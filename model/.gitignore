@@ -1,0 +1,53 @@
+# 模型工程 —— 只把「代码 + 文档 + 冻结配方」入库，产物一律不入库
+# （与参考工程 LINGQIDATA/Model 的纪律一致：脚本与 README 入库，训练/打分产物不入库）
+
+# ---- 初加工产物（可重建：preparingdata.py 一条命令）
+trainingdata/
+
+# ---- 单元产物（三个桶：训练 / 回测 / 记录）
+#   ★ 用「任意深度」匹配，让 V{N}/ 与 best/ 共用一套规则 ——
+#     原来是 `V*/xxx` 与 `best/xxx` 各写一遍，两处都得记得加。2026-09-20 就漏过一次：
+#     新增的 `sample_artifacts` 只加进了 V* 那一组，于是 best/sample_artifacts 里的
+#     7 MB 模型 pickle 差点被当成源码提交。
+#   ★ 冒烟/小样本嵌在桶内（`model_train/smoke/` 等），所以这两条就够，
+#     不再需要 `smoke_*` / `sample_*` 一整排兄弟规则。
+**/model_train/
+**/model_pred/
+
+#   ★ logs/ 只忽略**内容**、不忽略目录本身 —— 这样 `!` 才能把冻结配方捞回来。
+#     （git 的既定行为：父目录整个被排除后，`!` 无法再包含其中的文件。）
+**/logs/*
+!**/logs/recipe.yaml
+!**/logs/recipe.lock.json
+
+# ---- 旧名（2026-09-20 收敛前的产物桶；留着防旧目录残留 / 旧分支 checkout）
+**/artifacts/
+**/artifacts_smoke/
+**/pred/
+**/state/
+**/pics/
+**/smoke/
+**/smoke_pred/
+**/smoke_logs/
+**/smoke_artifacts/
+**/smoke_state/
+**/sample/
+**/sample_pred/
+**/sample_logs/
+**/sample_artifacts/
+**/sample_state/
+**/train_master.log
+
+# ---- 其它
+**/__pycache__/
+*.pyc
+*.pyo
+*.tmp
+
+# ---- 大文件（万一有落错地方的）
+*.parquet
+*.pkl
+*.fea
+
+# ---- Jupyter（用户会在项目里跑 notebook）
+.ipynb_checkpoints/

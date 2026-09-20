@@ -1,0 +1,44 @@
+# —— 数据与运行产物（不进仓库）——
+data/
+state/
+# ★ logs 只挡内容、不挡目录本身 —— 否则 `!` 捞不回 logs/recipe.*（git 的既定行为）
+**/logs/*
+!**/logs/recipe.yaml
+!**/logs/recipe.lock.json
+log0*/
+*.parquet
+*.log
+
+# —— Python ——
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# —— 密钥（本地单独提供）——
+APIKey.txt
+
+# —— 厂商 / 第三方资料 ——
+学习资料/
+灵启数据API*
+REFERENCE_lingqi.md
+resources/research/
+
+# —— 过程产物与归档（同步脚本已挡一层，这里再挡一层）——
+artifacts/
+history_iterations/
+trainingdata/
+model_train/
+model_pred/
+*.pkl
+*.fea
+
+# —— 平台级内部记录 ——
+QUANT_PLATFORM.md
+CLAUDE.md
+TASKS.md
+DAILY_RUNBOOK.md
+
+# —— 编辑器 ——
+.vscode/
+.idea/
+.DS_Store

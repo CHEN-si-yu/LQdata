@@ -1,0 +1,316 @@
+# 模块③ 模型工程 · 全局配置（引擎包内，路径真相源见 mx/config.py）
+#
+# 改这个文件不需要重启，每次运行重新读取。
+#
+# ★★ 三条铁律（详见 README.md）：
+#   1) 一切预处理**只用当日截面**统计量 —— 禁止全样本 mean/std/quantile（那是未来信息）
+#   2) 训练/验证/测试**按时间切分**，且标签重叠 h 天 ⇒ 边界两侧各丢 h 天（purge + embargo）
+#   3) 数据只从 `trainingdata/` 读（初加工产物）；本模块**绝不写**上游与 trainingdata
+#      —— 写 trainingdata 的只有 `preparingdata.py`
+
+version: 2
+
+paths:
+  # ★ 本包是**独立单元**：没有 factors / factors_state / factors_root 三条上游路径。
+  #   单元不该知道上游在哪 —— 上游 230 个因子 → trainingdata/ 的加工是**构建期**的事，
+  #   由模块根的 `preparingdata.py` 负责，本包只读它的产物。
+  #   `mx/config.py:_p()` 对缺键返回 None（不是 KeyError），所以这里不留键是安全的。
+  #   初加工产物（`preparingdata.py` 写，模型侧只读）
+  trainingdata: "trainingdata"
+  trainingdata_sample: "trainingdata/sample"
+  # 单元：本包自己就是单元（`mx/` 与 `model.py` 同级），见 config.py 的自指回退
+  units: "."
+  best: "best"
+
+# ---------------------------------------------------------------- 数据
+data:
+  # 样本区间：null = 用 trainingdata 里**全部已加工的交易日**
+  # （★ 不要用交易日历造日期轴 —— 它含未来 16 个交易日，模块② 踩过这个坑）
+  start: null
+  end: null
+  # 特征清单：null = 初加工产物里的全部特征（225 个减去下面的排除项）
+  # ★ 特征已在初加工阶段统一成 rank 且方向已翻正（"越大越好"）—— 这里选的是列，不是算法
+  features: null
+  # 排除清单（模块② eval 标了 ⚠NOISE 的两个：与噪声不可区分，不该进模型）
+  exclude_features:
+    - mf_big_order_ratio
+    - short_term_reversal_5
+  labels:
+    - label_ret_1d
+    - label_ret_3d
+    - label_ret_5d
+    - label_ret_10d
+    - label_ret_20d
+  # 每个交易日至少要有这么多只有效股票，才算一个有效截面（评价层用它，见 evaluate.py）
+  min_cross_section: 100
+  # ★ 样本的**特征覆盖率**门槛：一行的非空特征占比低于它就不算可用样本。0 = 关掉。
+  #   用途是剔"近乎全空"的行（比如上游某天写盘写了一半），**不是**评价数据好坏 ——
+  #   所以门槛要压低：实测逐日均覆盖 **2012 年约 0.43、2020 年代约 0.83**
+  #   （早年偏低是因为 40 个因子起点晚 + 长回看窗口的因子早年没有值）。
+  #   设 0.5 会把 2012–2015 整片切掉；0.2 只剔真正的垃圾行。
+  min_feature_coverage: 0.2
+
+# ---------------------------------------------------------------- 切分（防泄漏）
+# ★ 单元可以在自己的 `model.py` 里用 `SPLIT = {...}` 覆盖下面任意键（单元 = 配方的权威定义）。
+#   现行两套口径（用户 2026-09-17 拍板）：
+#     · 研究单元 Vx：固定 test 窗（2025-09-01 ~ 2026-09-01），train+valid 只能用 2025-08-10 之前
+#       —— 隔断按**交易日**由 purge 自动保证（每个标签按自己的 h 退，20d 标签自动退到 08-04 左右）
+#     · 实战单元 best：无 test，train+valid 用**全部**数据（见下面的 production 覆盖）
+split:
+  mode: date              # date = 按固定日期切（现行） | ratio = 按比例三段（遗留，仅 V1 用）
+  train_end: null         # train+valid 的上界（含）；null = 用数据末日（= 无 test 口径）
+  test_start: null        # test 窗下界（含）；null = 不切 test
+  test_end: null          # test 窗上界（含）
+  valid_ratio: 0.20       # valid 占 [数据起点, train_end] 的比例（多折时在其内轮换）
+  # purge/embargo：标签重叠 h 天 ⇒ 边界两侧各丢这么多**交易日**。null = 自动取该标签的 h
+  embargo_days: null
+  min_days_per_block: 20
+  # ratio 模式的遗留参数（只有 mode: ratio 时生效）
+  train_ratio: 0.60
+  # 生产单元（`best`）的强制覆盖：丢掉 test 窗、train+valid 放到数据末日
+  # ★ 这样 `main.py promote` 就能保持"纯文件复制"，不必改写单元代码里的 SPLIT
+  production:
+    drop_test: true
+    train_end: null
+  walk_forward:
+    folds: 4
+    min_train_days: 250
+
+# ---------------------------------------------------------------- 预处理
+preprocess:
+  # 对 rank 列再夹一层（初加工的 rank 是开区间 (0,1)，极端值仍可能扎堆）
+  clip: [0.001, 0.999]
+  # 缺失填充策略（逐日截面）：
+  #   per_model = 按模型类型自动选（推荐）
+  #   lgbm  = 保留 NaN（LightGBM 原生处理缺失，填了反而丢信息）
+  #   linear= 填**固定常数 0.5**（rank 的中性值；★ 初加工存的是 rank 或 1−rank，
+  #          0.5 在两种表示下都是中性点）+ 附一列"缺失占比"
+  #          不用当日截面中位数 —— 那是数据统计量，会让填充规则依赖当天分布，不如常数干净可证
+  fillna: per_model
+
+# ---------------------------------------------------------------- 模型
+models:
+  ridge:
+    type: linear
+    params:
+      alpha: 1.0
+      fit_intercept: true
+  lgbm:
+    type: gbdt
+    params:
+      n_estimators: 500
+      learning_rate: 0.03
+      num_leaves: 31
+      min_child_samples: 200
+      subsample: 0.8
+      subsample_freq: 1
+      colsample_bytree: 0.7
+      reg_lambda: 1.0
+      n_jobs: 8             # ★ 容器实测 32 核（os.cpu_count() 会报 192 = 宿主，别按它定）
+      verbose: -1
+  nn:                       # ★ 留桩：接口已接好，训练实现在后续版本
+    type: nn
+    params:
+      hidden: [256, 64]
+      dropout: 0.2
+      epochs: 30
+      batch_size: 4096
+      lr: 0.001
+      weight_decay: 0.0001
+
+  # ================================================================ 下面的都是"损失函数设计"的落点
+  # 全部参数可以在单元的 `heads()` 里用 overrides 覆盖 —— **架构与配方的唯一权威定义在单元**，
+  # 这里只是"不给就用的默认值"。四组可独立开关的旋钮：
+  #   label_transform : 标签变换（見 mx/labels.py）
+  #   sample_weight   : 样本权重（时间衰减 / 尾部加权）
+  #   目标函数本身    : 排序（rank）/ 顶部焦点（focus）
+  #   labels          : 本头只训哪几个标签（神经网络用来控成本）
+  ridge_w:
+    type: linear_w
+    params:
+      alpha: 1.0
+      fit_intercept: true
+      solver: cholesky
+  gbdt_w:
+    type: gbdt_w
+    params:
+      n_estimators: 500
+      learning_rate: 0.03
+      num_leaves: 31
+      min_child_samples: 200
+      subsample: 0.8
+      subsample_freq: 1
+      colsample_bytree: 0.7
+      reg_lambda: 1.0
+      n_jobs: 8
+  gbdt_rank:
+    type: gbdt_rank
+    params:
+      n_estimators: 500
+      learning_rate: 0.05
+      num_leaves: 31
+      min_child_samples: 200
+      subsample: 0.8
+      subsample_freq: 1
+      colsample_bytree: 0.7
+      reg_lambda: 1.0
+      grade_levels: 10              # 相关性的分档数（当日截面内等分位）
+      lambdarank_truncation_level: 20   # 只对当日头部这么多只算梯度 —— 与"只买 5 只"对齐
+      n_jobs: 8
+  gbdt_focus:
+    type: gbdt_focus
+    params:
+      n_estimators: 500
+      learning_rate: 0.03
+      num_leaves: 31
+      min_child_samples: 200
+      subsample: 0.8
+      subsample_freq: 1
+      colsample_bytree: 0.7
+      reg_lambda: 1.0
+      tau: 0.05                     # 逐日 softmax 的温度：越小越只看头部
+      n_jobs: 8
+  # ---- XGBoost：树模型里唯一能走 GPU 的（LightGBM 官方 wheel 是纯 CPU）
+  # ★ `xgb_buy` 是 `xgb` 的等价别名，专给"带 vs 不带可执行掩码"的消融用
+  #   （头名 = 产物目录名，同名会互相覆盖，见 §11-19）。
+  xgb_buy:
+    type: xgb
+    params: {}
+  xgb:
+    type: xgb
+    params:
+      n_estimators: 500
+      learning_rate: 0.03
+      max_depth: 6
+      min_child_weight: 50
+      subsample: 0.8
+      colsample_bytree: 0.7
+      reg_lambda: 1.0
+      tree_method: hist
+      device: auto                  # auto → 有 CUDA 就用 cuda，失败自动退回 cpu
+      n_jobs: 8
+  # ★ 排序头的"取样对数"消融别名（V7 用）：头名 = 产物目录名，同名会互相覆盖（§11-19）。
+  #   三个条目参数为空，口径全由单元 heads() 的 overrides 给。
+  xgb_rank50:
+    type: xgb_rank
+    params: {}
+  xgb_rank100:
+    type: xgb_rank
+    params: {}
+  # ★ xgb 超参扫描的别名（V15 用，2026-09-19）：头名 = 产物目录名，所以必须各自独立。
+  #   README §12 第 3 条：`max_depth=6 / min_child_weight=50` 当初都是**拍的**，
+  #   而 XGBoost 走 GPU（比 LightGBM 快 5 倍）⇒ 扫描是最便宜的一条提升路径。
+  #   口径全部由 V15/model.py 的 overrides 给，这里只声明 type。
+  xgb_d8:
+    type: xgb
+    params: {}
+  xgb_d4:
+    type: xgb
+    params: {}
+  xgb_mcw200:
+    type: xgb
+    params: {}
+  xgb_lr015:
+    type: xgb
+    params: {}
+  xgb_cs05:
+    type: xgb
+    params: {}
+  xgb_rank:
+    type: xgb_rank
+    params:
+      n_estimators: 500
+      learning_rate: 0.05
+      max_depth: 6
+      min_child_weight: 50
+      subsample: 0.8
+      colsample_bytree: 0.7
+      reg_lambda: 1.0
+      tree_method: hist
+      device: auto
+      grade_levels: 10
+      truncation_level: 20
+      n_jobs: 8
+  # ★ 神经网络"损失消融"三兄弟（V6 用）：**同一个 `type: nn`，只是三个不同的头名字**。
+  #   为什么要拆成三个条目：产物路径是 `<单元>/artifacts/fold{k}/<头名>__<标签>/`，
+  #   而头名就是模型名 —— 三个头共用一个名字会把彼此的产物**互相覆盖**（V6 首跑实测踩到）。
+  #   三个条目本身不设任何口径（参数全由单元 `heads()` 的 overrides 给），
+  #   所以它们与 `nn_top` 是等价的别名，不会污染已有版本。
+  nn_mse:
+    type: nn
+    params: {}
+  # ★ 风格分化别名（V9 用）：头名 = 产物目录名，同名会互相覆盖（§11-19）；
+  #   两个条目参数为空，口径全由单元 heads() 的 overrides 给。
+  nn_aggr:
+    type: nn
+    params: {}
+  nn_cons:
+    type: nn
+    params: {}
+  nn_ic:
+    type: nn
+    params: {}
+  nn_top:
+    type: nn
+    params:
+      hidden: [256, 64]
+      dropout: 0.2
+      epochs: 30
+      batch_days: 16                # ★ 按"日"分批（逐日 softmax/IC 要当日完整截面）
+      lr: 0.001
+      weight_decay: 0.0001
+      patience: 5
+      amp: true
+      tau: 0.05
+      w_mse: 1.0
+      w_ic: 0.0
+      w_top: 0.0
+      top_target: z                 # z = 秩高斯目标（排得对）；ret = 真实收益（买得对）
+      labels: [label_ret_5d, label_ret_1d]
+
+  # ★★ 参考工程复刻（用户 2026-09-19 交办，见 `mx/models/nn_ref.py`）：
+  #    头名 = 产物目录名，所以三个别名各自独立（§11-19 的教训）。
+  #    口径全部由单元的 `heads()` 给，这里只声明 type。
+  nn_v8:
+    type: nn_v8
+    params: {}
+  nn_v8_nw:                         # 同构，只关掉 ridge 热启动（消融用）
+    type: nn_v8
+    params: {}
+  nn_wpcc:
+    type: nn_wpcc
+    params: {}
+
+train:
+  seed: 42
+  # 早停：验证集 IC 连续这么多轮不提升就停（GBDT/NN 用；线性模型不用）
+  early_stopping_rounds: 50
+  device: auto              # auto | cpu | cuda —— ★ CPU/GPU 两手准备的开关，代码里不硬编码
+
+# ---------------------------------------------------------------- 交易策略（小资金口径，用户 2026-09-17 裁定）
+strategy:
+  capital: 100000           # 起始资金（个人小资金；整手 100 股 ⇒ 买不起 1 手就跳过）
+  max_positions: 5          # ★ 最多持股 5 只（硬约束）
+  lot_size: 100             # 整手
+  # 费用（单边）：佣金万 2.5（最低 5 元）+ 过户万 0.1 + 滑点 3bp；卖出另加印花万 5
+  commission_bps: 2.5
+  commission_min: 5.0
+  stamp_bps: 5.0
+  transfer_bps: 0.1
+  slippage_bps: 3.0
+  limit_pct: 0.098          # 一字板判定阈值（涨跌幅触及限价 且 开盘=最高=最低）
+
+# ---------------------------------------------------------------- 组合回测（旧口径：重叠 sleeve 近似）
+# ★ 只作历史对照：它是"h 日收益按几何摊到日频"的近似，不是逐日 mark-to-market。
+#   正式口径一律走上面的 strategy（现金级真实净值）。
+backtest:
+  top_n: 50
+  cost_bps: 5.0
+  slippage_bps: 3.0
+  hold_days: null           # null = 用该标签的 horizon
+  limit_pct: 0.098          # ★ 与 strategy.limit_pct 同一个概念，保持一致
+  max_turnover: null
+
+# ---------------------------------------------------------------- 可视化
+viz:
+  summary: true

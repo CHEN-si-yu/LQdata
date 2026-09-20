@@ -1,0 +1,73 @@
+# 灵启数据下载器 · 全局配置
+# 修改后无需重启，每次运行 main 时重新读取。
+
+api:
+  base_url: "https://data.diemeng.chat/api"
+  api_key_file: "APIKey.txt"        # 相对项目根目录
+  # ★ 官方上限 280 次/分钟。留约 7% 安全边际。
+  # 注意：这是"本进程"的令牌桶；真正的硬约束是下面的全局限速。
+  # ★★ 2026-09-14 实测结论：**不要提到 275**。当天的 A/B 数据 ——
+  #    260/min：stock_history_5min 跑 15.5 小时 / 155,840 请求仅 14 次重试（0.009%）；
+  #             cyq_chips 前 47 分钟 0 失败。
+  #    275/min：cyq_chips 重启后 11 分钟失败 72 次、稳定 6-9 条/分钟不衰减，
+  #             任务失败率 0.5% → 6.1%。失败任务要重试 7 次 →
+  #             6.1% × 7 = 多烧 43% 额度，把 5.8% 的提速彻底吃掉。
+  #    现象：厂商 nginx 返回 HTTP 502（不是 429），低速串行探针 8/8 成功、
+  #          只有高速生产流量被打 → 判定为**按速率的软性节流**。
+  #    结论：260 是经过长跑验证的稳定工作点，Goodput(260) > Goodput(275)。
+  #          即便要再往上试，也必须在空载窗口做 A/B，别在生产回填时试。
+  rate_limit_per_min: 260
+  # ★ 跨进程共享的全局限速（文件锁 + 60 秒滑动窗口）。
+  # 共享盘上可能同时跑多个实例，各自 260/min 叠加会突破 280/min，
+  # 所以所有进程共用这一个额度。这是真正防限流的那一层。
+  global_rate_limit: true
+  rate_limit_global_per_min: 260
+  # 常规并发。实测 12 并发无错，但配合令牌桶后并发只影响延迟不影响速率。
+  concurrency: 12
+  # 慢接口（market_distribution_history 单次 9~25s）单独走低并发通道，
+  # 避免它们占满线程池拖慢整体进度。
+  # ★ 2026-09-13 17:30 用户拍板 4 → 12：实测单次 10.3s，4 并发只有 23 次/分钟，
+  #   而全局限速额度是 260/min —— 91% 的额度空着。配 4 的本意是主干运行期间
+  #   不抢占其它数据集的额度，但跑到它时已是**最后一个数据集**，没有别人要抢。
+  #   提到 12（与普通通道一致）→ ~70 次/分钟，占 280 红线 25%，
+  #   4055 个交易日从 2h56m 降到 ~53m。
+  #   若将来它前面又有别的数据集了，记得把这个值调回 4。
+  slow_concurrency: 12
+  timeout: 120
+  max_retries: 6
+  backoff_base: 1.6                 # 指数退避基数（秒）
+  backoff_max: 30
+
+paths:
+  data: "data"
+  state: "state"
+  logs: "logs"
+
+download:
+  history_start: "1990-12-19"       # 日线数据实测起点
+  revision_days: 10                 # 增量时额外回刷最近 N 天（应对追溯修正）
+  default_page_size: 10000
+  # 空结果重试次数。服务端偶发返回空（实测），因此"预期非空"的请求会自动重试。
+  empty_retries: 4
+  # 写入缓冲：攒够多少行才真正合并写 parquet。
+  # parquet 是整文件重写，缓冲能避免一个年分区被反复重写（O(n²) 的 I/O），
+  # 也让串行的写盘不再卡住并发抓取。调小=落盘更频繁但更慢；调大=更快，但崩溃时丢的缓冲更多。
+  write_buffer_rows: 300000
+  # per_entity 的周期性 checkpoint 间隔（按任务数）。0 = 关闭。
+  # 背景：per_entity 的 done.entities 原来只在整轮跑完后写一次，而 cyq_chips
+  # 满载约 13 小时、stock_history 更长 —— 中途被 kill / OOM / 超时就会丢**全部**进度
+  # （parquet 已在盘上、数据不脏，但 manifest 无完成标记，重跑从头再来、白烧请求额度）。
+  # 加了它之后崩溃最多丢 `间隔 / 总任务数` 比例的工作量。
+  # 代价：checkpoint 会强制 flush 一次，绕过 write_buffer_rows 的自适应阈值，
+  #       多写若干次大分区。间隔越小越安全但越慢 —— 100 会让大分区被反复重写（别这么设）。
+  per_entity_checkpoint_every: 5000
+
+# 分钟级数据策略。
+# daily_dump 只能取最近 90 天，因此：
+#   - 历史回补走 stock/history 逐股票拉取（慢，需按年推进）
+#   - 每日增量走 daily_dump（每个日期每天限 10 次，我们只用 1 次）
+minute:
+  enabled: true
+  levels: ["5min"]                  # 先只做 5min；1min 体量约 5 倍
+  history_start: "2024-01-01"       # 逐股票回补的起点（可调）
+  dump_lookback_days: 90            # daily_dump 可用窗口

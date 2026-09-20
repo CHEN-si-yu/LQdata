@@ -1,0 +1,109 @@
+# 因子工程 · 全局配置
+# 修改后无需重启，每次运行 main 时重新读取。
+
+paths:
+  # 上游数据（模块① 的产出）。两个路径是同一个地方（/root/autodl-fs 是符号链接）。
+  upstream: "../datadownload/data"
+  upstream_state: "../datadownload/state"
+  factors: "data/factors"        # 因子产出根目录
+  state: "state"
+  logs: "logs"
+
+# ★★★ 用户的硬性约束（2026-09-13 拍板，别改） ★★★
+# 下游模型任务：A 股 **日横断面回归排序**。因此：
+#   1) 所有因子必须日频
+#   2) 固定主板股票池 2115 只，见下方 frozen_list
+#   3) 因子输出统一从 2018-01-01 起，个别因子可以更晚
+universe:
+  # 主板代码前缀白名单（实测自 stock_list 5901 只）
+  #   上交所主板 600 601 603 605（1844 只）
+  #   深交所主板 000 001 002 003（1640 只，002 为原中小板，2021-04 已并入主板）
+  # 排除：创业板 300 301 302（1448）、科创板 688 689（620）、北交所 832 833 920（348）
+  main_board_prefixes: ["600", "601", "603", "605", "000", "001", "002", "003"]
+  # 是否排除 ST/*ST（默认不排除，ST 也在主板内；置 true 则剔除）
+  exclude_st: true
+  # 上市后多少天内不参与（次新股常有极端值；0 = 不限制）
+  min_listed_days: 0
+
+  # ★★★ 2026-09-18 用户拍板：**冻结股票池**（固定名单，不再动态进出）
+  #
+  # 为什么必须冻结：动态池下一只新股上市 → 全库所有历史截面行数 +1、
+  #   rank / cs_zscore 全部平移 → 单日 MD5 台账 2177 条全红
+  #   （2026-09-18 实测：log0918_eod 比对，1772/1866 格剔除新股后逐位复现，
+  #    另 94 格全部归因到"新股入池"）。冻结后历史值**永久稳定**。
+  #
+  # 名单：conf/universe_frozen.tsv —— 2115 只
+  #   口径 = 主板 ∩ 至今存续 ∩ 从未ST(2016-08-09起) ∩ 上市日≤2018-01-01
+  #   生成：python scripts/build_frozen_universe.py（口径与代价写在文件头）
+  #
+  # ⚠️ 用户已知并接受的三个代价：①「至今存续」→ **幸存者偏差**，回测收益会被高估；
+  #   ②「从未ST」是事后判据；③ ST 历史最早只覆盖到 2016-08-09，之前无法判定。
+  #   详见 conf/universe_frozen.tsv 的文件头。
+  #
+  # ★ 内容哈希进 universe_fp：改名单 = 触发全部因子全量重建（有意的）。
+  # ★ 置空字符串 = 回到"主板全集 + 动态进出"的老口径（会再次引入新股致全红）。
+  frozen_list: "conf/universe_frozen.tsv"
+
+# 2026-09-19：全局输出下界。实际起点=max(default_start, 因子显式 start)。
+# 仅截断输出；上游更早数据继续用于 TTM、同比和滚动窗口预热。
+# 起点进入 recipe 指纹，修改后应通过 main.py rebuild 按年重建。
+# 默认串行，最多 --jobs 2；不要把多个年份塞进同一个长期存活的计算进程。
+default_start: "2018-01-01"
+
+compute:
+  # 增量时额外回刷最近 N 天（应对上游追溯修正 / 当日数据尚未定稿）
+  revision_days: 10
+  # 每个因子声明的 warmup_days 会把计算窗口起点再往前推（日历天）。
+  # 这是保证「增量结果 == 全量结果」的关键，见 fea/engine.py 的说明。
+  #
+  # ★ 上游输入变化驱动的失效回溯窗口（日历天），按数据集配置。
+  #   为什么需要：增量是按「输出日期」找缺口的，但上游财报被追溯修正时，
+  #   它的 ann_date 可能远在过去（实测最长滞后 15 个月）。只按日期找缺口
+  #   会让修正永久传播不到历史，且悄无声息。加了这一层后，只要上游某数据集
+  #   的行数/最新公告日变了，就把「上一个公告日 − 回填窗口」之后的日期全部重算。
+  #  ★★ 取舍（2026-09-15 按实测定稿）：**日频依赖必须给小值**。
+  #     L2 的判据是 `(行数, 最新日期)` 与上次不同，而日频表**每跑一次水位就变**
+  #     → L2 每次增量必然触发，从「上次最新日期 − back」重算到今天。
+  #     价格类因子有 130+ 个且都依赖 stock_daily / stock_adj_factor，
+  #     `default: 400` 等于**每天把所有价格因子回溯重算 400 个日历天 ≈ 1.1 个输出年**
+  #     （实测约 +3~4 分钟纯属白烧）。
+  #     日频取 20：略大于 revision_days(10)，覆盖一个周末 + 一次漏跑，
+  #     且与 L1b 的回刷窗口基本重合，边际成本接近 0。
+  #     季频保持 500 —— 追溯重述必须传播到历史，而且一年只触发几次。
+  dep_backfill_days:
+    # —— 季频 / 不定期：水位变化罕见，回溯要够远 ——
+    stock_income: 500
+    stock_balancesheet: 500
+    stock_cashflow: 500
+    stock_financial_indicator: 500
+    stock_holder_number: 500
+    stock_forecast: 500
+    stock_pledge_stat: 500
+    # —— 日频·全样本：水位每天变 → 窗口必须小 ——
+    stock_daily: 20
+    stock_adj_factor: 20
+    stock_finance: 20
+    stock_main_fund_flow: 20
+    stock_margin_detail: 20
+    stock_cyq_perf: 20
+    stock_cyq_chips: 20
+    stock_history_5min: 20
+    index_daily: 20
+    # —— 日频·稀疏/事件 ——
+    stock_limit_up: 20
+    stock_limit_list: 20
+    stock_top_list: 20
+    stock_dragon_tiger: 20
+    stock_suspension: 20
+    default: 60
+
+rank:
+  # 截面百分位排名前的缩尾分位（对齐灵启因子库文档的约定）
+  winsor: [0.01, 0.99]
+  # 每个交易日至少要有这么多只有效股票才算截面有效，否则该日弃用
+  min_cross_section: 100
+
+storage:
+  compression: "zstd"
+  # 单文件写入的行数上限不做限制：我们按「年」为单位算+写，
+  # 一年约 80 万行，天然避开模块① 踩过的 upsert O(n²) 重写坑。

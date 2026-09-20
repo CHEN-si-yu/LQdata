@@ -1,0 +1,151 @@
+# 数据集更新频率与增量策略 —— 机器可读表
+# ============================================================================
+# 这是 QUANT_PLATFORM.md §16.4 / TASKS.md §六 「任务 2」的产物，也是任务 3、4 的基础。
+#
+# 为什么需要它：完整性检查**必须按数据类型区分判据**，否则会把
+# 「不定期表本来就没有数据」误判成「缺失」，或者反过来漏掉真缺口。
+#   · 日频·全样本：每个交易日都该有稳定行数 → 缺一天就是异常
+#   · 日频·稀疏/事件：每个交易日都有行，但**行数波动很大**（涨停家数 40~95）
+#     → 可以用「日期是否存在」判缺口，但**不能**用「行数 = 0」判
+#   · 不定期/季频/月频：本来就不连续 → 只能对账 coverage，不能按交易日逐日要求
+#
+# freq 取值：
+#   daily_full      日频·全样本（每个交易日全市场）
+#   daily_sparse    日频·稀疏/事件（每天有行但行数波动）
+#   weekly_monthly  一张表混了周线+月线，靠 period 列区分 ★ 特殊
+#   monthly         月频
+#   quarterly       季频（按报告期，注意还要看 ann_date 的 PIT 语义）
+#   irregular       不定期（按公告）
+#   minute          分钟级
+#   snapshot        快照/一次性（无时间维度，不参与缺口判定）
+#
+# delay_days：该表的数据比"最后交易日"晚几个交易日才可得。
+#   ⚠️ 目前是**单时点观测**（2026-09-13 周日一次，见 QUANT_PLATFORM.md §16.3 附录），
+#      任务 3 要用连续观测（state/delay_history.json）把它固化成恒定值。
+#   ⚠️ 这个字段是**模块② 因子可得性锚定**的依据：任何用到 delay>0 的表做因子，
+#      都必须把因子值的「可得日」锚定在 T+delay，否则 T 日的因子值会在数据到达后**静默改变**。
+#
+# gap_checkable：能否用「交易日历 vs 实际有数据的日期」来判定缺口。
+#   快照表没有时间维度 → false；其余为 true。
+# ============================================================================
+
+version: 1
+updated_at: "2026-09-13"
+
+# 判定一个日频表"是否到齐"时用作基准的表（任务 4a）
+baseline: stock_daily
+
+datasets:
+  stock_cyq_perf:           {freq: daily_full, date_field: trade_date, delay_days: 0, gap_checkable: true, note: "2026-09-19 实测已含 09-18；发布时间仍需持续观测。winner_rate 保留厂商原值，不归一化。"}
+  # ---------------------------------------------------------------- 日频·全样本
+  stock_daily:              {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  stock_adj_factor:         {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  stock_finance:            {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  stock_main_fund_flow:     {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  dc_daily:                 {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  tdx_daily:                {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  index_daily:              {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  # ★ 2026-09-15 深夜更正：这三张表是**当天深夜发布**，不是次日 —— 同晚 7 次采样的
+  #   滞后序列（新→旧）0,1,1,1,0,0,0：21:22 还观测到滞后 1，23:32 服务端就有当天数据了。
+  #   与日更侧 registry._DELAY 同步：1 → 0（"发布晚 ≠ 不发布"）。
+  index_ths_daily:          {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true,
+                             note: "★ 2026-09-15 深夜定稿 delay_days=0（当天深夜发布，非次日；见上方 1→0 的注释）。\
+09-13（周日）观测时 09-11 还是空的，09-14 晚上 09-11 已可拉取（抽 25 个实体 25/25 命中），\
+已补回 1,586 行、max_date 追平 09-11。★ 2026-09-15 深夜据同晚 7 次采样改为 0。\
+但 audit.py 的 (D) 新鲜度检查会在补齐后报『滞后 0 != 声明 1』—— **那是正常现象，不是错误**。\
+⚠️ 该表是 per_entity、done 为实体级不分年份，所以**补齐后必须手工回填**，增量不会自动补。\
+另：09-08/09-09 两天真实缺口已于 2026-09-13 修复"}
+  stock_margin_detail:      {freq: daily_full,    date_field: trade_date,  delay_days: 1, gap_checkable: true,
+                             note: "实测滞后 1 个交易日"}
+
+  # ------------------------------------------------------- 日频·稀疏 / 事件驱动
+  stock_limit_up:           {freq: daily_sparse,  date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  stock_limit_list:         {freq: daily_sparse,  date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  # stock_dc_block_fund_flow / stock_ths_block_fund_flow / ths_hot
+  # 均已于 2026-09-19 彻底删除（时间覆盖不足）
+  stock_dragon_tiger:       {freq: daily_sparse,  date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  stock_top_list:           {freq: daily_sparse,  date_field: trade_date,  delay_days: 0, gap_checkable: true}
+  stock_suspension:         {freq: daily_sparse,  date_field: suspend_date, delay_days: 0, gap_checkable: true,
+                             note: "停牌是事件，很多交易日没有停牌 → 空值是正常的"}
+  # ★ 2026-09-15 深夜更正：这三张表是**当天深夜发布**，不是次日 —— 同晚 7 次采样的
+  #   滞后序列（新→旧）0,1,1,1,0,0,0：21:22 还观测到滞后 1，23:32 服务端就有当天数据了。
+  #   与日更侧 registry._DELAY 同步：1 → 0（"发布晚 ≠ 不发布"）。
+  stock_st_info:            {freq: daily_sparse,  date_field: trade_date,  delay_days: 0, gap_checkable: true,
+                             note: "★ 2026-09-15 深夜定稿 0（当天深夜发布，非次日）"}
+  # ★ 2026-09-15 晚按实测更正：T 当天服务端就有（delay_obs=0）→ 1 改 0
+  stock_adj_factor_changes: {freq: daily_sparse,  date_field: date,        delay_days: 0, gap_checkable: true,
+                             note: "2026-09-15 实测当天可得（原记 1，已更正）"}
+
+  # ------------------------------------------------------------------ 特殊频率
+  # ★ stock_kline 已于 2026-09-16 按用户指示彻底删除（不更新、不保存）。
+  #   它的周/月线实为「抓取请求范围 ∩ 该周期」内日线的聚合（非日历周期聚合），
+  #   窗口下界一滑动已结束周期的值也会被改写；且 14 个数据列与 stock_daily 完全相同、
+  #   零额外信息。需要周/月频特征请从 stock_daily 现算。
+  #   备份：everyday_tasks/state/backtest/stock_kline_full_20260916_225817/
+  stock_pledge_stat:        {freq: quarterly,     date_field: end_date,    delay_days: 0, gap_checkable: false}
+  stock_financial_indicator: {freq: quarterly,    date_field: end_date,    delay_days: 0, gap_checkable: false,
+                             note: "按 ann_date 做 PIT；end_date 不连续是正常的"}
+  stock_income:             {freq: quarterly,     date_field: end_date,    delay_days: 0, gap_checkable: false}
+  stock_balancesheet:       {freq: quarterly,     date_field: end_date,    delay_days: 0, gap_checkable: false}
+  stock_cashflow:           {freq: quarterly,     date_field: end_date,    delay_days: 0, gap_checkable: false}
+  stock_holder_number:      {freq: irregular,     date_field: end_date,    delay_days: 0, gap_checkable: false}
+  stock_forecast:           {freq: irregular,     date_field: ann_date,    delay_days: 0, gap_checkable: false}
+  # -------------------------------------------------------------------- 其它
+  tdx_minute:               {freq: minute,        date_field: trade_time,  delay_days: 0, gap_checkable: false,
+                             note: "分钟级；已落地 5835 万行"}
+
+  # ------------------------------------------------- 2026-09-13 用户拍板：新启用/新增的 4 个
+  # ⚠️ 这四个**一律不能标 daily_full / daily_sparse**，理由见下（这是本轮最重要的一条约束）。
+  #
+  #    闸门语义（gate.check :98 + main.py :191-194）：
+  #        ok = 该表 max_date >= 基准表往前推 delay_days 个交易日
+  #        ready = all(ok)；不 ready 且等满 4 小时 → **return 3，一个数据集都不下**。
+  #    且 **max_date 是 None（从未下载过）时 ok 恒为 False**。
+  #
+  #    实测三条硬证据：
+  #      1) stock_cyq_chips / stock_history_5min 走 per_entity，**没有回刷窗口** ——
+  #         回填完成后全部实体 done，每天 0 任务、max_date 永久冻结 → 标 daily_* 会
+  #         让每天的普通增量**永久 exit 3**（不是"白等 4 小时"，是整个任务跑不起来）。
+  #      2) stock_market_distribution_history 实测**最新交易日返回 0 行**
+  #         （2026-09-13 探测：09-11 与 09-09 均为空，09-10 有 241 行）→ max_date 落后
+  #         → 标 daily_* 同样永久阻塞。
+  #      3) stock_daily_dump 受"仅最近 90 天"窗口 + 每日期 10 次配额约束，语义上不是日频表。
+  #
+  #    所以四个一律用 minute / irregular，显式排除在闸门之外。
+  stock_market_distribution_history:
+    {freq: minute, date_field: trade_time, delay_days: 0, gap_checkable: false,
+     note: "分钟级（241 行/日，trade_time 是完整 datetime）。★ 故意不进闸门：
+            实测最新交易日会返回 0 行（上游发布滞后），标 daily_* 会让闸门永久阻塞、日更 exit 3。
+            逐日增量有 revision_days=10 的回刷窗口兜底，能自愈。
+            起点 2010-01-04 已由 predrop manifest + 2026-09-13 探测双重证实。"}
+  stock_cyq_chips:
+    {freq: irregular, date_field: trade_date, delay_days: 0, gap_checkable: false,
+     note: "★ 语义上是日频，但 per_entity 无回刷窗口 → 回填完 max_date 不再前进，
+            标 daily_* 会让闸门永久阻塞（见上方说明）。等 per_entity 回刷窗口实现后再改 daily_sparse。"}
+  stock_history_5min:
+    {freq: minute, date_field: trade_time, delay_days: 0, gap_checkable: false,
+     note: "个股 5min 分时，逐股拉。★ 不进闸门（同 per_entity 无回刷窗口）。
+            加 1min 时须另建 stock_history_1min —— 两个级别不能共用 data/ 目录（主键会撞）。"}
+  stock_daily_dump:
+    {freq: minute, date_field: trade_date, delay_days: 0, gap_checkable: false,
+     note: "★ 产出目录是 stock_dump_5min（**非 spec 名**，见 main.py:_orphan_datasets）。
+            受最近 90 天窗口 + 每日期每天 10 次配额约束，仅能作每日增量、不能回补历史。"}
+
+  # 快照/一次性：没有时间维度，不参与交易日缺口判定
+  # （basic_calendar 是日历本身，也不是"数据"）
+  basic_calendar:                  {freq: snapshot, date_field: date,       delay_days: 0, gap_checkable: false}
+  stock_list:                      {freq: snapshot, date_field: trade_date, delay_days: 0, gap_checkable: false}
+  tdx_blocks:                      {freq: snapshot, date_field: trade_date, delay_days: 0, gap_checkable: false}
+  dc_blocks:                       {freq: snapshot, date_field: trade_date, delay_days: 0, gap_checkable: false}
+  # index_ths_sector_categories / index_ths_constituent_stocks / tdx_block_stocks
+  # 已于 2026-09-19 彻底删除（快照表，无历史版本，回测必然前视）
+
+# 已禁用（enabled=False，不下）—— 列在这里是为了「任务 4」的增量闸门能识别并跳过它们
+# 详见 QUANT_PLATFORM.md §10.9
+#
+# ⓘ 2026-09-13 变更：stock_market_distribution_history / stock_cyq_chips / stock_daily_dump
+#   三项经用户拍板**重新启用**，已从本列表移出、并加入上方 datasets:（标 minute/irregular，
+#   均不进闸门）。§10.9 的原「不下」记录保留备查 —— 它同时解释了当初为什么不下。
+disabled:
+  - index_history
+  - stock_daily_adj
