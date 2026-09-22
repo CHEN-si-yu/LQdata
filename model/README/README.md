@@ -1,114 +1,116 @@
-# 模块③ · 模型工程 —— 文档入口
+# 模块③ · 模型迭代规程（怎么写一个新版本）
 
-> 量化平台三模块之一（① 数据爬取 `datadownload/` → ② 因子工程 `featureengineering/` → ③ **模型**）。
-> **输入** = 模块② 的因子产物；**输出** = A 股主板股票的**日频排序打分**（下游据此选股）。
-> 本目录就是模块③ 的**全部文档**（原先在模块根的两份 `README.md` / `LOG.md` 已拆分归位，见下面的导航）。
-> 平台级主记录在 [`../../QUANT_PLATFORM.md`](../../QUANT_PLATFORM.md)；
-> 上游口径以 [`../../featureengineering/README.md`](../../featureengineering/README.md) 为准
-> （旧文档里写的 `CLAUDE.md` / `FACTORS.md` **已不存在**，2026-09-19 并进了 `README.md`）。
+> 这一份只讲**规则与流程**：版本怎么编号、从哪个模板长出来、训练与打分的时间范围、交付什么、
+> 命令怎么跑、产物落在哪。**不写配方数字与口径细节**（那些会过期、且以代码为准）——
+> 配方看 `V16/model.py` 的 `RECIPE`，规格看 [SPEC.md](SPEC.md)，结论看 [LESSONS.md](LESSONS.md)，
+> 待办看 [TODO.md](TODO.md)，排行榜看 [`../LEADERBOARD.md`](../LEADERBOARD.md)。
 
-> **本文件包含**：导航 · 当前状态（榜单作废说明）· §5 命令速查 · §13 附：参考工程与协作约定 ｜ **文档入口**：[`README.md`](README.md)
-> ★ 章节号（`§N`）是**全库统一**的：指向别的文件时会写成「文件名.md §N」并带链接；对照表见 [`README.md`](README.md)。
+> **本文件包含**：§1 版本迭代规则 · §2 时间口径 · §3 交付格式 · §4 命令流水线 · §5 产物位置 · §6 文档分工
 
-## 导航
+---
 
-| 文件 | 里面是什么 |
+## 1. ★ 版本迭代规则（用户 2026-09-20 定）
+
+**这个模块在做什么**：把 `trainingdata/`（初加工快照，**模型侧唯一数据源**）训成打分 ——
+按季度滚动、四折集成，再在固定的评价窗上比版本。当前数据锚点 `panel_digest=798ccb32214853a8`
+（337 特征 × **2115 只固定池**，★ 固定池有**已知幸存者偏差**，报告不能当"无偏的全市场实盘收益"读）。
+
+| 规则 | 内容 |
 |:--|:--|
-| **[`SPEC.md`](SPEC.md)** | 结构与规范：目录约定 · 独立单元的定义与边界 · §1 硬约束 · §2 防泄漏铁律 · §4 切分口径（含 `best/` 约定）· §6 训练与内存纪律 · §6.5 损失函数引擎 |
-| **[`DATA.md`](DATA.md)** | §3 数据层：`trainingdata/` 四块产物 · 三个口径 · 增量更新 · 换快照的正确姿势 · 上游变更史 · ★ 下游待对齐清单 |
-| **[`EVAL.md`](EVAL.md)** | §7 评估三层与策略口径：术语约定（IC = RankIC）· 主判据 Σtop1 · 策略约束 |
-| **[`VERSIONS.md`](VERSIONS.md)** | §8 版本履历：V2b~V15 每版的假设 → 配方 → 结论（**历史档案**，命令与特征数已过时） |
-| **[`LESSONS.md`](LESSONS.md)** | §9 已确认的事实 · §10 死胡同清单 · §11 坑清单（都带证据） |
-| **[`TODO.md`](TODO.md)** | §12 待办与操作纪律 · 引擎副本同步纪律 |
-| **[`LOG.md`](LOG.md)** | ★ 迭代日志（倒序）：每一轮改了什么、为什么、结论、锚点 |
+| **一版一单元、自包含** | `V{N}/` 自带 `model.py`（配方 / 数据 / 切分 / 模型 / 损失 / 训练）+ `analysis.py`（推演拼接 / 评价 / 回测 / 报告 / 推荐表）+ `train.sh`（一键流水线）。**不 import 上游、不 import 别的版本**，只读 `trainingdata/` ⇒ 任何一版都能单独跑、单独交付 |
+| **模板 = `V16`** | 新版本从 **`V16` 复制**（`cp -r V16 V17`）再改。★ **不要**从 `history_iterations/` 复制 —— 那些是旧口径，跑不起来 |
+| **编号只增不减** | 下一版是 `V17`、再下一版 `V18`…**不在旧版本上就地改** —— 旧版本是"当时的结论"，改了就没法复查 |
+| **归档不运行** | `history_iterations/` 里的 **`V1`~`V75`（`V16` 除外，共 74 个）** 只作历史：**别再跑、也别从那儿复制**（旧口径，跑不起来）。★ 2026-09-22 起归档**只删权重**（`model_train/`）—— `model_pred/`、`REPORT.md`、脚本、`logs/` 与 research 子目录**都还在**，可读、可引、可复查；`V16`（模板）与 `best/`（实战）**不在**归档集合内 |
+| **`best/` 是晋级位**（当前空） | 把验证通过的那一版脚本复制进去、改成生产切分口径。★ **不根据测试结果自动晋级**，晋级是人的决定 |
+| **改了配方 = 新版本** | 配方变 ⇒ `run_id` 变 ⇒ 旧产物一律不复用、不可比；要留住旧结论就**归档**，不能手改锁文件骗过恢复检查 |
 
----
+★ 一个版本"改了什么"写进**它自己的 `REPORT.md`**（脚本生成）+ 版本目录里的配方锁文件，
+不要只留在对话里。
 
-## 🏆 榜单状态（2026-09-20 起：旧榜作废，新榜待建）
+## 2. ★ 时间口径（所有版本统一，不许自行调整）
 
-> **当前数据锚点**：`panel_digest=798ccb32214853a8` · 337 特征 × 2018-01-02 ~ 2026-09-18
-> （2116 天 × 2115 只 = 4,475,340 行）。★ 引用任何旧数字前，先核对它建在哪个 `panel_digest` 上。
->
-> ⚠️ **2026-09-20 起旧榜已作废，暂不维护。**
-> 原因是**数据被换掉了**：上游 2026-09-19 之后把因子整体重算过（2012~2017 分区被删、
-> 因子从 306 增到 337、财报类因子全体微动），`trainingdata/` 已按上游当前的样子重建。
-> 旧榜单（V12~V15）建在「306 特征 × 2012~2026」上，与现在的「337 特征 × 2018~2026」
-> **特征集与年份范围都不同，不可比**。★ 那 39 行旧数字**已随 2026-09-20 的文档瘦身删除**
-> （它们既不是结论也不是规律）。与数据无关的方法论留在了 [`VERSIONS.md`](VERSIONS.md) §8，
-> 来龙去脉见 [`LOG.md`](LOG.md)。
->
-> 新榜单要等新版本（从 `V16` 复制）跑出来再建。判定口径不变：**用 Σtop1**，先看折间区间再看均值。
->
-> 新数据上的**第一条基线**已跑出（`V16`，1 折，只作链路证据、**不是结论**）：
-> `xgb`/20d 评价 RankIC **+0.1233**、Σtop1 **+0.857**；集成把 IC 提到 +0.1379 但 Σtop1 掉到 +0.357
-> —— 「一个弱头等权混进来会拖死集成」这个老问题**在新数据上原样重现**。
-> 明细见 [`LOG.md`](LOG.md) 的「七、新建的模板单元 V16」。
+| 项 | 规则 |
+|:--|:--|
+| **评价与回测窗** | **2025-07-01 ~ 2026-06-30**（= 2025Q3 / 2025Q4 / 2026Q1 / 2026Q2 四个季度，242 个交易日）。**不许**扩到 2026Q3，也**不许**缩成部分季度 |
+| **训练数据** | 只用该季度**开始之前**、且标签已完成隔离（退 `h+1` 个交易日）的数据 |
+| **推演（打分产物）** | 「**输入的 X 有多少就输出多少**」—— 一直推到**数据末日**，以支撑增量推演与最新打分；每季度重训四折，历史窗口逐季向前滚动 |
+| **某一天由谁给分** | 「**最新一个没见过它的季度模型组**」；季度之后的尾段由最后一个季度那组负责 |
+| **排行榜取值** | 只取**评价窗内**的总计值；推演窗比评价窗多出来的那一段**不参与评价** |
 
----
+★ 为什么这么定、purge/embargo 与四折怎么轮换、`test` 与推演窗（`score`）的关系，见 [SPEC.md](SPEC.md) §4。
 
-## 5. 命令速查
+## 3. ★ 交付格式（每版必须齐，用户 2026-09-20 定）
 
-```bash
-PY=/autodl-fs/data/miniconda3/bin/python        # ★ 必须全路径
-cd /autodl-fs/data/model                        # 数据准备在这里做
+1. **`REPORT.md`**（放在版本目录下）—— 以 **Top1 隔日换手为 baseline**：策略收益/回撤曲线、
+   四季度统一指标表、四折稳定性表、配方与验证记录、资源采样与效率表；原始 CSV/JSON 可追溯。
+   ★ **由 `analysis.py` 生成**，不靠 Agent 手工写。
+2. **主评估指标表**：IC / ICIR / top 收益 / top 收益稳定性，**四个季度 + 一行总计 = 5 行**，**全部 1d 口径**
+   → `model_pred/tables/main_metrics_1d.csv`（口径见 [SPEC.md](SPEC.md) §7）。
+3. **最新推荐表**：`model_pred/latest/picks.md` + `recent_backtest.csv`（给实战 / 增量推演）。
+4. **更新 [`../LEADERBOARD.md`](../LEADERBOARD.md)**：一行 = 一版，取评价窗总计值，
+   排序 **IC → top 收益(1d) → ICIR / 稳定性**。
 
-# —— 数据（唯一在模块根做的事）
-$PY preparingdata.py                   # 日常增量（没有产物→自动全量）
-$PY preparingdata.py --check           # 体检：meta↔文件↔上游 + 取值域抽查
-$PY preparingdata.py --amount-only     # 只补 amount（每日成交额）
-$PY preparingdata.py --fac-sample-only # 只补 fac_sample（因子抽样）
-```
-
-> ★ **日常就这一条**：`$PY preparingdata.py`。有上游新数据就走增量（重算最近 28 个交易日），
-> 没有就零 I/O 跳过。快照当前**不是冻结状态**（要上锁用 `--meta-only --freeze`）。
->
-> ⚠️ **代码层尚未对齐新块名**：`V16/mx/` 现在读的还是 `X`/`Y`/`universe`/`P`，
-> 所以下面这些单元命令**暂时跑不通**。待对齐清单见 [`DATA.md`](DATA.md) §3 末。
-
-**跑一个单元：先 `cd` 进那个单元**（★ 顶层没有 `main.py` 了，也没有模块根引擎）：
+## 4. 命令流水线
 
 ```bash
-cd /autodl-fs/data/model/V16
-
-# —— 看
-$PY main.py doctor           # 环境自检（核数/内存/磁盘/GPU/torch + 该开几折几线程）
-$PY main.py status           # 数据在哪 + 训到哪了
-$PY main.py split V16        # ★ 零成本推演切分窗口（不训练，只读一列特征）
-$PY main.py data V16         # 看面板清单/覆盖率/可用样本数
-
-# —— 跑
-$PY main.py freeze V16       # 冻结配方（引擎哈希/上游指纹/生效切分）
-bash train.sh                # 全部折（并发；EXIT:0 的折自动跳过 = 断点续跑）
-$PY run.py 1 --smoke         # 单折冒烟
-$PY run.py 1                 # 单折正式
-$PY analysis.py              # 装配 + 榜单 + 策略矩阵 + 回测 + 落盘打分
-$PY analysis.py --no-backtest        # 只出榜单（不碰价格层，快）
-$PY main.py audit-pit V16    # 前视审计：截断复算
-$PY main.py eval V16         # 打印最近一次榜单（不重算）
+PY=/autodl-fs/data/miniconda3/bin/python      # ★ 必须全路径（非登录 shell 里的 python 没有 pandas）
+cd /autodl-fs/data/model
+$PY preparingdata.py --check          # 初加工产物 ↔ 上游 ↔ meta 对账（★ 写 trainingdata/ 的唯一入口）
+cd V16
+$PY model.py --doctor                 # 环境 / 数据自检
+$PY model.py --split                  # 打印四个季度 × 四折的 train / valid / test / 推演 区间
+$PY model.py --rescore                # 只重推演、不重训：口径改了但配方没变时刷新打分
+$PY model.py --quarter 2025Q3 --fold 1  # 单季度单折（调试用）
+$PY analysis.py --pipeline --jobs 8   # 全部"季度×折"调度 + 资源采样 + 评价
+$PY analysis.py --audit               # 完整评价 + 回测 + 重载推理对拍 + 报告 + 推荐表
+$PY analysis.py --picks-only          # 只出最新一日推荐表（增量推演用，不跑评价）
+$PY analysis.py --no-backtest         # 明确 IC-only，不出任何收益结论
+bash train.sh                         # 一条命令跑完：默认上限 8 任务 + 资源记录 + 回测 + REPORT.md
 ```
 
-**做一个新版本**（`V16` → `V17`；配方细节以 `../V16/model.py` 的文件头注释为准
-—— ★ `V16/` 下**没有 `README.md`**，文档全在本目录）：
+数据路径按 `MX_DATA` > `V16/trainingdata` > `../trainingdata` 依次找，以 `meta.json` 是否存在判断。
 
-```bash
-cd /autodl-fs/data/model && cp -r V16 V17 && cd V17
-# 改 model.py：NAME / TITLE / DATA / SPLIT / heads() / STRATEGIES
-$PY main.py freeze V17 && bash train.sh && $PY analysis.py
-```
+**并发与内存纪律**（数字全部现读，换机器/换实例自动跟随）：
 
-★ **工具脚本已全部删除**（`tools/` 那一套）。以前 `board.py` / `report.py` 生成榜单与
-Top-8 模板，现在文档由 **AI Agent 维护** —— 要出榜单就说一声，不要去找脚本。
+- 内存上限一律**现读 `/sys/fs/cgroup/memory.max`**，脚本里**不写死主机数字**；读不到或为 `max` 时
+  按"本机无上限"处理 ⇒ 跳过高水位闸门，只按 `--jobs` 限流并明确提示。
+- 最多 **8 个"季度×折"任务**（不是 8 折）；单任务 CPU 亲和按**本机可用核数的 80% 在并发任务间均分**（上限 3 核）。
+- **两个重活绝不并行**（训练 × 分析会顶穿容器，实测爆过一次容器重启）；训练与最终分析串行。
+- 跨折并发只有 `analysis.py --pipeline` 一套调度器；`model.py` 只做单折（`--quarter` / `--fold`）。
 
----
+## 5. 产物位置
 
-## 13. 附：参考工程与协作约定
+- `REPORT.md`：统一中文报告（`analysis.py` 生成）。
+- **`model_pred/`**（csv/json 已收进子目录）：
 
-- 参考工程 `CHEN-si-yu/LINGQIDATA`（只读镜像）是"版本化单元 + 策略矩阵 + `prepared_data.py`
-  初加工"这套设计的来源。★ **本机当前没有它的克隆**（2026-09-18 换机器后 `/home/claude/ref/`
-  与 `~/.ssh/` 都不存在了）；要用得按 `docs` 里的只读 deploy key 重新 clone 到 `/tmp`
-  （**别落共享盘**）。它的「死胡同清单」与「已确认事实」两张表**本库已抄录本地化**（[`LESSONS.md`](LESSONS.md) §10 / §9），
-  引用前先确认拿到的是参考工程的哪一版。
-- 本模块代码**不进公开仓库**（`LQdata_sync.sh` 的 `MODULES` 只含 datadownload/featureengineering/
-  everyday_tasks）—— 要不要把模型代码也推上去，需要用户拍板。
-- 工作方式：中文交流与注释、注释讲"为什么"、操作都落在共享盘、增量/断点续跑必须稳、
-  一个接口一个接口地做、允许并行 agent 干活。
+  | 子目录 | 装什么 |
+  |:--|:--|
+  | **`tables/`** | 汇总表与报告 json：`report.json`、`main_metrics_1d.csv`、`quarterly_*.csv`、`strategy_summary.csv` |
+  | **`ensemble/`** | 集成打分明细：`year=YYYY/data.parquet`（`trade_date/stock_code/value/rank`，**覆盖全推演窗**）＋ 各策略的每日收益 / 选股 / 资金曲线 / 逐笔成交 CSV |
+  | **`latest/`** | 最新一日推荐表 `picks.md` / `picks.csv`（排名/代码/名称/打分）＋ `recent_backtest.csv`（近 10 个信号日的 top1 明细，含**累计**列，未定型的行留空） |
+  | **`charts/`** | 策略收益/回撤曲线、可执行收益累加曲线、资源曲线 |
+
+  ★ **只有集成落盘** —— 各折的指标仍会算（供四折稳定性表），但产物不写盘。
+  用户 2026-09-20：「**4Fold 集成才是这个模型**」。
+
+- **`logs/`**：`<季度>_fold<k>.log`（一个任务一个文件，**不要合并**）· `analysis.log` ·
+  `resource_usage*.csv` / `resource_phases.json` / `resource_summary.json`（REPORT 资源表的数据源）·
+  以及旧日志归档。
+- **`model_train/<季度>/fold<k>/`**：`best.pt` / `last.pt` / `history.json` / `split.json` /
+  `recipe.lock.json` / `complete.json` / `score_predictions.npy`（全推演窗）/ `test_predictions.npy`（季度切片）。
+  ★ **产物的指纹与恢复规则见 [SPEC.md](SPEC.md) §4**（改配方/重建数据后必须归档，不能骗过恢复检查）。
+
+## 6. 文档分工
+
+| 文件 | 装什么 | 什么时候读 |
+|:--|:--|:--|
+| [`../LEADERBOARD.md`](../LEADERBOARD.md) | **排行榜**：一行一版、4 个指标（★ 历史 **1d** 口径，只加标注不重算） | 想知道旧口径下"哪版最好" |
+| [`../LEADERBOARD_RD11.md`](../LEADERBOARD_RD11.md) | **RD11 榜**：五日换手 ＋ 止盈止损（**5d** 口径，按三粒种子最差净收益排） | 想知道 RD11 方向"哪套最强" |
+| [`../LEADERBOARD_RD12.md`](../LEADERBOARD_RD12.md) | **RD12 榜**：每日打榜（涨停板买入）。**口径已预登记、执行路径未实现** | 要开工打板方向 |
+| **本文件** | **规程**：编号 / 时间口径 / 交付 / 命令 / 产物位置 | 要开一个新版本 |
+| [SPEC.md](SPEC.md) | **规格**：目录 · 硬约束 · 防泄漏铁律 · 数据层 · 切分与训练 · 评价口径 | 要改口径、查"什么不许动" |
+| [LESSONS.md](LESSONS.md) | **结论**：核心规律 `R*`/`U*` · 已确认事实 · 死胡同 · 坑 | 想避免重踩 |
+| [TODO.md](TODO.md) | **待办**：操作纪律 · 队列 · 研究方向 `RD*` | 要挑下一件事 |
+
+★ **章节号 `§N` 全库统一**：`§8.5`、`§11-24` 这类引用在任何一份文件里都按同一张表解析；
+`§5 / §6 / §6.5` 已随旧 `mx/` 引擎副本作废，**编号不回收**。

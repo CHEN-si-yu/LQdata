@@ -54,12 +54,21 @@ from . import fundflow3           # noqa: F401
 from . import fundamental3        # noqa: F401
 
 from . import cyq_perf, financial_detail, disclosure_detail  # noqa: F401
+from . import quarterly_quality  # noqa: F401
+from . import annual_field_expansion, field_events, field_markets  # noqa: F401
 
-__all__ = ["cyq_perf", "financial_detail", "disclosure_detail","fundamental", "event", "labels", "chips", "fundflow", "growth",
+# —— 第五批（2026-09-21，S-07：开盘首段流动性 / 执行容量口径）——
+#   数据源是新开的派生层 `data/derived/open5/`（`fea/open5.py`），
+#   **不动** `IntradayLayer` —— 改那一层的 version 会让现有 33 个日内因子的输入
+#   集体换版本、触发一次无谓的全量重建。理由写在 `fea/open5.py` 的模块 docstring。
+#   ★ 这三个是**执行/容量**口径，不是 alpha 声称；`higher_is_better` 只用于符号统一。
+from . import open5  # noqa: F401
+
+__all__ = ["annual_field_expansion", "field_events", "field_markets", "quarterly_quality", "cyq_perf", "financial_detail", "disclosure_detail","fundamental", "event", "labels", "chips", "fundflow", "growth",
            "intraday", "liquidity", "margin", "momentum", "quality", "technical",
            "valuation", "volatility", "coupling", "overnight_pattern", "chips2",
            "fundflow2", "event3", "fundamental2",
-           "intraday2", "breadth", "sector", "fundflow3", "fundamental3"]
+           "intraday2", "breadth", "sector", "fundflow3", "fundamental3", "open5"]
 
 # ★ 兜底：核对 `register(...)` 的调用次数与注册表大小。
 #   防的是「把装饰器写成普通调用」——那是个**静默 no-op**，不报错也不注册，

@@ -84,7 +84,10 @@ class RebuildContractTests(unittest.TestCase):
     def test_value_only_revision_recomputes_history(self):
         s=FactorSpec('test','test',deps=('source',))
         e=object.__new__(Engine)
-        e.cfg=SimpleNamespace(default_start='2018-01-01',revision_days=1)
+        # 窗口给足（2000 天，> 本用例的日历跨度）：收口不掩盖「只改值也触发重算」
+        # 这条性质（该分支存在的唯一理由）；收口本身由下一个用例固定。
+        e.cfg=SimpleNamespace(default_start='2018-01-01',revision_days=1,
+                              dep_backfill_days=lambda ds:2000)
         e.universe_fp='test';e._start_floor=20180101;e.override_start=None
         e.cal=Calendar(np.array([20180102,20190102,20200102],dtype=np.int32))
         prev={'exists':True,'rows':3,'max_pit':20200102,'files':{'year=2018':[100,1],'year=2020':[100,1]}}
@@ -92,6 +95,27 @@ class RebuildContractTests(unittest.TestCase):
         e.watermark=lambda _:cur
         m=Manifest('test',Path('/unused'),recipe=e._recipe(s),coverage=[['2018-01-02','2020-01-02']],input_watermark={'source':prev})
         self.assertEqual(sorted(e.plan(s,m,20200102,False)),[2018,2019,2020])
+
+    def test_file_revision_recompute_is_clamped_by_backfill_window(self):
+        """★ 2026-09-21 的 L2 修正：年分区被重写时，重算起点必须按回填窗口收口。
+
+        修正前 `lo = min(years_changed)*10000+101` 会一路回到最早被重写的年份 ——
+        实测（2026-09-21）日更把 2018 等 5 个年分区**原样重写**（字节数都没变、只有
+        mtime 变），于是所有依赖它的因子被判"历史修订"、计划全历史重建，
+        147 个 `afx_fi_*` 因子被"跨 ≥3 年"的守卫整批摘出。收口后窗口外的重写不再触发。
+        """
+        s=FactorSpec('test','test',deps=('source',))
+        e=object.__new__(Engine)
+        e.cfg=SimpleNamespace(default_start='2018-01-01',revision_days=1,
+                              dep_backfill_days=lambda ds:1)
+        e.universe_fp='test';e._start_floor=20180101;e.override_start=None
+        e.cal=Calendar(np.array([20180102,20190102,20200102],dtype=np.int32))
+        prev={'exists':True,'rows':3,'max_pit':20200102,'files':{'year=2018':[100,1],'year=2020':[100,1]}}
+        cur={**prev,'files':{'year=2018':[100,2],'year=2020':[100,1]}}
+        e.watermark=lambda _:cur
+        m=Manifest('test',Path('/unused'),recipe=e._recipe(s),coverage=[['2018-01-02','2020-01-02']],input_watermark={'source':prev})
+        # 窗口 1 天 + 锚点 = 上一次的最新公告日 20200102 ⇒ 2018 那次重写被收口掉，只重算 2020
+        self.assertEqual(sorted(e.plan(s,m,20200102,False)),[2020])
 
     def test_non_financial_run_skips_vintages(self):
         e=object.__new__(Engine)

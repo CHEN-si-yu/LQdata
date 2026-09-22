@@ -29,9 +29,11 @@ L2 是必需的一层：增量是按**输出日期**找缺口的，但上游财�
 from __future__ import annotations
 
 import datetime as _dt
+import json
 import logging
 import time
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -44,7 +46,8 @@ from .manifest import Manifest
 from .panel import Panel, cs_rank
 from .spec import FactorSpec
 from .store import upsert_year
-from .universe import code_master, frozen_fingerprint, listed_mask, st_events
+from .universe import (code_master, frozen_fingerprint, listed_mask,
+                       st_events, st_pool_fingerprint)
 from .upstream import Upstream
 
 log = logging.getLogger("fea.engine")
@@ -130,6 +133,7 @@ class Engine:
         self._prices_window: tuple[int, int] | None = None
         self._intraday = None
         self._chips = None
+        self._open5 = None
         self._factor_io = None
         # 上游水位按数据集缓存：watermark 要逐分区读 ann_date 列（如 stock_income 有 37 个
         # 年分区），而它在每个因子收尾时都会被调用。不缓存的话 10 个因子 × 2 个依赖
@@ -231,7 +235,10 @@ class Engine:
         m = self._uni_cache.get(key)
         if m is None:
             if self._st is None:
-                self._st = st_events(self.up, self.codes)   # 只算一次，与面板无关
+                # ★ 池子**动态**时 ST 真的会改变结果 → 读失败必须当场炸（见 st_events 的说明）；
+                #   冻结池（当前口径）下池内无 ST 事件，读不到不改变结果，留痕即可。
+                strict = bool(self.cfg.exclude_st) and self.cfg.frozen_universe is None
+                self._st = st_events(self.up, self.codes, strict=strict)
             m = listed_mask(panel, self.up, self.cfg, st_ev=self._st)
             self._uni_cache[key] = m
         return m
@@ -253,6 +260,13 @@ class Engine:
         if self._intraday is None:
             self._intraday = IntradayLayer(self.up, self.cfg, self.codes)
         return self._intraday
+
+    def open5_layer(self):
+        """构建开盘首段层。构造函数零成本（只在第一次 `panel()` 时才读/建缓存）。"""
+        from .open5 import Open5Layer
+        if self._open5 is None:
+            self._open5 = Open5Layer(self.up, self.cfg, self.codes)
+        return self._open5
 
     def chips_layer(self):
         """构建筹码层。同上，构造函数零成本。"""
@@ -377,9 +391,32 @@ class Engine:
                     if changed and (old_years or value_only):
                         years_changed = [int(key[5:]) for key in changed if key.startswith("year=")]
                         lo = max(start_i, min(years_changed) * 10000 + 101) if years_changed else start_i
+                        # ★★ 2026-09-21 修正：**必须**用与下面「水位变化」分支同一条回填窗口收口。
+                        #
+                        #   不收口的实测后果（当天真踩）：日更工程把上游某个**早年**年分区
+                        #   原样重写了一遍 —— `stock_financial_indicator/year=2018` 等 5 个
+                        #   分区**字节数完全相同、只有 mtime 变了**（实测 rows 与 max_pit
+                        #   也一字未变）。而 `_file_changed` 对年分区只比 `[size, mtime_ns]`，
+                        #   于是被判成"历史修订"；`lo` 又取 `min(years_changed)` ⇒
+                        #   直接回到 **2018-01-01** ⇒ 所有依赖它的因子计划**全历史重建**。
+                        #   那一轮的后果：147 个 `afx_fi_*` 因子被"跨 ≥3 年"的守卫**整批摘出**
+                        #   （当天一条都没更新），其余财务因子从 2025-01-01 起白算了一年多。
+                        #
+                        #   收口之后：窗口内（财务 500 天）的"只改值"修订**仍然抓得到** ——
+                        #   这正是本分支存在的唯一理由（行数/水位不变时它才起作用）；
+                        #   而窗口外的**重写**（无论是否真的改了内容）不再触发全历史重建。
+                        #   窗口内的真实重述由它与下面的水位分支双重覆盖；窗口外的重述
+                        #   本来就只能靠人工/定期全量对账发现（见 SPEC「上游会变」一节）。
+                        back = self.cfg.dep_backfill_days(dep)
+                        anchor = prev["max_pit"] or end_i
+                        lo = max(lo, minus_days(int(anchor), back))
                         lo = self._rewind_forward_dependency(spec, lo, start_i)
                         spans.append((lo, end_i))
-                        log.info("  ↻ %s 上游 %s 文件发生历史/等行数修订 -> 从 %s 重算", spec.name, dep, int_to_str(lo))
+                        log.info("  ↻ %s 上游 %s 的 %d 个年分区被重写（%s）-> 从 %s 重算"
+                                 "（已按回填窗口 %d 天收口）",
+                                 spec.name, dep, len(years_changed),
+                                 ",".join(str(y) for y in sorted(years_changed)[:6]),
+                                 int_to_str(lo), back)
                 if (cur["rows"], cur["max_pit"]) != (prev["rows"], prev["max_pit"]):
                     back = self.cfg.dep_backfill_days(dep)
                     anchor = prev["max_pit"] or end_i
@@ -524,7 +561,8 @@ class Engine:
         ctx = FactorContext(panel, deriv, self.up, self.cfg, uni,
                             prices=self.prices_for(wlo, hi_panel),
                             intraday=self._intraday, chips=self._chips,
-                            cal=self.cal, factor_io=self._factor_io)
+                            cal=self.cal, factor_io=self._factor_io,
+                            open5=self._open5)
 
         raw = np.asarray(spec.fn(ctx), dtype=np.float64)
         if tuple(raw.shape) != tuple(panel.shape):
@@ -609,6 +647,93 @@ class Engine:
         man.save()
         return stats
 
+    def st_gate(self) -> dict:
+        """ST 内容闸门 —— 与 `state/universe_st.json` 比对，**内容变了就拦下整轮运行**。
+
+        为什么需要它：`stock_st_info` 参与股票池掩码，却**不在任何因子的 deps 里**
+        （`HISTORY.md` 记了很久的「静默不一致」）—— 上游新增一条池内 ST 记录
+        **不会触发任何重算**，历史值会停在过时口径上，且零报错。
+
+        为什么是「拦」而不是「自动重建」：见 `universe.st_pool_fingerprint` 的第 2 条 ——
+        重建 = 全部 653 个因子重写，还可能与正在跑的模型训练抢共享盘，必须由人拍板。
+
+        为什么「读不到」只告警不拦：冻结池口径下池内本来就没有 ST 事件，
+        读不到**不改变任何结果**；此处拦下来会变成每天必响的假警报。
+        但 `source` 会留在基线文件里，事后可查「那一天到底读到了没有」。
+        """
+        cur = st_pool_fingerprint(self.up, self.codes)
+        p = Path(self.cfg.state_dir) / "universe_st.json"
+        prev = None
+        if p.exists():
+            try:
+                prev = json.loads(p.read_text(encoding="utf-8"))
+            except Exception as exc:                          # noqa: BLE001
+                raise RuntimeError(f"✘ {p} 读不出来，无法核对 ST 内容闸门：{exc!r}") from exc
+        else:
+            p.parent.mkdir(parents=True, exist_ok=True)
+
+        rec = {"note": "ST 内容闸门基线（S-01，2026-09-21）。改动它 = 放行一轮全量重建，"
+                       "必须是有意为之，并同步通知模型侧。",
+               "universe_n": int(self.codes.size), **cur}
+        if prev is None:
+            p.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+            log.info("ST 内容闸门：基线已建立 %s（source=%s · n_events=%s · max_date=%s）",
+                     p, cur["source"], cur["n_events"], cur["max_date"])
+            return cur
+
+        a, b = prev.get("sha1"), cur["sha1"]
+        if a and b and a != b:
+            raise RuntimeError(
+                "✘ ST 内容闸门拦下本轮运行：池内 ST 事件与基线不一致。\n"
+                f"  基线：sha1={a} · n={prev.get('n_events')} · max_date={prev.get('max_date')}\n"
+                f"  现在：sha1={b} · n={cur['n_events']} · max_date={cur['max_date']}\n"
+                "  这会让因子值停在一个已经过时的口径上（stock_st_info 不在任何因子的 deps 里，"
+                "不重算就不会变）。\n"
+                "  处置：① 确认这次变化该不该进历史 —— 该进就 `main.py rebuild` 全量重建，"
+                "重建前先备份、并避开模型侧训练；\n"
+                "        ② 只是厂商补了无关记录 → 手工刷新基线文件（等于显式接受）。\n"
+                f"  基线文件：{p}")
+        if a is None and b is not None:
+            log.warning("⚠️ ST 内容闸门：上一轮读不到 ST（基线 sha1 为空），本轮读到了 "
+                        "（n_events=%s）—— 已更新基线。若之前那几轮的因子值需要复核，"
+                        "请对照 %s 里的时间线。", cur["n_events"], p)
+        elif b is None:
+            log.warning("⚠️ ST 内容闸门：本轮读不到 stock_st_info（source=%s），"
+                        "无法与基线核对 —— 冻结池口径下不改变结果，已记入 %s。", cur["source"], p)
+
+        p.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        return cur
+
+    def delay_gate(self) -> dict:
+        """可用时点契约闸门（S-01）—— 只拦**「声明更松」**的方向。
+
+        因子侧用延迟表的唯一用途是 `spec.register()` 的闸门（依赖了延迟表却没声明
+        `lagged_ok` 的因子会被拒绝注册）。所以：
+          · 声明更严 → 最多误拒一个因子，**不产生未来函数** → 只报告；
+          · 声明更松 → 闸门放行一个实际拿不到数据的因子，它在历史截面上用了未来信息
+            → **必须拦**。
+        差异一旦"已解释"就写进 `conf/delay_contract_ack.json`（显式接受，不是静默放行）。
+        完整口径见 `delay.audit_contract()` 的注释。
+        """
+        from .delay import audit_contract
+        r = audit_contract()
+        if r["authoritative_state"] != "ok":
+            log.warning("⚠️ 可用时点契约：读不到日更侧 registry._DELAY（state=%s），"
+                        "本轮**无法核对**契约一致性 —— 已按「只读因子侧声明」继续，"
+                        "但这条不能当作通过。", r["authoritative_state"])
+            return r
+        if r["unexplained"]:
+            lines = "\n".join(f"    · {x['table']}：{x['why']}" for x in r["unexplained"][:10])
+            raise RuntimeError(
+                "✘ 可用时点契约闸门拦下本轮运行：因子侧声明的延迟**比日更侧更松**。\n"
+                f"{lines}\n"
+                "  后果：依赖这些表的因子可能被放行注册，从而在历史截面上用上当时拿不到的数据。\n"
+                "  处置：① 该加严 → 改 datadownload/conf/frequency.yaml 并同步 registry._DELAY；\n"
+                f"        ② 确认无害 → 写进 {r['ack_file']} 说明理由（显式接受）。")
+        if r["acked"]:
+            log.info("可用时点契约：%d 条差异已显式接受（见 %s）", len(r["acked"]), r["ack_file"])
+        return r
+
     def _trading_runs(self, days: np.ndarray) -> list[tuple[int, int]]:
         """把交易日集合切成「日历上连续」的若干段。"""
         if days.size == 0:
@@ -641,6 +766,10 @@ class Engine:
         否则每个 worker 都要自己重读一遍上游财务数据、重建一次衍生层
         （实测衍生层 ~6s × 10 个 worker，既慢又多读 10 倍磁盘）。
         """
+        # ★ 2026-09-21（S-01）：先过两道闸门（ST 内容 / 可用时点契约），再规划。
+        #   放在这里而不是 __init__：check / list 这类只读命令不该被闸门拦住。
+        self.st_gate()
+        self.delay_gate()
         self._run_end = end_i
         self._end_str = int_to_str(end_i)
         todo = []
@@ -695,9 +824,12 @@ class Engine:
             #   2018–2024 的派生层（实测：一次 run 在 prebuild 重建 15 个年分区、约 30 分钟，
             #   还会把「只保留 2026」的裁剪结果又建回来）。
             self.intraday_layer().ensure(
-                *self._layer_years(todo, ("stock_history_5min", "tdx_minute")))
+                # 个股日内派生层只消费 stock_history_5min；板块分钟线独立聚合。
+                *self._layer_years(todo, ("stock_history_5min",)))
             self.chips_layer().ensure(
                 *self._layer_years(todo, ("stock_cyq_chips",)))
+            self.open5_layer().ensure(
+                *self._layer_years(todo, ("stock_history_5min",)))
             self.factor_io()
             # ★ 清掉原始上游表缓存再 fork：见 Upstream.clear_cache 的说明。
             #   各派生层已经把这些数据"消化"完了，worker 不需要原始表。

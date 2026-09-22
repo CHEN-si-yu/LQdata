@@ -33,6 +33,8 @@
 
 from __future__ import annotations
 
+from .field_expansion import ANNUAL_ALIASES, ANNUAL_SOURCES
+
 import logging
 
 import numpy as np
@@ -116,7 +118,10 @@ IND_YOY = [
     "netprofit_yoy", "or_yoy", "tr_yoy", "op_yoy", "ebt_yoy", "roe_yoy",
     "ocf_yoy", "assets_yoy", "eqt_yoy", "bps_yoy", "dt_netprofit_yoy",
 ]
-IND_SAFE = tuple(IND_DIRECT + IND_YOY)
+# 只解锁已核对上游字典的单季度比率；q_ 前缀并不保证质量，不能整体放行。
+# 例如 q_eps 早年几乎全零，q_impair_to_gr_ttm 的窗口也不能由名字推断。
+IND_QUARTERLY = ["q_roe", "q_dt_roe", "q_npta", "q_ocf_to_sales", "q_sales_yoy"]
+IND_SAFE = tuple(IND_DIRECT + IND_YOY + IND_QUARTERLY)
 
 # `stock_financial_indicator` 作为第三个数据源进版本表。
 # 它的取值方式与 `point` 一致（「当日已知的最新报告期」上的原始披露值），
@@ -133,7 +138,8 @@ def period_of(end_date: np.ndarray) -> np.ndarray:
 
 
 def _load_one(up, ds: str, fields: list[str], y0: int, y1: int) -> pd.DataFrame:
-    cols = ["stock_code", "end_date", "ann_date"] + fields
+    physical = [ANNUAL_ALIASES[f][1] if f in ANNUAL_ALIASES else f for f in fields]
+    cols = list(dict.fromkeys(["stock_code", "end_date", "ann_date"] + physical))
     if ds != "stock_financial_indicator":
         cols.append("f_ann_date")
     try:
@@ -146,6 +152,11 @@ def _load_one(up, ds: str, fields: list[str], y0: int, y1: int) -> pd.DataFrame:
         return df
 
     df = df.copy()
+    # 不改旧字段归属：同名 ebit/rd_exp 等可以从不同报表读取，别名只服务新因子。
+    aliases = {logical: df[raw] for logical, raw in zip(fields, physical) if logical != raw}
+    if aliases:
+        # 一次拼接，避免上百字段逐列插入导致块碎片化。
+        df = pd.concat([df, pd.DataFrame(aliases, index=df.index)], axis=1)
     df["end_date_i"] = series_to_int(df["end_date"])
     # ★ 只保留「已经是季末」的行：实测有 4 行北交所的怪日期（如 2015-02-28）。
     #   注意必须先过滤再取各列，否则 ann/fann 与 end_date 长度不一致（踩过）。
@@ -176,6 +187,14 @@ def _load_one(up, ds: str, fields: list[str], y0: int, y1: int) -> pd.DataFrame:
     return df[["stock_code", "end_date_i", "period", "pit"] + fields]
 
 
+def _source_tables():
+    tables = {}
+    for source in (TTM_SOURCES, POINT_SOURCES, IND_SOURCES, ANNUAL_SOURCES):
+        for ds, fields in source.items():
+            tables.setdefault(ds, []).extend(f for f in fields if f not in tables.get(ds, []))
+    return tables
+
+
 def load_vintages(up, y0: int, y1: int, fields: frozenset | None = None) -> pd.DataFrame:
     """把所有财报拼成一张「版本表」，每个 (code, end_date, pit) 一行。
 
@@ -183,7 +202,7 @@ def load_vintages(up, y0: int, y1: int, fields: frozenset | None = None) -> pd.D
     的并集传进来）。版本表有 80 个字段 × 6 年分区，单跑一个因子时全建是纯浪费。
     `None` = 全建。
     """
-    tables = {**TTM_SOURCES, **POINT_SOURCES, **IND_SOURCES}
+    tables = _source_tables()
     if fields is not None:
         tables = {ds: [f for f in fs if f in fields] for ds, fs in tables.items()}
         tables = {ds: fs for ds, fs in tables.items() if fs}
@@ -223,7 +242,7 @@ def load_vintages(up, y0: int, y1: int, fields: frozenset | None = None) -> pd.D
     return base.reset_index(drop=True)
 
 
-FIELD_SOURCE = {field: ds for ds, fields in {**TTM_SOURCES, **POINT_SOURCES, **IND_SOURCES}.items() for field in fields}
+FIELD_SOURCE = {field: ds for ds, fields in _source_tables().items() for field in fields}
 FINANCIAL_SOURCES = frozenset(FIELD_SOURCE.values())
 
 
@@ -267,6 +286,7 @@ class Derivative:
     def __init__(self, vt: pd.DataFrame, codes: np.ndarray):
         self.codes = np.asarray(codes)
         self._sources = {}
+        self._annual = None
         self._isolated = not any(c.startswith("_available_") for c in vt.columns)
         pos = {c: i for i, c in enumerate(self.codes)}
         vt = vt[vt["stock_code"].isin(pos)].copy()
@@ -315,6 +335,8 @@ class Derivative:
         """
         for child in self._sources.values():
             child.trim_cache(panel)
+        if self._annual is not None:
+            self._annual.trim_cache(panel)
         if panel.T == 0:
             return
         w = (int(panel.dates[0]), int(panel.dates[-1]))
@@ -386,6 +408,13 @@ class Derivative:
                 source = self.vt.loc[self.vt[marker].eq(True), columns]
                 self._sources[ds] = Derivative(source, self.codes)
             return self._sources[ds].to_panel(panel, field, mode, lag)
+        if mode == "annual":
+            # 先限定年度报告再选择当时最新版本，季度披露绝不能把年报推走。
+            # 保留旧年报修订事件，让过去年度的修订只从实际披露时点传播。
+            if self._annual is None:
+                annual = self.vt.loc[self.vt["end_date_i"] % 10000 == 1231].copy()
+                self._annual = Derivative(annual, self.codes)
+            return self._annual.to_panel(panel, field, mode="point", lag=lag)
         if self.vt.empty:
             return np.full((panel.T, len(self.codes)), np.nan, dtype=np.float32)
         # ★ 缓存键必须带上**面板的日期范围**：不同因子的 warmup_days 不同

@@ -1017,6 +1017,7 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
             #   一起早退（见 `stale_block_years`）：它们与因子侧的新增无关，可能只是还没建过。
             ensure_block(cfg, AK, root, log=log)
             ensure_block(cfg, SK, root, log=log)
+            ensure_prices_if_enabled(cfg, root, log=log)
             return {"action": "skip", "reason": "无新增", "rebuilt": {},
                     "meta": load_meta(root) or meta_old}
         # ★★ 股票池口径变了（如 2026-09-18 的 3485 → 2115 冻结名单）必须**全量重建**：
@@ -1107,7 +1108,7 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
     #   只补"文件陈旧"的块，文件没陈旧就一声不吭，于是"这块数据是哪一版"的指纹**静默消失**。
     #   （2026-09-20 实测踩到：跑一次日常增量后 meta 顶层就没这两个 key 了。）
     #   先原样搬过来，下面 `ensure_block` 真重建时会用新的 `_record_block` 覆盖掉。
-    for _k in ALL_KINDS:
+    for _k in (*ALL_KINDS, "prices"):
         if _k in meta_old:
             meta[_k] = meta_old[_k]
 
@@ -1122,6 +1123,7 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
     #   会直接 return，而这两块与因子侧没有共同的失效条件（见 `stale_block_years`）。
     ensure_block(cfg, AK, Path(root), log=log)
     ensure_block(cfg, SK, Path(root), log=log)
+    ensure_prices_if_enabled(cfg, Path(root), rebuilt_years=plan.keys(), log=log)
 
     _summary(meta, log=log)
     # ★ `rebuilt` 交回给调用方喂台账：`{"年": "full"/"incr"}` —— 只有**本次真的重建了**
@@ -1194,7 +1196,7 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
     for y in built:
         info = meta["years"][y]
         exp = int(info["days"]) * C
-        for kind in ALL_KINDS:
+        for kind in (*ALL_KINDS, *(("prices",) if meta.get("prices") else ())):
             p = year_file(root, kind, int(y))
             if not p.exists():
                 # 四块都必建。缺 `amount`/`fac_sample` 时用 `--amount-only` / `--fac-sample-only` 补。
@@ -1213,7 +1215,7 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
             #   这是"增量把窗口外旧行算了两遍"的**唯一现场证据** —— 行数总和与
             #   meta 里虚高的天数自洽，比行数/比字节都抓不到它（真踩过）。
             #   只查"与 factors 逐日同形"的那几块 —— 这是四块的共同契约。
-            if kind in ALL_KINDS and C:
+            if (kind in ALL_KINDS or kind == "prices") and C:
                 td = pq.read_table(p, columns=["trade_date"]).column("trade_date").to_pylist()
                 cnt = pd.Series(td).value_counts()
                 off = cnt[cnt != C]
@@ -1396,9 +1398,12 @@ def _block_digest(years_meta: dict, years: list[int], kind: str) -> str:
 def _record_block(meta: dict, kind: str, years: list[int], extra: dict, root: Path,
                   log=print) -> dict:
     """把一块的清单写进 meta 并落盘（**不动 `panel_digest`**）。"""
-    meta[kind] = {"years": sorted(int(y) for y in years),
+    meta[kind] = {"years": sorted(int(y) for y in meta.get("built_years", years)
+                                  if kind in meta.get("years", {}).get(str(y), {}).get("files", {})),
                   "built_at": now(),
-                  "digest": _block_digest(meta.get("years") or {}, years, kind), **extra}
+                  "digest": _block_digest(meta.get("years") or {},
+                     [int(y) for y in meta.get("built_years", years)
+                      if kind in meta.get("years", {}).get(str(y), {}).get("files", {})], kind), **extra}
     save_json(meta_path(root), meta)
     log(f"  ✔ {kind} 块完成，meta 已更新（panel_digest 保持 {meta.get('panel_digest')}，"
         f"{kind} 指纹 {meta[kind]['digest']}）")
@@ -1603,9 +1608,43 @@ def build_year_fac_sample(cfg: Cfg, year: int, days: list[str], codes: np.ndarra
 
 
 
+
+# 回测原料独立块：显式建立后由日常增量维护，四块核心数据不受影响。
+PK = "prices"
+PRICE_COLUMNS = ("open", "high", "low", "close", "pre_close", "pct_chg", "vol", "adj_factor")
+
+def build_year_prices(cfg, year, days, codes, cols, *, log=print, root=None):
+    root = root if root is not None else root_of(cfg)
+    index = pd.MultiIndex.from_product([days, codes], names=list(KEY))
+    out = {}
+    for dataset, names in [("stock_daily", PRICE_COLUMNS[:-1]), ("stock_adj_factor", ("adj_factor",))]:
+        src = Path(cfg.raw_data) / dataset / f"year={year}" / "data.parquet"
+        df = pq.ParquetFile(src).read(columns=list(KEY)+list(names)).to_pandas()
+        df["trade_date"] = df["trade_date"].astype(str).str[:10]
+        df["stock_code"] = df["stock_code"].astype(str)
+        df = df[df["trade_date"].isin(days) & df["stock_code"].isin(codes)]
+        if df.duplicated(list(KEY)).any():
+            raise ValueError(f"{src}: 重复主键，不能覆盖落格")
+        df = df.set_index(list(KEY)).reindex(index)
+        for name in names:
+            out[name] = df[name].to_numpy(dtype=np.float64)
+            if np.isinf(out[name]).any(): raise ValueError(f"{src}: {name} 存在无穷值")
+    info = _write_block_year(root, PK, year, days, codes, out)
+    log(f"  {year}: prices {info['rows']:,} 行，{info['files'][PK]['mb']} MB")
+    return info
+
+def ensure_prices_if_enabled(cfg, root, rebuilt_years=(), log=print):
+    if not load_meta(root).get(PK): return []
+    years = sorted(set(stale_block_years(root, PK)) | {int(y) for y in rebuilt_years})
+    if years: build_block(cfg, PK, years=years, root=root, log=log)
+    return years
+
+
 #: 两个派生块的登记表。★ 放在这里（而不是常量区）是因为它引用 `build_year_*` ——
 #: 那两个函数必须先定义；模块级 dict 只要在**调用前**建好就行。
 BLOCKS: dict[str, Block] = {
+    PK: Block(kind=PK, title="回测价格块 prices", cols=lambda meta: PRICE_COLUMNS,
+              build_year=build_year_prices, meta_extra=lambda meta, cols: {"columns": list(cols), "enabled": True}),
     AK: Block(kind=AK, title="交易额度块 amount",
               cols=lambda meta: AMOUNT_COLUMNS,
               build_year=build_year_amount,
@@ -1631,6 +1670,7 @@ def build_parser() -> argparse.ArgumentParser:
     m.add_argument("--check", "-c", action="store_true", help="只校验不写")
     m.add_argument("--meta-only", action="store_true",
                    help="只补 meta 的派生字段（特征集等）—— ★ 不碰数据文件、不读因子侧")
+    m.add_argument("--prices-only", action="store_true", help="只补回测 prices，不改四块训练数据")
     m.add_argument("--amount-only", action="store_true",
                    help="★ 只建/刷新 amount（每日成交额）—— 同上，不改 panel_digest")
     m.add_argument("--fac-sample-only", action="store_true",
@@ -1669,6 +1709,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if r["ok"] else 1
     if a.meta_only:
         attach_meta_fields(cfg, freeze=a.freeze, unfreeze=a.unfreeze, reason=a.reason)
+        return 0
+    if a.prices_only:
+        r = build_block(cfg, PK, years=a.years, log=print)
         return 0
     if a.amount_only:
         r = build_block(cfg, AK, years=a.years, log=print)

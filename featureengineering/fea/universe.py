@@ -11,12 +11,15 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 
 import numpy as np
 import pandas as pd
 
 from .dates import series_to_int
 from .panel import Panel
+
+log = logging.getLogger("fea.universe")
 
 _NO_END = 99_999_999
 
@@ -141,19 +144,46 @@ def listed_mask(panel: Panel, up, cfg, st_ev=None) -> np.ndarray:
     return mask
 
 
-def st_events(up, codes: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def st_events(up, codes: np.ndarray, strict: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """把 ST 记录预处理成 `(列号, 日期)` 两个数组 —— **与面板日期范围无关**。
 
     单独抽出来是为了只算一次：原来每次 `st_mask()` 都要对 32.7 万行做
     `isin(dict)` + `map(dict)`，实测单次 917ms，而它在一次全量重建里会被调用上百次。
     用 `reindex` 代替 `map(dict)` 也快得多。
+
+    ★★ 2026-09-21：读失败**不再无条件静默返回空**（S-01）。两条分支的理由不同，
+    别把它们合并成一条：
+
+    · `strict=True` —— 由 `Engine.universe_for` 在**股票池动态**时传入 → 直接抛错。
+      池子动态进出时，「读不到 ST」与「真的没有 ST」会算出**不同的因子值**，
+      而静默降级正是平台纪律明令禁止的 bug 形态（崩了你会去修，降级了你以为它在工作）。
+
+    · `strict=False` —— 当前**冻结池**走这条 → 仍然返回空，但**必须留痕**。
+      冻结名单的口径是「主板 ∩ 至今存续 ∩ 从未ST(2016-08-09 起)」，池内本来就不该有
+      ST 事件，所以读不到**不会改变任何一个因子值**；此时抛错只会变成每天必响的假警报，
+      而假警报会把真信号淹掉（同 HISTORY 里「增量丢行」那条告警的教训）。
+      留痕落在 `st_pool_fingerprint()["source"]`，可事后审计；内容一变则
+      `Engine.st_gate()` 会**直接拦下**整轮运行。
     """
     empty = (np.zeros(0, np.int32), np.zeros(0, np.int32))
     try:
         st = up.read("stock_st_info", columns=["stock_code", "trade_date"])
-    except Exception:
+    except Exception as exc:                                  # noqa: BLE001
+        if strict:
+            raise RuntimeError(
+                "✘ 读 stock_st_info 失败，而 universe.exclude_st=true 且股票池是**动态**的 —— "
+                "此时「读不到 ST」与「没有 ST」会算出不同的因子值，拒绝静默按「无 ST」继续。\n"
+                f"  原始错误：{exc!r}\n"
+                "  修法：先修上游 stock_st_info；或显式把 universe.exclude_st 置 false 后重建。") from exc
+        log.warning("⚠️ 读 stock_st_info 失败，按「无 ST」继续（冻结池口径下池内无 ST 事件，"
+                    "不改变结果；已记入 state/universe_st.json 的 source 字段）：%r", exc)
         return empty
     if st is None or st.empty:
+        if strict:
+            raise RuntimeError(
+                "✘ stock_st_info 为空，而 universe.exclude_st=true 且股票池是**动态**的 —— "
+                "拒绝静默按「无 ST」继续（空表与读取失败在结果上无法区分）。")
+        log.warning("⚠️ stock_st_info 为空，按「无 ST」继续（冻结池口径下不影响结果，已留痕）")
         return empty
 
     lut = pd.Series(np.arange(len(codes), dtype=np.int32), index=np.asarray(codes))
@@ -171,3 +201,40 @@ def st_mask(panel: Panel, events: tuple[np.ndarray, np.ndarray]) -> np.ndarray:
     if cc.size == 0:
         return np.zeros(panel.shape, dtype=bool)
     return panel.scatter(cc, dd, weights=np.ones(cc.size)) > 0
+
+
+def st_pool_fingerprint(up, codes: np.ndarray) -> dict:
+    """ST 事件在**冻结池之内**的内容指纹 —— 落 `state/universe_st.json`，变了就拦。
+
+    两个设计要点（都是权衡过的，别顺手改）：
+
+    1. **只统计池内**。厂商每天都在给池外股票记 ST（全表 32.8 万行）；
+       把池外也算进来的话这个指纹会**天天变**，闸门立刻退化成噪声源 ——
+       而没人再看的闸门等于没有闸门（同 `delay.py` 里「假警报会淹没真信号」那一课）。
+
+    2. **不并进 `Engine.universe_fp`**。那个指纹一变就是**全部 653 个因子全量重建**
+       （几十 GB 重写，还会跟正在跑的模型训练抢共享盘）。ST 内容变化确实会让历史值变，
+       但「现在要不要重建」必须由人拍板（可能正在训练、可能只是厂商补了一条无关记录），
+       所以这里选择**拦下来并报告**，而不是替用户按下重建按钮。
+
+    `source` 三态是为了事后能审计「当时到底读到了没有」：
+      ok / empty（表在但没有池内事件）/ unavailable（读失败）。
+    """
+    no = {"error": None, "sha1": None, "n_events": None, "max_date": None}
+    try:
+        st = up.read("stock_st_info", columns=["stock_code", "trade_date"])
+    except Exception as exc:                                  # noqa: BLE001
+        return {"source": "unavailable", **{**no, "error": repr(exc)}}
+    if st is None or st.empty:
+        return {"source": "empty", **no, "n_events": 0}
+    sc = st["stock_code"].astype(str)
+    sub = st.loc[sc.isin(set(np.asarray(codes, dtype=str).tolist())).to_numpy()]
+    if sub.empty:
+        return {"source": "ok", **no, "sha1": "pool-empty", "n_events": 0}
+    key = (sub["stock_code"].astype(str) + "|" + sub["trade_date"].astype(str)).sort_values()
+    return {
+        "source": "ok", "error": None,
+        "sha1": hashlib.sha1("\n".join(key.tolist()).encode()).hexdigest(),
+        "n_events": int(len(sub)),
+        "max_date": str(sub["trade_date"].astype(str).max()),
+    }

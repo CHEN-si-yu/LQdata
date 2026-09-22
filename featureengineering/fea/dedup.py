@@ -90,6 +90,78 @@ def _matrix(specs, cfg, engine, years: list[int]) -> tuple[np.ndarray, dict]:
     return X, {"names": names, "meta": meta}
 
 
+def _gram_years(specs, cfg, engine, years: list[int]):
+    """按年分块累加 `G = XᵀX`，返回 `(G, names, rows)`。
+
+    ## 为什么必须分块（2026-09-21，S-02）
+
+    `_matrix()` 把 (观测数 × 因子数) 的长矩阵**一次性**放进内存：
+    658 个因子 × 2018~2026 全历史 ≈ 447 万行 × 658 列 × float32 ≈ **11.7 GB**，
+    而 `np.column_stack` 还要再开一份同样大的输出 ⇒ **峰值约 23 GB**。
+    在「90 GiB 容器 + 模型侧正在训练」的前提下，那就是平台明令禁止的「两个重活并行」。
+
+    ## 为什么分块是**等价**而不是近似
+
+    - z-score 本来就是**逐日截面**算的（`_matrix` 里也是按 axis=1 逐日归一），
+      把某一年单独拿出来算，同一天的 z 值逐位相同；
+    - `(A;B)ᵀ(A;B) = AᵀA + BᵀB`。
+    所以两者只差**浮点求和顺序**，不差口径。峰值内存从 ~23 GB 降到「单年一块」≈ 1.4 GB。
+
+    `cmd_dedup --matrix` 保留老路径，用来随时对拍（实测 |Δ| 在 1e-6 量级）。
+    """
+    cal, codes = engine.cal, engine.codes
+    codes_idx = pd.Series(np.arange(codes.size), index=codes)
+    from .panel import Panel
+
+    # ★ 列集合**先定死**：保持与 `_matrix()` 相同的语义 —— 只要这个因子在被请求的
+    #   年份里有产物，它就在矩阵里占一列；缺的 (年) 用 0 填（z-score 后缺失本就记 0）。
+    #   用 factor_years() 判有无（只读分区清单，不读数据）—— 若改成"按年读一次再看空不空"，
+    #   就会把 11 GB 数据读两遍。
+    have = {sp.name: (set(store.factor_years(cfg.factors_dir, sp.name)) & set(years))
+            for sp in specs}
+    names = [sp.name for sp in specs if have[sp.name]]
+    K = len(names)
+    pos = {nm: i for i, nm in enumerate(names)}
+    G = np.zeros((K, K), dtype=np.float64)
+    rows: dict[str, int] = dict.fromkeys(names, 0)
+
+    for y in sorted(years):
+        days = cal.between(int(f"{y}0101"), int(f"{y}1231"))
+        if days.size == 0:
+            continue
+        here = [(sp, pos[sp.name]) for sp in specs if y in have[sp.name]]
+        if not here:
+            continue
+        panel = Panel(days, codes)
+        Xb = np.zeros((days.size * codes.size, K), dtype=np.float32)
+        for sp, j in here:
+            df = store.read_factor(cfg.factors_dir, sp.name, [y])
+            if df.empty:
+                continue
+            ci = codes_idx.reindex(df["stock_code"].to_numpy()).to_numpy()
+            keep = np.isfinite(ci)
+            if not keep.any():
+                continue
+            v = panel.place(ci[keep].astype(np.int64), series_to_int(df["trade_date"])[keep],
+                            pd.to_numeric(df["rank"], errors="coerce").to_numpy()[keep])
+            # 逐日截面 z-score（与 _matrix 逐字一致：NaN 记 0 = 缺失不参与相关）
+            valid = np.isfinite(v)
+            cnt = valid.sum(axis=1, keepdims=True)
+            tot = np.where(valid, v, 0.0).sum(axis=1, keepdims=True)
+            ss = np.where(valid, v * v, 0.0).sum(axis=1, keepdims=True)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                mu = tot / np.maximum(cnt, 1)
+                var = np.maximum(ss / np.maximum(cnt, 1) - mu * mu, 0.0)
+                sd = np.sqrt(var)
+                z = (v - mu) / np.where(sd > 0, sd, np.nan)
+            Xb[:, j] = np.where(np.isfinite(z), z, 0.0).reshape(-1)
+            rows[sp.name] += int(valid.sum())
+            del v, z, valid
+        G += Xb.T @ Xb
+        del Xb
+    return G, names, rows
+
+
 def _identical_frac(cfg, years, a_name: str, b_name: str) -> float:
     """两个因子 rank 逐格相同的比例（只在两者都有值的格子上算）。"""
     a = _rank_frame(cfg, a_name, years)
@@ -156,12 +228,21 @@ def cmd_dedup(args, cfg) -> int:
     thr = float(getattr(args, "threshold", 0.95))
     print(f"\n因子冗余检测 · {len(specs)} 个因子 · {years[0]}~{years[-1]} · |ρ| ≥ {thr} 视为重复")
     print("（口径：落盘 rank 列 → 逐日截面 z-score → 长向量 Pearson；缺失记 0，保守估计）")
-    X, meta = _matrix(specs, cfg, engine, years)
-    names = meta["names"]
-    if X.shape[1] < 2:
-        print("可比较的因子不足 2 个")
-        return 1
-    G = X.T @ X                                            # (K,K) 分子
+    if getattr(args, "matrix", False):
+        # 老路径：一次性长矩阵。全历史 658 因子峰值约 23 GB —— 只在与小样本对拍时用。
+        print("（--matrix：一次性长矩阵路径，仅用于与分块路径对拍；全量跑会吃 ~23 GB）")
+        X, meta = _matrix(specs, cfg, engine, years)
+        names = meta["names"]
+        if X.shape[1] < 2:
+            print("可比较的因子不足 2 个")
+            return 1
+        G = X.T @ X                                        # (K,K) 分子
+        del X
+    else:
+        G, names, _rows = _gram_years(specs, cfg, engine, years)
+        if len(names) < 2:
+            print("可比较的因子不足 2 个")
+            return 1
     d = np.sqrt(np.diag(G))
     with np.errstate(invalid="ignore", divide="ignore"):
         corr = G / np.outer(np.where(d > 0, d, np.nan), np.where(d > 0, d, np.nan))
@@ -188,6 +269,11 @@ def cmd_dedup(args, cfg) -> int:
                 f = _identical_frac(cfg, years, names[g[a]], names[g[b]])
                 if f >= 0.999:
                     ident.append((names[g[a]], names[g[b]], round(f, 4)))
+        # ★ 每簇算完就清缓存：簇是并查集划分出来的，一个因子只属于一个簇 ⇒
+        #   跨簇复用**本就不可能**；而每份全历史 rank 帧要几百 MB（两个字符串列），
+        #   缓存不清时簇一多就会攒成几十 GB —— 这正是 2026-09-21 全量跑
+        #   在写报告阶段地址空间耗尽的来源。清掉它不改变任何数值结果。
+        _FRAME_CACHE.clear()
         keep = members[0]
         drop = members[1:]
         rows.append({"size": len(g), "keep": keep, "drop": drop,
@@ -202,13 +288,14 @@ def cmd_dedup(args, cfg) -> int:
     total_drop = sum(r["size"] - 1 for r in rows)
     print(f"共 {len(rows)} 簇 · 建议删除 {total_drop} 个（每簇留 1 个代表）")
 
-    outdir = Path(cfg.state_dir) / "dedup"
-    outdir.mkdir(parents=True, exist_ok=True)
-    (outdir / "report.json").write_text(json.dumps(
+    # `--out` 允许把报告写到别处（试跑/对拍时不覆盖生产报告）；默认仍是 state/dedup/。
+    out = Path(getattr(args, "out", "") or (Path(cfg.state_dir) / "dedup" / "report.json"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(
         {"years": years, "threshold": thr, "clusters": rows,
          "corr": {names[i]: {names[j]: (None if not np.isfinite(corr[i, j])
                                         else round(float(corr[i, j]), 4))
                              for j in range(len(names))} for i in range(len(names))}},
         ensure_ascii=False), encoding="utf-8")
-    print(f"报告已写入 {outdir / 'report.json'}")
+    print(f"报告已写入 {out}")
     return 0

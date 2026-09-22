@@ -252,31 +252,8 @@ def chip_position(ctx):
 
 
 
-@register(FactorSpec(
-    name="chip_resistance_distance", group="chip", deps=DEPS_PX,
-    desc="上方压力距离 = p75 / 现价 − 1（现价距上方筹码密集带多远）",
-    formula='result = cost_85pct / close_adj - 1; return cross_sectional_rank(-result)',
-    start=CHIP_START, warmup_days=W_FIELD, higher_is_better=False,
-    note="★ 参考库用 cost_85pct，本表取 p75（最近分位）。"
-         "★ 口径：close 未复权。实测中位数 2018/2019/2020 = −0.021 / −0.041 / −0.033 —— "
-         "**中位股票现价略高于 p75**（与 winner_rate 中位 0.79~0.87 一致），"
-         "p25 分位 −0.24/−0.20/−0.15 才是「现价在成本带下方」的一侧；"
-         "正值意味着现价已跌到成本带内（上方有解套抛压）。参考库 rank 取负。",
-))
-def chip_resistance_distance(ctx):
-    return ctx.safe_div(ctx.chip("p75"), _close(ctx), min_abs_den=MIN_PRICE) - 1.0
 
 
-@register(FactorSpec(
-    name="chip_support_distance", group="chip", deps=DEPS_PX,
-    desc="下方支撑距离 = 现价 / p25 − 1（现价距下方筹码密集带多远）",
-    formula='result = close_adj / cost_15pct - 1; return cross_sectional_rank(result)',
-    start=CHIP_START, warmup_days=W_FIELD, higher_is_better=True,
-    note="★ 参考库用 cost_15pct，本表取 p25（最近分位，故支撑位比参考库**更低**、距离更大）。"
-         "★ 口径：close 未复权。与 chip_resistance_distance 是一对镜像（同一构造、上下两侧）。",
-))
-def chip_support_distance(ctx):
-    return ctx.safe_div(_close(ctx), ctx.chip("p25"), min_abs_den=MIN_PRICE) - 1.0
 
 
 # ══════════════════════════════════════════════════════════════════════════

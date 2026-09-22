@@ -317,23 +317,6 @@ def volume_ratio(ctx):
 
 
 
-@register(FactorSpec(
-    name="market_cap_concentration_20d", group="value", deps=DEP_PX,
-    desc="log 总市值的 20 日波动率（低 = 市场对公司价值共识度高）",
-    formula="mv = np.log(finance['total_mv'].replace(0, np.nan))\n"
-            "mv_vol_20 = mv.groupby(level='Code').transform(\n"
-            "    lambda s: s.rolling(20, min_periods=10).std())",
-    start=VAL_START, warmup_days=ROLL20_WARMUP, higher_is_better=False,
-    note="市值剧烈波动 = 市场对公司价值的共识度低 / 信息不对称高。"
-         "★ 偏离：参考库用 min_periods=10，我们用**严格窗口**（窗口内有一个 NaN 就 NaN）。"
-         "理由：市值的两个因子（close、total_share）都是前向填充的状态量，"
-         "上市之后不存在停牌缺口，唯一会产生 NaN 的是「上市不足 20 天」，"
-         "而次新股正是应该被排除的区间。"
-         "★ 停牌期市值是水平量（不波动），所以停牌本身不会抬高这个波动率 ——"
-         "它与供应商 total_mv 同口径。",
-))
-def market_cap_concentration_20d(ctx):
-    return ctx.roll_std(ctx.safe_log(_mktcap(ctx, "total_share")), 20)
 
 
 

@@ -1,0 +1,118 @@
+{
+  "old_csv": "/autodl-fs/data/model/research/20260921_new_factors/newfactor_ic.csv",
+  "new_csv": "/autodl-fs/data/model/research/20260921_s03_screening/newfactor_ic_isolated.csv",
+  "n_common": 315,
+  "delta_ic_mean": {
+    "min": -0.0006612270885952998,
+    "max": 0.0006471523758082992,
+    "mean_abs": 0.00016092679125190106,
+    "max_abs": 0.0006612270885952998
+  },
+  "top34_by_abs_ic_mean": {
+    "overlap": 32,
+    "only_old": [
+      "efx_annual_sales_yield",
+      "efx_lu_one_price"
+    ],
+    "only_new": [
+      "open5_amt_log",
+      "open5_amt_share"
+    ]
+  },
+  "top34_by_abs_icir": {
+    "overlap": 32
+  },
+  "biggest_movers": [
+    {
+      "factor": "afx_bs_fix_assets_total",
+      "ic_mean_old": 0.004624133936999,
+      "ic_mean_new": 0.0039629068484037,
+      "d": -0.0006612270885952998
+    },
+    {
+      "factor": "efx_limit_win_fraction",
+      "ic_mean_old": 0.0326914080010556,
+      "ic_mean_new": 0.0333385603768639,
+      "d": 0.0006471523758082992
+    },
+    {
+      "factor": "efx_lu_board_density",
+      "ic_mean_old": 0.0228010023107518,
+      "ic_mean_new": 0.0233889099948795,
+      "d": 0.000587907684127701
+    },
+    {
+      "factor": "efx_annual_sales_yield",
+      "ic_mean_old": 0.0166709527896857,
+      "ic_mean_new": 0.0160832721553657,
+      "d": -0.0005876806343200029
+    },
+    {
+      "factor": "afx_fi_fixed_assets",
+      "ic_mean_old": 0.0039796879248616,
+      "ic_mean_new": 0.0034381672528363,
+      "d": -0.0005415206720252998
+    },
+    {
+      "factor": "mfx_index_amount",
+      "ic_mean_old": -0.0085134095884619,
+      "ic_mean_new": -0.0079824240144323,
+      "d": 0.0005309855740296011
+    },
+    {
+      "factor": "afx_cf_use_right_asset_dep",
+      "ic_mean_old": -0.0024884880258529,
+      "ic_mean_new": -0.0019579745008767,
+      "d": 0.0005305135249762003
+    },
+    {
+      "factor": "afx_bs_const_materials",
+      "ic_mean_old": -0.0005908715747491,
+      "ic_mean_new": -0.0010977763030678,
+      "d": -0.0005069047283187
+    },
+    {
+      "factor": "efx_top_participation",
+      "ic_mean_old": 0.0268041492839768,
+      "ic_mean_new": 0.02727527236919,
+      "d": 0.00047112308521320145
+    },
+    {
+      "factor": "efx_top_amount_rate",
+      "ic_mean_old": 0.0268043494886767,
+      "ic_mean_new": 0.0272753596210622,
+      "d": 0.00047101013238549927
+    },
+    {
+      "factor": "efx_limit_trade_share",
+      "ic_mean_old": 0.0074316929472362,
+      "ic_mean_new": 0.0079005529474014,
+      "d": 0.0004688600001652001
+    },
+    {
+      "factor": "mfx_ths_turnover_rate",
+      "ic_mean_old": -0.0191147645686894,
+      "ic_mean_new": -0.0186462692222611,
+      "d": 0.00046849534642830204
+    },
+    {
+      "factor": "afx_bs_oth_liab",
+      "ic_mean_old": 0.0067878821318539,
+      "ic_mean_new": 0.0072549345911727,
+      "d": 0.0004670524593188008
+    },
+    {
+      "factor": "afx_is_oth_b_income",
+      "ic_mean_old": 0.0067113539990906,
+      "ic_mean_new": 0.0071783149732215,
+      "d": 0.00046696097413089985
+    },
+    {
+      "factor": "afx_is_oper_exp",
+      "ic_mean_old": 0.0066814042583188,
+      "ic_mean_new": 0.0071478257638752,
+      "d": 0.0004664215055564004
+    }
+  ],
+  "note": "越界版 = 20260921_new_factors/newfactor_ic.csv（CUTOFF=2025-06-30，最后 6 个信号日标签伸进评价窗）；隔离版 = 20260921_s03_screening/newfactor_ic_isolated.csv（CUTOFF=2025-06-20，自检兑现日 2025-06-30 < 2025-07-01）。"
+}

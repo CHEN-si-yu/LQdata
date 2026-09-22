@@ -3,6 +3,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+import numpy as np
 import pandas as pd
 import main
 
@@ -13,7 +14,13 @@ class CheckCliTests(unittest.TestCase):
             spec=SimpleNamespace(name='sample',deps=('stock_daily',),allow_qfq=False,
                                  resolved_start=lambda cfg:'2027-01-01' if future else '2018-01-01')
             man=SimpleNamespace(partition_rows=lambda:rows,partitions={'2026':{}} if missing_partition else {})
-            engine=SimpleNamespace(baseline_last_day=lambda:20260918)
+            # S-01（2026-09-21）起 cmd_check 先报告两道闸门（ST 内容 / 可用时点契约），
+            # 它们要 engine.up / engine.codes / engine.cfg.state_dir；这里给最小替身：
+            # ST 读不到 -> source="empty"，只多打一行状态，不改变本文件关心的结论
+            # （缺产物 / 分区缺失 / 格式）。
+            engine=SimpleNamespace(baseline_last_day=lambda:20260918,cfg=cfg,
+                                   codes=np.array(['000001.SZ']),
+                                   up=SimpleNamespace(read=lambda *a,**k:None))
             text=io.StringIO()
             with patch('fea.engine.Engine',return_value=engine),patch.object(main,'all_specs',return_value=[spec]),patch.object(main.Manifest,'load',return_value=man),patch.object(main.store,'read_factor',return_value=frame),patch.object(main,'_check_format',return_value=0),redirect_stdout(text):
                 rc=main.cmd_check(SimpleNamespace(),cfg)

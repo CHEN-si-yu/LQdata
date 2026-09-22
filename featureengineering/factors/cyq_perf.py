@@ -80,13 +80,7 @@ def cyqp_tail_width_share(ctx):
 @register(_spec('cyqp_mean_median_gap','筹码均值与中位数成本偏离（扩展）','weight_avg/cost_50pct - 1',high=False))
 def cyqp_mean_median_gap(ctx):return ctx.safe_div(_field(ctx,'weight_avg'),_field(ctx,'cost_50pct'),1e-8)-1
 
-@register(_spec('cyqp_price_cost_position','现价在 90% 筹码成本区间的位置','(close-cost_5pct)/(cost_95pct-cost_5pct)',price=True,high=False))
-def cyqp_price_cost_position(ctx):
-    lo,hi=_field(ctx,'cost_5pct'),_field(ctx,'cost_95pct')
-    return ctx.safe_div(ctx.px('close')-lo,hi-lo,1e-8)
 
-@register(_spec('cyqp_average_cost_premium','现价相对供应商加权成本的溢价','close/weight_avg - 1',price=True,high=False))
-def cyqp_average_cost_premium(ctx):return ctx.safe_div(ctx.px('close'),_field(ctx,'weight_avg'),1e-8)-1
 
 @register(_spec('cyqp_historical_range_position','中位成本在供应商历史价格区间的位置（扩展）','(cost_50pct-his_low)/(his_high-his_low)'))
 def cyqp_historical_range_position(ctx):

@@ -26,7 +26,8 @@ from .panel import Panel
 
 class FactorContext:
     def __init__(self, panel: Panel, deriv: Derivative, up, cfg, universe: np.ndarray,
-                 prices=None, intraday=None, chips=None, cal=None, factor_io=None):
+                 prices=None, intraday=None, chips=None, cal=None, factor_io=None,
+                 open5=None):
         self.panel = panel
         self.deriv = deriv
         self.up = up
@@ -37,6 +38,7 @@ class FactorContext:
         self.prices = prices          # PriceLayer：日频价格/量/复权
         self.intraday = intraday      # IntradayLayer：5min 派生的日频宽表
         self.chips = chips            # ChipLayer：筹码峰派生的日频摘要
+        self.open5 = open5            # Open5Layer：5min 派生的一开盘首段流动性（S-07）
         self.cal = cal                # Calendar：交易日历（日期位移法要用）
         self.factor_io = factor_io    # FactorIO：读已落盘的其它因子（耦合因子用）
 
@@ -105,6 +107,13 @@ class FactorContext:
             raise RuntimeError("该因子用到了日内层，但引擎没有预建 IntradayLayer。")
         return self.intraday.panel(self.panel, field)
 
+    # ---------------------------------------------------------------- 开盘首段
+    def open5_field(self, field: str) -> np.ndarray:
+        """读开盘首段（首 5 分钟）预聚合出来的日频字段（见 fea/open5.py 的字段表）。"""
+        if self.open5 is None:
+            raise RuntimeError("该因子用到了开盘首段层，但引擎没有预建 Open5Layer。")
+        return self.open5.panel(self.panel, field)
+
     # ---------------------------------------------------------------- 筹码
     def chip(self, field: str) -> np.ndarray:
         """读筹码峰预聚合出来的日频摘要字段（见 fea/chips.py 的字段表）。"""
@@ -149,7 +158,8 @@ class FactorContext:
         """`stock_financial_indicator` 的**时点比率**字段（按 ann_date 做 PIT 前向填充）。
 
         与 `ttm()/point()` 的区别：这里**不做任何口径变换**，给的就是供应商披露的值。
-        ⚠️ 只允许取 `deriv.IND_SAFE` 里的字段（时点比率 + 同期同比，季节性自动抵消）。
+        ⚠️ 只允许取 `deriv.IND_SAFE` 里的字段（时点比率、同期同比及明确白名单的单季度比率）。
+          单季度字段仍有季节性，按报告期 lag=4 比较同期；不能把日频 shift 当财季。
           该表的 `roe / roa / grossprofit_margin / *_turn` 等是**累计 YTD**，
           直接当日频用会得到跨季锯齿（振幅 4 倍）—— 这些必须用 ttm() 从原始三表重算。
 
@@ -170,6 +180,22 @@ class FactorContext:
                 f"  允许的字段（{len(IND_SAFE)} 个）：{list(IND_SAFE)}{hint}")
         self._trim()
         return self.deriv.to_panel(self.panel, field, mode="ind", lag=lag)
+
+    # ---------------------------------------------------------------- 数学
+    def annual(self, dataset: str, field: str, lag_years: int = 0) -> np.ndarray:
+        """仅取当时已公告的12月31日年度报告；年度同比按报告期回看4季。
+
+        供新增字段使用的独立入口，不放宽 ind() 对累计YTD比率的限制。
+        允许的源字段显式列在 conf/field_expansion.json；缺年、缺修订保持NaN。
+        """
+        from .field_expansion import ANNUAL_ALIASES, annual_alias
+        alias = annual_alias(dataset, field)
+        if alias not in ANNUAL_ALIASES:
+            raise KeyError(f"未声明的年度字段：{dataset}.{field}")
+        if not isinstance(lag_years, int) or lag_years < 0:
+            raise ValueError("年度因子只允许非负整数历史滞后")
+        self._trim()
+        return self.deriv.to_panel(self.panel, alias, mode="annual", lag=4 * lag_years)
 
     # ---------------------------------------------------------------- 数学
     # 以下都是 fea/mathx.py 的转发，因子作者不必 import mathx

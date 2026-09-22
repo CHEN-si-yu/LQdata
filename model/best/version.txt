@@ -1,0 +1,16 @@
+best  （实战单元 / SPEC.md §4）
+来源配方：R38 得分最高口径的复现 —— 九粒种子 × 四折打分直接相加 → 组间逐日截面标准差对齐 → 等权平均 → 60 日市场趋势门槛。
+脚本来源：model.py ← V62/model.py（= V32 配方）· evaluation_core.py ← V75/evaluation_core.py · memory_guard.py ← V62/memory_guard.py · analysis.py 的集成段 ← V75/combine.py、出票段 ← V62/analysis.py::write_daily_picks。
+种子基号：3253(V62) 3254(V34) 3255(V36) 15361(V50) 28403(V51) 49117(V52) 3301(V72) 3302(V73) 3303(V74)；折内仍是 `基号 + fold - 1`，36 个模型复现那九粒的初始化。
+特征列：features_old337.json（337 列）—— 九组**必须同列集**；V34/V36/V50/V51/V52 当年的 `features='all'` 在当时就是 337 列，照抄到现在的 656 列快照上会静默训成 R37 的"新因子臂"（top1 −23.65%）。
+数据快照：../trainingdata（panel_digest=23a6bfa150528094，末日 2026-09-21，**599 列**）。
+★★ **2026-09-22 快照对齐后未做的一件事**：`features_old337.json` 里有 **6 列已被因子侧删除**
+（`chip_resistance_distance`/`chip_support_distance`/`cyqp_average_cost_premium`/
+`cyqp_price_cost_position`/`market_cap_concentration_20d`/`ret_skew_60`）——
+下次跑 `train.sh` / `analysis.py` 会**直接报缺列**。三种处置（需人拍板）：
+① 原位替换成同簇代表（|ρ| 0.95~0.99，见 `featureengineering/artifacts/audits/dedup_20260922/replacement_map.tsv`）；
+② 直接删掉这 6 列（337 → 331）；③ 保持不动、只跑旧快照（已不适用：旧快照已让位）。
+★ 无论选哪种，列集一变 ⇒ 需**重训**才能与训练时的输入一致。
+★ 与研究单元的唯一偏离 = 切分口径：无 test 窗（用户 2026-09-21：实战组不跑任何 test 回测）、train_end = 数据末日退 h+1 交易日、只推演最近 10 天；有效性由四折轮换的 valid 块承担。
+★ 本目录是用户 2026-09-21 明确指示的直接写入（SPEC.md §4 的纪律是"best/ 只由 promote 写入"），偏离已记录在此。
+★ 运行与操作记录（建库、训练、验证、每日运维、当日信号存档）见 OPERATIONS.md。

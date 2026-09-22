@@ -11,7 +11,11 @@ from fea.dates import Calendar
 class LabelRefreshTests(unittest.TestCase):
     def engine(self):
         e=object.__new__(Engine)
-        e.cfg=SimpleNamespace(default_start="2018-01-01",revision_days=10)
+        # 回填窗口给足（3000 天）：本文件的用例关心的是**回溯逻辑本身**
+        # （前向依赖回退、标签成熟），窗口收口会掩盖这些行为；
+        # 收口本身由 test_rebuild_contract 的专用用例固定。
+        e.cfg=SimpleNamespace(default_start="2018-01-01",revision_days=10,
+                              dep_backfill_days=lambda ds:3000)
         e.cal=Calendar(np.asarray([int(d.strftime("%Y%m%d")) for d in pd.bdate_range("2018-01-01","2026-09-18")],dtype=np.int32))
         e._start_floor=20180101;e.override_start=None;e.universe_fp='test'
         return e

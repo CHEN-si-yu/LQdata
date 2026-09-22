@@ -382,6 +382,63 @@ def cmd_status(args, cfg) -> int:
     return 0
 
 
+def _report_contracts(engine) -> int:
+    """报告 ST 内容闸门与可用时点契约的状态（S-01，2026-09-21）；返回新增的问题数。
+
+    为什么放在逐因子体检**之前**：这两处都是「不报错、但让因子值停在过时口径上」的
+    静默不一致。契约不对，后面逐因子的行数/值域再干净也不代表口径是对的。
+    """
+    import json as _json
+    from pathlib import Path
+
+    from fea.delay import audit_contract
+    from fea.universe import st_pool_fingerprint
+
+    bad = 0
+
+    # ---- ① ST 内容闸门 ----
+    st = st_pool_fingerprint(engine.up, engine.codes)
+    p = Path(engine.cfg.state_dir) / "universe_st.json"
+    base = None
+    if p.exists():
+        try:
+            base = _json.loads(p.read_text(encoding="utf-8"))
+        except Exception:                                     # noqa: BLE001
+            base = None
+    if base is None:
+        print(f"⚠️ ST 内容闸门：尚未建立基线（{p}）—— 下次 `main.py run` 会自动建立并留痕")
+    elif st["sha1"] is None:
+        print(f"⚠️ ST 内容闸门：本轮读不到 stock_st_info（source={st['source']}），无法与基线核对；"
+              "冻结池口径下池内无 ST 事件、不改变结果")
+    elif base.get("sha1") != st["sha1"]:
+        bad += 1
+        print(f"✘ ST 内容闸门：池内 ST 事件与基线不一致 "
+              f"（基线 sha1={base.get('sha1')} n={base.get('n_events')} → "
+              f"现在 sha1={st['sha1']} n={st['n_events']}）\n"
+              "    → stock_st_info 不在任何因子的 deps 里，不重算就不会传播；"
+              "需要一次全量重建，或显式刷新基线文件")
+    else:
+        print(f"✓ ST 内容闸门：池内 ST 事件与基线一致（n={st['n_events']} · source={st['source']} · "
+              f"池 {len(engine.codes)} 只）")
+
+    # ---- ② 可用时点契约 ----
+    r = audit_contract()
+    if r["authoritative_state"] != "ok":
+        print(f"⚠️ 可用时点契约：读不到日更侧 registry._DELAY（state={r['authoritative_state']}），"
+              "本轮**无法核对**（不能当作通过）")
+    elif r["unexplained"]:
+        bad += 1
+        print(f"✘ 可用时点契约：{len(r['unexplained'])} 条未解释差异（因子侧声明比日更侧**更松**）")
+        for x in r["unexplained"][:5]:
+            print(f"    · {x['table']}：{x['why']}")
+        print(f"    → 改 frequency.yaml 并同步 registry._DELAY，或写进 {r['ack_file']} 显式接受")
+    else:
+        print(f"✓ 可用时点契约：声明 / 日更侧 / 观测 三方无「声明更松」差异"
+              f"（已解释 {len(r['acked'])} 条 · 更保守 {len(r['conservative'])} 条 · "
+              f"声明 {r['declared_n']} 张 · 有观测 {r['observed_n']} 张）")
+    return bad
+
+
 def cmd_check(args, cfg) -> int:
     """基础体检：universe 合规、值域与格式；因果性另用 audit-pit 截断复算。"""
     from fea.engine import Engine
@@ -393,6 +450,8 @@ def cmd_check(args, cfg) -> int:
     from fea.spec import QFQ_DATASETS
     print(BANNER)
     print("基础体检不证明无前视；PIT 未执行，请另用 main.py audit-pit 做历史截断复算。")
+    problems += _report_contracts(engine)
+    print("-" * 96)
     print(f"{'因子':<24}{'行数':>12}{'主板合规':>9}{'≥起点':>7}"
           f"{'值域异常':>9}{'日均截面':>9}  复权口径")
     print("-" * 96)
@@ -765,6 +824,8 @@ def main() -> int:
                      help="只检查这些年（默认全部）")
     dp2.add_argument("--threshold", type=float, default=0.95,
                      help="判定重复的 |ρ| 阈值（默认 0.95）")
+    dp2.add_argument("--matrix", action="store_true",
+                     help="老的一次性长矩阵路径（全历史 658 因子约 23 GB）；只用于对拍分块路径")
     _add_common(dp2)
 
     dh = sub.add_parser("dayhash", help="逐截面 MD5 台账（用户交办：验证历史不变 + 增量==全量）")

@@ -377,16 +377,6 @@ def ret_kurt_20(ctx):
     return _degenerate_guard(ctx.roll_kurt(_ret(ctx), 20, min_count=15), 1e4)
 
 
-@register(FactorSpec(
-    name="ret_skew_60", group="risk", deps=PRICE_DEPS,
-    desc="60 日收益偏度（日收益滚动三阶矩，反向）",
-    formula="skew = _ret_wide(daily).rolling(60, min_periods=40).skew()",
-    start=None, warmup_days=W60, higher_is_better=False,
-    note="逐字抄自 Class1 risk / ret_skew_60。min_count=40 = 参考 min_periods（60 日窗口要 40 个样本）。"
-         "★ 数值守卫 |skew| > 100 → NaN（同 ret_skew_20：退化窗口 m2→0 会让偏度爆炸）。",
-))
-def ret_skew_60(ctx):
-    return _degenerate_guard(ctx.roll_skew(_ret(ctx), 60, min_count=40), 100.0)
 
 
 # ══════════════════════════════════════════════════════════════ 市场 / 系统性

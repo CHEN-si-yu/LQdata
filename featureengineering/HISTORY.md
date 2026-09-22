@@ -25,6 +25,314 @@
 
 经验：仅移动文件不足以完成文档归并，还需要处理生成器，否则下一次运行会重新产生散落文档；完整来源索引和校验值便于核查，而过时内容必须明确标记。MD5/SHA256 用于证据核对，不声称替代可恢复备份。本次不建立原始数据副本，不更改因子公式、股票池、数据日期或计算资源参数。
 
+<a id="session-20260922"></a>
+## 2026-09-22 · 本轮三件事（U1/U2/U3）+ 测试套件修复
+
+> 交办：「检查当前的项目，尤其是因子工程，完成文档中未完成的任务」。
+> U1/U2/U3 三条未完成事项**全部做完**，各自的「✅ 完成记录」小节里有跑法、用时、产物与实测数字
+> （见下一节）。本节只记**横跨三件事**的东西。
+
+### ★ 额外发现：单元测试自 2026-09-21 晚起是红的（7 个错误）—— 已修
+
+跑法（本轮为它新增了 `scripts/run_tests.py` —— 环境里没有 pytest、`tests/` 没有
+`__init__.py`、测试内又要 `from main import ...`，所以 `unittest discover -s tests` 用不了）：
+
+```bash
+$PY scripts/run_tests.py        # 几秒跑完；退出码非 0 即有失败
+```
+
+**修前 7 错 / 修后 105 全过**。三处根因都是「生产代码演进、测试桩没跟上」，
+**没有一处是生产代码的 bug**：
+
+| 失败 | 根因（什么时候变的） | 处置 |
+|:--|:--|:--|
+| `test_check_cli` ×4：`'SimpleNamespace' has no attribute 'up'` | S-01（09-21）给 `cmd_check` 前面加了「ST 闸门 + 可用时点契约」报告段，要 `engine.up/codes/cfg` | 测试替身补这三个属性（ST 读不到 → `source="empty"`，不影响原断言） |
+| `test_field_market_events` ×1：`'Engine' has no attribute 'codes'` / `_open5` | S-01 把两道闸门挪进了 `prebuild` 开头；09-21 又新增 open5 派生层 | 该用例只验日内层依赖规划 ⇒ 把 `st_gate`/`delay_gate`/`open5_layer` 三个**别处的关注点**打桩 |
+| `test_label_refresh` ×1、`test_rebuild_contract` ×1：`cfg` 缺 `dep_backfill_days` | 09-21 的 L2 收口（`fea/engine.py:410`） | 替身补该方法；**另加一条专用用例** `test_file_revision_recompute_is_clamped_by_backfill_window` 固定收口行为（原有用例保留，把窗口调大到不掩盖本意） |
+
+★ 这轮 L2 收口改了 `plan()` 的**共享分支**，标签（label）也走它 —— 也就是说标签的重算范围
+同样被回填窗口收口。核对过：窗口（默认 400 / 财务 500 天）远大于标签 horizon（≤21 天）
+与「跨年重写」那类场景，跨年边界仍覆盖得到；窗口**外**的重写不再触发重算，与因子侧同一条已知局限。
+
+### ★★ 同日追加：按审计清单执行去冗余删除（用户 2026-09-22 交办）
+
+> 用户原话：「把冗余过高的（你说超过 0.95 的）因子都删了」。
+> 走**三层真删**（源码注册 + 产物 + 状态），共 **57 个**、保留 1 个。
+
+- **备份先行**：`artifacts/backups/prune_20260922/`（58 个产物目录 789 MB + 58 个状态文件
+  + 8 份源码 + conf 副本）。平台纪律第 1 条；真删之前一条 `cp -a` 就能反悔。
+- **实际删除 57 个**（656 → 599 个因子；注册对象 661 → 604，标签 5 个不变）。
+- **★ 保留 1 个不是漏删**：`momentum_60`（与 `sortino_ratio_60` |ρ|=0.953）是
+  **两个存活耦合因子的父依赖** —— `cp_momentum_highvol_60`、`cp_quality_momentum`；
+  删了父因子，子因子的 `ctx.load_factor` 会**静默**返回全 NaN（只 warning）⇒ 非空率 0% 而不报错。
+  同 2026-09-17 轮保留 `mf_big_order_ratio` / `short_term_reversal_5` 的道理。
+- **四种注册机制，四条摘除路径**（老 `prune_factors.py` 只认第一种）：
+  | 路径 | 数量 | 谁 |
+  |:--|--:|:--|
+  | 删 `conf/field_expansion.json` 条目（该 JSON 就是注册源） | 39 | `afx_*` |
+  | 并入文件自带的 `REJECTED_CANDIDATES` | 12 | `efx_*` 3（field_events.py）· `mfx_*` 9（field_markets.py） |
+  | AST 摘 `@register` 块 | 6 | chips 2 · cyq_perf 2 · valuation 1 · volatility 1 |
+  | 数字循环摘元组 | 0 | `momentum_60` 最终保留（原本是 `momentum.py` 的 `(10,20,60,120,250)`） |
+  | 删产物目录 + 状态文件 | 57 + 57 | 全部候选 |
+- **工具本轮补齐三处**（`scripts/prune_factors.py`）：
+  1. **按机制分派摘除** —— 不做的话，conf/REJECTED 两族的产物删了、注册还在，
+     下一次 `main.py run` 会把它们**原样算回来**（工具原 docstring 警告的正是这件事）；
+  2. **依赖守卫** —— 待删名单里若有存活因子的父依赖，拦下并退出码 2（本轮就是它抓出 `momentum_60` 的）；
+  3. **定位改用运行时行号** —— 老实现正则找装饰器里的 `name='...'`，而 `cyq_perf.py` 写的是
+     `@register(_spec('名字', ...))`（名字是**位置参数**）⇒ 漏删 2 个；
+     现在用 `spec.fn.__code__.co_firstlineno`（★ 装饰器函数的这个值是**装饰器行**、不是 def 行，
+     两个行号都要能命中）。另加了**删完另起进程 import factors 复核**的收尾检查。
+- **交付与下游**：
+  · `artifacts/audits/dedup_20260922/replacement_map.tsv`（**删 → 本簇代表** 对照表，
+    模型侧改列清单照它替换即可）；
+  · 模型侧通知写在 `FACTOR_REQUESTS.md`：现行快照 656 列会在下次 `preparingdata.py` 变成 599 列
+    （列是扫 `data/factors/` 目录得来的），**其中 7 列是 `best/` 实战单元在用的**
+    （`momentum_60` 已保留 ⇒ 实际受影响 6 列：`chip_resistance_distance`、`chip_support_distance`、
+    `cyqp_average_cost_premium`、`cyqp_price_cost_position`、`market_cap_concentration_20d`、`ret_skew_60`）。
+- **验证**：`scripts/run_tests.py` **105 全过**（删掉的因子被 2 个用例引用，已改用同族存活因子：
+  `afx_is_diluted_eps` → `afx_is_basic_eps`、`mfx_tdx_pressure` → `mfx_dc_pressure`）；
+  `main.py list` 计 604；`main.py docs` 已刷新手册字典；
+  代码里对已删因子**无悬空硬引用**（15 处字面引用全在新建的 REJECTED_CANDIDATES 里）。
+- ★★ **逐位验证（用当天上午刚立的 dayhash 基线）**：`main.py dayhash --date 2026-09-21 --verify`
+  → **共同 4228 条逐位零变化**（含冒烟重算的 3 个因子 ⇒ 重算是逐位无副作用的），
+  消失 **399 条 = 57 个被删因子 × 7 天**（算术正好对上）。工具最后那句
+  「✘ 历史横截面发生了变化」是它**看不到删除动作**的误报，本轮的"消失"是有意为之。
+- ★ **连带修了一个被我删崩的东西**：`scripts/audit_field_coverage.py`（`FIELD_EXPANSION` 文档里
+  写的可复现入口）要求**每个未接入的分析字段都有一条理由** —— 被删因子原本在消费那些字段，
+  一删它们就变成"未开发且无理由"，脚本直接 `ValueError`。处置：给 `conf/field_exclusions.json`
+  补了 **52 条**（39 条 conf 族 + 13 条 events/markets 族；理由统一写成"原使用者 X 于 2026-09-22
+  因 |ρ|≥0.95 去冗余被删；字段本身可用"），150 → **202 条**；脚本复跑通过，
+  并刷新了台账 `artifacts/audits/field_coverage/`（**新增使用 321 → 271、未接入 150 → 200**）。
+  ★ 注意 events/markets 两族要从**历史台账 CSV** 反查原使用者 —— 因为
+  `field_markets.add()` 遇到 `REJECTED_CANDIDATES` 会提前 return，被拒因子的 `SOURCE_FIELDS`
+  条目根本不存在（第一版按 `SOURCE_FIELDS` 算，漏了 13 个字段）。
+- **README 报告区**：本轮 `prune_factors.py` 跑了 5 次（dry-run ×2 + apply ×3），
+  报告区里堆了 5 份重复的分诊报告 ⇒ **人工合并成 1 份最终记录**（边界标记 `FEA:REPORTS:*` 原样保留）。
+  以后真要再删，建议 dry-run 用 `--report <path>` 导出、别默认写进手册。
+
+### ★★ 同日续：模型侧快照按新因子集重建（用户交办「对齐到现在的因子侧，直接覆盖」）
+
+- **做法**（不原地覆盖、先另建再换名，全程可回滚）：
+  `preparingdata.py --full --out trainingdata_new`（~13 min）→ `--prices-only --out trainingdata_new`
+  → `--check` 通过 → `mv trainingdata trainingdata_prev656_20260922 && mv trainingdata_new trainingdata`。
+- **结果**：**599 特征 / 5 标签 / 4,477,455 行 / 轴 2018-01-02 ~ 2026-09-21**，
+  `panel_digest = 23a6bfa150528094`（旧 `71984270753fd665` 作废）；
+  `prices` 指纹 `3b392f0e09c9589f` **与旧快照逐位相同**（价格块不依赖因子，符合预期）。
+  列集实测**与因子库 599 个启用因子逐列一致**。
+- **★ 两个必须知道的坑**（都实测确认）：
+  1. **不能只裸跑增量**：因子集变化只改指纹、不改股票池 ⇒ 走增量分支只重写最近 28 个交易日
+     ⇒ 老年份 656 列、窗口内 599 列，得到一个**列不一致的快照**。池子变更那条有守卫挡，
+     **列集变更这一种没有**（这是个真实缺口，模型侧应补一条守卫）。
+  2. **新快照不会自动补 `prices`**：`ensure_prices_if_enabled()` 只在 meta 已有该块时才跑
+     ⇒ 新建快照必须显式 `--prices-only`。这正是 `SPEC.md` 记的「两个工具缺口」之一。
+- **旧快照**：`model/trainingdata_prev656_20260922/`（3.9 GB，原样未动 —— 已用
+  `find -newermt` 核过，防的正是平台记过的「`--out` 只重定向一半」事故）。
+- ★ **留给模型侧的待办**（不在因子工程范围，已写进 `model/best/version.txt` 与
+  `model/README/SPEC.md`）：20 个模型文件仍写着被删的 **6 列**
+  （`chip_resistance_distance`/`chip_support_distance`/`cyqp_average_cost_premium`/
+  `cyqp_price_cost_position`/`market_cap_concentration_20d`/`ret_skew_60`），
+  其中 `best/features_old337.json` + `V27~V30/model.py`（硬编码）会在建面板时**直接报缺列**
+  （`best/model.py` 有 `assert len(panel.features) == 337`）。替换对照表：
+  `artifacts/audits/dedup_20260922/replacement_map.tsv`。**列集一变 ⇒ 需重训才一致。**
+
+### 本轮新增/改动的代码（都在因子工程内）
+
+- **新增** `scripts/run_dedup.py` —— 全量冗余审计 runner（不调 `configure()`，
+  `RLIMIT_AS` 只放宽到现读的 cgroup 上限）。
+- **改动** `fea/dedup.py` —— ① 每簇算完清 `_FRAME_CACHE`（簇是划分，跨簇复用本就不可能）；
+  ② 新增 `--out`（试跑不覆盖生产报告）。
+- **改动** `scripts/dedup_representatives.py` —— ① 标题不再写死「653」；
+  ② 新增「覆盖率校核」节（用各因子落地清单补 eval 缺失的新因子排序依据）。
+- **改动** `tests/` 4 个文件（上表）+ 1 条新用例。
+
+<a id="unfinished-20260921-2347"></a>
+## 2026-09-21 23:47 · ★ 未完成事项（用户指示：本轮不做冗余审计，记录在案）
+
+> 时间戳：**2026-09-21 23:47 停止**（用户 23:4x 指示「今天不需要冗余审计，
+> 将相关未完成的工作记录在对应的项目的文档中，加上时间戳即可」）。
+> 以下条目**未完成**，恢复时从这里接。
+>
+> ★★ **2026-09-22 上午：U1 / U2 / U3 三条全部做完**（各自条目下有「✅ 完成记录」小节，
+> 含跑法、用时、产物路径与实测数字）。本节原样保留，作为「当时停在哪」的历史快照。
+
+### U1. 653/656 因子的冗余审计（评审建议 S-02）—— ✅ **2026-09-22 完成**（原记「未产出报告」）
+
+- **做到哪**：代码侧**已完成**且已验证 ——
+  · `fea/dedup.py` 改成**按年分块累加** `G = XᵀX`（峰值内存 ~23 GB → 单年 ~1.4 GB）；
+    与老路径 `--matrix` 对拍等价（40 因子 × 2 年，`max|ΔG|/max|G| = 4.75e-06`，仅浮点求和顺序差）；
+  · `scripts/dedup_representatives.py` 可把机读报告转成**保守代表清单**（按 09-19 的旧报告试跑通过）。
+- **没做到哪**：**全量跑没跑完**。两次尝试：
+  1. 22:05 那轮（走 `main.py dedup`）：相关矩阵与簇**已算出并在屏幕上打印过**，
+     但在写报告时被 `fea/resources.py::configure()` 设的 **24 GiB `RLIMIT_AS`**（地址空间上限）
+     卡死 —— 报错只申请 34 MB，属地址空间耗尽，不是真内存不够；
+  2. 23:25 那轮（`/tmp/run_dedup.py`，绕过 `configure()`、`RLIMIT_AS=(-1,-1)`）：
+     **读到 ~4 GB / 共约 12 GB 时被用户指示停止**，未到报告阶段。
+- **产出物状态**：`state/dedup/report.json` 仍是 **2026-09-19 那版（337 因子 × 仅 2026 年）**，
+  `artifacts/audits/` 下**没有**本次审计的代表清单。
+- **恢复时怎么做**：
+  ```bash
+  $PY /tmp/run_dedup.py            # 或把该 runner 挪进 scripts/（它绕过 24 GiB 地址空间上限）
+  $PY scripts/dedup_representatives.py --out-dir artifacts/audits/dedup_<日期>
+  ```
+  ★ 注意两点：① 现在因子侧是 **656 个因子**（含 `open5_*`）；
+  ② 建议先 `cp state/dedup/report.json /tmp/` 备份旧报告再覆盖（本次已备份一份在 `/tmp`）。
+
+#### ✅ U1 完成记录（2026-09-22 08:29 ~ 09:14）
+
+- **跑法**：新写的 `scripts/run_dedup.py`（它就是上面说的那个 runner，直接调用
+  `fea.dedup.cmd_dedup`，**不调 `configure()`**、RLIMIT_AS 只放宽不收紧、按现读的 cgroup 上限）；
+  另外把 `fea/dedup.py` 的 `_FRAME_CACHE` 改成**每簇算完即清** —— 簇是并查集划分，
+  一个因子只属于一个簇、跨簇复用本就不可能，而每份全历史 rank 帧要几百 MB
+  （两个字符串列），不清就会攒成几十 GB。两处都**不改任何数值口径**。
+- **结果**：656 因子 × 2018~2026、|ρ|≥0.95 ⇒ **37 簇 · 58 个候选删除**
+  （对照：旧报告 337 因子 × 仅 2026 年只有 3 簇 / 3 个 ⇒ 覆盖年份和新交付的 350 个因子
+  都显著改变结论）。最大的簇是 10 个 ROA/ROE/ROIC 族（`afx_fi_*`，其中三对 rank 完全相同）。
+- **交付物**：
+  · 机器报告 `state/dedup/report.json`（13.5 MB；旧版逐字归档在
+    `artifacts/audits/dedup_20260919_legacy/report.json`，md5 与替换前一致）；
+  · `artifacts/audits/dedup_20260922/REPORT.md` + `representatives.json`
+    （由 `scripts/dedup_representatives.py` 生成）。
+- **实测**：总用时 ~45 min · 峰值 RSS ≈ 1.7 GB · 读因子产物 ~11 GB · **未改任何因子产物**。
+- **覆盖率校核**（新加的一项）：keep 的排序依据 `state/eval/summary.json` 是 **09-18 版、
+  只覆盖 306 个旧因子** ⇒ 同簇里全是新因子时 keep 与质量无关。交付脚本改用各因子自己的
+  落地清单（`state/<因子>.json` 的 `nonnull` 占比）核验：**9/37 簇**的 keep 不是覆盖率最高的
+  成员（Δ ≤ 2.8pp，如 `mfx_dc_*` 97.5% vs `mfx_ths_*` 99.5%），已在 REPORT.md 单列，
+  机器报告的 keep 字段未改。
+- **本轮顺带修的两个小接口**：`fea/dedup.py` 支持 `--out`（试跑不覆盖生产报告）；
+  `scripts/dedup_representatives.py` 的标题不再写死「653 因子」。
+
+### U2. 干净选列表（评审建议 S-03 的因子侧半）—— ✅ **2026-09-22 09:23 已跑出**
+
+- `model/research/20260921_s03_screening/newfactor_ic_isolated.py` 已写好并**自检通过**
+  （正确 `CUTOFF = 2025-06-20`，受污染信号日 6 个），但**没有跑出新的 CSV**。
+- 恢复时直接 `$PY newfactor_ic_isolated.py` 即可（它会写 `newfactor_ic_isolated.csv` 与 `run_meta.json`）。
+
+#### ✅ U2 完成记录（2026-09-22 09:23）
+
+- **跑法**：`$PY -u newfactor_ic_isolated.py`（后台，用时 ~9 min；日志
+  `logs/newfactor_ic_isolated_20260922.log`）。自检打印：
+  `cutoff=2025-06-20 → 兑现日=2025-06-30 < 2025-07-01` ✔
+- **产物**：`model/research/20260921_s03_screening/newfactor_ic_isolated.csv`
+  （**318 个新因子** × 8 年 IC/ICIR + 与 337 旧列的 max|ρ|）+ `run_meta.json`。
+- **与越界版的对照**（新增 `isolated_vs_original.json`，因子侧补的核对）：
+  · 共同 315 个因子的 `ic_mean` 差异极小（`max|Δ| = 6.6e-4`、`mean|Δ| = 2.1e-4`）——
+    与「越界只有最后 6 个信号日」的量级一致；
+  · **但按 |ic_mean| 取前 34 名（臂 D 的选列口径）会换掉 2 个**：
+    越界版含 `efx_annual_sales_yield` / `efx_lu_one_price`，隔离版换成
+    `open5_amt_log` / `open5_amt_share`（重合 32/34；按 |icir| 也是 32/34）——
+    近-tie 名次被越界污染翻转，正是 S-03 要修的东西；
+  · 越界版只有 315 行 ⇒ 它跑在 `open5_*` 交付**之前**，三个 open5 因子当时不在候选池里。
+- ★ 模型侧仍未做的事（**不是因子侧的活**）：把这条对照写进 `20260921_new_factors/RESULTS.md`
+  的臂 C/D 旁注、以及按 S-03 重跑选列 —— 仍按用户 09-21 指示推迟。
+
+### U3. 「回填窗口之外的真实重述抓不到」—— ✅ **2026-09-22 已落地第一次全量对账**（原记「未落地」）
+
+- 见同文件的「2026-09-21 修复」节末尾。兜底手段是**周期性全量对账**
+  （`everyday_tasks/main.py hash-audit --deep` + 本工程 `main.py dayhash --verify`），**本次未落地**。
+
+#### ✅ U3 落地记录（2026-09-22 上午）
+
+**① 上游侧对账**：`cd everyday_tasks && $PY main.py hash-audit --deep`（只读，约 7 min）
+→ 日志 `logs/hash_audit_deep_20260922.log`。结果：**10 项待处理**，两类：
+
+| 类 | 张数 | 是什么 |
+|:--|--:|:--|
+| 漏天（台账自身范围内的缺口） | 5 | `stock_financial_indicator` / `stock_income` / `stock_balancesheet` / `stock_cashflow` / `index_ths_daily`；缺的都是 2012~2024 的历史日 ⇒ **台账建账时的缺口**，不是数据丢了 |
+| 🔴 复算不符 | 5 | 同上 4 张财报表 + `index_ths_daily`，共 19 个 (表, 日) |
+
+★ 复算不符的细节由 `show_mismatch_detail.py` 摊开（原始日志与脚本归档在
+`artifacts/audits/reconcile_20260922/`）：**19 条全部是「行数增加」**
+（如 `stock_financial_indicator` 2015-03-25 55→56、`index_ths_daily` 2025-08-12 1163→1166），
+**没有一条行数减少或持平** ⇒ 与「厂商**迟到补录**旧公告日的行」一致，不是原地改值。
+最老的到 2015-03-25，最新的到 2026-09-10（近几天也有）。
+★ 这条正好是 U3 局限的**实证**：这些日期都在回填窗口之外 ⇒ 按期 L2 收口，
+因子产物**不会**因它们而重算；只有全量重建才会体现。
+（处置属模块①′，本记录只作为对账证据。）
+★ 顺带核实了一条过期文档：README 曾写「dayhash 默认 fork min(16, 核数-1)」——
+实际走 `resources.safe_jobs()`，**只能 1 或 2**；已就地更正。
+
+**② 因子侧基线**（09-18 池子冻结后的第一份，旧台账已标 `superseded`）：
+
+```bash
+$PY main.py dayhash --jobs 2                 # 661 因子 × 最近 7 个交易日 = 4627 格
+# → artifacts/dayhash/2026-09-21/{dayhash.tsv,meta.json}，用时 30.6s
+#   ★ 4627/4627 全部有值：factors_missing = 0、empty_pairs = 0
+```
+并把该 tsv 复制成同目录的 `dayhash.prev.tsv`，再跑一次 `--verify` 做机制自检：
+`共同 4627 条 · 变化 0 条 · 新增 0 条 · 消失 0 条 ✅`（同数据重算，属**机制**自检而非独立性证据）。
+
+**③ 建议的周期性节奏**（写在这里，供用户拍板；未写进任何自动流程）：
+每天 `main.py run` 之后加一条 `$PY main.py dayhash --verify`（约 1 min；把上一天的
+`dayhash.tsv` 复制成新目录的 `dayhash.prev.tsv` 即可比对）；上游 audit 每季度一次。
+★ 覆盖边界要说清：它只能抓**这 7 个交易日**的横截面变化 —— 更早的日期没有任何台账，
+按设计就抓不到（这正是「全量重建」仍是唯一兜底的原因）。
+
+---
+
+<a id="fix-20260921-l2-clamp"></a>
+## 2026-09-21 修复：L2 的「文件修订」分支触发全历史重建 —— 已按回填窗口收口
+
+### 现象
+
+当天日更（`everyday_tasks`，22:28~22:40，T=2026-09-21）跑完后，因子增量
+`main.py run` 把 **147 个 `afx_fi_*` 因子整批摘出**，理由是"缺 2018..2026 的多段历史"
+（跨 ≥3 年，命中 `cmd_run` 的多年守卫）。其余财务因子则从 **2025-01-01** 起白算了一年多。
+
+### 根因（逐层查实，不是推测）
+
+1. 日更工程重写了上游 `stock_financial_indicator` 的 **2018 / 2023 / 2024 / 2025 / 2026**
+   五个年分区。实测这五个分区的 `[size, mtime_ns]` 里 **size 一字未变**，只有 `mtime_ns` 变了；
+   该依赖的 `rows=339450`、`max_pit=20260910` 也**与上一轮完全相同**。
+   ⇒ 结论：**内容未变、只是被原样重写**（日更的 upsert 语义会重写受影响的年分区）。
+2. `fea/engine.py::_file_changed()` 对年分区**只比 `[size, mtime_ns]`**（docstring 写明
+   "Annual files use metadata, avoiding full reads of large source partitions"）⇒
+   把"原样重写"判成了"历史修订"。
+3. L2 的该分支取 `lo = min(years_changed) * 10000 + 101` ⇒ 最早被重写的年份是 **2018**
+   ⇒ `lo = 2018-01-01` ⇒ 所有依赖它的因子计划全历史重建。
+   该分支**没有**像下面的"水位变化"分支那样用 `dep_backfill_days` 收口 —— 这是差异所在。
+
+### 处置
+
+`fea/engine.py::plan()` 的该分支补一行收口：
+
+```python
+back = self.cfg.dep_backfill_days(dep)
+anchor = prev["max_pit"] or end_i
+lo = max(lo, minus_days(int(anchor), back))
+```
+
+并同时把日志从"文件发生历史/等行数修订"改成"**N 个年分区被重写 → 从 X 重算（已按回填窗口 N 天收口）**"，
+把被重写的年份逐个打出来，便于事后判读。
+
+**为什么是收口而不是"忽略 mtime"**：
+- 该分支存在的**唯一理由**就是抓"行数/水位不变、只改值"的修订（docstring 明写
+  "Row/date watermarks alone cannot detect value-only repairs"）。忽略 mtime 会把它废掉；
+- 收口到回填窗口后，**窗口内**的只改值修订仍然抓得到（财务 500 天），
+  而**窗口外**的重写不再触发重建；
+- 窗口外的**真实**重述本来就只能靠定期全量对账发现 —— 这正是
+  `SPEC.md`「上游会变，而且不一定会通知你」那条已知局限，本次没有改变它，只是不让它
+  以"误报"的形式每天触发一次全历史重建。
+
+### 验证
+
+对 `afx_fi_ar_turn` 与 `yoy_revenue` 各跑一次 `plan()`（只规划、不计算）：
+
+| 因子 | 修复前 | 修复后 |
+|:--|:--|:--|
+| `afx_fi_ar_turn` | 2018-01-02 起 · 全 9 年 | **2025-04-28 起 · 343 天**（年份 [2025, 2026]） |
+| `yoy_revenue` | 2025-01-01 起 | 2025-04-28 起 · 343 天 |
+
+⇒ 147 个因子不再被守卫摘出，且重算范围收口到 500 天回填窗口。
+
+### 遗留
+
+- `_file_changed()` 对年分区仍是 `[size, mtime]`：**原样重写**依然会被记成一次"修订"，
+  于是每次日更重写某年分区，相关因子都会在回填窗口内重算一遍（财务 500 天）。
+  这是**有意的保守**（宁可多算，不可漏掉真实重述），但成本不小。
+  若日后要根治，应当在日更侧"内容未变则不写盘"、或给年分区加**内容哈希**
+  （读一次 17~23 MB，可接受）—— 那属于 `everyday_tasks` 的改动，不在本工程范围。
+- 本轮只改了 `plan()` 的收口与日志，**没有改任何因子的公式、口径或产物**。
+
 <a id="maintenance-20260919"></a>
 ## 2026-09-19 维护记录
 
@@ -3025,7 +3333,7 @@ T 日的隔夜跳空）—— 其余 11 个都是同日量。
 > **337 特征** / 5 标签、**2018-01-02 → 2026-09-18**（2116 天 × 2115 只 = 4,475,340 行）。
 > 块名也已改：`X`→`factors`、`Y`→`target`、`sample_input`→`fac_sample`，
 > `universe` / `P` / `sample/` 已从布局删除。快照**当前处于冻结状态**
-> （`meta.frozen.on = True`）。现行口径见 `model/README/DATA.md` §3 与 `QUANT_PLATFORM.md` §70/§71。
+> （`meta.frozen.on = True`）。现行口径见 `model/README/SPEC.md` §3 与 `QUANT_PLATFORM.md` §70/§71。
 
 `model/trainingdata/` 目前是**冻结快照**（`panel_digest 898661318a690631`，
 225 特征 / 5 标签，2012-01-04 → 2026-09-17）。
@@ -3360,3 +3668,13 @@ $PY scripts/rebuild_manifest.py                              # 全部（230 因�
 <!-- SOURCE:6eaba2f71f5a9d3892bf586e06fac7675f3f445b81ebc78179c0f313c1d73f08:END -->
 
 </details>
+
+
+## 2026-09-21 第二批：上游未覆盖字段扩展
+
+交付304个候选因子，新增使用321个分析字段，覆盖531/681。沿用统一引擎和冻结池，旧产物保留；104项测试、时点截断、预热、增量和正式回刷验证通过。详见 [交付报告](FIELD_EXPANSION_20260921.md)。
+
+
+## 2026-09-21 因子侧交付记录归档
+
+按用户要求，新增 [因子开发交付记录索引](FACTOR_DEVELOPMENT_LOG.md)，串联两批交付、全部字段覆盖台账、质量与时点验证、发布和回刷记录，并记录事件均值精度修复、分钟层依赖修复及剔除/延后决定。README导航与AGENTS已补入口。本次仅整理文档，未重算因子或修改模型侧文件。

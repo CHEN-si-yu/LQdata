@@ -159,3 +159,119 @@ def load(upstream_root: Path | str | None = None, refresh: bool = False) -> dict
     log.info("延迟表已加载（来源：%s，生效 %d 张）：%s", "+".join(src), len(out),
              "、".join(f"{k}={v}({picked[k]})" for k, v in sorted(out.items())))
     return out
+
+
+# ============================================================================
+# 契约一致性审计（S-01，2026-09-21）
+#
+# ## 为什么需要它
+#
+# 延迟表有**两份互不传导的副本**（这是平台已知隐患）：
+#   · 因子侧读 `datadownload/conf/frequency.yaml`；
+#   · 日更侧以 `everyday_tasks/data_incremental/registry.py` 为准。
+# 而 `datadownload/README.md` 自己写着：frequency.yaml 是**冻结快照**，
+# "冻结后不再保证与日更侧一致"。暂一致 ≠ 以后同步。
+#
+# ## 为什么只报「不保守」的方向
+#
+# 因子侧用这张表的**唯一用途**是 `spec.register()` 的闸门：依赖了「延迟>0 的表」
+# 却没声明 `lagged_ok` 的因子会被**拒绝注册**。所以：
+#   · 声明得**更严**（delay 偏大）→ 最多拒掉一个本可注册的因子，不产生未来函数；
+#   · 声明得**更松**（delay 偏小）→ 闸门放行一个实际拿不到数据的因子，
+#     它在历史截面上用了未来才有的信息 —— **这才是要拦的**。
+# 与 load() 的「只上不下」同一套哲学（加严能传播、放宽不能），但方向相反：
+# 那里保的是"别白丢一天信息"，这里保的是"别提前一天用上信息"。
+#
+# ## 三路来源
+#
+#   declared       frequency.yaml（因子侧现行读取点）
+#   authoritative  registry.py 的 `_DELAY`（只读 AST 取字面量，**不 import**）
+#   observed       delay_history.json 最近 ≥3 次观测
+#
+# ★ 为什么不用 import：跨工程 import 会把两个工程的加载顺序与副作用绑在一起，
+#   平台明令禁止。这里把它当**一个数据文件**读；解析失败就退化为「无法核对」并告警，
+#   绝不让因子工程因为"另一个模块改了写法"而起不来。
+# ============================================================================
+
+# 已解释差异台账：每条差异都要有人写下理由，否则闸门会响。
+# 与 `st_gate` 的基线文件同一套思路 —— **是显式接受，不是静默放行**。
+_ACK_FILE = "conf/delay_contract_ack.json"
+
+
+def _authoritative(upstream_root: Path | None) -> tuple[dict[str, int], str]:
+    """从日更侧 registry.py 里取 `_DELAY`（只读源码，AST 取字面量）。
+
+    返回 `(表, 状态)`，状态 ∈ {"ok", "missing", "unparsable"}。
+    """
+    import ast
+    root = Path(upstream_root).resolve().parent if upstream_root else Path(__file__).resolve().parents[2]
+    p = root / "everyday_tasks" / "data_incremental" / "registry.py"
+    if not p.exists():
+        return {}, "missing"
+    try:
+        tree = ast.parse(p.read_text(encoding="utf-8"))
+    except Exception as exc:                                  # noqa: BLE001
+        log.warning("registry.py 解析失败（忽略，退化为「无法核对」）：%r", exc)
+        return {}, "unparsable"
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name) and t.id == "_DELAY":
+                    try:
+                        v = ast.literal_eval(node.value)
+                    except Exception:                         # noqa: BLE001
+                        return {}, "unparsable"
+                    return {k: int(x) for k, x in v.items() if isinstance(x, (int, float))}, "ok"
+    return {}, "missing"
+
+
+def audit_contract(upstream_root: Path | None = None) -> dict:
+    """三方对照；`unexplained` 非空 = 契约有未解释差异（调用方应拦住或显著报告）。"""
+    self_dir = Path(__file__).resolve().parents[1]            # = featureengineering/
+    hist_p, freq_p = _sources(Path(upstream_root) if upstream_root else None)
+    declared = _from_frequency(freq_p) if freq_p is not None else {}
+    recent = _recent_by_table(hist_p) if hist_p is not None else {}
+    auth, auth_state = _authoritative(upstream_root)
+
+    ack: dict[str, str] = {}
+    ack_p = self_dir / _ACK_FILE
+    if ack_p.exists():
+        try:
+            for r in json.loads(ack_p.read_text(encoding="utf-8")):
+                ack[r["table"]] = r.get("reason", "")
+        except Exception as exc:                              # noqa: BLE001
+            log.warning("读 %s 失败（按「无已解释差异」处理）：%r", ack_p, exc)
+
+    unexplained, conservative, acked, rows = [], [], [], []
+    for name in sorted(set(declared) | set(auth) | set(recent)):
+        d = declared.get(name)
+        a = auth.get(name)
+        obs = (recent.get(name) or [])[:3]
+        # ★ 观测的判据与 load() 严格一致：**最近 3 次全都**比声明更差才算证据。
+        #   单次观测不是常数本身（早采样会系统性高估"当晚才发布"的表的滞后，
+        #   实测 ths_hot/stock_st_info/index_ths_daily 同晚序列是 0,1,1,1,0,0,0）——
+        #   放宽成 max() 会让这三张表天天进 unexplained，闸门立刻没人看。
+        obs_tight = len(obs) >= 3 and all(o > (d or 0) for o in obs)
+        loose_by = []
+        if a is not None and a > (d or 0):
+            loose_by.append(f"registry={a}")
+        if obs_tight:
+            loose_by.append(f"观测连续 3 次 {obs}")
+        row = {"table": name, "declared": d, "authoritative": a, "observed": obs or None}
+        if loose_by:
+            row["why"] = "声明更松：" + " · ".join(loose_by)
+            if ack.get(name):
+                row["acked"] = ack[name]
+                acked.append(row)
+            else:
+                unexplained.append(row)
+        elif d is not None and a is not None and d > a:
+            row["why"] = f"声明更严（保守，不拦）：d={d} > registry={a}"
+            conservative.append(row)
+        rows.append(row)
+
+    return {"declared_n": len(declared), "authoritative_n": len(auth),
+            "authoritative_state": auth_state, "observed_n": len(recent),
+            "unexplained": unexplained, "conservative": conservative, "acked": acked,
+            "ack_file": str(ack_p), "observed": bool(recent), "rows": rows}
+

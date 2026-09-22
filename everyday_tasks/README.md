@@ -577,7 +577,7 @@ sudo chmod -R g+rw  /autodl-fs/data/datadownload/state /autodl-fs/data/datadownl
 | 3 | **不要改 `_DELAY` 去迎合 monitor 的 `★改`** | monitor 读的是白天采样，**已知误报**（见 §7.1）；闸门用的是 `delay_history.json` |
 | 4 | **失败绝不标 coverage** | 标了就是永久空洞（旧工程 `index_daily` 缺 159 天的根因） |
 | 5 | **先落数据、再落状态** | 反过来会留"状态说完成、数据还在内存"的永久空洞 |
-| 6 | **`--sample` 之类收窄股票池的回测会被闸门挡** | 价格层按引擎代码轴落格，池子不同会**静默错位**（见 `model/README.md`） |
+| 6 | **`--sample` 之类收窄股票池的回测会被闸门挡** | 价格层按引擎代码轴落格，池子不同会**静默错位**（见 `model/README/SPEC.md` §3 末） |
 | 7 | **不要用 `pkill -f "main.py"`** | 会匹配到自己那条命令行而自杀；用 `ps -eo pid,args \| grep '[m]ain\.py'` 找 PID |
 
 ### 8.3 ★ 修过的坑（2026-09-15 破坏性回测揪出的 14 个，**别再犯回去**）

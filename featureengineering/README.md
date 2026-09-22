@@ -3,7 +3,7 @@
 `/autodl-fs/data/featureengineering`（规范路径；`/root/autodl-fs` 是同一目录的符号链接）的现行手册。
 最近整理：**2026-09-20 拆分** —— 本文件此前 24255 行 / 1.59 MiB，现按用途拆成 3 份。
 
-**本目录现在是 3 份 Markdown，各有单一职责：**
+**核心手册由以下 3 份 Markdown 组成，各有单一职责；并行分工见 `AGENTS.md`，最新交付见下方链接：**
 
 | 文件 | 职责 | 什么时候读 |
 |:--|:--|:--|
@@ -19,8 +19,15 @@
 标记缺失或重复会直接抛 `ValueError`。所以这三块**必须留在本文件**，
 不能像历史记录那样搬去 `HISTORY.md` —— 除非同时修改 `fea/documentation.py`。
 
+
+> **2026-09-21 新增交付**：已新增 12 个 `quarterly_quality` 候选因子；首批交付时注册为 349 个因子 + 5 个标签。旧因子的定义及历史产物保持不变。
+> 并行开发请先读 [AGENTS.md](AGENTS.md)；公式、质量检查与使用边界见 [本轮开发报告](FACTOR_DEVELOPMENT_20260921.md)。下方 2026-09-20 体检与字段覆盖表为当时快照。
+
+> **2026-09-21 第二批字段扩展已交付**：新增 **304 个候选因子**；分析字段覆盖增至 **531/681（78.0%）**，当前 **653 因子 + 5 标签**。详见 [交付与验收报告](FIELD_EXPANSION_20260921.md) 及 [逐字段台账](artifacts/experiments/field_expansion_20260921_56292/coverage/FIELD_COVERAGE.csv)。下方旧体检数字为当时快照。
+
 ### 导航
 
+- [因子开发交付记录索引](FACTOR_DEVELOPMENT_LOG.md)（批次、验收证据、字段台账与维护事项）
 - [★ 因子质量体检报告（2026-09-20）](#audit-20260920) ← **先看这个**
 - [上游字段开发覆盖（2026-09-20 盘点）](#upstream-fields) ← 还差哪些字段没用
 - [当前操作与开发约定](#current-guide)
@@ -288,6 +295,18 @@ python main.py check        # 342 个注册对象 / 3073 个分区
 它们在下游的日横断面回归里只会互相抢显著性、放大过拟合。
 *建议*：按 `state/dedup` 的思路做一次簇内保留，或在下游改用「每簇取第一主成分」；
 不需要删因子源文件，删的是喂给模型的列。
+
+> ★ **2026-09-22 已出全量审计**（656 因子 × 2018~2026、|ρ|≥0.95）：**37 簇 / 58 个候选删除** ——
+> 交付物 `artifacts/audits/dedup_20260922/`（`REPORT.md` + `representatives.json`），
+> 机器报告 `state/dedup/report.json`（09-19 的 337×2026 旧版归档在
+> `artifacts/audits/dedup_20260919_legacy/`）。★ 本报告上表的 47.6/337 是 **2026-09-20 的
+> 状态**（337 因子、|ρ|≥0.70 口径），与这次 0.95 口径的 37 簇不是同一件事，别混引。
+>
+> ★★ **同日（2026-09-22 下午）已按该清单执行真删**：58 个候选里**删 57 个**
+> （因子 656 → **599**），保留 `momentum_60`（两个存活耦合因子的父依赖，删了子因子会静默变全 NaN）。
+> 删除前全量备份 `artifacts/backups/prune_20260922/`；删→代表对照表
+> `artifacts/audits/dedup_20260922/replacement_map.tsv`；记录见本手册末的「因子分诊报告」区
+> 与 `HISTORY.md` §2026-09-22 的「同日追加」小节。**模型侧需同步列清单**（通知在 `FACTOR_REQUESTS.md`）。
 
 #### P2 —— 影响因子质量，但不阻塞使用
 
@@ -857,7 +876,7 @@ data/factors/<因子名>/year=YYYY/data.parquet
 
 ## 因子清单
 
-共 337 个因子、5 个标签。
+共 598 个因子、5 个标签。
 
 > ★ 所有因子的**列名 / 列序 / dtype / 目录结构 / 分区方式 / 语义完全一致**，
 > **唯一允许的差异是起止日期**（下表最后两列）。
@@ -869,22 +888,227 @@ di_plus, di_minus = _directional_movement(daily["high"], daily["low"], daily["pr
 dx = 100 * (di_plus - di_minus).abs() / (di_plus + di_minus + 1e-8)
 adx = dx.groupby(level="Code").transform(
     lambda s: s.rolling(14, min_periods=7).mean()
-)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 300 | stock_daily, stock_adj_factor |
-| `amihud_asymmetry_20` | liquidity | 低优 | 涨跌两侧的非流动性差：下跌日 Amihud / 上涨日 Amihud | `up_illiq = illiq.where(ret > 0).rolling(20, min_periods=5).mean(); down_illiq = illiq.where(ret < 0).rolling(20, min_periods=5).mean(); asym = safe_divide(down_illiq, up_illiq + 1e-12)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `amihud_daily_5` | liquidity | 高优 | Amihud 日频非流动性：5 日平均 \|收益\|/成交额（短周期版） | `amihud = \|ret\| / amount; amihud5 = roll(amihud, 5, "mean", min_periods=2)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_daily, stock_adj_factor |
+)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 300 | stock_daily, stock_adj_factor |
+| `afx_bs_cap_rese` | field_balance | 高优 | 资本公积金年度结构占比 | `asinh(annual(stock_balancesheet.cap_rese)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_const_materials` | field_balance | 高优 | 工程物资年度结构占比 | `asinh(annual(stock_balancesheet.const_materials)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_debt_invest` | field_balance | 高优 | 债权投资年度结构占比 | `asinh(annual(stock_balancesheet.debt_invest)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2019-04-01 | 2019-04-01 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_decr_in_disbur` | field_balance | 高优 | 发放贷款及垫款年度结构占比 | `asinh(annual(stock_balancesheet.decr_in_disbur)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_deriv_assets` | field_balance | 高优 | 衍生金融资产年度结构占比 | `asinh(annual(stock_balancesheet.deriv_assets)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_deriv_liab` | field_balance | 高优 | 衍生金融负债年度结构占比 | `asinh(annual(stock_balancesheet.deriv_liab)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_div_payable` | field_balance | 高优 | 应付股利年度结构占比 | `asinh(annual(stock_balancesheet.div_payable)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_div_receiv` | field_balance | 高优 | 应收股利年度结构占比 | `asinh(annual(stock_balancesheet.div_receiv)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_estimated_liab` | field_balance | 高优 | 预计负债年度结构占比 | `asinh(annual(stock_balancesheet.estimated_liab)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_fix_assets_total` | field_balance | 高优 | 固定资产(合计)年度结构占比 | `asinh(annual(stock_balancesheet.fix_assets_total)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_fixed_assets_disp` | field_balance | 高优 | 固定资产清理年度结构占比 | `asinh(annual(stock_balancesheet.fixed_assets_disp)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_hfs_assets` | field_balance | 高优 | 持有待售的资产年度结构占比 | `asinh(annual(stock_balancesheet.hfs_assets)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_int_payable` | field_balance | 高优 | 应付利息年度结构占比 | `asinh(annual(stock_balancesheet.int_payable)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_int_receiv` | field_balance | 高优 | 应收利息年度结构占比 | `asinh(annual(stock_balancesheet.int_receiv)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_invest_real_estate` | field_balance | 高优 | 投资性房地产年度结构占比 | `asinh(annual(stock_balancesheet.invest_real_estate)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_loan_oth_bank` | field_balance | 高优 | 拆入资金年度结构占比 | `asinh(annual(stock_balancesheet.loan_oth_bank)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_long_pay_total` | field_balance | 高优 | 长期应付款(合计)年度结构占比 | `asinh(annual(stock_balancesheet.long_pay_total)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_lt_amor_exp` | field_balance | 高优 | 长期待摊费用年度结构占比 | `asinh(annual(stock_balancesheet.lt_amor_exp)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_lt_eqt_invest` | field_balance | 高优 | 长期股权投资年度结构占比 | `asinh(annual(stock_balancesheet.lt_eqt_invest)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_lt_payable` | field_balance | 高优 | 长期应付款年度结构占比 | `asinh(annual(stock_balancesheet.lt_payable)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_lt_payroll_payable` | field_balance | 高优 | 长期应付职工薪酬年度结构占比 | `asinh(annual(stock_balancesheet.lt_payroll_payable)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_lt_rec` | field_balance | 高优 | 长期应收款年度结构占比 | `asinh(annual(stock_balancesheet.lt_rec)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_nca_within_1y` | field_balance | 高优 | 一年内到期的非流动资产年度结构占比 | `asinh(annual(stock_balancesheet.nca_within_1y)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_ordin_risk_reser` | field_balance | 高优 | 一般风险准备年度结构占比 | `asinh(annual(stock_balancesheet.ordin_risk_reser)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_assets` | field_balance | 高优 | 其他资产年度结构占比 | `asinh(annual(stock_balancesheet.oth_assets)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_comp_income` | field_balance | 高优 | 其他综合收益年度结构占比 | `asinh(annual(stock_balancesheet.oth_comp_income)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_cur_assets` | field_balance | 高优 | 其他流动资产年度结构占比 | `asinh(annual(stock_balancesheet.oth_cur_assets)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_cur_liab` | field_balance | 高优 | 其他流动负债年度结构占比 | `asinh(annual(stock_balancesheet.oth_cur_liab)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_debt_invest` | field_balance | 高优 | 其他债权投资年度结构占比 | `asinh(annual(stock_balancesheet.oth_debt_invest)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2019-04-01 | 2019-04-01 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_eqt_tools` | field_balance | 高优 | 其他权益工具年度结构占比 | `asinh(annual(stock_balancesheet.oth_eqt_tools)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_nca` | field_balance | 高优 | 其他非流动资产年度结构占比 | `asinh(annual(stock_balancesheet.oth_nca)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_ncl` | field_balance | 高优 | 其他非流动负债年度结构占比 | `asinh(annual(stock_balancesheet.oth_ncl)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_pay_total` | field_balance | 高优 | 其他应付款(合计)年度结构占比 | `asinh(annual(stock_balancesheet.oth_pay_total)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_payable` | field_balance | 高优 | 其他应付款年度结构占比 | `asinh(annual(stock_balancesheet.oth_payable)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_oth_rcv_total` | field_balance | 高优 | 其他应收款(合计)年度结构占比 | `asinh(annual(stock_balancesheet.oth_rcv_total)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_payroll_payable` | field_balance | 高优 | 应付职工薪酬年度结构占比 | `asinh(annual(stock_balancesheet.payroll_payable)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_produc_bio_assets` | field_balance | 高优 | 生产性生物资产年度结构占比 | `asinh(annual(stock_balancesheet.produc_bio_assets)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_pur_resale_fa` | field_balance | 高优 | 买入返售金融资产年度结构占比 | `asinh(annual(stock_balancesheet.pur_resale_fa)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_sold_for_repur_fa` | field_balance | 高优 | 卖出回购金融资产款年度结构占比 | `asinh(annual(stock_balancesheet.sold_for_repur_fa)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_special_rese` | field_balance | 高优 | 专项储备年度结构占比 | `asinh(annual(stock_balancesheet.special_rese)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_specific_payables` | field_balance | 高优 | 专项应付款年度结构占比 | `asinh(annual(stock_balancesheet.specific_payables)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_surplus_rese` | field_balance | 高优 | 盈余公积金年度结构占比 | `asinh(annual(stock_balancesheet.surplus_rese)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_taxes_payable` | field_balance | 高优 | 应交税费年度结构占比 | `asinh(annual(stock_balancesheet.taxes_payable)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_trading_fl` | field_balance | 高优 | 交易性金融负债年度结构占比 | `asinh(annual(stock_balancesheet.trading_fl)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_bs_undistr_porfit` | field_balance | 高优 | 未分配利润年度结构占比 | `asinh(annual(stock_balancesheet.undistr_porfit)/annual(stock_balancesheet.total_liab_hldr_eqy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_balancesheet |
+| `afx_cf_beg_bal_cash` | field_cashflow | 高优 | 减:现金的期初余额年度结构占比 | `asinh(annual(stock_cashflow.beg_bal_cash)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_beg_bal_cash_equ` | field_cashflow | 高优 | 减:现金等价物的期初余额年度结构占比 | `asinh(annual(stock_cashflow.beg_bal_cash_equ)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_c_cash_equ_end_period` | field_cashflow | 高优 | 期末现金及现金等价物余额年度结构占比 | `asinh(annual(stock_cashflow.c_cash_equ_end_period)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_c_disp_withdrwl_invest` | field_cashflow | 高优 | 收回投资收到的现金年度结构占比 | `asinh(annual(stock_cashflow.c_disp_withdrwl_invest)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_c_fr_oth_operate_a` | field_cashflow | 高优 | 收到其他与经营活动有关的现金年度结构占比 | `asinh(annual(stock_cashflow.c_fr_oth_operate_a)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_c_paid_invest` | field_cashflow | 高优 | 投资支付的现金年度结构占比 | `asinh(annual(stock_cashflow.c_paid_invest)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_c_recp_cap_contrib` | field_cashflow | 高优 | 吸收投资收到的现金年度结构占比 | `asinh(annual(stock_cashflow.c_recp_cap_contrib)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_c_recp_return_invest` | field_cashflow | 高优 | 取得投资收益收到的现金年度结构占比 | `asinh(annual(stock_cashflow.c_recp_return_invest)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_decr_def_inc_tax_assets` | field_cashflow | 高优 | 递延所得税资产减少年度结构占比 | `asinh(annual(stock_cashflow.decr_def_inc_tax_assets)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_decr_oper_payable` | field_cashflow | 高优 | 经营性应收项目的减少年度结构占比 | `asinh(annual(stock_cashflow.decr_oper_payable)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_eff_fx_flu_cash` | field_cashflow | 高优 | 汇率变动对现金的影响年度结构占比 | `asinh(annual(stock_cashflow.eff_fx_flu_cash)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_end_bal_cash_equ` | field_cashflow | 高优 | 加:现金等价物的期末余额年度结构占比 | `asinh(annual(stock_cashflow.end_bal_cash_equ)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_finan_exp` | field_cashflow | 高优 | 财务费用年度结构占比 | `asinh(annual(stock_cashflow.finan_exp)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_ifc_cash_incr` | field_cashflow | 高优 | 收取利息和手续费净增加额年度结构占比 | `asinh(annual(stock_cashflow.ifc_cash_incr)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_im_n_incr_cash_equ` | field_cashflow | 高优 | 现金及现金等价物净增加额(间接法)年度结构占比 | `asinh(annual(stock_cashflow.im_n_incr_cash_equ)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_im_net_cashflow_oper_act` | field_cashflow | 高优 | 经营活动产生的现金流量净额(间接法)年度结构占比 | `asinh(annual(stock_cashflow.im_net_cashflow_oper_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_incl_cash_rec_saims` | field_cashflow | 高优 | 其中:子公司吸收少数股东投资收到的现金年度结构占比 | `asinh(annual(stock_cashflow.incl_cash_rec_saims)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_incl_dvd_profit_paid_sc_ms` | field_cashflow | 高优 | 其中:子公司支付给少数股东的股利、利润年度结构占比 | `asinh(annual(stock_cashflow.incl_dvd_profit_paid_sc_ms)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_incr_def_inc_tax_liab` | field_cashflow | 高优 | 递延所得税负债增加年度结构占比 | `asinh(annual(stock_cashflow.incr_def_inc_tax_liab)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_incr_oper_payable` | field_cashflow | 高优 | 经营性应付项目的增加年度结构占比 | `asinh(annual(stock_cashflow.incr_oper_payable)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_loss_disp_fiolta` | field_cashflow | 高优 | 处置固定、无形资产和其他长期资产的损失年度结构占比 | `asinh(annual(stock_cashflow.loss_disp_fiolta)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_loss_fv_chg` | field_cashflow | 高优 | 公允价值变动损失年度结构占比 | `asinh(annual(stock_cashflow.loss_fv_chg)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_loss_scr_fa` | field_cashflow | 高优 | 固定资产报废损失年度结构占比 | `asinh(annual(stock_cashflow.loss_scr_fa)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_n_depos_incr_fi` | field_cashflow | 高优 | 客户存款和同业存放款项净增加额年度结构占比 | `asinh(annual(stock_cashflow.n_depos_incr_fi)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_n_disp_subs_oth_biz` | field_cashflow | 高优 | 取得子公司及其他营业单位支付的现金净额年度结构占比 | `asinh(annual(stock_cashflow.n_disp_subs_oth_biz)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_n_incr_clt_loan_adv` | field_cashflow | 高优 | 客户贷款及垫款净增加额年度结构占比 | `asinh(annual(stock_cashflow.n_incr_clt_loan_adv)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_n_incr_loans_oth_bank` | field_cashflow | 高优 | 拆入资金净增加额年度结构占比 | `asinh(annual(stock_cashflow.n_incr_loans_oth_bank)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_n_recp_disp_fiolta` | field_cashflow | 高优 | 处置固定资产、无形资产和其他长期资产收回的现金净额年度结构占比 | `asinh(annual(stock_cashflow.n_recp_disp_fiolta)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_n_recp_disp_sobu` | field_cashflow | 高优 | 处置子公司及其他营业单位收到的现金净额年度结构占比 | `asinh(annual(stock_cashflow.n_recp_disp_sobu)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_net_profit` | field_cashflow | 高优 | 净利润年度结构占比 | `asinh(annual(stock_cashflow.net_profit)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_oth_cash_pay_oper_act` | field_cashflow | 高优 | 支付其他与经营活动有关的现金年度结构占比 | `asinh(annual(stock_cashflow.oth_cash_pay_oper_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_oth_cash_recp_ral_fnc_act` | field_cashflow | 高优 | 收到其他与筹资活动有关的现金年度结构占比 | `asinh(annual(stock_cashflow.oth_cash_recp_ral_fnc_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_oth_cashpay_ral_fnc_act` | field_cashflow | 高优 | 支付其他与筹资活动有关的现金年度结构占比 | `asinh(annual(stock_cashflow.oth_cashpay_ral_fnc_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_oth_pay_ral_inv_act` | field_cashflow | 高优 | 支付其他与投资活动有关的现金年度结构占比 | `asinh(annual(stock_cashflow.oth_pay_ral_inv_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_oth_recp_ral_inv_act` | field_cashflow | 高优 | 收到其他与投资活动有关的现金年度结构占比 | `asinh(annual(stock_cashflow.oth_recp_ral_inv_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_pay_handling_chrg` | field_cashflow | 高优 | 支付手续费的现金年度结构占比 | `asinh(annual(stock_cashflow.pay_handling_chrg)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_proc_issue_bonds` | field_cashflow | 高优 | 发行债券收到的现金年度结构占比 | `asinh(annual(stock_cashflow.proc_issue_bonds)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_stot_cash_in_fnc_act` | field_cashflow | 高优 | 筹资活动现金流入小计年度结构占比 | `asinh(annual(stock_cashflow.stot_cash_in_fnc_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_stot_cashout_fnc_act` | field_cashflow | 高优 | 筹资活动现金流出小计年度结构占比 | `asinh(annual(stock_cashflow.stot_cashout_fnc_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_stot_inflows_inv_act` | field_cashflow | 高优 | 投资活动现金流入小计年度结构占比 | `asinh(annual(stock_cashflow.stot_inflows_inv_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_stot_out_inv_act` | field_cashflow | 高优 | 投资活动现金流出小计年度结构占比 | `asinh(annual(stock_cashflow.stot_out_inv_act)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_cf_use_right_asset_dep` | field_cashflow | 高优 | 使用权资产折旧年度结构占比 | `asinh(annual(stock_cashflow.use_right_asset_dep)/annual(stock_cashflow.c_inf_fr_operate_a))` | 2020-03-30 | 2020-03-30 → 2026-09-21 | 1100 | stock_cashflow |
+| `afx_fi_adminexp_of_gr` | field_indicator | 高优 | 管理费用/营业总收入年度同期差 | `asinh(annual(stock_financial_indicator.adminexp_of_gr)-annual_lag1y(stock_financial_indicator.adminexp_of_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ar_turn` | field_indicator | 高优 | 应收账款周转率年度同期差 | `asinh(annual(stock_financial_indicator.ar_turn)-annual_lag1y(stock_financial_indicator.ar_turn))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_arturn_days` | field_indicator | 高优 | 应收账款周转天数年度同期差 | `asinh(annual(stock_financial_indicator.arturn_days)-annual_lag1y(stock_financial_indicator.arturn_days))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_assets_turn` | field_indicator | 高优 | 总资产周转率年度同期差 | `asinh(annual(stock_financial_indicator.assets_turn)-annual_lag1y(stock_financial_indicator.assets_turn))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_basic_eps_yoy` | field_indicator | 高优 | 基本每股收益同比增长率(%)年度同期差 | `asinh(annual(stock_financial_indicator.basic_eps_yoy)-annual_lag1y(stock_financial_indicator.basic_eps_yoy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_bps` | field_indicator | 高优 | 每股净资产年度变化率 | `asinh((annual(stock_financial_indicator.bps)-annual_lag1y(stock_financial_indicator.bps))/abs(annual_lag1y(stock_financial_indicator.bps)))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ca_turn` | field_indicator | 高优 | 流动资产周转率年度同期差 | `asinh(annual(stock_financial_indicator.ca_turn)-annual_lag1y(stock_financial_indicator.ca_turn))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_capital_rese_ps` | field_indicator | 高优 | 每股资本公积年度每股净资产归一化 | `asinh(annual(stock_financial_indicator.capital_rese_ps)/annual(stock_financial_indicator.bps))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_capitalized_to_da` | field_indicator | 高优 | 资本支出/折旧和摊销年度同期差 | `asinh(annual(stock_financial_indicator.capitalized_to_da)-annual_lag1y(stock_financial_indicator.capitalized_to_da))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_cash_to_liqdebt` | field_indicator | 高优 | 货币资金／流动负债年度同期差 | `asinh(annual(stock_financial_indicator.cash_to_liqdebt)-annual_lag1y(stock_financial_indicator.cash_to_liqdebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_cash_to_liqdebt_withinterest` | field_indicator | 高优 | 货币资金／带息流动负债年度同期差 | `asinh(annual(stock_financial_indicator.cash_to_liqdebt_withinterest)-annual_lag1y(stock_financial_indicator.cash_to_liqdebt_withinterest))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_cfps` | field_indicator | 高优 | 每股现金流量净额年度每股净资产归一化 | `asinh(annual(stock_financial_indicator.cfps)/annual(stock_financial_indicator.bps))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_cfps_yoy` | field_indicator | 高优 | 每股经营活动现金流净额同比增长率(%)年度同期差 | `asinh(annual(stock_financial_indicator.cfps_yoy)-annual_lag1y(stock_financial_indicator.cfps_yoy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_cogs_of_sales` | field_indicator | 高优 | 销售成本率年度同期差 | `asinh(annual(stock_financial_indicator.cogs_of_sales)-annual_lag1y(stock_financial_indicator.cogs_of_sales))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_current_exint` | field_indicator | 高优 | 无息流动负债年度投入资本占比 | `asinh(annual(stock_financial_indicator.current_exint)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_daa` | field_indicator | 高优 | 折旧与摊销年度投入资本占比 | `asinh(annual(stock_financial_indicator.daa)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_diluted2_eps` | field_indicator | 高优 | 期末摊薄每股收益年度每股净资产归一化 | `asinh(annual(stock_financial_indicator.diluted2_eps)/annual(stock_financial_indicator.bps))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_dp_assets_to_eqt` | field_indicator | 高优 | 权益乘数(杜邦分析)年度同期差 | `asinh(annual(stock_financial_indicator.dp_assets_to_eqt)-annual_lag1y(stock_financial_indicator.dp_assets_to_eqt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_dtprofit_to_profit` | field_indicator | 高优 | 扣除非经常损益后的净利润/净利润年度同期差 | `asinh(annual(stock_financial_indicator.dtprofit_to_profit)-annual_lag1y(stock_financial_indicator.dtprofit_to_profit))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ebit` | field_indicator | 高优 | 息税前利润年度投入资本占比 | `asinh(annual(stock_financial_indicator.ebit)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ebit_of_gr` | field_indicator | 高优 | 息税前利润/营业总收入年度同期差 | `asinh(annual(stock_financial_indicator.ebit_of_gr)-annual_lag1y(stock_financial_indicator.ebit_of_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ebit_ps` | field_indicator | 高优 | 每股息税前利润年度每股净资产归一化 | `asinh(annual(stock_financial_indicator.ebit_ps)/annual(stock_financial_indicator.bps))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ebit_to_interest` | field_indicator | 高优 | 已获利息倍数(EBIT/利息费用)年度同期差 | `asinh(annual(stock_financial_indicator.ebit_to_interest)-annual_lag1y(stock_financial_indicator.ebit_to_interest))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ebitda` | field_indicator | 高优 | 息税折旧摊销前利润年度投入资本占比 | `asinh(annual(stock_financial_indicator.ebitda)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_eqt_to_debt` | field_indicator | 高优 | 归属于母公司的股东权益/负债合计年度同期差 | `asinh(annual(stock_financial_indicator.eqt_to_debt)-annual_lag1y(stock_financial_indicator.eqt_to_debt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_eqt_to_interestdebt` | field_indicator | 高优 | 归属于母公司的股东权益/带息债务年度同期差 | `asinh(annual(stock_financial_indicator.eqt_to_interestdebt)-annual_lag1y(stock_financial_indicator.eqt_to_interestdebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_eqt_to_talcapital` | field_indicator | 高优 | 归属于母公司的股东权益/全部投入资本年度同期差 | `asinh(annual(stock_financial_indicator.eqt_to_talcapital)-annual_lag1y(stock_financial_indicator.eqt_to_talcapital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_equity_yoy` | field_indicator | 高优 | 净资产同比增长率年度同期差 | `asinh(annual(stock_financial_indicator.equity_yoy)-annual_lag1y(stock_financial_indicator.equity_yoy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_expense_of_sales` | field_indicator | 高优 | 销售期间费用率年度同期差 | `asinh(annual(stock_financial_indicator.expense_of_sales)-annual_lag1y(stock_financial_indicator.expense_of_sales))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_extra_item` | field_indicator | 高优 | 非经常性损益年度投入资本占比 | `asinh(annual(stock_financial_indicator.extra_item)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_fa_turn` | field_indicator | 高优 | 固定资产周转率年度同期差 | `asinh(annual(stock_financial_indicator.fa_turn)-annual_lag1y(stock_financial_indicator.fa_turn))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_fcfe` | field_indicator | 高优 | 股权自由现金流量年度投入资本占比 | `asinh(annual(stock_financial_indicator.fcfe)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_fcff` | field_indicator | 高优 | 企业自由现金流量年度投入资本占比 | `asinh(annual(stock_financial_indicator.fcff)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_finaexp_of_gr` | field_indicator | 高优 | 财务费用/营业总收入年度同期差 | `asinh(annual(stock_financial_indicator.finaexp_of_gr)-annual_lag1y(stock_financial_indicator.finaexp_of_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_fixed_assets` | field_indicator | 高优 | 固定资产合计年度投入资本占比 | `asinh(annual(stock_financial_indicator.fixed_assets)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_gc_of_gr` | field_indicator | 高优 | 营业总成本/营业总收入年度同期差 | `asinh(annual(stock_financial_indicator.gc_of_gr)-annual_lag1y(stock_financial_indicator.gc_of_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_gross_margin` | field_indicator | 高优 | 毛利年度投入资本占比 | `asinh(annual(stock_financial_indicator.gross_margin)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_impai_ttm` | field_indicator | 高优 | 资产减值损失/营业总收入年度同期差 | `asinh(annual(stock_financial_indicator.impai_ttm)-annual_lag1y(stock_financial_indicator.impai_ttm))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_interestdebt` | field_indicator | 高优 | 带息债务年度投入资本占比 | `asinh(annual(stock_financial_indicator.interestdebt)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_interst_income` | field_indicator | 高优 | 利息费用年度投入资本占比 | `asinh(annual(stock_financial_indicator.interst_income)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_inv_turn` | field_indicator | 高优 | 存货周转率年度同期差 | `asinh(annual(stock_financial_indicator.inv_turn)-annual_lag1y(stock_financial_indicator.inv_turn))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_invest_capital` | field_indicator | 高优 | 投入资本年度变化率 | `asinh((annual(stock_financial_indicator.invest_capital)-annual_lag1y(stock_financial_indicator.invest_capital))/abs(annual_lag1y(stock_financial_indicator.invest_capital)))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_investincome_of_ebt` | field_indicator | 高优 | 价值变动净收益/利润总额年度同期差 | `asinh(annual(stock_financial_indicator.investincome_of_ebt)-annual_lag1y(stock_financial_indicator.investincome_of_ebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_invturn_days` | field_indicator | 高优 | 存货周转天数年度同期差 | `asinh(annual(stock_financial_indicator.invturn_days)-annual_lag1y(stock_financial_indicator.invturn_days))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_longdebt_to_workingcapital` | field_indicator | 高优 | 长期债务与营运资金比率年度同期差 | `asinh(annual(stock_financial_indicator.longdebt_to_workingcapital)-annual_lag1y(stock_financial_indicator.longdebt_to_workingcapital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_n_op_profit_of_ebt` | field_indicator | 高优 | 营业外收支净额/利润总额年度同期差 | `asinh(annual(stock_financial_indicator.n_op_profit_of_ebt)-annual_lag1y(stock_financial_indicator.n_op_profit_of_ebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_netdebt` | field_indicator | 高优 | 净债务年度投入资本占比 | `asinh(annual(stock_financial_indicator.netdebt)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_networking_capital` | field_indicator | 高优 | 营运流动资本年度投入资本占比 | `asinh(annual(stock_financial_indicator.networking_capital)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_non_op_profit` | field_indicator | 高优 | 非营业利润年度投入资本占比 | `asinh(annual(stock_financial_indicator.non_op_profit)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_noncurrent_exint` | field_indicator | 高优 | 无息非流动负债年度投入资本占比 | `asinh(annual(stock_financial_indicator.noncurrent_exint)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_npta` | field_indicator | 高优 | 总资产净利润年度同期差 | `asinh(annual(stock_financial_indicator.npta)-annual_lag1y(stock_financial_indicator.npta))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ocf_to_debt` | field_indicator | 高优 | 经营活动产生的现金流量净额/负债合计年度同期差 | `asinh(annual(stock_financial_indicator.ocf_to_debt)-annual_lag1y(stock_financial_indicator.ocf_to_debt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ocf_to_interestdebt` | field_indicator | 高优 | 经营活动产生的现金流量净额/带息债务年度同期差 | `asinh(annual(stock_financial_indicator.ocf_to_interestdebt)-annual_lag1y(stock_financial_indicator.ocf_to_interestdebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ocf_to_netdebt` | field_indicator | 高优 | 经营活动产生的现金流量净额/净债务年度同期差 | `asinh(annual(stock_financial_indicator.ocf_to_netdebt)-annual_lag1y(stock_financial_indicator.ocf_to_netdebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ocf_to_opincome` | field_indicator | 高优 | 经营活动产生的现金流量净额/经营活动净收益年度同期差 | `asinh(annual(stock_financial_indicator.ocf_to_opincome)-annual_lag1y(stock_financial_indicator.ocf_to_opincome))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ocf_to_or` | field_indicator | 高优 | 经营活动产生的现金流量净额/营业收入年度同期差 | `asinh(annual(stock_financial_indicator.ocf_to_or)-annual_lag1y(stock_financial_indicator.ocf_to_or))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ocf_to_profit` | field_indicator | 高优 | 经营活动产生的现金流量净额／营业利润年度同期差 | `asinh(annual(stock_financial_indicator.ocf_to_profit)-annual_lag1y(stock_financial_indicator.ocf_to_profit))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_ocfps` | field_indicator | 高优 | 每股经营活动产生的现金流量净额年度每股净资产归一化 | `asinh(annual(stock_financial_indicator.ocfps)/annual(stock_financial_indicator.bps))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_op_income` | field_indicator | 高优 | 经营活动净收益年度投入资本占比 | `asinh(annual(stock_financial_indicator.op_income)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_op_to_debt` | field_indicator | 高优 | 营业利润／负债合计年度同期差 | `asinh(annual(stock_financial_indicator.op_to_debt)-annual_lag1y(stock_financial_indicator.op_to_debt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_op_to_ebt` | field_indicator | 高优 | 营业利润／利润总额年度同期差 | `asinh(annual(stock_financial_indicator.op_to_ebt)-annual_lag1y(stock_financial_indicator.op_to_ebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_op_to_liqdebt` | field_indicator | 高优 | 营业利润／流动负债年度同期差 | `asinh(annual(stock_financial_indicator.op_to_liqdebt)-annual_lag1y(stock_financial_indicator.op_to_liqdebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_opincome_of_ebt` | field_indicator | 高优 | 经营活动净收益/利润总额年度同期差 | `asinh(annual(stock_financial_indicator.opincome_of_ebt)-annual_lag1y(stock_financial_indicator.opincome_of_ebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_profit_dedt` | field_indicator | 高优 | 扣除非经常性损益后的净利润（扣非净利润）年度投入资本占比 | `asinh(annual(stock_financial_indicator.profit_dedt)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_adminexp_to_gr` | field_indicator | 高优 | 管理费用／营业总收入(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_adminexp_to_gr)-annual_lag1y(stock_financial_indicator.q_adminexp_to_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_dtprofit` | field_indicator | 高优 | 扣除非经常损益后的单季度净利润年度投入资本占比 | `asinh(annual(stock_financial_indicator.q_dtprofit)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_dtprofit_to_profit` | field_indicator | 高优 | 扣非净利润／净利润(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_dtprofit_to_profit)-annual_lag1y(stock_financial_indicator.q_dtprofit_to_profit))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_exp_to_sales` | field_indicator | 高优 | 销售期间费用率(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_exp_to_sales)-annual_lag1y(stock_financial_indicator.q_exp_to_sales))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_finaexp_to_gr` | field_indicator | 高优 | 财务费用／营业总收入(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_finaexp_to_gr)-annual_lag1y(stock_financial_indicator.q_finaexp_to_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_gc_to_gr` | field_indicator | 高优 | 营业总成本／营业总收入(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_gc_to_gr)-annual_lag1y(stock_financial_indicator.q_gc_to_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_gr_qoq` | field_indicator | 高优 | 营业总收入环比增长率(%)(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_gr_qoq)-annual_lag1y(stock_financial_indicator.q_gr_qoq))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_gr_yoy` | field_indicator | 高优 | 营业总收入同比增长率(%)(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_gr_yoy)-annual_lag1y(stock_financial_indicator.q_gr_yoy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_gsprofit_margin` | field_indicator | 高优 | 销售毛利率(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_gsprofit_margin)-annual_lag1y(stock_financial_indicator.q_gsprofit_margin))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_impair_to_gr_ttm` | field_indicator | 高优 | 资产减值损失／营业总收入(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_impair_to_gr_ttm)-annual_lag1y(stock_financial_indicator.q_impair_to_gr_ttm))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_investincome` | field_indicator | 高优 | 价值变动单季度净收益年度投入资本占比 | `asinh(annual(stock_financial_indicator.q_investincome)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_investincome_to_ebt` | field_indicator | 高优 | 价值变动净收益／利润总额(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_investincome_to_ebt)-annual_lag1y(stock_financial_indicator.q_investincome_to_ebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_netprofit_margin` | field_indicator | 高优 | 销售净利率(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_netprofit_margin)-annual_lag1y(stock_financial_indicator.q_netprofit_margin))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_netprofit_qoq` | field_indicator | 高优 | 归母净利润环比增长率(%)(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_netprofit_qoq)-annual_lag1y(stock_financial_indicator.q_netprofit_qoq))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_netprofit_yoy` | field_indicator | 高优 | 归母净利润同比增长率(%)(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_netprofit_yoy)-annual_lag1y(stock_financial_indicator.q_netprofit_yoy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_ocf_to_or` | field_indicator | 高优 | 经营活动现金流净额／经营活动净收益(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_ocf_to_or)-annual_lag1y(stock_financial_indicator.q_ocf_to_or))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_op_qoq` | field_indicator | 高优 | 营业利润环比增长率(%)(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_op_qoq)-annual_lag1y(stock_financial_indicator.q_op_qoq))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_op_to_gr` | field_indicator | 高优 | 营业利润／营业总收入(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_op_to_gr)-annual_lag1y(stock_financial_indicator.q_op_to_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_op_yoy` | field_indicator | 高优 | 营业利润同比增长率(%)(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_op_yoy)-annual_lag1y(stock_financial_indicator.q_op_yoy))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_opincome` | field_indicator | 高优 | 经营活动单季度净收益年度投入资本占比 | `asinh(annual(stock_financial_indicator.q_opincome)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_opincome_to_ebt` | field_indicator | 高优 | 经营活动净收益／利润总额(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_opincome_to_ebt)-annual_lag1y(stock_financial_indicator.q_opincome_to_ebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_profit_qoq` | field_indicator | 高优 | 净利润环比增长率(%)(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_profit_qoq)-annual_lag1y(stock_financial_indicator.q_profit_qoq))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_saleexp_to_gr` | field_indicator | 高优 | 销售费用／营业总收入(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_saleexp_to_gr)-annual_lag1y(stock_financial_indicator.q_saleexp_to_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_q_salescash_to_or` | field_indicator | 高优 | 销售商品提供劳务收到的现金／营业收入(单季度)年度同期差 | `asinh(annual(stock_financial_indicator.q_salescash_to_or)-annual_lag1y(stock_financial_indicator.q_salescash_to_or))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_rd_exp` | field_indicator | 高优 | 研发费用年度投入资本占比 | `asinh(annual(stock_financial_indicator.rd_exp)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_retained_earnings` | field_indicator | 高优 | 留存收益年度投入资本占比 | `asinh(annual(stock_financial_indicator.retained_earnings)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_retainedps` | field_indicator | 高优 | 每股留存收益年度每股净资产归一化 | `asinh(annual(stock_financial_indicator.retainedps)/annual(stock_financial_indicator.bps))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_revenue_ps` | field_indicator | 高优 | 每股营业收入年度每股净资产归一化 | `asinh(annual(stock_financial_indicator.revenue_ps)/annual(stock_financial_indicator.bps))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_roe_avg` | field_indicator | 高优 | 平均净资产收益率(增发条件)年度同期差 | `asinh(annual(stock_financial_indicator.roe_avg)-annual_lag1y(stock_financial_indicator.roe_avg))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_saleexp_to_gr` | field_indicator | 高优 | 销售费用/营业总收入年度同期差 | `asinh(annual(stock_financial_indicator.saleexp_to_gr)-annual_lag1y(stock_financial_indicator.saleexp_to_gr))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_salescash_to_or` | field_indicator | 高优 | 销售商品提供劳务收到的现金/营业收入年度同期差 | `asinh(annual(stock_financial_indicator.salescash_to_or)-annual_lag1y(stock_financial_indicator.salescash_to_or))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_surplus_rese_ps` | field_indicator | 高优 | 每股盈余公积年度每股净资产归一化 | `asinh(annual(stock_financial_indicator.surplus_rese_ps)/annual(stock_financial_indicator.bps))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_tangible_asset` | field_indicator | 高优 | 有形资产年度投入资本占比 | `asinh(annual(stock_financial_indicator.tangible_asset)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_tangibleasset_to_netdebt` | field_indicator | 高优 | 有形资产/净债务年度同期差 | `asinh(annual(stock_financial_indicator.tangibleasset_to_netdebt)-annual_lag1y(stock_financial_indicator.tangibleasset_to_netdebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_tax_to_ebt` | field_indicator | 高优 | 所得税/利润总额年度同期差 | `asinh(annual(stock_financial_indicator.tax_to_ebt)-annual_lag1y(stock_financial_indicator.tax_to_ebt))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_total_fa_trun` | field_indicator | 高优 | 固定资产合计周转率年度同期差 | `asinh(annual(stock_financial_indicator.total_fa_trun)-annual_lag1y(stock_financial_indicator.total_fa_trun))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_valuechange_income` | field_indicator | 高优 | 价值变动净收益年度投入资本占比 | `asinh(annual(stock_financial_indicator.valuechange_income)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_fi_working_capital` | field_indicator | 高优 | 营运资金年度投入资本占比 | `asinh(annual(stock_financial_indicator.working_capital)/annual(stock_financial_indicator.invest_capital))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `afx_is_ass_invest_income` | field_income | 高优 | 其中:对联营企业和合营企业的投资收益年度结构占比 | `asinh(annual(stock_income.ass_invest_income)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_basic_eps` | field_income | 高优 | 基本每股收益年度每股收益变化率 | `asinh((annual(stock_income.basic_eps)-annual_lag1y(stock_income.basic_eps))/abs(annual_lag1y(stock_income.basic_eps)))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_biz_tax_surchg` | field_income | 高优 | 减:营业税金及附加年度结构占比 | `asinh(annual(stock_income.biz_tax_surchg)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_comm_exp` | field_income | 高优 | 减:手续费及佣金支出年度结构占比 | `asinh(annual(stock_income.comm_exp)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_comm_income` | field_income | 高优 | 手续费及佣金收入年度结构占比 | `asinh(annual(stock_income.comm_income)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_compr_inc_attr_m_s` | field_income | 高优 | 归属于少数股东的综合收益总额年度结构占比 | `asinh(annual(stock_income.compr_inc_attr_m_s)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_compr_inc_attr_p` | field_income | 高优 | 归属于母公司(或股东)的综合收益总额年度结构占比 | `asinh(annual(stock_income.compr_inc_attr_p)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_continued_net_profit` | field_income | 高优 | 持续经营净利润年度结构占比 | `asinh(annual(stock_income.continued_net_profit)/annual(stock_income.total_revenue))` | 2026-04-09 | 2026-04-09 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_ebitda` | field_income | 高优 | 息税折旧摊销前利润年度结构占比 | `asinh(annual(stock_income.ebitda)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_fin_exp_int_inc` | field_income | 高优 | 财务费用:利息收入年度结构占比 | `asinh(annual(stock_income.fin_exp_int_inc)/annual(stock_income.total_revenue))` | 2019-02-22 | 2019-02-22 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_forex_gain` | field_income | 高优 | 加:汇兑净收益年度结构占比 | `asinh(annual(stock_income.forex_gain)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_int_exp` | field_income | 高优 | 减:利息支出年度结构占比 | `asinh(annual(stock_income.int_exp)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_int_income` | field_income | 高优 | 利息收入年度结构占比 | `asinh(annual(stock_income.int_income)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_n_oth_b_income` | field_income | 高优 | 加:其他业务净收益年度结构占比 | `asinh(annual(stock_income.n_oth_b_income)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_oth_compr_income` | field_income | 高优 | 其他综合收益年度结构占比 | `asinh(annual(stock_income.oth_compr_income)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `afx_is_other_bus_cost` | field_income | 高优 | 其他业务成本年度结构占比 | `asinh(annual(stock_income.other_bus_cost)/annual(stock_income.total_revenue))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_income |
+| `amihud_asymmetry_20` | liquidity | 低优 | 涨跌两侧的非流动性差：下跌日 Amihud / 上涨日 Amihud | `up_illiq = illiq.where(ret > 0).rolling(20, min_periods=5).mean(); down_illiq = illiq.where(ret < 0).rolling(20, min_periods=5).mean(); asym = safe_divide(down_illiq, up_illiq + 1e-12)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `amihud_daily_5` | liquidity | 高优 | Amihud 日频非流动性：5 日平均 \|收益\|/成交额（短周期版） | `amihud = \|ret\| / amount; amihud5 = roll(amihud, 5, "mean", min_periods=2)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_daily, stock_adj_factor |
 | `amihud_parkinson_ratio` | coupling | 低优 | 非流动性 / 波动率 = 20 日 Amihud ÷ 20 日 Parkinson 波动 | `Amihud = roll_mean(\|ret\| / amount, 20);
 Parkinson = sqrt( roll_mean( ln(high/low)^2, 20) / (4 ln 2) );
-Ratio = Amihud / Parkinson` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 200 | stock_daily, stock_adj_factor |
-| `amount_mom_accel` | liquidity | 高优 | 成交额动量加速：3 日变化率 − 10 日变化率 | `p3 = amount.pct_change(3); p10 = amount.pct_change(10); vals = p3 - p10` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_daily |
-| `amount_ratio_20` | liquidity | 低优 | 相对成交额：当日成交额 / 20 日均成交额 − 1 | `avg_amount = rolling(20, min_periods=10).mean(); a_ratio = amount / avg_amount.replace(0, np.nan) - 1.0` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily |
-| `ar_ap_to_revenue` | quality | 高优 | 净预收款占收入比 = (预收款项 − 预付款项) / 营业收入(TTM) | `Ratio = (AdvanceReceipts - AdvancePayment) / OperatingRevenue` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_balancesheet, stock_income |
+Ratio = Amihud / Parkinson` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 200 | stock_daily, stock_adj_factor |
+| `amount_mom_accel` | liquidity | 高优 | 成交额动量加速：3 日变化率 − 10 日变化率 | `p3 = amount.pct_change(3); p10 = amount.pct_change(10); vals = p3 - p10` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_daily |
+| `amount_ratio_20` | liquidity | 低优 | 相对成交额：当日成交额 / 20 日均成交额 − 1 | `avg_amount = rolling(20, min_periods=10).mean(); a_ratio = amount / avg_amount.replace(0, np.nan) - 1.0` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily |
+| `ar_ap_to_revenue` | quality | 高优 | 净预收款占收入比 = (预收款项 − 预付款项) / 营业收入(TTM) | `Ratio = (AdvanceReceipts - AdvancePayment) / OperatingRevenue` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_balancesheet, stock_income |
 | `aroon_down_25` | technical | 低优 | Aroon 下行：25 日窗口内「距最近新低的交易日数」的位置，越接近新低越低 | `wide = _adjusted_close(daily).unstack("Code")
 days_since = _rolling_extreme_age(wide, window=25, find_max=False)
-aroon = safe_divide(25.0 - days_since, 25.0) * 100.0` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 70 | stock_daily, stock_adj_factor |
+aroon = safe_divide(25.0 - days_since, 25.0) * 100.0` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 70 | stock_daily, stock_adj_factor |
 | `aroon_up_25` | technical | 高优 | Aroon 上行：25 日窗口内「距最近新高的交易日数」的位置，越接近新高越高 | `wide = _adjusted_close(daily).unstack("Code")
 days_since = _rolling_extreme_age(wide, window=25, find_max=True)
-aroon = safe_divide(25.0 - days_since, 25.0) * 100.0` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 70 | stock_daily, stock_adj_factor |
-| `asset_growth_qoq` | growth | 低优 | 总资产环比增速（相对上一个报告期） | `Growth = TotalAssets_t / TotalAssets_{t-1Q} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_balancesheet |
+aroon = safe_divide(25.0 - days_since, 25.0) * 100.0` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 70 | stock_daily, stock_adj_factor |
+| `asset_growth_qoq` | growth | 低优 | 总资产环比增速（相对上一个报告期） | `Growth = TotalAssets_t / TotalAssets_{t-1Q} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_balancesheet |
 | `atr_14_ratio` | technical | 低优 | 相对波幅 = ATR14 / 后复权收盘价（已归一化，无量纲） | `close = daily["close"]
 high = daily["high"]
 low = daily["low"]
@@ -901,123 +1125,119 @@ atr = (tr * scale).groupby(level="Code").transform(
     lambda s: s.rolling(20, min_periods=10).mean()
 )
 
-atr_pct = safe_divide(atr, adj + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 48 | stock_daily, stock_adj_factor |
-| `avg_cost_premium` | chip | 高优 | 平均成本溢价 = (现价 − 筹码加权均价) / 筹码加权均价 | `premium = safe_divide(close_adj - weight_avg, weight_avg + 1e-10); premium = premium.clip(-1, 5); return cross_sectional_rank(premium)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
-| `beta_60` | risk | 低优 | 60 日市场贝塔（对沪深300，反向） | `beta = _rolling_beta(wide, mkt, 60, 30)  # Beta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor, index_daily |
+atr_pct = safe_divide(atr, adj + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 48 | stock_daily, stock_adj_factor |
+| `avg_cost_premium` | chip | 高优 | 平均成本溢价 = (现价 − 筹码加权均价) / 筹码加权均价 | `premium = safe_divide(close_adj - weight_avg, weight_avg + 1e-10); premium = premium.clip(-1, 5); return cross_sectional_rank(premium)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips, stock_daily |
+| `beta_60` | risk | 低优 | 60 日市场贝塔（对沪深300，反向） | `beta = _rolling_beta(wide, mkt, 60, 30)  # Beta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor, index_daily |
 | `bias_20` | technical | 高优 | 20 日乖离率 = close/MA20 − 1 | `# 跨日 MA 窗口走复权基座,未复权 close 在除权日跳变会伪造负乖离
 adj = _adjusted_close(daily_panel)
 ma_20 = adj.groupby(level="Code").transform(
     lambda s: s.rolling(20, min_periods=10).mean()
 )
-bias = adj / ma_20.replace(0, np.nan) - 1.0` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `big_vs_small_divergence_5d` | fundflow | 高优 | 大小单背离的 5 日变化 = Δ5(大单净买率 − 小单净买率) | `big_net = (ff["buy_lg_amount"] + ff["buy_elg_amount"] - ff["sell_lg_amount"] - ff["sell_elg_amount"]) / _total_amount(ff); small_net = (ff["buy_sm_amount"] - ff["sell_sm_amount"]) / _total_amount(ff); divergence = big_net - small_net; div_5d = divergence.diff(5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 38 | stock_main_fund_flow, stock_daily |
+bias = adj / ma_20.replace(0, np.nan) - 1.0` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `big_vs_small_divergence_5d` | fundflow | 高优 | 大小单背离的 5 日变化 = Δ5(大单净买率 − 小单净买率) | `big_net = (ff["buy_lg_amount"] + ff["buy_elg_amount"] - ff["sell_lg_amount"] - ff["sell_elg_amount"]) / _total_amount(ff); small_net = (ff["buy_sm_amount"] - ff["sell_sm_amount"]) / _total_amount(ff); divergence = big_net - small_net; div_5d = divergence.diff(5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 38 | stock_main_fund_flow, stock_daily |
 | `bollinger_squeeze` | technical | 低优 | 布林带宽的 250 日**历史分位**（∈[0,1]）：低 = 波动压缩，变盘前夜 | `# 跨日 MA/std 窗口走复权基座,未复权 close 在除权日跳变会污染带宽
 adj = _adjusted_close(daily_panel)
 ma_20 = adj.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean())
 std_20 = adj.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).std())
 bandwidth = 4 * std_20 / ma_20.replace(0, np.nan)
 # Rank negative: narrow band = squeeze = ranked high
-# 本项目口径：squeeze = ctx.roll_rank(bandwidth, 250)（带宽自身的历史分位），见 note` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 500 | stock_daily, stock_adj_factor |
+# 本项目口径：squeeze = ctx.roll_rank(bandwidth, 250)（带宽自身的历史分位），见 note` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 500 | stock_daily, stock_adj_factor |
 | `bollinger_width_20` | technical | 低优 | 20 日布林带宽 = 4×std/ma（已按价格归一化，无量纲） | `# 跨日 MA/std 窗口走复权基座,未复权 close 在除权日跳变会污染带宽
 adj = _adjusted_close(daily)
 ma = rolling_group_mean(adj, 20)
 std = rolling_group_std(adj, 20)
-width = safe_divide(4 * std, ma)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `bp` | value | 高优 | 账面市值比 = 归母股东权益 / 总市值（高 = 价值股） | `bp = 1.0 / finance["pb"].replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_balancesheet, stock_daily, stock_finance |
-| `bs_construction_capital_share` | financial_detail | 低优 | 在建工程占固定投入资本 | `cip_total/(fix_assets+cip_total)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_balancesheet |
-| `bs_intangible_asset_share` | financial_detail | 低优 | 无形资产占总资产 | `intan_assets/total_assets` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_balancesheet |
-| `bs_near_term_debt_share` | financial_detail | 低优 | 近端债务占主要有息债务 | `(st_borr+non_cur_liab_due_1y)/(st_borr+non_cur_liab_due_1y+lt_borr+bond_payable)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_balancesheet |
-| `bs_net_contract_to_assets` | financial_detail | 低优 | 净合同资产占总资产 | `(contract_assets-contract_liab)/total_assets` | 2020-05-01 | 2020-05-06 → 2026-09-18 | 700 | stock_balancesheet |
-| `bs_net_notes_to_assets` | financial_detail | 低优 | 净应收票据占资产 | `(notes_receiv-notes_payable)/total_assets` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_balancesheet |
-| `bs_other_receiv_to_assets` | financial_detail | 低优 | 其他应收款占总资产 | `oth_receiv/total_assets` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_balancesheet |
-| `bw_beta_60` | breadth | 低优 | 个股收益对市场宽度变化的 60 日 β（市场参与度暴露） | `beta = roll_cov(ret, delta_up_share, 60, 30) / roll_var(delta_up_share, 60, 30)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_market_distribution_history, stock_daily, stock_adj_factor |
-| `bw_beta_asym_20` | breadth | 高优 | 上行宽度日 β − 下行宽度日 β（参与度的不对称） | `b_up - b_down, 两腿各自用互斥的 NaN 掩码在 20 日窗内回归` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
-| `bw_beta_change_20` | breadth | 高优 | 宽度 β 的短期变化 = β20 − β60（参与度暴露的抬升） | `beta20 = rolling_beta(20,10); beta60 = rolling_beta(60,30); change = beta20 - beta60` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_market_distribution_history, stock_daily, stock_adj_factor |
-| `bw_breadthvol_response_20` | breadth | 低优 | \|个股收益\| 与 当日市场内部翻腾度 的 20 日相关（脆弱性） | `corr(abs(ret), bw_vol, 20, 10)，bw_vol = 当日分钟内 up 份额的 std` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
-| `bw_capture_asym_20` | breadth | 低优 | 市场收敛日的捕获 / 市场扩散日的捕获（防御性） | `stock_on_down = mean(ret \| d_sh<0, 20d); stock_on_up = mean(ret \| d_sh>0, 20d); sens = \|down\| / \|up\|` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
-| `bw_intraday_beta_20` | breadth | 高优 | 日内腿的宽度 β = 个股日内收益 对 市场日内宽度变化 的 20 日 β | `cov(close/open-1, sh_close-sh_open, 20, 10) / var(sh_close-sh_open, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor, stock_history_5min |
-| `bw_overnight_lag_beta_20` | breadth | 高优 | 隔夜跳空 与 昨日宽度变化 的 20 日相关（滞后反应） | `corr(gap_T, delta_up_share_{T-1}, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
-| `bw_resid_beta_60` | breadth | 低优 | 剔掉沪深300 β 之后的宽度 β（正交的参与度暴露） | `e = ret - beta_idx*ret_idx; resid_beta = roll_cov(e, d_sh, 60, 30)/roll_var(d_sh, 60, 30)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_market_distribution_history, stock_daily, stock_adj_factor, index_daily |
-| `bw_session_follow_20` | breadth | 高优 | 上/下午「与市场宽度同向」频率之差（日内跟随的市场一致性） | `am: sign(am_ret)==sign(d_sh_am); pm: sign(pm_ret)==sign(d_sh_pm); delta = mean(am,20,10) - mean(pm,20,10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor, stock_history_5min |
-| `bw_strength_sensitivity_20` | breadth | 高优 | 个股收益 与 全市场「涨超 5% 占比」的 20 日相关（对强势情绪的敏感度） | `up = (up_5_to_7+up_7_to_10+up_over_10)/total; corr(ret, up, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
-| `bw_tail_comove_60` | breadth | 低优 | 与宽度的尾部共振频率（双方 \|z\|>1.5 且同向的交易日占比，60 日） | `z = (x - rolling_mean)/rolling_std; freq(\|z_r\|>1.5 & \|z_m\|>1.5 & sign一致) 的 60 日均值` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_market_distribution_history, stock_daily, stock_adj_factor |
-| `bw_weak_breadth_ret_20` | breadth | 高优 | 市场偏弱日（上涨家数 < 半数）的条件收益 − 自身 20 日均值 | `weak = sh_close < 0.5; cond = mean(ret \| weak, 20) - mean(ret, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
-| `cash_conversion_cycle` | quality | 低优 | 现金转换周期（天）= 存货周转天数 + 应收周转天数 − 应付周转天数（低优） | `CCC = DIO + DSO - DPO = 365×Inventories/OperatingCost_TTM + 365×AccountsReceivable/OperatingRevenue_TTM - 365×AccountPayable/OperatingCost_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_balancesheet |
-| `cash_sales_ratio` | quality | 高优 | 销售收现比 = 销售商品收到的现金(TTM) / 营业收入(TTM) | `ratio = c_fr_sale_sg_TTM / revenue_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_cashflow |
-| `cf_borrowing_repayment_ratio` | financial_detail | 低优 | 借款流入对偿债现金的覆盖 | `TTM(c_recp_borrow)/TTM(c_prepay_amt_borr)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow |
-| `cf_distribution_cash_coverage` | financial_detail | 低优 | 分红与利息现金支付占经营现金流 | `TTM(c_pay_dist_dpcp_int_exp)/abs(TTM(n_cashflow_act))` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow |
-| `cf_net_borrowing_to_assets` | financial_detail | 低优 | 净借款现金流占总资产 | `(TTM(c_recp_borrow)-TTM(c_prepay_amt_borr))/total_assets` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow, stock_balancesheet |
-| `cf_purchase_cash_intensity` | financial_detail | 低优 | 采购现金占收入 | `TTM(c_paid_goods_s)/TTM(revenue)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow, stock_income |
-| `cf_tax_cash_burden` | financial_detail | 低优 | 现金税费占收入 | `TTM(c_paid_for_taxes)/TTM(revenue)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow, stock_income |
-| `cf_tax_refund_share` | financial_detail | 高优 | 税费返还占营业收入 | `TTM(recp_tax_rends)/TTM(revenue)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow, stock_income |
-| `cfcr` | quality | 高优 | 现金流利息保障倍数 = 经营现金流(TTM) / 利息支出(TTM) | `CFCR = NetOperateCashFlow_TTM / InterestExpense_TTM` | 2019-05-01 | 2019-05-06 → 2026-09-18 | 700 | stock_cashflow, stock_income |
-| `cfp_ttm` | value | 高优 | 经营现金流市值比 = 经营活动现金流净额TTM / 总市值 | `ocf_to_market = NetOperateCashFlow_TTM / MarketCap` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow, stock_daily, stock_finance |
-| `chip_above_below_ratio` | chip | 低优 | 筹码压力比 = (现价 − p75) / (p25 − 现价)（正 ⟺ 现价落在 p25~p75 带内，绝对值越大越靠近 p25） | `close_adj = _close_adj_basis(daily); cost_85 = cyq["cost_85pct"]; cost_15 = cyq["cost_15pct"]; above = close_adj.loc[common] - cost_85.loc[common]; below = cost_15.loc[common] - close_adj.loc[common]; ratio = safe_divide(above, below); return cross_sectional_rank(-ratio)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
-| `chip_concentration` | chip | 低优 | 筹码集中度（80% 筹码的相对宽度）= (p90 − p10) / p50 | `spread = (perf["cost_95pct"] - perf["cost_5pct"]) / perf["cost_50pct"]; return cross_sectional_rank(-spread)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `chip_concentration_change_20d` | chip | 高优 | 筹码集中度的 20 日变化（正=区间收窄=筹码凝聚） | `concentration = -(cost_95pct - cost_5pct) / cost_50pct; chg = concentration.groupby(level="Code").transform(lambda s: s.diff(20)); return cross_sectional_rank(chg)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 60 | stock_cyq_chips |
-| `chip_cost_convergence_20d` | chip | 高优 | 筹码成本收敛 = (p75 − p10)/p50 的 20 日变化的相反数（正=宽度收敛） | `width = safe_divide(cost_85pct - cost_5pct, cost_50pct); chg = width.groupby(level="Code").transform(lambda s: s.diff(20)); return cross_sectional_rank(-chg)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 60 | stock_cyq_chips |
-| `chip_cv_factor` | chip | 低优 | 筹码变异系数 = std / mean（低=相对离散度小=成本一致性强） | `s = _compute_chip_factor(..., "chip_cv"); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `chip_deep_trap_ratio` | chip | 低优 | 深套筹码占比 = 成本 > 1.1×现价 的筹码比例（高=上方深度套牢盘重） | `s = _chip_series(context, "chip_upper_110", need_close=True); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
-| `chip_gini_factor` | chip | 高优 | 筹码基尼系数（高=筹码集中在少数价位=价格锚定清晰） | `s = _compute_chip_factor(..., "chip_gini"); return cross_sectional_rank(s)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `chip_high_float_ratio` | chip | 低优 | 高浮盈筹码占比 = 成本 < 0.9×现价 的筹码比例（高=获利丰厚、兑现压力大） | `s = _chip_series(context, "chip_below_90", need_close=True); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
-| `chip_median_distance` | chip | 高优 | 中位数成本距离 = (现价 − p50) / 现价（正=过半持仓者盈利） | `median_series = _compute_chip_factor(..., "chip_median_price"); close = daily_panel["close"]; common = close.index.intersection(median_series.index); distance = (close.loc[common] - median_series.loc[common]) / close.loc[common].replace(0, np.nan); return cross_sectional_rank(distance)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
-| `chip_p90_p10_factor` | chip | 低优 | 90% 筹码价格区间宽度 = p90 − p10（绝对价差） | `s = _compute_chip_factor(..., "chip_p90_p10"); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `chip_peak_distance` | chip | 高优 | 主峰距离 = (现价 − 众数价) / 现价（正=现价在最大筹码峰上方=有支撑） | `peak_series = _compute_chip_factor(..., "chip_peak_price"); close_adj = _close_adj_basis(daily_panel); common = close_adj.index.intersection(peak_series.index); distance = (close_adj.loc[common] - peak_series.loc[common]) / close_adj.loc[common].replace(0, np.nan); return cross_sectional_rank(distance)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
-| `chip_peak_growing` | chip | 高优 | 主峰增强 = 主峰纯度（peak_purity）的 5 个交易日变化（升=筹码向核心价位凝聚） | `s = _compute_chip_factor(..., "chip_peak_dominance"); chg = s.groupby(level="Code").transform(lambda x: x.diff(5)); return cross_sectional_rank(chg)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 30 | stock_cyq_chips |
-| `chip_position` | chip | 低优 | 现价在筹码分布中的位置 = (现价 − p10) / (p90 − p10) | `position = (close_adj - cost_5pct) / (cost_95pct - cost_5pct); return cross_sectional_rank(-position)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
-| `chip_range_normalized` | chip | 低优 | 归一化筹码区间（中间 50% 筹码的相对宽度）= (p75 − p25) / p50 | `spread = (perf["cost_85pct"] - perf["cost_15pct"]) / perf["cost_50pct"]; return cross_sectional_rank(-spread)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `chip_resistance_distance` | chip | 低优 | 上方压力距离 = p75 / 现价 − 1（现价距上方筹码密集带多远） | `result = cost_85pct / close_adj - 1; return cross_sectional_rank(-result)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
-| `chip_support_distance` | chip | 高优 | 下方支撑距离 = 现价 / p25 − 1（现价距下方筹码密集带多远） | `result = close_adj / cost_15pct - 1; return cross_sectional_rank(result)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
-| `chip_tail_risk` | chip | 低优 | 筹码尾部风险 = 成本分布的超额峰度（高=极端价位筹码堆积=肥尾） | `s = _compute_chip_factor(..., "chip_kurtosis"); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `chip_win_peak_frac` | chip | 高优 | 获利筹码峰集中度 = 现价下方最大单档占比 / 下方筹码总量（高=获利盘锁筹集中） | `s = _chip_series(context, "chip_win_peak_frac", need_close=True); return cross_sectional_rank(s)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips, stock_daily |
+width = safe_divide(4 * std, ma)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `bp` | value | 高优 | 账面市值比 = 归母股东权益 / 总市值（高 = 价值股） | `bp = 1.0 / finance["pb"].replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_balancesheet, stock_daily, stock_finance |
+| `bs_construction_capital_share` | financial_detail | 低优 | 在建工程占固定投入资本 | `cip_total/(fix_assets+cip_total)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_balancesheet |
+| `bs_intangible_asset_share` | financial_detail | 低优 | 无形资产占总资产 | `intan_assets/total_assets` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_balancesheet |
+| `bs_near_term_debt_share` | financial_detail | 低优 | 近端债务占主要有息债务 | `(st_borr+non_cur_liab_due_1y)/(st_borr+non_cur_liab_due_1y+lt_borr+bond_payable)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_balancesheet |
+| `bs_net_contract_to_assets` | financial_detail | 低优 | 净合同资产占总资产 | `(contract_assets-contract_liab)/total_assets` | 2020-05-01 | 2020-05-06 → 2026-09-21 | 700 | stock_balancesheet |
+| `bs_net_notes_to_assets` | financial_detail | 低优 | 净应收票据占资产 | `(notes_receiv-notes_payable)/total_assets` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_balancesheet |
+| `bs_other_receiv_to_assets` | financial_detail | 低优 | 其他应收款占总资产 | `oth_receiv/total_assets` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_balancesheet |
+| `bw_beta_60` | breadth | 低优 | 个股收益对市场宽度变化的 60 日 β（市场参与度暴露） | `beta = roll_cov(ret, delta_up_share, 60, 30) / roll_var(delta_up_share, 60, 30)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_market_distribution_history, stock_daily, stock_adj_factor |
+| `bw_beta_asym_20` | breadth | 高优 | 上行宽度日 β − 下行宽度日 β（参与度的不对称） | `b_up - b_down, 两腿各自用互斥的 NaN 掩码在 20 日窗内回归` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
+| `bw_beta_change_20` | breadth | 高优 | 宽度 β 的短期变化 = β20 − β60（参与度暴露的抬升） | `beta20 = rolling_beta(20,10); beta60 = rolling_beta(60,30); change = beta20 - beta60` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_market_distribution_history, stock_daily, stock_adj_factor |
+| `bw_breadthvol_response_20` | breadth | 低优 | \|个股收益\| 与 当日市场内部翻腾度 的 20 日相关（脆弱性） | `corr(abs(ret), bw_vol, 20, 10)，bw_vol = 当日分钟内 up 份额的 std` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
+| `bw_capture_asym_20` | breadth | 低优 | 市场收敛日的捕获 / 市场扩散日的捕获（防御性） | `stock_on_down = mean(ret \| d_sh<0, 20d); stock_on_up = mean(ret \| d_sh>0, 20d); sens = \|down\| / \|up\|` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
+| `bw_intraday_beta_20` | breadth | 高优 | 日内腿的宽度 β = 个股日内收益 对 市场日内宽度变化 的 20 日 β | `cov(close/open-1, sh_close-sh_open, 20, 10) / var(sh_close-sh_open, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor, stock_history_5min |
+| `bw_overnight_lag_beta_20` | breadth | 高优 | 隔夜跳空 与 昨日宽度变化 的 20 日相关（滞后反应） | `corr(gap_T, delta_up_share_{T-1}, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
+| `bw_resid_beta_60` | breadth | 低优 | 剔掉沪深300 β 之后的宽度 β（正交的参与度暴露） | `e = ret - beta_idx*ret_idx; resid_beta = roll_cov(e, d_sh, 60, 30)/roll_var(d_sh, 60, 30)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_market_distribution_history, stock_daily, stock_adj_factor, index_daily |
+| `bw_session_follow_20` | breadth | 高优 | 上/下午「与市场宽度同向」频率之差（日内跟随的市场一致性） | `am: sign(am_ret)==sign(d_sh_am); pm: sign(pm_ret)==sign(d_sh_pm); delta = mean(am,20,10) - mean(pm,20,10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor, stock_history_5min |
+| `bw_strength_sensitivity_20` | breadth | 高优 | 个股收益 与 全市场「涨超 5% 占比」的 20 日相关（对强势情绪的敏感度） | `up = (up_5_to_7+up_7_to_10+up_over_10)/total; corr(ret, up, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
+| `bw_tail_comove_60` | breadth | 低优 | 与宽度的尾部共振频率（双方 \|z\|>1.5 且同向的交易日占比，60 日） | `z = (x - rolling_mean)/rolling_std; freq(\|z_r\|>1.5 & \|z_m\|>1.5 & sign一致) 的 60 日均值` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_market_distribution_history, stock_daily, stock_adj_factor |
+| `bw_weak_breadth_ret_20` | breadth | 高优 | 市场偏弱日（上涨家数 < 半数）的条件收益 − 自身 20 日均值 | `weak = sh_close < 0.5; cond = mean(ret \| weak, 20) - mean(ret, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_market_distribution_history, stock_daily, stock_adj_factor |
+| `cash_conversion_cycle` | quality | 低优 | 现金转换周期（天）= 存货周转天数 + 应收周转天数 − 应付周转天数（低优） | `CCC = DIO + DSO - DPO = 365×Inventories/OperatingCost_TTM + 365×AccountsReceivable/OperatingRevenue_TTM - 365×AccountPayable/OperatingCost_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_balancesheet |
+| `cash_sales_ratio` | quality | 高优 | 销售收现比 = 销售商品收到的现金(TTM) / 营业收入(TTM) | `ratio = c_fr_sale_sg_TTM / revenue_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_cashflow |
+| `cf_borrowing_repayment_ratio` | financial_detail | 低优 | 借款流入对偿债现金的覆盖 | `TTM(c_recp_borrow)/TTM(c_prepay_amt_borr)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow |
+| `cf_distribution_cash_coverage` | financial_detail | 低优 | 分红与利息现金支付占经营现金流 | `TTM(c_pay_dist_dpcp_int_exp)/abs(TTM(n_cashflow_act))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow |
+| `cf_net_borrowing_to_assets` | financial_detail | 低优 | 净借款现金流占总资产 | `(TTM(c_recp_borrow)-TTM(c_prepay_amt_borr))/total_assets` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow, stock_balancesheet |
+| `cf_purchase_cash_intensity` | financial_detail | 低优 | 采购现金占收入 | `TTM(c_paid_goods_s)/TTM(revenue)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow, stock_income |
+| `cf_tax_cash_burden` | financial_detail | 低优 | 现金税费占收入 | `TTM(c_paid_for_taxes)/TTM(revenue)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow, stock_income |
+| `cf_tax_refund_share` | financial_detail | 高优 | 税费返还占营业收入 | `TTM(recp_tax_rends)/TTM(revenue)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow, stock_income |
+| `cfcr` | quality | 高优 | 现金流利息保障倍数 = 经营现金流(TTM) / 利息支出(TTM) | `CFCR = NetOperateCashFlow_TTM / InterestExpense_TTM` | 2019-05-01 | 2019-05-06 → 2026-09-21 | 700 | stock_cashflow, stock_income |
+| `cfp_ttm` | value | 高优 | 经营现金流市值比 = 经营活动现金流净额TTM / 总市值 | `ocf_to_market = NetOperateCashFlow_TTM / MarketCap` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow, stock_daily, stock_finance |
+| `chip_above_below_ratio` | chip | 低优 | 筹码压力比 = (现价 − p75) / (p25 − 现价)（正 ⟺ 现价落在 p25~p75 带内，绝对值越大越靠近 p25） | `close_adj = _close_adj_basis(daily); cost_85 = cyq["cost_85pct"]; cost_15 = cyq["cost_15pct"]; above = close_adj.loc[common] - cost_85.loc[common]; below = cost_15.loc[common] - close_adj.loc[common]; ratio = safe_divide(above, below); return cross_sectional_rank(-ratio)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips, stock_daily |
+| `chip_concentration` | chip | 低优 | 筹码集中度（80% 筹码的相对宽度）= (p90 − p10) / p50 | `spread = (perf["cost_95pct"] - perf["cost_5pct"]) / perf["cost_50pct"]; return cross_sectional_rank(-spread)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `chip_concentration_change_20d` | chip | 高优 | 筹码集中度的 20 日变化（正=区间收窄=筹码凝聚） | `concentration = -(cost_95pct - cost_5pct) / cost_50pct; chg = concentration.groupby(level="Code").transform(lambda s: s.diff(20)); return cross_sectional_rank(chg)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 60 | stock_cyq_chips |
+| `chip_cost_convergence_20d` | chip | 高优 | 筹码成本收敛 = (p75 − p10)/p50 的 20 日变化的相反数（正=宽度收敛） | `width = safe_divide(cost_85pct - cost_5pct, cost_50pct); chg = width.groupby(level="Code").transform(lambda s: s.diff(20)); return cross_sectional_rank(-chg)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 60 | stock_cyq_chips |
+| `chip_cv_factor` | chip | 低优 | 筹码变异系数 = std / mean（低=相对离散度小=成本一致性强） | `s = _compute_chip_factor(..., "chip_cv"); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `chip_deep_trap_ratio` | chip | 低优 | 深套筹码占比 = 成本 > 1.1×现价 的筹码比例（高=上方深度套牢盘重） | `s = _chip_series(context, "chip_upper_110", need_close=True); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips, stock_daily |
+| `chip_gini_factor` | chip | 高优 | 筹码基尼系数（高=筹码集中在少数价位=价格锚定清晰） | `s = _compute_chip_factor(..., "chip_gini"); return cross_sectional_rank(s)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `chip_high_float_ratio` | chip | 低优 | 高浮盈筹码占比 = 成本 < 0.9×现价 的筹码比例（高=获利丰厚、兑现压力大） | `s = _chip_series(context, "chip_below_90", need_close=True); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips, stock_daily |
+| `chip_median_distance` | chip | 高优 | 中位数成本距离 = (现价 − p50) / 现价（正=过半持仓者盈利） | `median_series = _compute_chip_factor(..., "chip_median_price"); close = daily_panel["close"]; common = close.index.intersection(median_series.index); distance = (close.loc[common] - median_series.loc[common]) / close.loc[common].replace(0, np.nan); return cross_sectional_rank(distance)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips, stock_daily |
+| `chip_p90_p10_factor` | chip | 低优 | 90% 筹码价格区间宽度 = p90 − p10（绝对价差） | `s = _compute_chip_factor(..., "chip_p90_p10"); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `chip_peak_distance` | chip | 高优 | 主峰距离 = (现价 − 众数价) / 现价（正=现价在最大筹码峰上方=有支撑） | `peak_series = _compute_chip_factor(..., "chip_peak_price"); close_adj = _close_adj_basis(daily_panel); common = close_adj.index.intersection(peak_series.index); distance = (close_adj.loc[common] - peak_series.loc[common]) / close_adj.loc[common].replace(0, np.nan); return cross_sectional_rank(distance)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips, stock_daily |
+| `chip_peak_growing` | chip | 高优 | 主峰增强 = 主峰纯度（peak_purity）的 5 个交易日变化（升=筹码向核心价位凝聚） | `s = _compute_chip_factor(..., "chip_peak_dominance"); chg = s.groupby(level="Code").transform(lambda x: x.diff(5)); return cross_sectional_rank(chg)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 30 | stock_cyq_chips |
+| `chip_position` | chip | 低优 | 现价在筹码分布中的位置 = (现价 − p10) / (p90 − p10) | `position = (close_adj - cost_5pct) / (cost_95pct - cost_5pct); return cross_sectional_rank(-position)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips, stock_daily |
+| `chip_range_normalized` | chip | 低优 | 归一化筹码区间（中间 50% 筹码的相对宽度）= (p75 − p25) / p50 | `spread = (perf["cost_85pct"] - perf["cost_15pct"]) / perf["cost_50pct"]; return cross_sectional_rank(-spread)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `chip_tail_risk` | chip | 低优 | 筹码尾部风险 = 成本分布的超额峰度（高=极端价位筹码堆积=肥尾） | `s = _compute_chip_factor(..., "chip_kurtosis"); return cross_sectional_rank(-s)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `chip_win_peak_frac` | chip | 高优 | 获利筹码峰集中度 = 现价下方最大单档占比 / 下方筹码总量（高=获利盘锁筹集中） | `s = _chip_series(context, "chip_win_peak_frac", need_close=True); return cross_sectional_rank(s)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips, stock_daily |
 | `close_location_20d` | technical | 高优 | 收盘位置 = 20 日收益 / 20 日振幅，度量上涨的「上攻效率」 | `h20 = roll(df, "high", 20, "max")
 l20 = roll(df, "low", 20, "min")
 chg20 = df.groupby("Code")["close"].shift(20)
-vals = (df["close"] - chg20) / (h20 - l20 + 1e-8)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
+vals = (df["close"] - chg20) / (h20 - l20 + 1e-8)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
 | `consecutive_limit_down` | event | 低优 | 当前连续跌停天数（连续段逻辑：断段即归零，非跌停日为 0） | `is_ld = daily["pct_chg"].le(-9.8).astype(int)
 code = is_ld.index.get_level_values("Code")
 seg = (~is_ld.astype(bool)).groupby(level="Code").cumsum()
 count = is_ld.groupby([code, seg]).cumsum()      # 参考库原文
 # 本实现：同一「连续段」语义（断段归零），向量化为
-#   count = 到 t 为止连续跌停的天数（np.maximum.accumulate 求最近一次 0 的位置）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_limit_list, stock_daily, stock_adj_factor |
+#   count = 到 t 为止连续跌停的天数（np.maximum.accumulate 求最近一次 0 的位置）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_limit_list, stock_daily, stock_adj_factor |
 | `consecutive_limit_up` | event | 高优 | 当前连板数（连续涨停天数），断板即归零；非涨停日为 0 | `is_lu = daily["pct_chg"].ge(9.8).astype(int)
 code = is_lu.index.get_level_values("Code")
 seg = (~is_lu.astype(bool)).groupby(level="Code").cumsum()
-count = is_lu.groupby([code, seg]).cumsum()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_limit_up |
-| `cost_convergence_signal` | chip | 高优 | 成本收敛信号 = (p90 − p10) 的 20 个交易日**变化率**（收敛=筹码向成本中枢凝聚） | `cyq = context.load("cyq_perf.parquet"); width = cyq["cost_95pct"] - cyq["cost_5pct"]; chg = width.groupby(level="Code").transform(lambda s: s.pct_change(20, fill_method=None)); chg = chg.clip(-1, 1); return cross_sectional_rank(-chg)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 60 | stock_cyq_chips |
-| `cost_distribution_skew` | chip | 高优 | 成本分布偏度（分位点口径）= (p50 − p25) / (p75 − p50)（<1 = 上方尾部更长/右偏） | `cyq = context.load("cyq_perf.parquet"); left_tail = cyq["cost_50pct"] - cyq["cost_15pct"]; right_tail = cyq["cost_85pct"] - cyq["cost_50pct"]; skew = left_tail / right_tail.replace(0, np.nan); return cross_sectional_rank(skew)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `cost_skew_ratio` | chip | 高优 | 成本偏度比率 = (p50 − p10) / (p90 − p50)（>1 = 下方尾部更长/左偏） | `cyq = context.load("cyq_perf.parquet"); lower_range = cyq["cost_50pct"] - cyq["cost_5pct"]; upper_range = cyq["cost_95pct"] - cyq["cost_50pct"]; skew = safe_divide(lower_range, upper_range + 1e-10); skew = skew.clip(0.1, 10); return cross_sectional_rank(skew)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `cp_bigflow_margin_20` | coupling | 高优 | 大单成本 × 两融加速 = z(大单成交均价偏离) × z(融资余额速度) | `CP = z(mf_large_order_avg_price) × z(margin_velocity)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 320 | mf_large_order_avg_price, margin_velocity |
-| `cp_chip_support_reversal_5` | coupling | 高优 | 筹码位置 × 短期反转 = z(收盘相对筹码分布位置) × z(5日反转) | `CP = z(chip_position) × z(short_term_reversal_5)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 200 | chip_position, short_term_reversal_5 |
-| `cp_chip_turnover` | coupling | 低优 | 筹码集中 × 换手波动 = z(筹码集中度) × z(换手率波动) | `CP = z(chip_concentration) × z(turnover_std_20)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 200 | chip_concentration, turnover_std_20 |
-| `cp_margin_trend_div` | coupling | 高优 | 两融加速 − 趋势强度 = z(融资余额速度) − z(60日趋势强度) | `CP = z(margin_velocity) − z(trend_strength_60)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 320 | margin_velocity, trend_strength_60 |
-| `cp_momentum_highvol_60` | coupling | 高优 | 进攻型动量 = z(60日动量) × z(120日波动) | `CP = z(momentum_60) × z(vol_120)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 320 | momentum_60, vol_120 |
-| `cp_momentum_lowvol_20` | coupling | 高优 | 防守型动量 = z(20日动量) × z(−特质波动) | `CP = z(momentum_20) × z(−idio_vol_60)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 320 | momentum_20, idio_vol_60 |
-| `cp_moneyflow_momentum_res` | coupling | 低优 | 资金流结构 × 动量 = z(订单规模熵) × z(20日动量) | `CP = z(mf_order_size_entropy) × z(momentum_20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 320 | mf_order_size_entropy, momentum_20 |
-| `cp_quality_momentum` | coupling | 高优 | 质量动量共振 = z(ROE TTM) × z(60日动量) | `CP = z(roe_ttm) × z(momentum_60)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | roe_ttm, momentum_60 |
-| `cp_rsi_moneyflow_res` | coupling | 低优 | RSI × 主力净流入 = z(RSI14) × z(净流入占比) | `CP = z(rsi_14) × z(mf_net_inflow_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 200 | rsi_14, mf_net_inflow_ratio |
-| `cp_value_momentum_div` | coupling | 高优 | 价值−动量分歧 = z(BP) − z(20日动量) | `CP = z(bp) − z(momentum_20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 320 | bp, momentum_20 |
-| `cp_value_quality` | coupling | 高优 | 价值质量共振 = z(账面市值比 BP) × z(ROE TTM) | `CP = z(bp) × z(roe_ttm)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | bp, roe_ttm |
-| `cvar_95_120` | risk | 高优 | 120 日 CVaR(95%) = 窗口内 ≤5% 分位那部分收益的均值（尾部期望损失） | `quantiles = [ret_w.rolling(120, min_periods=60).quantile(q) for q in (0.01, 0.02, 0.03, 0.04, 0.05)]; cvar_w = sum(quantiles) / len(quantiles)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 240 | stock_daily, stock_adj_factor |
-| `cyqp_average_cost_premium` | chip_perf | 低优 | 现价相对供应商加权成本的溢价 | `close/weight_avg - 1` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf, stock_daily |
-| `cyqp_cost_premium_change_20` | chip_perf | 高优 | 现价相对筹码中位成本溢价的 20 日变化 | `diff(close/cost_50pct - 1,20)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf, stock_daily |
-| `cyqp_cost_tail_asymmetry` | chip_perf | 低优 | 上下成本尾部不对称（扩展） | `(cost_95pct+cost_5pct-2*cost_50pct)/(cost_95pct-cost_5pct)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_cost_width_70` | chip_perf | 低优 | 70% 筹码成本相对宽度 | `(cost_85pct-cost_15pct)/cost_50pct` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_cost_width_90` | chip_perf | 低优 | 90% 筹码成本相对宽度 | `(cost_95pct-cost_5pct)/cost_50pct` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_cost_width_change_20` | chip_perf | 低优 | 90% 成本宽度 20 日变化 | `diff((cost_95pct-cost_5pct)/cost_50pct,20)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_historical_range_position` | chip_perf | 高优 | 中位成本在供应商历史价格区间的位置（扩展） | `(cost_50pct-his_low)/(his_high-his_low)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_mean_median_gap` | chip_perf | 低优 | 筹码均值与中位数成本偏离（扩展） | `weight_avg/cost_50pct - 1` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_price_cost_position` | chip_perf | 低优 | 现价在 90% 筹码成本区间的位置 | `(close-cost_5pct)/(cost_95pct-cost_5pct)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf, stock_daily |
-| `cyqp_tail_width_share` | chip_perf | 低优 | 两端尾部占 90% 区间的宽度比例（扩展） | `((cost_95pct-cost_85pct)+(cost_15pct-cost_5pct))/(cost_95pct-cost_5pct)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_winner_acceleration_5` | chip_perf | 低优 | 获利盘占比 5 日二阶差分 | `diff(diff(winner_fraction,5),5)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_winner_change_20` | chip_perf | 高优 | 获利盘占比 20 日变化 | `winner_fraction(T) - winner_fraction(T-20)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_winner_fraction` | chip_perf | 低优 | 供应商获利盘占比 | `winner_rate / 100` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
-| `cyqp_winner_volatility_20` | chip_perf | 低优 | 获利盘占比 20 日波动 | `std(winner_fraction,20)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 80 | stock_cyq_perf |
+count = is_lu.groupby([code, seg]).cumsum()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_limit_up |
+| `cost_convergence_signal` | chip | 高优 | 成本收敛信号 = (p90 − p10) 的 20 个交易日**变化率**（收敛=筹码向成本中枢凝聚） | `cyq = context.load("cyq_perf.parquet"); width = cyq["cost_95pct"] - cyq["cost_5pct"]; chg = width.groupby(level="Code").transform(lambda s: s.pct_change(20, fill_method=None)); chg = chg.clip(-1, 1); return cross_sectional_rank(-chg)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 60 | stock_cyq_chips |
+| `cost_distribution_skew` | chip | 高优 | 成本分布偏度（分位点口径）= (p50 − p25) / (p75 − p50)（<1 = 上方尾部更长/右偏） | `cyq = context.load("cyq_perf.parquet"); left_tail = cyq["cost_50pct"] - cyq["cost_15pct"]; right_tail = cyq["cost_85pct"] - cyq["cost_50pct"]; skew = left_tail / right_tail.replace(0, np.nan); return cross_sectional_rank(skew)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `cost_skew_ratio` | chip | 高优 | 成本偏度比率 = (p50 − p10) / (p90 − p50)（>1 = 下方尾部更长/左偏） | `cyq = context.load("cyq_perf.parquet"); lower_range = cyq["cost_50pct"] - cyq["cost_5pct"]; upper_range = cyq["cost_95pct"] - cyq["cost_50pct"]; skew = safe_divide(lower_range, upper_range + 1e-10); skew = skew.clip(0.1, 10); return cross_sectional_rank(skew)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `cp_bigflow_margin_20` | coupling | 高优 | 大单成本 × 两融加速 = z(大单成交均价偏离) × z(融资余额速度) | `CP = z(mf_large_order_avg_price) × z(margin_velocity)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 320 | mf_large_order_avg_price, margin_velocity |
+| `cp_chip_support_reversal_5` | coupling | 高优 | 筹码位置 × 短期反转 = z(收盘相对筹码分布位置) × z(5日反转) | `CP = z(chip_position) × z(short_term_reversal_5)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 200 | chip_position, short_term_reversal_5 |
+| `cp_chip_turnover` | coupling | 低优 | 筹码集中 × 换手波动 = z(筹码集中度) × z(换手率波动) | `CP = z(chip_concentration) × z(turnover_std_20)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 200 | chip_concentration, turnover_std_20 |
+| `cp_margin_trend_div` | coupling | 高优 | 两融加速 − 趋势强度 = z(融资余额速度) − z(60日趋势强度) | `CP = z(margin_velocity) − z(trend_strength_60)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 320 | margin_velocity, trend_strength_60 |
+| `cp_momentum_highvol_60` | coupling | 高优 | 进攻型动量 = z(60日动量) × z(120日波动) | `CP = z(momentum_60) × z(vol_120)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 320 | momentum_60, vol_120 |
+| `cp_momentum_lowvol_20` | coupling | 高优 | 防守型动量 = z(20日动量) × z(−特质波动) | `CP = z(momentum_20) × z(−idio_vol_60)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 320 | momentum_20, idio_vol_60 |
+| `cp_moneyflow_momentum_res` | coupling | 低优 | 资金流结构 × 动量 = z(订单规模熵) × z(20日动量) | `CP = z(mf_order_size_entropy) × z(momentum_20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 320 | mf_order_size_entropy, momentum_20 |
+| `cp_quality_momentum` | coupling | 高优 | 质量动量共振 = z(ROE TTM) × z(60日动量) | `CP = z(roe_ttm) × z(momentum_60)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | roe_ttm, momentum_60 |
+| `cp_rsi_moneyflow_res` | coupling | 低优 | RSI × 主力净流入 = z(RSI14) × z(净流入占比) | `CP = z(rsi_14) × z(mf_net_inflow_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 200 | rsi_14, mf_net_inflow_ratio |
+| `cp_value_momentum_div` | coupling | 高优 | 价值−动量分歧 = z(BP) − z(20日动量) | `CP = z(bp) − z(momentum_20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 320 | bp, momentum_20 |
+| `cp_value_quality` | coupling | 高优 | 价值质量共振 = z(账面市值比 BP) × z(ROE TTM) | `CP = z(bp) × z(roe_ttm)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | bp, roe_ttm |
+| `cvar_95_120` | risk | 高优 | 120 日 CVaR(95%) = 窗口内 ≤5% 分位那部分收益的均值（尾部期望损失） | `quantiles = [ret_w.rolling(120, min_periods=60).quantile(q) for q in (0.01, 0.02, 0.03, 0.04, 0.05)]; cvar_w = sum(quantiles) / len(quantiles)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 240 | stock_daily, stock_adj_factor |
+| `cyqp_cost_premium_change_20` | chip_perf | 高优 | 现价相对筹码中位成本溢价的 20 日变化 | `diff(close/cost_50pct - 1,20)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf, stock_daily |
+| `cyqp_cost_tail_asymmetry` | chip_perf | 低优 | 上下成本尾部不对称（扩展） | `(cost_95pct+cost_5pct-2*cost_50pct)/(cost_95pct-cost_5pct)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_cost_width_70` | chip_perf | 低优 | 70% 筹码成本相对宽度 | `(cost_85pct-cost_15pct)/cost_50pct` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_cost_width_90` | chip_perf | 低优 | 90% 筹码成本相对宽度 | `(cost_95pct-cost_5pct)/cost_50pct` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_cost_width_change_20` | chip_perf | 低优 | 90% 成本宽度 20 日变化 | `diff((cost_95pct-cost_5pct)/cost_50pct,20)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_historical_range_position` | chip_perf | 高优 | 中位成本在供应商历史价格区间的位置（扩展） | `(cost_50pct-his_low)/(his_high-his_low)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_mean_median_gap` | chip_perf | 低优 | 筹码均值与中位数成本偏离（扩展） | `weight_avg/cost_50pct - 1` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_tail_width_share` | chip_perf | 低优 | 两端尾部占 90% 区间的宽度比例（扩展） | `((cost_95pct-cost_85pct)+(cost_15pct-cost_5pct))/(cost_95pct-cost_5pct)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_winner_acceleration_5` | chip_perf | 低优 | 获利盘占比 5 日二阶差分 | `diff(diff(winner_fraction,5),5)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_winner_change_20` | chip_perf | 高优 | 获利盘占比 20 日变化 | `winner_fraction(T) - winner_fraction(T-20)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_winner_fraction` | chip_perf | 低优 | 供应商获利盘占比 | `winner_rate / 100` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
+| `cyqp_winner_volatility_20` | chip_perf | 低优 | 获利盘占比 20 日波动 | `std(winner_fraction,20)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 80 | stock_cyq_perf |
 | `di_plus_minus_ratio_14` | technical | 高优 | 14 日 DI+/DI- 比率：多头相对空头的趋势优势，>1 = 上升趋势占优 | `scale = _adjusted_close(daily) / daily["close"].replace(0, np.nan)
 di_plus, di_minus = _directional_movement(daily["high"], daily["low"], daily["pre_close"], scale, 14)
-ratio = safe_divide(di_plus, di_minus + 1e-8)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 300 | stock_daily, stock_adj_factor |
+ratio = safe_divide(di_plus, di_minus + 1e-8)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 300 | stock_daily, stock_adj_factor |
 | `dividend_yield_3y_avg` | value | 高优 | 3 年平均股息率 = 近 735 个交易日的（每股分红 ÷ 当期价）均值 / 当前价（%） | `dividend_yield_3y_avg = (SUM(ActualCashDiviRMB, 735) / 3) / ClosePrice
-   = AVG(ActualCashDiviRMB, 3年) / ClosePrice` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 1400 | stock_daily, stock_finance |
+   = AVG(ActualCashDiviRMB, 3年) / ClosePrice` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1400 | stock_daily, stock_finance |
 | `donchian_position_20` | technical | 高优 | Donchian 通道位置 ∈[0,1]：(close − 20日最低)/(20日最高 − 20日最低) | `close = daily["close"]
 # 用每日复权系数 (后复权基座/close) 折算 high/low 后再取 20 日极值,
 # 避免除权日污染通道上下轨
@@ -1035,128 +1255,157 @@ lowest = adj_low.groupby(level="Code").transform(
 )
 
 position = safe_divide(adj - lowest, highest - lowest + 1e-10)
-position = position.clip(0, 1)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `downside_upside_vol_60` | risk | 低优 | 下行/上行波动比 = 60 日负收益标准差 / 正收益标准差（反向） | `down = ret.where(ret < 0); up = ret.where(ret > 0); down_std = down.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=5).std()); up_std = up.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=5).std()); ratio = safe_divide(down_std, up_std + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
-| `downside_vol_ratio_20` | risk | 低优 | 下行波动占比 = 20 日下行半波动 / 总波动（反向） | `neg = wide.clip(upper=0.0); var_all = (wide ** 2).rolling(20, min_periods=15).mean(); var_neg = (neg ** 2).rolling(20, min_periods=15).mean(); ratio = var_neg.pow(0.5) / var_all.pow(0.5).replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `dp_ttm` | value | 高优 | 滚动股息率（%）= 供应商 dv_ttm | `dp = finance["dv_ttm"]` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_finance |
+position = position.clip(0, 1)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `downside_upside_vol_60` | risk | 低优 | 下行/上行波动比 = 60 日负收益标准差 / 正收益标准差（反向） | `down = ret.where(ret < 0); up = ret.where(ret > 0); down_std = down.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=5).std()); up_std = up.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=5).std()); ratio = safe_divide(down_std, up_std + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor |
+| `downside_vol_ratio_20` | risk | 低优 | 下行波动占比 = 20 日下行半波动 / 总波动（反向） | `neg = wide.clip(upper=0.0); var_all = (wide ** 2).rolling(20, min_periods=15).mean(); var_neg = (neg ** 2).rolling(20, min_periods=15).mean(); ratio = var_neg.pow(0.5) / var_all.pow(0.5).replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `dp_ttm` | value | 高优 | 滚动股息率（%）= 供应商 dv_ttm | `dp = finance["dv_ttm"]` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_finance |
 | `dpo_20` | technical | 高优 | 20 日 DPO 去趋势：(11 日前收盘 − 当前 20 日均价)/20 日均价 | `adj = _adjusted_close(daily)
 ma20 = adj.groupby(level="Code").transform(
     lambda s: s.rolling(20, min_periods=10).mean()
 )
 lagged = adj.groupby(level="Code").shift(11)
-dpo = safe_divide(lagged - ma20, ma20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 82 | stock_daily, stock_adj_factor |
+dpo = safe_divide(lagged - ma20, ma20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 82 | stock_daily, stock_adj_factor |
 | `dragon_tiger_org_net_20` | event | 高优 | 机构席位净买 = 20 日「机构专用」席位净买额 / 20 日成交额（无机构席位则 NaN） | `OrgNet_20 = sum(OrgNetAmount, 20d) / sum(Amount, 20d)
 OrgNetAmount = buy_amount - sell_amount, org_name == '机构专用'
-Amount = 该股当日总成交额（stock_daily.amount，元）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_dragon_tiger, stock_daily |
-| `drawdown_duration_120` | risk | 低优 | 回撤持续期 = 价格低于 120 日滚动前高的连续天数（上限 120） | `rolling_high = adj.groupby(level="Code").transform(lambda s: s.rolling(120, min_periods=1).max()); in_dd = adj.lt(rolling_high * 0.999); duration = _consecutive_count(in_dd).clip(upper=120)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 240 | stock_daily, stock_adj_factor |
+Amount = 该股当日总成交额（stock_daily.amount，元）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_dragon_tiger, stock_daily |
+| `drawdown_duration_120` | risk | 低优 | 回撤持续期 = 价格低于 120 日滚动前高的连续天数（上限 120） | `rolling_high = adj.groupby(level="Code").transform(lambda s: s.rolling(120, min_periods=1).max()); in_dd = adj.lt(rolling_high * 0.999); duration = _consecutive_count(in_dd).clip(upper=120)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 240 | stock_daily, stock_adj_factor |
 | `dv_stability_4q` | value | 低优 | 股息稳定性 = 60 交易日 dv_ttm 的变异系数（低 = 稳定，取负向） | `dv = fin['dv_ratio'].clip(0, 20)
 roll_std = dv.groupby(level='Code').transform(
     lambda s: s.rolling(60, min_periods=20).std())
 roll_mean = dv.groupby(level='Code').transform(
     lambda s: s.rolling(60, min_periods=20).mean())
-cv = safe_divide(roll_std, roll_mean + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 480 | stock_finance |
-| `ebitda_to_market` | value | 高优 | EBITDA 市值比 = (EBIT + 折旧 + 无形资产摊销 + 长期待摊摊销)TTM / 总市值 | `ebitda_to_market = EBITDA / (ClosePrice × TotalShares)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow, stock_income, stock_balancesheet, stock_daily, stock_finance |
+cv = safe_divide(roll_std, roll_mean + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 480 | stock_finance |
+| `ebitda_to_market` | value | 高优 | EBITDA 市值比 = (EBIT + 折旧 + 无形资产摊销 + 长期待摊摊销)TTM / 总市值 | `ebitda_to_market = EBITDA / (ClosePrice × TotalShares)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow, stock_income, stock_balancesheet, stock_daily, stock_finance |
+| `efx_annual_earnings_yield` | field_events | 高优 | 静态正盈利收益率 | `mean_20(1/pe where pe>0, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_finance |
+| `efx_dividend_gap` | field_events | 高优 | 静态与滚动股息率差 | `mean_20(dv_ratio-dv_ttm, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_finance |
+| `efx_dragon_net_intensity` | field_events | 高优 | 营业部净买入强度 | `mean_60(median(net_buy_amount/(buy_amount+sell_amount)), observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_dragon_tiger |
+| `efx_dragon_ratio_balance` | field_events | 高优 | 营业部买卖占比差 | `mean_60(median(buy_ratio-sell_ratio across disclosed seats), observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_dragon_tiger |
+| `efx_forecast_revision_delay` | field_events | 高优 | 业绩预告距首次披露的间隔 | `mean_120(calendar_days(ann_date-first_ann_date), available at ann_date, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_forecast |
+| `efx_free_turnover` | field_events | 高优 | 自由流通口径换手溢价 | `mean_20(turnover_rate_f-turnover_rate, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_finance |
+| `efx_limit_first` | field_events | 高优 | 首次触板时刻 | `mean_60(trading_minutes(first_time)/240, observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_limit_float_fraction` | field_events | 高优 | 触板股票流通市值比例 | `mean_60(float_mv/total_mv, observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_limit_openings` | field_events | 高优 | 触板后开板次数 | `mean_60(log1p(open_times), observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_limit_reseal_span` | field_events | 高优 | 首次至最后触板交易时间差 | `mean_60((last_time-first_time)/240 trading minutes, observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_limit_signed_move` | field_events | 高优 | 触板日涨跌幅 | `mean_60(pct_chg for known U/D/Z event types, observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_limit_streak` | field_events | 高优 | 连板天数暴露 | `mean_60(limit_times, observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_limit_trade_share` | field_events | 高优 | 涨跌停价成交金额占比 | `mean_60(limit_amount/amount, observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_limit_turnover` | field_events | 高优 | 触板日换手率 | `mean_60(turnover_ratio, observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_limit_win_fraction` | field_events | 高优 | 近期涨停次数密度 | `mean_60(up_stat numerator / denominator, observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_lu_board_density` | field_events | 高优 | 多日连板密度 | `mean_60(boards_count / days parsed from boards; first-board text missing, observed rows only)` | 2019-08-14 | 2019-08-14 → 2026-09-21 | 220 | stock_limit_up |
+| `efx_lu_final` | field_events | 高优 | 涨停最终封板时刻 | `mean_60(trading_minutes(final_limit_time)/240, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_limit_up |
+| `efx_lu_first` | field_events | 高优 | 涨停首次封板时刻 | `mean_60(trading_minutes(first_limit_time)/240, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_limit_up |
+| `efx_lu_move` | field_events | 高优 | 涨停日涨幅暴露 | `mean_60(change_percent, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_limit_up |
+| `efx_lu_one_price` | field_events | 高优 | 一字涨停类型比例 | `mean_60(contains_one_price(limit_type) among known text events, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_limit_up |
+| `efx_lu_seal_amount` | field_events | 高优 | 封单金额规模 | `mean_60(log1p(sealed_amount in source units), observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_limit_up |
+| `efx_lu_seal_volume` | field_events | 高优 | 封单数量规模 | `mean_60(log1p(sealed_volume in source units), observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_limit_up |
+| `efx_seal_float` | field_events | 高优 | 封单金额流通市值比 | `mean_60(fd_amount/float_mv, observed rows only)` | 2020-01-01 | 2020-01-02 → 2026-09-21 | 220 | stock_limit_list |
+| `efx_top_amount_rate` | field_events | 高优 | 龙虎榜成交占比原始口径 | `mean_60(amount_rate, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_top_list |
+| `efx_top_float` | field_events | 高优 | 上榜股票流通市值暴露 | `mean_60(log1p(float_values), observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_top_list |
+| `efx_top_imbalance` | field_events | 高优 | 龙虎榜买卖不平衡 | `mean_60((l_buy-l_sell)/(l_buy+l_sell), observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_top_list |
+| `efx_top_move` | field_events | 高优 | 上榜日价格变化 | `mean_60(pct_change, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_top_list |
+| `efx_top_turnover` | field_events | 高优 | 上榜股票换手暴露 | `mean_60(turnover_rate, observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_top_list |
+| `efx_volume_ratio` | field_events | 高优 | 量比平滑 | `mean_20(log1p(volume_ratio), observed rows only)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | stock_finance |
 | `elg_net_60d_to_mv` | fundflow | 高优 | 超大单 60 日累计净买入额 / 总市值（长线吸筹强度） | `net = (mf["buy_elg_amount"] - mf["sell_elg_amount"]) * 1e4
 net60 = net.rolling(60, min_periods=20).sum()
 circ_mv = fin["circ_mv"].reindex(net60.index)
-raw = safe_divide(net60, circ_mv)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_main_fund_flow, stock_daily, stock_finance |
-| `eom_14` | pattern | 高优 | 14 日 Ease of Movement：价格中点位移 ÷ (成交量/振幅) 的 14 日均值 | `mid=(adj_high+adj_low)/2; box_ratio=vol/(adj_high-adj_low); distance=mid-mid.shift(1); eom=distance/box_ratio; eom_avg=rolling(14, min_periods=7).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 46 | stock_daily, stock_adj_factor |
-| `ep_ttm` | value | 高优 | 盈利收益率 = 归母净利润TTM / 总市值（= 1/PE_TTM），亏损为负 | `earnings_to_price = NPParentCompanyOwners_TTM / (ClosePrice × TotalShares)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_daily, stock_finance |
+raw = safe_divide(net60, circ_mv)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_main_fund_flow, stock_daily, stock_finance |
+| `eom_14` | pattern | 高优 | 14 日 Ease of Movement：价格中点位移 ÷ (成交量/振幅) 的 14 日均值 | `mid=(adj_high+adj_low)/2; box_ratio=vol/(adj_high-adj_low); distance=mid-mid.shift(1); eom=distance/box_ratio; eom_avg=rolling(14, min_periods=7).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 46 | stock_daily, stock_adj_factor |
+| `ep_ttm` | value | 高优 | 盈利收益率 = 归母净利润TTM / 总市值（= 1/PE_TTM），亏损为负 | `earnings_to_price = NPParentCompanyOwners_TTM / (ClosePrice × TotalShares)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_daily, stock_finance |
 | `etp5` | value | 高优 | 五年平均净利润 / 五年平均市值（≈ 5 年平均盈利收益率） | `ETP5 = RollingMean(NetProfit_Y, 1260) / RollingMean(MarketCap, 1260)
-   Factor = CrossSectionalRank(ETP5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 2300 | stock_income, stock_daily, stock_finance |
+   Factor = CrossSectionalRank(ETP5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 2300 | stock_income, stock_daily, stock_finance |
 | `extreme_move_event` | event | 低优 | 近 5 日极端波动事件的衰减加权（\|日收益\| ≥ 9.5%，半衰期 3 日） | `is_ext = daily["pct_chg"].abs().gt(7.0)
 event = is_ext.astype(float).where(is_ext, np.nan)
 decayed = event_decay(event, half_life=10)     # 参考库原文（阈值 7%、H=10）
 # 本实现（任务书口径）：
 #   ev = 1 if \|pct_chg\| >= 9.5 else 0      （停牌日 pct_chg 为 NaN -> 非事件）
-#   decayed = Σ_{k=0}^{4} ev(t-k) × 0.5^(k/3)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_daily, stock_adj_factor |
-| `forecast_profit_midpoint_change` | disclosure_detail | 高优 | 预告利润区间中点相对去年同期的变化 | `((net_profit_min+net_profit_max)/2-last_parent_net)/abs(last_parent_net)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_forecast |
-| `forecast_profit_range_uncertainty` | disclosure_detail | 低优 | 预告利润区间宽度相对去年利润 | `(net_profit_max-net_profit_min)/abs(last_parent_net)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_forecast |
+#   decayed = Σ_{k=0}^{4} ev(t-k) × 0.5^(k/3)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_daily, stock_adj_factor |
+| `forecast_profit_midpoint_change` | disclosure_detail | 高优 | 预告利润区间中点相对去年同期的变化 | `((net_profit_min+net_profit_max)/2-last_parent_net)/abs(last_parent_net)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_forecast |
+| `forecast_profit_range_uncertainty` | disclosure_detail | 低优 | 预告利润区间宽度相对去年利润 | `(net_profit_max-net_profit_min)/abs(last_parent_net)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_forecast |
 | `forecast_type_score` | event | 高优 | 业绩预告类型打分（预增/扭亏 +2 … 预减/首亏 −2），按 ann_date 前向填充 | `Score = map(type): 预增/扭亏=+2, 略增/续盈/减亏=+1, 不确定/其他=0,
                   略减=−1, 预减/首亏/续亏/增亏=−2
-# PIT 对齐: ann_date <= T 的最新一条；同日多条取中位数` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_forecast |
-| `free_share_ratio` | value | 低优 | 自由流通股占比 = free_share / total_share（低 = 筹码锁定度高） | `ratio = finance["free_share"] / finance["total_share"].replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_finance |
+# PIT 对齐: ann_date <= T 的最新一条；同日多条取中位数` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_forecast |
+| `free_share_ratio` | value | 低优 | 自由流通股占比 = free_share / total_share（低 = 筹码锁定度高） | `ratio = finance["free_share"] / finance["total_share"].replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_finance |
 | `fundflow_retail_inst_divergence` | fundflow | 高优 | 主力-散户背离 = rank(大单净买率) × rank(−散户成交占比)（机构买而散户卖的联合信号） | `big = ctx.load_factor("mf_big_order_ratio")
 small = ctx.load_factor("mf_small_order_ratio")
 big_r = _rank(big); small_r = _rank(-small)
 divergence = big_r * small_r
-return cross_sectional_rank(divergence)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | mf_big_order_ratio, mf_retail_dominance |
-| `fv_gain_share` | quality | 低优 | 公允价值变动收益占利润总额的比重（纸面利润依赖度） | `share = fv_value_chg_gain_TTM / total_profit_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income |
-| `gain_loss_asymmetry_60` | risk | 高优 | 涨跌幅度不对称 = 60 日平均涨幅 / \|平均跌幅\|（涨多跌少排前） | `mean_up = ret_w.where(ret_w > 0).rolling(60, min_periods=10).mean(); mean_down = ret_w.where(ret_w < 0).rolling(60, min_periods=10).mean(); asym = safe_divide(mean_up, mean_down.abs() + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
-| `gap_down_recover_freq_20d` | pattern | 高优 | 低开高走频率：20 日内（隔夜<0 且 日内>0）的交易日占比（0~1） | `gap_down_rec = ((overnight<0) & (intraday>0)).astype(float); freq = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
+return cross_sectional_rank(divergence)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | mf_big_order_ratio, mf_retail_dominance |
+| `fv_gain_share` | quality | 低优 | 公允价值变动收益占利润总额的比重（纸面利润依赖度） | `share = fv_value_chg_gain_TTM / total_profit_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income |
+| `gain_loss_asymmetry_60` | risk | 高优 | 涨跌幅度不对称 = 60 日平均涨幅 / \|平均跌幅\|（涨多跌少排前） | `mean_up = ret_w.where(ret_w > 0).rolling(60, min_periods=10).mean(); mean_down = ret_w.where(ret_w < 0).rolling(60, min_periods=10).mean(); asym = safe_divide(mean_up, mean_down.abs() + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor |
+| `gap_down_recover_freq_20d` | pattern | 高优 | 低开高走频率：20 日内（隔夜<0 且 日内>0）的交易日占比（0~1） | `gap_down_rec = ((overnight<0) & (intraday>0)).astype(float); freq = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
 | `gap_event_decay_5` | event | 高优 | 近 5 日跳空事件的衰减加权（\|跳空幅度\| ≥ 3% 时按跳空幅度加权，半衰期 3 日） | `gap = safe_divide(daily["open"], daily["pre_close"]) - 1.0
 is_gap = gap.abs().gt(0.05)
 event = is_gap.astype(float).where(is_gap, np.nan)
 decayed = event_decay(event, half_life=5)      # 参考库原文（0/1 事件）
 # 本实现（任务书：跳空幅度 × 半衰期权重）：
 #   g   = hfq(open)/hfq(pre_close) - 1        （当日有成交才有效）
-#   decayed = Σ_{k=0}^{4} \|g(t-k)\| × 1[\|g\| >= 3%] × 0.5^(k/3)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_daily, stock_adj_factor |
-| `gap_fill_tendency_10d` | pattern | 低优 | 缺口回补倾向：10 日内跳空（>1%）后被**当日收盘**回补的比例 | `gap=(open-pre_close)/pre_close; is_gap=\|gap\|>0.01; filled=((gap>0.01)&(close<pre_close))\|((gap<-0.01)&(close>pre_close)); rate=_roll_sum(filled,10,5)/(_roll_sum(is_gap,10,5)+0.01)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_daily, stock_adj_factor |
-| `gap_up_fade_freq_20d` | pattern | 低优 | 高开低走频率：20 日内（隔夜>0 且 日内<0）的交易日占比（0~1） | `gap_up_fade = ((overnight>0) & (intraday<0)).astype(float); freq = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `growth_stability` | growth | 高优 | 营收增速的稳定性 = 近 8 个报告期同比增速的均值 / 标准差 | `Stability = mean(YoY_{t-i}, i=0..7) / std(YoY_{t-i}, i=0..7) , YoY_{t-i} = Revenue_TTM_{t-i} / Revenue_TTM_{t-i-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income |
-| `hammer_ratio_20d` | pattern | 高优 | 锤子线频率：20 日内（下影 > 2×实体 且 上影 < 0.3×振幅 且 实体>0）的占比 | `body=\|close-open\|; lower=min(open,close)-low; upper=high-max(open,close); rng=high-low; is_hammer=(lower>2*body)&(upper<0.3*rng)&(body>0); ratio=rolling(20, min_periods=10).mean(is_hammer)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
+#   decayed = Σ_{k=0}^{4} \|g(t-k)\| × 1[\|g\| >= 3%] × 0.5^(k/3)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_daily, stock_adj_factor |
+| `gap_fill_tendency_10d` | pattern | 低优 | 缺口回补倾向：10 日内跳空（>1%）后被**当日收盘**回补的比例 | `gap=(open-pre_close)/pre_close; is_gap=\|gap\|>0.01; filled=((gap>0.01)&(close<pre_close))\|((gap<-0.01)&(close>pre_close)); rate=_roll_sum(filled,10,5)/(_roll_sum(is_gap,10,5)+0.01)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_daily, stock_adj_factor |
+| `gap_up_fade_freq_20d` | pattern | 低优 | 高开低走频率：20 日内（隔夜>0 且 日内<0）的交易日占比（0~1） | `gap_up_fade = ((overnight>0) & (intraday<0)).astype(float); freq = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `growth_stability` | growth | 高优 | 营收增速的稳定性 = 近 8 个报告期同比增速的均值 / 标准差 | `Stability = mean(YoY_{t-i}, i=0..7) / std(YoY_{t-i}, i=0..7) , YoY_{t-i} = Revenue_TTM_{t-i} / Revenue_TTM_{t-i-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income |
+| `hammer_ratio_20d` | pattern | 高优 | 锤子线频率：20 日内（下影 > 2×实体 且 上影 < 0.3×振幅 且 实体>0）的占比 | `body=\|close-open\|; lower=min(open,close)-low; upper=high-max(open,close); rng=high-low; is_hammer=(lower>2*body)&(upper<0.3*rng)&(body>0); ratio=rolling(20, min_periods=10).mean(is_hammer)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
 | `high_open_low_close_frac_20` | event | 低优 | 高开低走占比 = 20 日内「高开≥2% 且收阴」的天数占比（出货特征） | `gapup = safe_divide(daily["open"], daily["pre_close"]) - 1.0
 fade = (gapup >= 0.02) & (daily["close"] < daily["open"])
 freq = fade.astype(float).groupby(level="Code").transform(
-    lambda s: s.rolling(20, min_periods=5).mean())` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `holder_number_chg` | sentiment | 低优 | 股东户数变化率 = 本期 / 上期 − 1（户数减少 = 筹码集中，低者优） | `Chg = HolderNum_t / HolderNum_{t-1} - 1（两条腿都取「该公告日为止最新一版」）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_holder_number |
-| `id2_am_close_position` | intraday | 高优 | 上午收盘价在上午区间中的位置 ∈ [0,1] | `return cross_sectional_rank(_metric(context, 'am_hl_position'))` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_am_pm_range_ratio` | intraday | 低优 | 上午振幅 / 下午振幅（取 ln，会话波动的时间分配） | `return cross_sectional_rank(-_metric(context, 'am_pm_hl_range_ratio'))` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_am_pm_ret_gap` | intraday | 高优 | 上午段收益 − 下午段收益（会话动量的时间差） | `am_ret - pm_ret` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_am_pm_vwap_gap` | intraday | 高优 | 上午 VWAP / 下午 VWAP − 1（会话成交均价的时间位移） | `return cross_sectional_rank(_metric(context, 'vwap_am_pm_gap'))` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_am_ret` | intraday | 高优 | 上午段收益 = 11:30 价 / 09:35 价 − 1 | `am = _compute_intraday_factor(context, 'am_momentum')` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_am_vol_share` | intraday | 高优 | 上午段成交量占全天的比重 | `avs = _compute_intraday_factor(context, 'am_vol_share'); rank(avs)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_amihud_intraday_20` | intraday | 低优 | 日内 Amihud 非流动性（20 日）：\|日内收益\| / 成交额 | `amihud_intraday = abs(ret_sum) / amt; 20 日均值` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_history_5min |
-| `id2_close_vs_pm_vwap` | intraday | 低优 | 收盘价相对下午 VWAP 的偏离（收盘集合竞价的定价压力） | `return cross_sectional_rank(-_metric(context, 'vwap_dev'))` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_close_vs_pm_vwap_20` | intraday | 低优 | 收盘相对下午 VWAP 偏离的 20 日水平（持续性尾盘溢价/折价） | `roll_mean(close5/pm_vwap - 1, 20, min_count=10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_history_5min |
-| `id2_dd_ru_asym` | intraday | 低优 | 日内行程的不对称 = \|最大回撤\| / (\|最大回撤\| + 最大反弹) ∈ [0,1] | `abs(max_dd) / (abs(max_dd) + max_ru)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_hi_lo_pos_gap` | intraday | 高优 | 当日最高点与最低点的**时点**间隔（日内在时间轴上的铺开程度） | `hi_pos - lo_pos   （两者都是段内 argmax/argmin 归一化到 [0,1]）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_intraday_max_runup` | intraday | 高优 | 日内最大反弹（从段内低点到其后高点的最大涨幅） | `ru = _compute_intraday_factor(context, 'intraday_max_runup'); rank(ru)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_lunch_gap` | intraday | 高优 | 午间跳空 = 13:05 价 / 11:30 价 − 1 | `lb = _compute_intraday_factor(context, 'lunch_break_ret')` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_parkinson_vol` | intraday | 低优 | Parkinson 极差波动（当日）= sqrt( ln(hi/lo)^2 / (4 ln2) ) | `parkinson_vol = sqrt(log(high/low)**2 / (4*log(2)))` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_pm_ret` | intraday | 高优 | 下午段收益 = 收盘价 / 13:05 价 − 1 | `pm = _compute_intraday_factor(context, 'pm_momentum')` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_ret_concentration` | intraday | 低优 | 日内收益路径的集中度 = n·Σr² / (Σ\|r\|)²（反参与比） | `concentration = n_bars * ret2_sum / absret_sum**2` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_rv_parkinson_gap` | intraday | 低优 | 连续 vs 跳跃诊断 = ln(已实现波动 / Parkinson 极差波动) | `efficiency = safe_divide(rv_5min, parkinson_vol + 1e-10); rank(-efficiency)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_rv_parkinson_gap_20` | intraday | 低优 | 连续 vs 跳跃诊断的 20 日水平（单日太噪，20 日均值才稳） | `roll_mean(ln(rv_5min/parkinson_vol), 20, min_count=10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_history_5min |
-| `id2_session_range_overlap` | intraday | 低优 | 跨会话区间结构 = (上午振幅 + 下午振幅) / 全天振幅 ∈ [1,2] | `(am_range + pm_range) / day_range` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_session_sign_agreement_20` | intraday | 高优 | 上午与下午同向的频率（20 日）∈ [0,1] | `roll_mean(sign(am_ret) == sign(pm_ret), 20, min_count=10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_history_5min |
-| `id2_vol_amt_hhi_gap` | intraday | 高优 | 成交**额**集中度 − 成交**量**集中度（大单是否集中在高价区） | `n*amt2_sum/amt**2 - n*vol2_sum/vol**2` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_vol_peak_pos` | intraday | 低优 | 当日成交量的峰值时点（层已归一化到 [0,1]） | `vpt = _compute_intraday_factor(context, 'volume_peak_time'); rank(-vpt)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `id2_vol_peak_std_20` | intraday | 低优 | 放量时点的 20 日标准差（日内流动性节奏稳不稳） | `roll_std(vol_peak_pos, 20, min_count=10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_history_5min |
-| `id2_zero_bar_share` | intraday | 低优 | 零收益 5min 棒占比 = (n_zero − 1) / (n_bars − 1) | `(n_zero - 1) / (n_bars - 1)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_history_5min |
-| `idio_vol_60` | risk | 低优 | 60 日特质波动率 = 剔除市场暴露后残差的标准差（反向） | `beta = _rolling_beta(wide, mkt, 60, 30); resid = wide - beta.multiply(mkt, axis=0); idio = resid.rolling(60, min_periods=30).std()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor, index_daily |
-| `idt_intraday_max_drawdown` | intraday | 高优 | 日内最大回撤：从盘内高点到后续低点的最大跌幅（≤0） | `min(close5_t / cummax(close5) - 1)  （= 日内层 max_dd 字段）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_history_5min |
-| `idt_lo_pos` | intraday | 低优 | 日内最低价时点（归一化到 [0,1]）：越晚见低＝尾盘走弱（方向为负） | `argmin(close5) / (n_bars - 1)  （日内层 lo_pos，已在 [0,1]）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_history_5min |
-| `idt_overnight_gap` | intraday | 低优 | 隔夜跳空：后复权开盘 / 上一交易日后复权收盘 − 1 | `gap = open / pre_close - 1  （参考库 rank(-gap)）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_daily, stock_adj_factor |
-| `idt_overnight_minus_intraday` | intraday | 高优 | 隔夜 − 日内收益差：隔夜强于日内＝信息在开盘被消化 | `overnight - intraday  (= open/pre_close-1 与 close/open-1 之差)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_daily, stock_adj_factor |
-| `idt_overnight_return_share_20` | intraday | 高优 | 隔夜收益占比：20 日 \|跳空\| / Σ(\|跳空\|+\|日内\|) | `roll_sum(\|gap\|, 20, 10) / roll_sum(\|gap\|+\|intra\|, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `idt_rv_daily` | intraday | 低优 | 日已实现波动率：当日 5min 收益平方和开根（**日频口径，未年化**） | `rv_daily = sqrt(sum(r_5min^2)) = sqrt(ret2_sum)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_history_5min |
-| `idt_rv_term_structure_slope` | intraday | 低优 | 波动率期限结构斜率：rv_5日/rv_60日 − 1（陡峭＝短期波动高） | `rv_5min / rv_60min - 1,  rv_N = sqrt(roll_mean(ret2_sum, N))` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_history_5min |
-| `idt_up_minutes_ratio` | intraday | 高优 | 上涨棒占比：n_up / n_bars，买盘持续主导 | `n_up / n_bars   （5min 口径 = 参考库 intra_trend）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_history_5min |
-| `idt_vol_stability` | intraday | 低优 | 成交量稳定性：日内 5min 量的变异系数 std/mean（越大越不稳定） | `std(vol_5min) / mean(vol_5min) = sqrt(n_bars * vol2_sum*vol_mult / vol^2 - 1)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_history_5min |
-| `ind_beta_60` | sector | 低优 | 个股对**所属行业**的 60 日 β（行业耦合强度） | `beta = roll_cov(ret, ind_ret, 60, 30) / roll_var(ind_ret, 60, 30)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `ind_bps_yoy` | growth | 高优 | 每股净资产同比（股东权益的**每股**累积速度） | `ctx.ind('bps_yoy')` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_financial_indicator |
-| `ind_currentdebt_to_debt` | risk | 低优 | 短期债务占总债务的比重（债务期限结构 / 展期风险） | `ctx.ind('currentdebt_to_debt')   # 供应商时点比率` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_financial_indicator |
-| `ind_disp_ma_20d` | sector | 低优 | 所属行业内部的收益分化度（行业成员截面 std 的 20 日均值） | `ind_disp = cross_std(ret within my industry); factor = ts_mean(ind_disp, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `ind_disp_ma_5d` | sector | 低优 | 所属行业内部的收益分化度（行业成员截面 std 的 5 日均值） | `ind_disp = cross_std(ret within my industry); factor = ts_mean(ind_disp, 5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `ind_dt_netprofit_yoy` | growth | 高优 | 扣非净利润同比（供应商同期同比字段，季节性自动抵消） | `ctx.ind('dt_netprofit_yoy')` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_financial_indicator |
-| `ind_int_to_talcap` | risk | 低优 | 有息负债占总资本的比重（融资性杠杆，剔除经营性负债） | `ctx.ind('int_to_talcap')   # 供应商时点比率` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_financial_indicator |
-| `ind_mom_accel` | sector | 高优 | 行业动量加速度 = 行业 5 日均收益 − 行业 20 日均收益 | `accel = ts_mean(ind_ret, 5) - ts_mean(ind_ret, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `ind_ret_ma_20d` | sector | 高优 | 所属行业的 20 日平均日收益（行业动能） | `ind_ret = industry_index_daily_return; factor = ts_mean(ind_ret, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `ind_ret_ma_3d` | sector | 高优 | 所属行业的 3 日平均日收益（行业动能） | `ind_ret = industry_index_daily_return; factor = ts_mean(ind_ret, 3)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `ind_ret_ma_5d` | sector | 高优 | 所属行业的 5 日平均日收益（行业动能） | `ind_ret = industry_index_daily_return; factor = ts_mean(ind_ret, 5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `ind_ret_ma_60d` | sector | 高优 | 所属行业的 60 日平均日收益（行业动能） | `ind_ret = industry_index_daily_return; factor = ts_mean(ind_ret, 60)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `inside_bar_count_20` | pattern | 高优 | 孕线（内包线）频率：20 日内「今高 ≤ 昨高 且 今低 ≥ 昨低」的交易日占比 | `prev_high=shift(high,1); prev_low=shift(low,1); inside=(high<=prev_high)&(low>=prev_low); count=_roll_sum(inside,20,5); 参考库: cross_sectional_rank(count)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `interest_coverage` | quality | 高优 | 利息保障倍数（TTM）= EBIT_TTM / 利息支出TTM（值越大偿债越安全） | `ICR = EBIT_TTM / InterestExpense_TTM` | 2019-05-01 | 2019-05-06 → 2026-09-18 | 700 | stock_income |
-| `intraday_ma_20d` | pattern | 高优 | 日内收益均值（20 个交易日） | `intraday = close/open - 1; ma20 = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `intraday_ma_5d` | pattern | 高优 | 日内收益均值（5 个交易日） | `intraday = close/open - 1; ma5 = rolling(5).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_daily, stock_adj_factor |
-| `intraday_ma_60d` | pattern | 高优 | 日内收益均值（60 个交易日） | `intraday = close/open - 1; ma60 = rolling(60).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
-| `intraday_ret_momentum` | pattern | 高优 | 日内收益因子：(close − open) / open，单日口径 | `intraday = (close - open) / open   # 参考库 cross_sectional_rank(intraday)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_daily, stock_adj_factor |
+    lambda s: s.rolling(20, min_periods=5).mean())` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `holder_number_chg` | sentiment | 低优 | 股东户数变化率 = 本期 / 上期 − 1（户数减少 = 筹码集中，低者优） | `Chg = HolderNum_t / HolderNum_{t-1} - 1（两条腿都取「该公告日为止最新一版」）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_holder_number |
+| `id2_am_close_position` | intraday | 高优 | 上午收盘价在上午区间中的位置 ∈ [0,1] | `return cross_sectional_rank(_metric(context, 'am_hl_position'))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_am_pm_range_ratio` | intraday | 低优 | 上午振幅 / 下午振幅（取 ln，会话波动的时间分配） | `return cross_sectional_rank(-_metric(context, 'am_pm_hl_range_ratio'))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_am_pm_ret_gap` | intraday | 高优 | 上午段收益 − 下午段收益（会话动量的时间差） | `am_ret - pm_ret` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_am_pm_vwap_gap` | intraday | 高优 | 上午 VWAP / 下午 VWAP − 1（会话成交均价的时间位移） | `return cross_sectional_rank(_metric(context, 'vwap_am_pm_gap'))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_am_ret` | intraday | 高优 | 上午段收益 = 11:30 价 / 09:35 价 − 1 | `am = _compute_intraday_factor(context, 'am_momentum')` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_am_vol_share` | intraday | 高优 | 上午段成交量占全天的比重 | `avs = _compute_intraday_factor(context, 'am_vol_share'); rank(avs)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_amihud_intraday_20` | intraday | 低优 | 日内 Amihud 非流动性（20 日）：\|日内收益\| / 成交额 | `amihud_intraday = abs(ret_sum) / amt; 20 日均值` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_history_5min |
+| `id2_close_vs_pm_vwap` | intraday | 低优 | 收盘价相对下午 VWAP 的偏离（收盘集合竞价的定价压力） | `return cross_sectional_rank(-_metric(context, 'vwap_dev'))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_close_vs_pm_vwap_20` | intraday | 低优 | 收盘相对下午 VWAP 偏离的 20 日水平（持续性尾盘溢价/折价） | `roll_mean(close5/pm_vwap - 1, 20, min_count=10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_history_5min |
+| `id2_dd_ru_asym` | intraday | 低优 | 日内行程的不对称 = \|最大回撤\| / (\|最大回撤\| + 最大反弹) ∈ [0,1] | `abs(max_dd) / (abs(max_dd) + max_ru)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_hi_lo_pos_gap` | intraday | 高优 | 当日最高点与最低点的**时点**间隔（日内在时间轴上的铺开程度） | `hi_pos - lo_pos   （两者都是段内 argmax/argmin 归一化到 [0,1]）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_intraday_max_runup` | intraday | 高优 | 日内最大反弹（从段内低点到其后高点的最大涨幅） | `ru = _compute_intraday_factor(context, 'intraday_max_runup'); rank(ru)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_lunch_gap` | intraday | 高优 | 午间跳空 = 13:05 价 / 11:30 价 − 1 | `lb = _compute_intraday_factor(context, 'lunch_break_ret')` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_parkinson_vol` | intraday | 低优 | Parkinson 极差波动（当日）= sqrt( ln(hi/lo)^2 / (4 ln2) ) | `parkinson_vol = sqrt(log(high/low)**2 / (4*log(2)))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_pm_ret` | intraday | 高优 | 下午段收益 = 收盘价 / 13:05 价 − 1 | `pm = _compute_intraday_factor(context, 'pm_momentum')` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_ret_concentration` | intraday | 低优 | 日内收益路径的集中度 = n·Σr² / (Σ\|r\|)²（反参与比） | `concentration = n_bars * ret2_sum / absret_sum**2` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_rv_parkinson_gap` | intraday | 低优 | 连续 vs 跳跃诊断 = ln(已实现波动 / Parkinson 极差波动) | `efficiency = safe_divide(rv_5min, parkinson_vol + 1e-10); rank(-efficiency)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_rv_parkinson_gap_20` | intraday | 低优 | 连续 vs 跳跃诊断的 20 日水平（单日太噪，20 日均值才稳） | `roll_mean(ln(rv_5min/parkinson_vol), 20, min_count=10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_history_5min |
+| `id2_session_range_overlap` | intraday | 低优 | 跨会话区间结构 = (上午振幅 + 下午振幅) / 全天振幅 ∈ [1,2] | `(am_range + pm_range) / day_range` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_session_sign_agreement_20` | intraday | 高优 | 上午与下午同向的频率（20 日）∈ [0,1] | `roll_mean(sign(am_ret) == sign(pm_ret), 20, min_count=10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_history_5min |
+| `id2_vol_amt_hhi_gap` | intraday | 高优 | 成交**额**集中度 − 成交**量**集中度（大单是否集中在高价区） | `n*amt2_sum/amt**2 - n*vol2_sum/vol**2` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_vol_peak_pos` | intraday | 低优 | 当日成交量的峰值时点（层已归一化到 [0,1]） | `vpt = _compute_intraday_factor(context, 'volume_peak_time'); rank(-vpt)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `id2_vol_peak_std_20` | intraday | 低优 | 放量时点的 20 日标准差（日内流动性节奏稳不稳） | `roll_std(vol_peak_pos, 20, min_count=10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_history_5min |
+| `id2_zero_bar_share` | intraday | 低优 | 零收益 5min 棒占比 = (n_zero − 1) / (n_bars − 1) | `(n_zero - 1) / (n_bars - 1)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_history_5min |
+| `idio_vol_60` | risk | 低优 | 60 日特质波动率 = 剔除市场暴露后残差的标准差（反向） | `beta = _rolling_beta(wide, mkt, 60, 30); resid = wide - beta.multiply(mkt, axis=0); idio = resid.rolling(60, min_periods=30).std()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor, index_daily |
+| `idt_intraday_max_drawdown` | intraday | 高优 | 日内最大回撤：从盘内高点到后续低点的最大跌幅（≤0） | `min(close5_t / cummax(close5) - 1)  （= 日内层 max_dd 字段）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_history_5min |
+| `idt_lo_pos` | intraday | 低优 | 日内最低价时点（归一化到 [0,1]）：越晚见低＝尾盘走弱（方向为负） | `argmin(close5) / (n_bars - 1)  （日内层 lo_pos，已在 [0,1]）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_history_5min |
+| `idt_overnight_gap` | intraday | 低优 | 隔夜跳空：后复权开盘 / 上一交易日后复权收盘 − 1 | `gap = open / pre_close - 1  （参考库 rank(-gap)）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_daily, stock_adj_factor |
+| `idt_overnight_minus_intraday` | intraday | 高优 | 隔夜 − 日内收益差：隔夜强于日内＝信息在开盘被消化 | `overnight - intraday  (= open/pre_close-1 与 close/open-1 之差)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_daily, stock_adj_factor |
+| `idt_overnight_return_share_20` | intraday | 高优 | 隔夜收益占比：20 日 \|跳空\| / Σ(\|跳空\|+\|日内\|) | `roll_sum(\|gap\|, 20, 10) / roll_sum(\|gap\|+\|intra\|, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `idt_rv_daily` | intraday | 低优 | 日已实现波动率：当日 5min 收益平方和开根（**日频口径，未年化**） | `rv_daily = sqrt(sum(r_5min^2)) = sqrt(ret2_sum)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_history_5min |
+| `idt_rv_term_structure_slope` | intraday | 低优 | 波动率期限结构斜率：rv_5日/rv_60日 − 1（陡峭＝短期波动高） | `rv_5min / rv_60min - 1,  rv_N = sqrt(roll_mean(ret2_sum, N))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_history_5min |
+| `idt_up_minutes_ratio` | intraday | 高优 | 上涨棒占比：n_up / n_bars，买盘持续主导 | `n_up / n_bars   （5min 口径 = 参考库 intra_trend）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_history_5min |
+| `idt_vol_stability` | intraday | 低优 | 成交量稳定性：日内 5min 量的变异系数 std/mean（越大越不稳定） | `std(vol_5min) / mean(vol_5min) = sqrt(n_bars * vol2_sum*vol_mult / vol^2 - 1)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_history_5min |
+| `ind_beta_60` | sector | 低优 | 个股对**所属行业**的 60 日 β（行业耦合强度） | `beta = roll_cov(ret, ind_ret, 60, 30) / roll_var(ind_ret, 60, 30)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `ind_bps_yoy` | growth | 高优 | 每股净资产同比（股东权益的**每股**累积速度） | `ctx.ind('bps_yoy')` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_financial_indicator |
+| `ind_currentdebt_to_debt` | risk | 低优 | 短期债务占总债务的比重（债务期限结构 / 展期风险） | `ctx.ind('currentdebt_to_debt')   # 供应商时点比率` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_financial_indicator |
+| `ind_disp_ma_20d` | sector | 低优 | 所属行业内部的收益分化度（行业成员截面 std 的 20 日均值） | `ind_disp = cross_std(ret within my industry); factor = ts_mean(ind_disp, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `ind_disp_ma_5d` | sector | 低优 | 所属行业内部的收益分化度（行业成员截面 std 的 5 日均值） | `ind_disp = cross_std(ret within my industry); factor = ts_mean(ind_disp, 5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `ind_dt_netprofit_yoy` | growth | 高优 | 扣非净利润同比（供应商同期同比字段，季节性自动抵消） | `ctx.ind('dt_netprofit_yoy')` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_financial_indicator |
+| `ind_int_to_talcap` | risk | 低优 | 有息负债占总资本的比重（融资性杠杆，剔除经营性负债） | `ctx.ind('int_to_talcap')   # 供应商时点比率` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_financial_indicator |
+| `ind_mom_accel` | sector | 高优 | 行业动量加速度 = 行业 5 日均收益 − 行业 20 日均收益 | `accel = ts_mean(ind_ret, 5) - ts_mean(ind_ret, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `ind_ret_ma_20d` | sector | 高优 | 所属行业的 20 日平均日收益（行业动能） | `ind_ret = industry_index_daily_return; factor = ts_mean(ind_ret, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `ind_ret_ma_3d` | sector | 高优 | 所属行业的 3 日平均日收益（行业动能） | `ind_ret = industry_index_daily_return; factor = ts_mean(ind_ret, 3)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `ind_ret_ma_5d` | sector | 高优 | 所属行业的 5 日平均日收益（行业动能） | `ind_ret = industry_index_daily_return; factor = ts_mean(ind_ret, 5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `ind_ret_ma_60d` | sector | 高优 | 所属行业的 60 日平均日收益（行业动能） | `ind_ret = industry_index_daily_return; factor = ts_mean(ind_ret, 60)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `inside_bar_count_20` | pattern | 高优 | 孕线（内包线）频率：20 日内「今高 ≤ 昨高 且 今低 ≥ 昨低」的交易日占比 | `prev_high=shift(high,1); prev_low=shift(low,1); inside=(high<=prev_high)&(low>=prev_low); count=_roll_sum(inside,20,5); 参考库: cross_sectional_rank(count)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `interest_coverage` | quality | 高优 | 利息保障倍数（TTM）= EBIT_TTM / 利息支出TTM（值越大偿债越安全） | `ICR = EBIT_TTM / InterestExpense_TTM` | 2019-05-01 | 2019-05-06 → 2026-09-21 | 700 | stock_income |
+| `intraday_ma_20d` | pattern | 高优 | 日内收益均值（20 个交易日） | `intraday = close/open - 1; ma20 = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `intraday_ma_5d` | pattern | 高优 | 日内收益均值（5 个交易日） | `intraday = close/open - 1; ma5 = rolling(5).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_daily, stock_adj_factor |
+| `intraday_ma_60d` | pattern | 高优 | 日内收益均值（60 个交易日） | `intraday = close/open - 1; ma60 = rolling(60).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor |
+| `intraday_ret_momentum` | pattern | 高优 | 日内收益因子：(close − open) / open，单日口径 | `intraday = (close - open) / open   # 参考库 cross_sectional_rank(intraday)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_daily, stock_adj_factor |
 | `intraday_ret_share_20` | coupling | 低优 | 日内收益占比 = 20 日 Σ(日内收益) / 20 日 Σ(\|隔夜\| + \|日内\|) | `intraday(t) = hfq_close(t)/hfq_open(t) − 1;  overnight(t) = hfq_open(t)/hfq_close(t−1) − 1;
-Share = roll_sum(intraday, 20) / roll_sum(\|overnight\| + \|intraday\|, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 200 | stock_daily, stock_adj_factor |
-| `intraday_vol_ratio_5d` | pattern | 高优 | 日内/隔夜波动比：5 日 \|日内收益\| 均值 ÷ 5 日 \|隔夜收益\| 均值 | `_ia = \|intraday\|; _oa = \|overnight\|; m_ia = rolling(5).mean(_ia); m_oa = rolling(5).mean(_oa); x = m_ia / (m_oa + 1e-8)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_daily, stock_adj_factor |
-| `inventory_turnover` | quality | 高优 | 存货周转率（TTM，次/年）= 营业成本TTM / 期末存货 | `InventoryTurnover = OperatingCost_TTM / Inventories` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_balancesheet |
-| `invest_income_share` | quality | 低优 | 投资收益占利润总额的比重（非主业盈利依赖度） | `share = invest_income_TTM / total_profit_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income |
+Share = roll_sum(intraday, 20) / roll_sum(\|overnight\| + \|intraday\|, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 200 | stock_daily, stock_adj_factor |
+| `intraday_vol_ratio_5d` | pattern | 高优 | 日内/隔夜波动比：5 日 \|日内收益\| 均值 ÷ 5 日 \|隔夜收益\| 均值 | `_ia = \|intraday\|; _oa = \|overnight\|; m_ia = rolling(5).mean(_ia); m_oa = rolling(5).mean(_oa); x = m_ia / (m_oa + 1e-8)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_daily, stock_adj_factor |
+| `inventory_turnover` | quality | 高优 | 存货周转率（TTM，次/年）= 营业成本TTM / 期末存货 | `InventoryTurnover = OperatingCost_TTM / Inventories` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_balancesheet |
+| `invest_income_share` | quality | 低优 | 投资收益占利润总额的比重（非主业盈利依赖度） | `share = invest_income_TTM / total_profit_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income |
 | `kdj_k_minus_d` | technical | 高优 | 日频 KDJ 的 K − D（KD 金叉/死叉的横截面形态），>0 = 多头排列 | `# 参考库只有分钟级 kdj_k_d_distance = (K-D)/\|D\|，日频版沿用 kdj_daily_j 的链：
 wide = _adjusted_close(daily).unstack("Code")
 ll9 = wide.rolling(9, min_periods=5).min()
@@ -1164,16 +1413,16 @@ hh9 = wide.rolling(9, min_periods=5).max()
 rsv = safe_divide(wide - ll9, hh9 - ll9 + 1e-10) * 100.0
 k = rsv.ewm(alpha=1.0 / 3.0, adjust=False).mean()
 d = k.ewm(alpha=1.0 / 3.0, adjust=False).mean()
-return k - d` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 300 | stock_daily, stock_adj_factor |
-| `label_ret_10d` | label | 高优 | T+1 开盘买入、T+11 开盘卖出，持有 10 个交易日的收益 | `label = open_hfq(T+1+10) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 5 | stock_daily, stock_adj_factor |
-| `label_ret_1d` | label | 高优 | T+1 开盘买入、T+2 开盘卖出，持有 1 个交易日的收益 | `label = open_hfq(T+1+1) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 5 | stock_daily, stock_adj_factor |
-| `label_ret_20d` | label | 高优 | T+1 开盘买入、T+21 开盘卖出，持有 20 个交易日的收益 | `label = open_hfq(T+1+20) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 5 | stock_daily, stock_adj_factor |
-| `label_ret_3d` | label | 高优 | T+1 开盘买入、T+4 开盘卖出，持有 3 个交易日的收益 | `label = open_hfq(T+1+3) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 5 | stock_daily, stock_adj_factor |
-| `label_ret_5d` | label | 高优 | T+1 开盘买入、T+6 开盘卖出，持有 5 个交易日的收益 | `label = open_hfq(T+1+5) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 5 | stock_daily, stock_adj_factor |
+return k - d` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 300 | stock_daily, stock_adj_factor |
+| `label_ret_10d` | label | 高优 | T+1 开盘买入、T+11 开盘卖出，持有 10 个交易日的收益 | `label = open_hfq(T+1+10) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 5 | stock_daily, stock_adj_factor |
+| `label_ret_1d` | label | 高优 | T+1 开盘买入、T+2 开盘卖出，持有 1 个交易日的收益 | `label = open_hfq(T+1+1) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 5 | stock_daily, stock_adj_factor |
+| `label_ret_20d` | label | 高优 | T+1 开盘买入、T+21 开盘卖出，持有 20 个交易日的收益 | `label = open_hfq(T+1+20) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 5 | stock_daily, stock_adj_factor |
+| `label_ret_3d` | label | 高优 | T+1 开盘买入、T+4 开盘卖出，持有 3 个交易日的收益 | `label = open_hfq(T+1+3) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 5 | stock_daily, stock_adj_factor |
+| `label_ret_5d` | label | 高优 | T+1 开盘买入、T+6 开盘卖出，持有 5 个交易日的收益 | `label = open_hfq(T+1+5) / open_hfq(T+1) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 5 | stock_daily, stock_adj_factor |
 | `large_order_timing_signal` | fundflow | 高优 | 大单净流入占比 × (1 − 20 日价格位置)：大钱在低位买 | `big_net = (buy_lg+buy_elg-sell_lg-sell_elg)/_total_amount(mf)
 high_20 = adj.rolling(20,10).max(); low_20 = ...
 position = (adj-low_20)/(high_20-low_20)
-signal = big_net*(1-position)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_main_fund_flow, stock_daily, stock_adj_factor |
+signal = big_net*(1-position)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_main_fund_flow, stock_daily, stock_adj_factor |
 | `limit_board_streak_mean_60` | event | 高优 | 平均连板高度 = 60 日封板天数 / 连板启动次数（历史拉板惯性） | `sealed = (daily["pct_chg"] >= _LIMIT_UP).astype(float)
 prev_sealed = sealed.astype(bool).groupby(level="Code").shift(1)
     .fillna(False).astype(bool)
@@ -1182,24 +1431,24 @@ days60 = sealed.groupby(level="Code").transform(
     lambda s: s.rolling(60, min_periods=1).sum())
 starts60 = start.astype(float).groupby(level="Code").transform(
     lambda s: s.rolling(60, min_periods=1).sum())
-avg = safe_divide(days60, starts60).fillna(0.0)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_limit_up |
+avg = safe_divide(days60, starts60).fillna(0.0)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_limit_up |
 | `limit_down_event_5` | event | 低优 | 近 5 个交易日跌停事件的指数衰减加权值（半衰期 3 日） | `down = daily["pct_chg"].le(-9.8)
 event = down.astype(float).where(down, np.nan)
 decayed = event_decay(event, half_life=3)      # 参考库原文
 # 本实现（任务书范式：加权和，窗口 N=5）：
 #   is_ld   = (limit == "D") if stock_limit_list 有记录
 #             else (pct_chg <= -9.5 and close == low)
-#   decayed = Σ_{k=0}^{4} is_ld(t-k) × 0.5^(k/3)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_limit_list, stock_daily, stock_adj_factor |
-| `limit_up_count_20` | event | 高优 | 过去 20 个交易日的涨停次数 | `Count = sum(IsLimitUp, window=20 trading days)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_limit_up |
+#   decayed = Σ_{k=0}^{4} is_ld(t-k) × 0.5^(k/3)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_limit_list, stock_daily, stock_adj_factor |
+| `limit_up_count_20` | event | 高优 | 过去 20 个交易日的涨停次数 | `Count = sum(IsLimitUp, window=20 trading days)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_limit_up |
 | `limit_up_event_5` | event | 高优 | 近 5 个交易日涨停事件的指数衰减加权值（半衰期 3 日）——跌停侧的对照组 | `event = daily["pct_chg"].ge(9.8).astype(float).where(
     daily["pct_chg"].ge(9.8), np.nan)
 decayed = event_decay(event, half_life=3)      # 参考库原文
 # 本实现（与 limit_down_event_5 同一套口径，只把方向反过来）：
 #   is_lu   = (limit == "U") if stock_limit_list 有记录
 #             else (pct_chg >= 9.5 and close == high)
-#   decayed = Σ_{k=0}^{4} is_lu(t-k) × 0.5^(k/3)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_limit_list, stock_daily, stock_adj_factor |
-| `liquidity_shock_20` | liquidity | 低优 | 流动性冲击：20 日 Amihud 均值相对再前 20 日的变化（放大 = 流动性恶化） | `amihud = safe_divide(\|pct_chg\| / 100.0, amount); log_amihud = np.log(amihud + 1e-12); ma_now = rolling(20, min_periods=10).mean(); ma_prev = ma_now.shift(20); shock = ma_now - ma_prev` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 95 | stock_daily, stock_adj_factor |
-| `log_mv` | value | 低优 | 对数总市值 ln(close × total_share)（元），规模因子的基准 | `log_mv = ln(TotalMV), TotalMV = ClosePrice × TotalShares` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_finance |
+#   decayed = Σ_{k=0}^{4} is_lu(t-k) × 0.5^(k/3)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_limit_list, stock_daily, stock_adj_factor |
+| `liquidity_shock_20` | liquidity | 低优 | 流动性冲击：20 日 Amihud 均值相对再前 20 日的变化（放大 = 流动性恶化） | `amihud = safe_divide(\|pct_chg\| / 100.0, amount); log_amihud = np.log(amihud + 1e-12); ma_now = rolling(20, min_periods=10).mean(); ma_prev = ma_now.shift(20); shock = ma_now - ma_prev` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 95 | stock_daily, stock_adj_factor |
+| `log_mv` | value | 低优 | 对数总市值 ln(close × total_share)（元），规模因子的基准 | `log_mv = ln(TotalMV), TotalMV = ClosePrice × TotalShares` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_finance |
 | `macd_daily_hist_5d` | technical | 高优 | 日频 MACD 柱（归一化 DIF − DEA）的 5 日变化：动能的二阶导 | `wide = _adjusted_close(daily).unstack("Code")
 ema12 = wide.ewm(span=12, adjust=False).mean()
 ema26 = wide.ewm(span=26, adjust=False).mean()
@@ -1209,86 +1458,83 @@ ema26 = wide.ewm(span=26, adjust=False).mean()
 dif = safe_divide(ema12 - ema26, ema26)
 dea = dif.ewm(span=9, adjust=False).mean()
 hist = dif - dea
-chg = hist.diff(5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 300 | stock_daily, stock_adj_factor |
-| `margin_balance_20d` | margin | 高优 | 融资余额 20 日变化率（中期杠杆资金趋势） | `chg = m["rzye"].groupby(level="Code").transform(lambda s: s.pct_change(20, fill_method=None)); chg = chg.clip(-0.5, 1.0); return cross_sectional_rank(chg)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail |
-| `margin_balance_5d` | margin | 高优 | 融资余额 5 日变化率（短期杠杆资金进出速度） | `chg = m["rzye"].groupby(level="Code").transform(lambda s: s.pct_change(5, fill_method=None)); chg = chg.clip(-0.5, 1.0); return cross_sectional_rank(chg)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_margin_detail |
+chg = hist.diff(5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 300 | stock_daily, stock_adj_factor |
+| `margin_balance_20d` | margin | 高优 | 融资余额 20 日变化率（中期杠杆资金趋势） | `chg = m["rzye"].groupby(level="Code").transform(lambda s: s.pct_change(20, fill_method=None)); chg = chg.clip(-0.5, 1.0); return cross_sectional_rank(chg)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail |
+| `margin_balance_5d` | margin | 高优 | 融资余额 5 日变化率（短期杠杆资金进出速度） | `chg = m["rzye"].groupby(level="Code").transform(lambda s: s.pct_change(5, fill_method=None)); chg = chg.clip(-0.5, 1.0); return cross_sectional_rank(chg)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_margin_detail |
 | `margin_balance_ma_divergence` | margin | 高优 | 融资余额偏离 20 日均线幅度 = (rzye − MA20)/MA20（极端偏离预示均值回归） | `rzye = m["rzye"]
 ma20 = rzye.groupby(level="Code").transform(
     lambda s: s.rolling(20, min_periods=10).mean())
 div = safe_divide(rzye - ma20, ma20); div = div.clip(-0.1, 0.1)
 return cross_sectional_rank(div)
 ★ 本实现的状态量口径（见 note）：asof 前向填充 + **20 个交易日新鲜度掩码**
-stale = 最近 20 个交易日内无该股两融记录 → div = NaN` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail |
-| `margin_balance_volatility_20d` | margin | 低优 | 融资余额 20 日变异系数 CV=std/mean（杠杆资金稳定性，低者优） | `roll_std = rzye.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).std()); roll_mean = rzye.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); cv = safe_divide(roll_std, roll_mean); cv = cv.clip(0, 0.5); return cross_sectional_rank(-cv)【本实现：不取反（方向交给 higher_is_better=False）；clip 交给引擎缩尾；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail |
-| `margin_buyer_avg_cost_premium` | margin | 高优 | 融资盘成本溢价 = 现价 / 近 20 日融资买入加权平均成本 − 1 | `cost = _margin_weighted_cost(margin, daily); close = daily["close"].reindex(cost.index); raw = safe_divide(close, cost) - 1.0; return cross_sectional_rank(raw)【本实现：加权成本 = Σ(rzmre × hfq_close) / Σ(rzmre) over 20 日（原函数未公开，见 note）；配对价格用后复权 close；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail, stock_daily, stock_adj_factor |
-| `margin_chg_rel_5d` | margin | 高优 | 融资余额变化率之加速度 = 5 日变化率 − 20 日变化率 | `chg5 = m["rzye"].groupby(level="Code").transform(lambda s: s.pct_change(5, fill_method=None)); chg20 = m["rzye"].groupby(level="Code").transform(lambda s: s.pct_change(20, fill_method=None)); return cross_sectional_rank(chg5 - chg20)   ★ 参考库原条目为 margin_chg_rel_ind_5d（融资余额5日变化率**行业相对**）【本实现：行业表在本框架不可得（见 note），改为「相对自身中期趋势」；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail |
+stale = 最近 20 个交易日内无该股两融记录 → div = NaN` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail |
+| `margin_balance_volatility_20d` | margin | 低优 | 融资余额 20 日变异系数 CV=std/mean（杠杆资金稳定性，低者优） | `roll_std = rzye.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).std()); roll_mean = rzye.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); cv = safe_divide(roll_std, roll_mean); cv = cv.clip(0, 0.5); return cross_sectional_rank(-cv)【本实现：不取反（方向交给 higher_is_better=False）；clip 交给引擎缩尾；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail |
+| `margin_buyer_avg_cost_premium` | margin | 高优 | 融资盘成本溢价 = 现价 / 近 20 日融资买入加权平均成本 − 1 | `cost = _margin_weighted_cost(margin, daily); close = daily["close"].reindex(cost.index); raw = safe_divide(close, cost) - 1.0; return cross_sectional_rank(raw)【本实现：加权成本 = Σ(rzmre × hfq_close) / Σ(rzmre) over 20 日（原函数未公开，见 note）；配对价格用后复权 close；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail, stock_daily, stock_adj_factor |
+| `margin_chg_rel_5d` | margin | 高优 | 融资余额变化率之加速度 = 5 日变化率 − 20 日变化率 | `chg5 = m["rzye"].groupby(level="Code").transform(lambda s: s.pct_change(5, fill_method=None)); chg20 = m["rzye"].groupby(level="Code").transform(lambda s: s.pct_change(20, fill_method=None)); return cross_sectional_rank(chg5 - chg20)   ★ 参考库原条目为 margin_chg_rel_ind_5d（融资余额5日变化率**行业相对**）【本实现：行业表在本框架不可得（见 note），改为「相对自身中期趋势」；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail |
 | `margin_chip_cost_gap` | margin | 低优 | 融资盘成本 / 全市场筹码均价 − 1（融资盘相对市场平均的建仓位置，高位接盘者低优） | `cost = _margin_weighted_cost(margin, daily)   # Σ(rzmre × close)/Σ(rzmre) 近 20 日
 weight_avg = cyq["weight_avg"].reindex(cost.index)
 gap = safe_divide(cost, weight_avg) - 1.0
-return cross_sectional_rank(-gap)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail, stock_cyq_chips, stock_daily |
-| `margin_flow_asymmetry_10d` | margin | 高优 | 10 日累计融资净买入 / 10 日累计融资交易额（方向持续性） | `net = m["rzmre"] - m["rzche"]; total = m["rzmre"] + m["rzche"]; net_10d = net.groupby(level="Code").transform(lambda s: s.rolling(10, min_periods=5).sum()); total_10d = total.groupby(level="Code").transform(lambda s: s.rolling(10, min_periods=5).sum()); asymmetry = safe_divide(net_10d, total_10d); asymmetry = asymmetry.clip(-1, 1); return cross_sectional_rank(asymmetry)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_margin_detail |
-| `margin_leverage_change_20d` | margin | 高优 | 融资杠杆变化 =（融资余额 / 流通市值）的 20 个交易日变化 | `total_mv_m = fin["total_mv"].reindex(m.index); leverage = safe_divide(m["rzye"], total_mv_m); change = leverage.groupby(level="Code").diff(20); return cross_sectional_rank(change)【本实现：total_mv → 流通市值 = 未复权 close × float_share（用户口径）；diff(20) 即 20 个交易日之差；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail, stock_daily, stock_finance |
-| `margin_repay_deceleration` | margin | 低优 | 融资偿还额 5 日变化率（偿还减速=看空力量减弱，低者优） | `chg = m["rzche"].groupby(level="Code").transform(lambda s: s.pct_change(5, fill_method=None)); chg = chg.clip(-0.5, 0.5); return cross_sectional_rank(-chg)【本实现：不取反（方向交给 higher_is_better=False）；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_margin_detail |
-| `margin_repay_shock` | margin | 低优 | 融资偿还冲击 = 当日偿还额 / 20 日均偿还额（突然放大=恐慌平仓，低者优） | `repay_ma20 = rzche.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); shock = safe_divide(rzche, repay_ma20); shock = shock.clip(0, 5); return cross_sectional_rank(-shock)【本实现：不取反（方向交给 higher_is_better=False）；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail |
-| `margin_velocity` | margin | 高优 | 融资周转速度 =（融资买入 + 融资偿还）/ 融资余额 | `total_flow = m["rzmre"] + m["rzche"]; velocity = safe_divide(total_flow, m["rzye"]); velocity = velocity.clip(0, 2); return cross_sectional_rank(velocity)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_margin_detail |
-| `market_cap_concentration_20d` | value | 低优 | log 总市值的 20 日波动率（低 = 市场对公司价值共识度高） | `mv = np.log(finance['total_mv'].replace(0, np.nan))
-mv_vol_20 = mv.groupby(level='Code').transform(
-    lambda s: s.rolling(20, min_periods=10).std())` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_finance |
-| `marubozu_ratio_10d` | pattern | 高优 | 光头光脚阳线频率：10 日内（上下影合计 < 10%×振幅 且 收>开）的交易日占比 | `body=\|close-open\|; upper=high-max(open,close); lower=min(open,close)-low; rng=high-low; is_marubozu=((upper+lower)/rng < 0.1); is_green=(close>open); signal=is_marubozu*is_green; ratio=rolling(10, min_periods=5).mean(signal)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_daily, stock_adj_factor |
-| `max_drawdown_120` | risk | 高优 | 120 日回撤深度 = 后复权价 / 最近 120 日最高价 − 1（≤0） | `peak = adj.groupby(level="Code").transform(lambda s: s.rolling(120, min_periods=60).max()); drawdown = adj / peak.replace(0, np.nan) - 1.0  # ≤ 0` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 240 | stock_daily, stock_adj_factor |
-| `max_drawdown_60` | risk | 高优 | 60 日回撤深度 = 后复权价 / 最近 60 日最高价 − 1（≤0） | `peak = adj.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=30).max()); drawdown = adj / peak.replace(0, np.nan) - 1.0  # ≤ 0` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
+return cross_sectional_rank(-gap)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail, stock_cyq_chips, stock_daily |
+| `margin_flow_asymmetry_10d` | margin | 高优 | 10 日累计融资净买入 / 10 日累计融资交易额（方向持续性） | `net = m["rzmre"] - m["rzche"]; total = m["rzmre"] + m["rzche"]; net_10d = net.groupby(level="Code").transform(lambda s: s.rolling(10, min_periods=5).sum()); total_10d = total.groupby(level="Code").transform(lambda s: s.rolling(10, min_periods=5).sum()); asymmetry = safe_divide(net_10d, total_10d); asymmetry = asymmetry.clip(-1, 1); return cross_sectional_rank(asymmetry)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_margin_detail |
+| `margin_leverage_change_20d` | margin | 高优 | 融资杠杆变化 =（融资余额 / 流通市值）的 20 个交易日变化 | `total_mv_m = fin["total_mv"].reindex(m.index); leverage = safe_divide(m["rzye"], total_mv_m); change = leverage.groupby(level="Code").diff(20); return cross_sectional_rank(change)【本实现：total_mv → 流通市值 = 未复权 close × float_share（用户口径）；diff(20) 即 20 个交易日之差；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail, stock_daily, stock_finance |
+| `margin_repay_deceleration` | margin | 低优 | 融资偿还额 5 日变化率（偿还减速=看空力量减弱，低者优） | `chg = m["rzche"].groupby(level="Code").transform(lambda s: s.pct_change(5, fill_method=None)); chg = chg.clip(-0.5, 0.5); return cross_sectional_rank(-chg)【本实现：不取反（方向交给 higher_is_better=False）；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_margin_detail |
+| `margin_repay_shock` | margin | 低优 | 融资偿还冲击 = 当日偿还额 / 20 日均偿还额（突然放大=恐慌平仓，低者优） | `repay_ma20 = rzche.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); shock = safe_divide(rzche, repay_ma20); shock = shock.clip(0, 5); return cross_sectional_rank(-shock)【本实现：不取反（方向交给 higher_is_better=False）；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail |
+| `margin_velocity` | margin | 高优 | 融资周转速度 =（融资买入 + 融资偿还）/ 融资余额 | `total_flow = m["rzmre"] + m["rzche"]; velocity = safe_divide(total_flow, m["rzye"]); velocity = velocity.clip(0, 2); return cross_sectional_rank(velocity)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_margin_detail |
+| `marubozu_ratio_10d` | pattern | 高优 | 光头光脚阳线频率：10 日内（上下影合计 < 10%×振幅 且 收>开）的交易日占比 | `body=\|close-open\|; upper=high-max(open,close); lower=min(open,close)-low; rng=high-low; is_marubozu=((upper+lower)/rng < 0.1); is_green=(close>open); signal=is_marubozu*is_green; ratio=rolling(10, min_periods=5).mean(signal)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_daily, stock_adj_factor |
+| `max_drawdown_120` | risk | 高优 | 120 日回撤深度 = 后复权价 / 最近 120 日最高价 − 1（≤0） | `peak = adj.groupby(level="Code").transform(lambda s: s.rolling(120, min_periods=60).max()); drawdown = adj / peak.replace(0, np.nan) - 1.0  # ≤ 0` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 240 | stock_daily, stock_adj_factor |
+| `max_drawdown_60` | risk | 高优 | 60 日回撤深度 = 后复权价 / 最近 60 日最高价 − 1（≤0） | `peak = adj.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=30).max()); drawdown = adj / peak.replace(0, np.nan) - 1.0  # ≤ 0` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor |
 | `mf_amount_weighted_direction` | fundflow | 高优 | 金额加权方向 = 四档方向信号 sign(该档净额) 按该档毛额占比加权求和（多空结构综合） | `sm_dir = np.sign(ff["buy_sm_amount"] - ff["sell_sm_amount"])   # md/lg/elg 同理
 sm_w = (ff["buy_sm_amount"] + ff["sell_sm_amount"]) / total_amt   # md/lg/elg 同理
 composite = sm_dir*sm_w + md_dir*md_w + lg_dir*lg_w + elg_dir*elg_w
-return cross_sectional_rank(composite)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
+return cross_sectional_rank(composite)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
 | `mf_avg_trade_price_momentum` | fundflow | 高优 | 成交均价动量 = (大单VWAP / 小单VWAP) 的 5 日变化率（比率上升=机构买入更急迫） | `big_vol = (buy_lg_vol + sell_lg_vol + buy_elg_vol + sell_elg_vol)
 big_amt = (buy_lg_amount + sell_lg_amount + buy_elg_amount + sell_elg_amount)
 big_vwap = safe_divide(big_amt, big_vol); sm_vwap = safe_divide(sm_amt, sm_vol)
 ratio = safe_divide(big_vwap, sm_vwap).clip(0.5, 3.0)
 mom = ratio.groupby(level="Code").transform(
     lambda s: s.pct_change(5, fill_method=None)).clip(-0.3, 0.5)
-return cross_sectional_rank(mom)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 38 | stock_main_fund_flow, stock_daily |
+return cross_sectional_rank(mom)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 38 | stock_main_fund_flow, stock_daily |
 | `mf_big_mid_net_corr_20` | fundflow | 高优 | 大单净额 与 中单净额 的 20 日滚动相关（机构与中户是否同向） | `b = (buy_lg+buy_elg-sell_lg-sell_elg); m = (buy_md-sell_md)
-factor = roll_corr(b, m, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_main_fund_flow |
-| `mf_big_order_net_ac1_20` | fundflow | 高优 | 大单净额占比的一阶自相关（20 日）（资金流入的持续性） | `x = big_net_ratio; factor = roll_corr(x, shift(x,1), 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_main_fund_flow |
+factor = roll_corr(b, m, 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_main_fund_flow |
+| `mf_big_order_net_ac1_20` | fundflow | 高优 | 大单净额占比的一阶自相关（20 日）（资金流入的持续性） | `x = big_net_ratio; factor = roll_corr(x, shift(x,1), 20, 10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_main_fund_flow |
 | `mf_big_order_net_kurt_20` | fundflow | 高优 | 大单净额占比的 20 日峰度（脉冲式建仓 vs 匀速滴灌） | `x = (mf["buy_lg_amount"]+mf["buy_elg_amount"]-mf["sell_lg_amount"]-mf["sell_elg_amount"])
-kurt = x.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).kurt())` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_main_fund_flow |
-| `mf_big_order_ratio` | fundflow | 高优 | 大单+超大单净买入率 = (lg+elg 净额) / 当日八列毛额 | `big_net = (ff["buy_lg_amount"] - ff["sell_lg_amount"] + ff["buy_elg_amount"] - ff["sell_elg_amount"]); ratio = big_net / _total_amount(ff)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
+kurt = x.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).kurt())` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_main_fund_flow |
+| `mf_big_order_ratio` | fundflow | 高优 | 大单+超大单净买入率 = (lg+elg 净额) / 当日八列毛额 | `big_net = (ff["buy_lg_amount"] - ff["sell_lg_amount"] + ff["buy_elg_amount"] - ff["sell_elg_amount"]); ratio = big_net / _total_amount(ff)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
 | `mf_big_small_divergence` | fundflow | 高优 | 大小单背离 = (大单净买额 − 小单净买额) / 当日八列毛额（机构与散户分歧，分歧顶点伴转折） | `big_net = (ff["buy_lg_amount"] - ff["sell_lg_amount"]
            + ff["buy_elg_amount"] - ff["sell_elg_amount"])
 small_net = ff["buy_sm_amount"] - ff["sell_sm_amount"]
 divergence = (big_net - small_net) / _total_amount(ff)
-return cross_sectional_rank(divergence)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
-| `mf_elg_lg_split_20` | fundflow | 高优 | 超大单净额占比 − 大单净额占比（20 日均值）：哪一级机构在买 | `e = elg_net/total; l = lg_net/total; factor = mean(e,20,10) - mean(l,20,10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_main_fund_flow |
-| `mf_extra_large_sell_pressure` | fundflow | 低优 | 超大单**卖出**毛额占八列毛额的比重（顶级资金的派发压力） | `total = Σ(buy_*_amount) + Σ(sell_*_amount); elg_sell_ratio = sell_elg_amount / total; return cross_sectional_rank(-elg_sell_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow |
+return cross_sectional_rank(divergence)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
+| `mf_elg_lg_split_20` | fundflow | 高优 | 超大单净额占比 − 大单净额占比（20 日均值）：哪一级机构在买 | `e = elg_net/total; l = lg_net/total; factor = mean(e,20,10) - mean(l,20,10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_main_fund_flow |
+| `mf_extra_large_sell_pressure` | fundflow | 低优 | 超大单**卖出**毛额占八列毛额的比重（顶级资金的派发压力） | `total = Σ(buy_*_amount) + Σ(sell_*_amount); elg_sell_ratio = sell_elg_amount / total; return cross_sectional_rank(-elg_sell_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow |
 | `mf_flow_factor_momentum_20` | fundflow | 高优 | 主力资金流因子的 20 日动量 = Δ20(主力净流入率)（机构态度的边际改善） | `mf = ctx.load_factor("mf_net_inflow_ratio")
 delta = _delta(mf, 20)
-return cross_sectional_rank(delta)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | mf_net_inflow_ratio |
-| `mf_flow_price_absorption_20` | fundflow | 高优 | 20 日大单净流入占比累计 / 20 日累计绝对收益（单位价格冲击吸收的流量） | `flow = roll_sum(big_net_ratio, 20, 10); move = roll_sum(abs(ret), 20, 10); factor = flow / move` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_main_fund_flow, stock_daily, stock_adj_factor |
+return cross_sectional_rank(delta)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | mf_net_inflow_ratio |
+| `mf_flow_price_absorption_20` | fundflow | 高优 | 20 日大单净流入占比累计 / 20 日累计绝对收益（单位价格冲击吸收的流量） | `flow = roll_sum(big_net_ratio, 20, 10); move = roll_sum(abs(ret), 20, 10); factor = flow / move` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_main_fund_flow, stock_daily, stock_adj_factor |
 | `mf_large_order_avg_price` | fundflow | 高优 | 大单均价相对全日成交均价的偏离（正 = 机构在高价位成交） | `large_avg = safe_divide(large_amt, large_vol)   # lg+elg 的买+卖毛额/毛量
 total_avg = safe_divide(total_amt, total_vol)
-ratio = safe_divide(large_avg, total_avg).clip(0.5, 2.0)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
-| `mf_large_order_net_5d` | fundflow | 高优 | 大单净买入率 5 日均值（只算 lg 档，不含超大单） | `large_net = ff["buy_lg_amount"] - ff["sell_lg_amount"]; ratio = safe_divide(large_net, _total_amount(ff)); ratio_ma5 = ratio.rolling(5, min_periods=3).mean(); ratio_ma5.clip(-0.5, 0.5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_main_fund_flow, stock_daily |
+ratio = safe_divide(large_avg, total_avg).clip(0.5, 2.0)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
+| `mf_large_order_net_5d` | fundflow | 高优 | 大单净买入率 5 日均值（只算 lg 档，不含超大单） | `large_net = ff["buy_lg_amount"] - ff["sell_lg_amount"]; ratio = safe_divide(large_net, _total_amount(ff)); ratio_ma5 = ratio.rolling(5, min_periods=3).mean(); ratio_ma5.clip(-0.5, 0.5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_main_fund_flow, stock_daily |
 | `mf_net_amount_intensity` | fundflow | 高优 | 主力资金净额强度 = 净流入额 / 总市值（消除规模效应） | `intensity = net_mf_amount / circ_mv   （参考库用流通市值）
-本实现：net_amount * 1e4 / (close * total_share)   # 万元->元；总市值=元` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily, stock_finance |
+本实现：net_amount * 1e4 / (close * total_share)   # 万元->元；总市值=元` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily, stock_finance |
 | `mf_net_amount_mom5_to_mv` | fundflow | 高优 | 厂商净流入额的 5 日变化 / 总市值（无尺度的流量动量） | `mom = net_mf_amount.diff(5); return cross_sectional_rank(mom)   # 参考库原式
-本实现：mom * 1e4 / (close * total_share)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_main_fund_flow, stock_daily |
-| `mf_net_inflow_5d` | fundflow | 高优 | 5 日累计主力净流入率 | `daily_ratio = ff["net_mf_amount"] / _total_amount(ff); cum_ratio = daily_ratio.rolling(5, min_periods=3).sum()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_main_fund_flow, stock_daily |
-| `mf_net_inflow_ratio` | fundflow | 高优 | 主力资金净流入率 = 供应商净额 / 当日四档买卖总额（T 日单日） | `ratio = ff["net_mf_amount"] / _total_amount(ff)   # _total_amount = 买4+卖4 八列金额之和` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
+本实现：mom * 1e4 / (close * total_share)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_main_fund_flow, stock_daily |
+| `mf_net_inflow_5d` | fundflow | 高优 | 5 日累计主力净流入率 | `daily_ratio = ff["net_mf_amount"] / _total_amount(ff); cum_ratio = daily_ratio.rolling(5, min_periods=3).sum()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_main_fund_flow, stock_daily |
+| `mf_net_inflow_ratio` | fundflow | 高优 | 主力资金净流入率 = 供应商净额 / 当日四档买卖总额（T 日单日） | `ratio = ff["net_mf_amount"] / _total_amount(ff)   # _total_amount = 买4+卖4 八列金额之和` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
 | `mf_net_vol_surprise_20` | fundflow | 高优 | 厂商净流入量的 20 日意外度 = (净量 − 20 日均) / 毛量 20 日均 | `ma_20 = net_vol.rolling(20,10).mean()
 divergence = safe_divide(net_vol, ma_20.abs()+1e-10) - 1.0   # 参考库原式
-本实现：(net_vol - ma_20) / mean(total_vol, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_main_fund_flow |
-| `mf_open_close_divergence_10d` | fundflow | 低优 | 资金态度摇摆度 = 净流入率相对其 5 日均线偏离的 10 日波动率 | `net_rate = safe_divide(ff["net_mf_amount"], _total_amount(ff)); trend_5 = rolling_group_mean(net_rate, 5); divergence = safe_divide(net_rate - trend_5, trend_5.abs() + 1e-8); div_std = rolling_group_std(divergence, 10); return cross_sectional_rank(div_std)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 47 | stock_main_fund_flow, stock_daily |
+本实现：(net_vol - ma_20) / mean(total_vol, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_main_fund_flow |
+| `mf_open_close_divergence_10d` | fundflow | 低优 | 资金态度摇摆度 = 净流入率相对其 5 日均线偏离的 10 日波动率 | `net_rate = safe_divide(ff["net_mf_amount"], _total_amount(ff)); trend_5 = rolling_group_mean(net_rate, 5); divergence = safe_divide(net_rate - trend_5, trend_5.abs() + 1e-8); div_std = rolling_group_std(divergence, 10); return cross_sectional_rank(div_std)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 47 | stock_main_fund_flow, stock_daily |
 | `mf_order_size_entropy` | fundflow | 高优 | 四档成交量分布的信息熵（归一化到 [0,1]，大 = 参与结构多样） | `sm_share = (buy_sm_vol + sell_sm_vol) / _total_vol(ff);  # md/lg/elg 同理
-entropy = -(Σ p·ln(p + 1e-10)) / ln(4)      # 本框架加了 /ln4 归一化` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
+entropy = -(Σ p·ln(p + 1e-10)) / ln(4)      # 本框架加了 /ln4 归一化` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
 | `mf_order_size_entropy_chg_5d` | fundflow | 高优 | 四档成交量分布信息熵的 5 日变化（参与结构形状的迁移） | `sm_share = (buy_sm_vol+sell_sm_vol)/total_vol;  # md/lg/elg 同理
-entropy = -(Σ p·ln(p+1e-10))/ln(4);  factor = entropy.diff(5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_main_fund_flow, stock_daily |
-| `mf_retail_dominance` | fundflow | 低优 | 散户成交占比 = 小单买+卖金额 / 全部成交额（高者劣） | `retail = ff["buy_sm_amount"] + ff["sell_sm_amount"]; ratio = safe_divide(retail, _total_amount(ff)); return cross_sectional_rank(-ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
+entropy = -(Σ p·ln(p+1e-10))/ln(4);  factor = entropy.diff(5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_main_fund_flow, stock_daily |
+| `mf_retail_dominance` | fundflow | 低优 | 散户成交占比 = 小单买+卖金额 / 全部成交额（高者劣） | `retail = ff["buy_sm_amount"] + ff["sell_sm_amount"]; ratio = safe_divide(retail, _total_amount(ff)); return cross_sectional_rank(-ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
 | `mf_small_order_avg_price_dev` | fundflow | 低优 | 小单成交均价相对当日 VWAP 的绝对偏离（散户的成交价劣势） | `sm_avg_price = safe_divide(sm_total_amt, sm_total_vol)
 ratio = safe_divide(sm_avg_price, vwap)
-return cross_sectional_rank(-deviation)   # deviation = (ratio-1).abs()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
-| `mf_tier_flow_agreement_20` | fundflow | 高优 | 「大单与中单同向」频率 − 「中单与小单同向」频率（20 日） | `agree(a,b) = sign(a)==sign(b); factor = mean(agree(big,mid),20,10) - mean(agree(mid,small),20,10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_main_fund_flow |
-| `mf_vol_amount_divergence` | fundflow | 高优 | 资金流的量-额背离 = 净流入量占比 − 净流入额占比 | `net_vol_ratio = safe_divide(ff["net_mf_vol"], _total_vol(ff)); net_amt_ratio = safe_divide(ff["net_mf_amount"], _total_amount(ff)); divergence = (net_vol_ratio - net_amt_ratio).clip(-0.5, 0.5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
+return cross_sectional_rank(-deviation)   # deviation = (ratio-1).abs()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
+| `mf_tier_flow_agreement_20` | fundflow | 高优 | 「大单与中单同向」频率 − 「中单与小单同向」频率（20 日） | `agree(a,b) = sign(a)==sign(b); factor = mean(agree(big,mid),20,10) - mean(agree(mid,small),20,10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_main_fund_flow |
+| `mf_vol_amount_divergence` | fundflow | 高优 | 资金流的量-额背离 = 净流入量占比 − 净流入额占比 | `net_vol_ratio = safe_divide(ff["net_mf_vol"], _total_vol(ff)); net_amt_ratio = safe_divide(ff["net_mf_amount"], _total_amount(ff)); divergence = (net_vol_ratio - net_amt_ratio).clip(-0.5, 0.5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
 | `mfi_14` | technical | 高优 | 14 日资金流量指标 MFI（量加权的 RSI），值域 [0,100] | `# TP 方向判定为跨日比较,走复权口径避免除权日误判方向
 # (scale=adj/close 折算 high/low,close 直接用复权基座)
 adj = _adjusted_close(daily)
@@ -1301,13 +1547,31 @@ neg_flow = raw_flow.where(tp_chg < 0, 0.0)
 pos_w = pos_flow.unstack("Code").rolling(14, min_periods=7).sum()
 neg_w = neg_flow.unstack("Code").rolling(14, min_periods=7).sum()
 ratio = safe_divide(pos_w, neg_w + 1e-10)
-mfi = 100.0 - 100.0 / (1.0 + ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 48 | stock_daily, stock_adj_factor |
-| `momentum_10` | momentum | 高优 | 10 个交易日的后复权动量（2 周趋势动能） | `Mom10 = hfq_close(T) / hfq_close(T-10) - 1  # 参考库: adj.groupby(Code).pct_change(10, fill_method=None)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 38 | stock_daily, stock_adj_factor |
-| `momentum_120` | momentum | 高优 | 120 个交易日的后复权动量（半年趋势质量） | `Mom120 = hfq_close(T) / hfq_close(T-120) - 1  # 参考库: adj.groupby(Code).pct_change(120, fill_method=None)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 236 | stock_daily, stock_adj_factor |
-| `momentum_20` | momentum | 高优 | 20 个交易日的后复权动量（Jegadeesh-Titman 月度动量区间） | `Mom20 = hfq_close(T) / hfq_close(T-20) - 1  # 参考库: adj.groupby(Code).pct_change(20, fill_method=None)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `momentum_250` | momentum | 高优 | 250 个交易日的后复权动量（年度动量，最慢最稳） | `Mom250 = hfq_close(T) / hfq_close(T-250) - 1  # 参考库: adj.groupby(Code).pct_change(250, fill_method=None)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 480 | stock_daily, stock_adj_factor |
-| `momentum_60` | momentum | 高优 | 60 个交易日的后复权动量（季度趋势延续） | `Mom60 = hfq_close(T) / hfq_close(T-60) - 1  # 参考库: adj.groupby(Code).pct_change(60, fill_method=None)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
-| `net_margin_ttm` | quality | 高优 | 销售净利率（TTM）= 归母净利润TTM / 营业收入TTM | `NPM = NetProfit / OperatingRevenue` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income |
+mfi = 100.0 - 100.0 / (1.0 + ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 48 | stock_daily, stock_adj_factor |
+| `mfx_dc_amount` | field_markets | 高优 | 个股收益与dc_daily的amount状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(dc_daily.amount)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | dc_daily, stock_daily, stock_adj_factor |
+| `mfx_dc_pct_change` | field_markets | 高优 | 个股收益与dc_daily的pct_change状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(dc_daily.pct_change)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | dc_daily, stock_daily, stock_adj_factor |
+| `mfx_dc_pressure` | field_markets | 高优 | 个股收益与dc_daily的pressure状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(dc_daily.pressure)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | dc_daily, stock_daily, stock_adj_factor |
+| `mfx_dc_range` | field_markets | 高优 | 个股收益与dc_daily的range状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(dc_daily.range)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | dc_daily, stock_daily, stock_adj_factor |
+| `mfx_dc_turnover_rate` | field_markets | 高优 | 个股收益与dc_daily的turnover_rate状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(dc_daily.turnover_rate)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | dc_daily, stock_daily, stock_adj_factor |
+| `mfx_dc_volume` | field_markets | 高优 | 个股收益与dc_daily的volume状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(dc_daily.volume)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | dc_daily, stock_daily, stock_adj_factor |
+| `mfx_index_amount` | field_markets | 高优 | 个股收益与index_daily的amount状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(index_daily.amount)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | index_daily, stock_daily, stock_adj_factor |
+| `mfx_index_gap` | field_markets | 高优 | 个股收益与index_daily的gap状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(index_daily.gap)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | index_daily, stock_daily, stock_adj_factor |
+| `mfx_index_pressure` | field_markets | 高优 | 个股收益与index_daily的pressure状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(index_daily.pressure)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | index_daily, stock_daily, stock_adj_factor |
+| `mfx_index_range` | field_markets | 高优 | 个股收益与index_daily的range状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(index_daily.range)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | index_daily, stock_daily, stock_adj_factor |
+| `mfx_index_volume` | field_markets | 高优 | 个股收益与index_daily的volume状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(index_daily.volume)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | index_daily, stock_daily, stock_adj_factor |
+| `mfx_minute_amplitude` | field_markets | 高优 | 个股收益与tdx_minute的amplitude状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(tdx_minute.amplitude)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | tdx_minute, stock_daily, stock_adj_factor |
+| `mfx_minute_volume_concentration` | field_markets | 高优 | 个股收益与tdx_minute的volume_concentration状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(tdx_minute.volume_concentration)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | tdx_minute, stock_daily, stock_adj_factor |
+| `mfx_minute_weighted_pressure` | field_markets | 高优 | 个股收益与tdx_minute的weighted_pressure状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(tdx_minute.weighted_pressure)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | tdx_minute, stock_daily, stock_adj_factor |
+| `mfx_tdx_amount` | field_markets | 高优 | 个股收益与tdx_daily的amount状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(tdx_daily.amount)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | tdx_daily, stock_daily, stock_adj_factor |
+| `mfx_tdx_volume` | field_markets | 高优 | 个股收益与tdx_daily的volume状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(tdx_daily.volume)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | tdx_daily, stock_daily, stock_adj_factor |
+| `mfx_ths_gap` | field_markets | 高优 | 个股收益与index_ths_daily的gap状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(index_ths_daily.gap)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | index_ths_daily, stock_daily, stock_adj_factor |
+| `mfx_ths_premium` | field_markets | 高优 | 个股收益与index_ths_daily的premium状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(index_ths_daily.premium)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | index_ths_daily, stock_daily, stock_adj_factor |
+| `mfx_ths_volume` | field_markets | 高优 | 个股收益与index_ths_daily的volume状态60日相关暴露 | `corr60(ret_clean_hfq, cross_index_median(index_ths_daily.volume)); volume/amount use log change` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 220 | index_ths_daily, stock_daily, stock_adj_factor |
+| `momentum_10` | momentum | 高优 | 10 个交易日的后复权动量（2 周趋势动能） | `Mom10 = hfq_close(T) / hfq_close(T-10) - 1  # 参考库: adj.groupby(Code).pct_change(10, fill_method=None)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 38 | stock_daily, stock_adj_factor |
+| `momentum_120` | momentum | 高优 | 120 个交易日的后复权动量（半年趋势质量） | `Mom120 = hfq_close(T) / hfq_close(T-120) - 1  # 参考库: adj.groupby(Code).pct_change(120, fill_method=None)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 236 | stock_daily, stock_adj_factor |
+| `momentum_20` | momentum | 高优 | 20 个交易日的后复权动量（Jegadeesh-Titman 月度动量区间） | `Mom20 = hfq_close(T) / hfq_close(T-20) - 1  # 参考库: adj.groupby(Code).pct_change(20, fill_method=None)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `momentum_250` | momentum | 高优 | 250 个交易日的后复权动量（年度动量，最慢最稳） | `Mom250 = hfq_close(T) / hfq_close(T-250) - 1  # 参考库: adj.groupby(Code).pct_change(250, fill_method=None)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 480 | stock_daily, stock_adj_factor |
+| `net_margin_ttm` | quality | 高优 | 销售净利率（TTM）= 归母净利润TTM / 营业收入TTM | `NPM = NetProfit / OperatingRevenue` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income |
 | `new_high_60_event` | event | 高优 | 近 60 个交易日新高事件的指数衰减加权（当日最高价 = 60 日最高，半衰期 5 日） | `adj = _adjusted_close(daily)
 is_high = adj.eq(adj.groupby(level="Code").transform(
     lambda s: s.rolling(60, min_periods=30).max()))
@@ -1315,12 +1579,12 @@ event = is_high.astype(float).where(is_high, np.nan)
 decayed = event_decay(event, half_life=5)      # 参考库原文
 # 本实现：
 #   is_high = hfq(high) == max(hfq(high), 60)  且 当日有成交
-#   decayed = Σ_{k=0}^{9} is_high(t-k) × 0.5^(k/5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 164 | stock_daily, stock_adj_factor |
+#   decayed = Σ_{k=0}^{9} is_high(t-k) × 0.5^(k/5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 164 | stock_daily, stock_adj_factor |
 | `new_high_frequency_60` | event | 高优 | 60 日新高频率 = 60 日内「收盘价创 60 日新高」的天数占比 | `adj = _adjusted_close(daily)
 is_high = adj.eq(adj.groupby(level="Code").transform(
     lambda s: s.rolling(60, min_periods=30).max()))
 freq = is_high.groupby(level="Code").transform(
-    lambda s: s.rolling(60, min_periods=30).mean())` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
+    lambda s: s.rolling(60, min_periods=30).mean())` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor |
 | `new_low_60_event` | event | 低优 | 近 60 个交易日新低事件的指数衰减加权（当日最低价 = 60 日最低，半衰期 5 日） | `adj = _adjusted_close(daily)
 is_low = adj.eq(adj.groupby(level="Code").transform(
     lambda s: s.rolling(60, min_periods=30).min()))
@@ -1328,20 +1592,23 @@ event = is_low.astype(float).where(is_low, np.nan)
 decayed = event_decay(event, half_life=5)      # 参考库原文
 # 本实现：
 #   is_low  = hfq(low) == min(hfq(low), 60)  且 当日有成交
-#   decayed = Σ_{k=0}^{9} is_low(t-k) × 0.5^(k/5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 164 | stock_daily, stock_adj_factor |
-| `np_to_deferred_tax_yoy` | growth | 高优 | 单位递延所得税资产创利同比 = (净利_TTM / 递延所得税资产) 的同比 | `Ratio = NetProfit_Q / DeferredTaxAssets;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_balancesheet |
-| `np_to_fixed_assets_yoy` | growth | 高优 | 单位固定资产创利同比 = (净利_TTM / 固定资产) 的同比 | `Ratio = NetProfit_Q / FixedAssets;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_balancesheet |
-| `np_to_inventory_yoy` | growth | 高优 | 单位存货创利同比 = (净利_TTM / 存货) 的同比 | `Ratio = NetProfit_Q / Inventories;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_balancesheet |
+#   decayed = Σ_{k=0}^{9} is_low(t-k) × 0.5^(k/5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 164 | stock_daily, stock_adj_factor |
+| `np_to_deferred_tax_yoy` | growth | 高优 | 单位递延所得税资产创利同比 = (净利_TTM / 递延所得税资产) 的同比 | `Ratio = NetProfit_Q / DeferredTaxAssets;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_balancesheet |
+| `np_to_fixed_assets_yoy` | growth | 高优 | 单位固定资产创利同比 = (净利_TTM / 固定资产) 的同比 | `Ratio = NetProfit_Q / FixedAssets;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_balancesheet |
+| `np_to_inventory_yoy` | growth | 高优 | 单位存货创利同比 = (净利_TTM / 存货) 的同比 | `Ratio = NetProfit_Q / Inventories;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_balancesheet |
 | `np_to_opex_yoy` | growth | 高优 | 单位经营性费用创利同比 = (净利_TTM / (销售+管理+研发费用)_TTM) 的同比 | `Opex = sell_exp + admin_exp + rd_exp (TTM)
-Ratio = NetProfit_TTM / Opex;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income |
-| `np_to_salary_yoy` | growth | 高优 | 单位薪酬创利同比 = (净利_TTM / 支付给职工的现金_TTM) 的同比 | `Ratio = NetProfit_TTM / StaffBehalfPaid_TTM;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_cashflow |
-| `ocf_to_profit` | quality | 高优 | 盈利现金保障倍数（TTM）= 经营现金流TTM / 归母净利润TTM | `OCFtoProfit = NetOperateCashFlow_TTM / NetProfit_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow, stock_income, stock_balancesheet |
-| `ocf_to_revenue` | quality | 高优 | 经营现金流占营收比（TTM）= 经营现金流TTM / 营业收入TTM | `OCFtoRevenue = NetOperateCashFlow_TTM / OperatingRevenue_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow, stock_income, stock_balancesheet |
+Ratio = NetProfit_TTM / Opex;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income |
+| `np_to_salary_yoy` | growth | 高优 | 单位薪酬创利同比 = (净利_TTM / 支付给职工的现金_TTM) 的同比 | `Ratio = NetProfit_TTM / StaffBehalfPaid_TTM;  Growth = Ratio_t / Ratio_{t-4} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_cashflow |
+| `ocf_to_profit` | quality | 高优 | 盈利现金保障倍数（TTM）= 经营现金流TTM / 归母净利润TTM | `OCFtoProfit = NetOperateCashFlow_TTM / NetProfit_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow, stock_income, stock_balancesheet |
+| `ocf_to_revenue` | quality | 高优 | 经营现金流占营收比（TTM）= 经营现金流TTM / 营业收入TTM | `OCFtoRevenue = NetOperateCashFlow_TTM / OperatingRevenue_TTM` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow, stock_income, stock_balancesheet |
 | `one_word_limit_down_freq_20` | event | 低优 | 一字跌停占比 = 20 日内「全天无波动且跌停」的天数占比 | `no_range = (daily["high"] - daily["low"]).abs().lt(1e-6)
 one_word = (no_range & daily["pct_chg"].le(-9.8)).astype(float)
 freq = _roll_mean(one_word, 20, 5)
-return cross_sectional_rank(-freq)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_limit_list, stock_daily, stock_adj_factor |
-| `opm_npm_spread` | quality | 低优 | 营业利润率 − 净利率（营业利润到归母之间的损耗） | `spread = operate_profit/revenue - n_income_attr_p/revenue` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income |
+return cross_sectional_rank(-freq)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_limit_list, stock_daily, stock_adj_factor |
+| `open5_amt_log` | intraday | 高优 | 开盘首 5 分钟成交额的对数（绝对开盘容量，供执行层估单笔上限） | `log(amt_open5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_history_5min |
+| `open5_amt_share` | intraday | 高优 | 开盘首 5 分钟成交额 / 全日成交额（执行容量口径，非 alpha） | `amt_open5 / amt_day` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_history_5min |
+| `open5_amt_share_pct20` | intraday | 高优 | 开盘首 5 分钟成交额占比的 20 日时序分位（去掉长期漂移与个股规模） | `Ts_Rank(amt_open5/amt_day, 20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_history_5min |
+| `opm_npm_spread` | quality | 低优 | 营业利润率 − 净利率（营业利润到归母之间的损耗） | `spread = operate_profit/revenue - n_income_attr_p/revenue` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income |
 | `order_size_concentration` | fundflow | 高优 | 订单规模集中度 = 四档成交额 HHI × sign(大单净额)（机构主导的高集中 vs 散户主导的高集中） | `sm_total = ff["buy_sm_amount"] + ff["sell_sm_amount"]   # md/lg/elg 同理
 total_amount = sm_total + md_total + lg_total + elg_total
 hhi = ((sm_total/total_amount)**2 + (md_total/total_amount)**2
@@ -1349,54 +1616,65 @@ hhi = ((sm_total/total_amount)**2 + (md_total/total_amount)**2
 smart_direction = (ff["buy_elg_amount"] - ff["sell_elg_amount"]
                    + ff["buy_lg_amount"] - ff["sell_lg_amount"])
 signed_hhi = hhi * np.sign(smart_direction)
-return cross_sectional_rank(signed_hhi)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_main_fund_flow, stock_daily |
+return cross_sectional_rank(signed_hhi)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_main_fund_flow, stock_daily |
 | `order_size_ratio_change` | fundflow | 高优 | 订单规模比变化 = 大单+超大单毛额占比的 5 日变化（大单占比提升=机构参与加深） | `big_total = (ff["buy_lg_amount"] + ff["sell_lg_amount"]
              + ff["buy_elg_amount"] + ff["sell_elg_amount"])
 total = _total_amount(ff); big_ratio = big_total / total
 chg = big_ratio.groupby(level="Code").transform(lambda s: s.diff(5))
-return cross_sectional_rank(chg)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 38 | stock_main_fund_flow, stock_daily |
-| `outside_bar_count_20` | pattern | 高优 | 吞没/突破频率：20 日内「收盘 > 昨高 或 收盘 < 昨低」的交易日占比 | `prev_high=shift(high,1); prev_low=shift(low,1); outside=(close>prev_high)\|(close<prev_low); count=_roll_sum(outside,20,5); 参考库: cross_sectional_rank(count)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `overnight_gap_vol_20` | pattern | 低优 | 20 日隔夜跳空波动率（样本标准差 ddof=1，高波动=信息不确定性高） | `overnight_ret = (open - pre_close)/(pre_close + 1e-8); gap_vol = rolling(20, min_periods=10).std()   # 参考库 rank(-gap_vol)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `overnight_intraday_ratio_20d` | pattern | 高优 | 隔夜/日内收益强度比：20 日隔夜均值 ÷ \|20 日日内均值\| | `oma = rolling(20).mean(overnight); ima = rolling(20).mean(intraday); x = oma / (ima.abs() + 1e-6)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `overnight_ma_20d` | pattern | 高优 | 隔夜收益均值（20 个交易日） | `overnight = open/pre_close - 1; ma20 = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `overnight_ma_5d` | pattern | 高优 | 隔夜收益均值（5 个交易日） | `overnight = open/pre_close - 1; ma5 = rolling(5).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_daily, stock_adj_factor |
-| `overnight_ma_60d` | pattern | 高优 | 隔夜收益均值（60 个交易日） | `overnight = open/pre_close - 1; ma60 = rolling(60).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
-| `overnight_sign_consistency_20d` | pattern | 高优 | 隔夜方向一致性：20 日内 overnight > 0 的交易日占比（0~1） | `overnight_pos = (overnight > 0).astype(float); x = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `overnight_skewness_20d` | pattern | 高优 | 20 日隔夜收益偏度的**绝对值取反**（−\|skew\|，越接近 0 = 信息冲击越不极端） | `skew = rolling(20, min_periods=10).skew(); skew = skew.clip(-5, 5); factor = -skew.abs()   # 参考库: cross_sectional_rank(-skew.abs())` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `overnight_std_5d` | pattern | 低优 | 隔夜收益标准差（5 个交易日，样本口径 ddof=1） | `overnight = open/pre_close - 1; std5 = rolling(5).std()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_daily, stock_adj_factor |
-| `panic_selling_ratio_60` | risk | 高优 | 放量下跌占比 = 60 日内「放量且下跌」天数 / 放量天数（恐慌抛售排前） | `ma20 = vol.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); big = vol.gt(1.5 * ma20); down = ret.lt(0); panic = (big & down).astype(float); n_big = big.astype(float)...rolling(60, min_periods=1).sum(); n_panic = panic...rolling(60, min_periods=1).sum(); ratio = safe_divide(n_panic, n_big)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 164 | stock_daily, stock_adj_factor |
+return cross_sectional_rank(chg)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 38 | stock_main_fund_flow, stock_daily |
+| `outside_bar_count_20` | pattern | 高优 | 吞没/突破频率：20 日内「收盘 > 昨高 或 收盘 < 昨低」的交易日占比 | `prev_high=shift(high,1); prev_low=shift(low,1); outside=(close>prev_high)\|(close<prev_low); count=_roll_sum(outside,20,5); 参考库: cross_sectional_rank(count)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `overnight_gap_vol_20` | pattern | 低优 | 20 日隔夜跳空波动率（样本标准差 ddof=1，高波动=信息不确定性高） | `overnight_ret = (open - pre_close)/(pre_close + 1e-8); gap_vol = rolling(20, min_periods=10).std()   # 参考库 rank(-gap_vol)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `overnight_intraday_ratio_20d` | pattern | 高优 | 隔夜/日内收益强度比：20 日隔夜均值 ÷ \|20 日日内均值\| | `oma = rolling(20).mean(overnight); ima = rolling(20).mean(intraday); x = oma / (ima.abs() + 1e-6)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `overnight_ma_20d` | pattern | 高优 | 隔夜收益均值（20 个交易日） | `overnight = open/pre_close - 1; ma20 = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `overnight_ma_5d` | pattern | 高优 | 隔夜收益均值（5 个交易日） | `overnight = open/pre_close - 1; ma5 = rolling(5).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_daily, stock_adj_factor |
+| `overnight_ma_60d` | pattern | 高优 | 隔夜收益均值（60 个交易日） | `overnight = open/pre_close - 1; ma60 = rolling(60).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor |
+| `overnight_sign_consistency_20d` | pattern | 高优 | 隔夜方向一致性：20 日内 overnight > 0 的交易日占比（0~1） | `overnight_pos = (overnight > 0).astype(float); x = rolling(20).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `overnight_skewness_20d` | pattern | 高优 | 20 日隔夜收益偏度的**绝对值取反**（−\|skew\|，越接近 0 = 信息冲击越不极端） | `skew = rolling(20, min_periods=10).skew(); skew = skew.clip(-5, 5); factor = -skew.abs()   # 参考库: cross_sectional_rank(-skew.abs())` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `overnight_std_5d` | pattern | 低优 | 隔夜收益标准差（5 个交易日，样本口径 ddof=1） | `overnight = open/pre_close - 1; std5 = rolling(5).std()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_daily, stock_adj_factor |
+| `panic_selling_ratio_60` | risk | 高优 | 放量下跌占比 = 60 日内「放量且下跌」天数 / 放量天数（恐慌抛售排前） | `ma20 = vol.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); big = vol.gt(1.5 * ma20); down = ret.lt(0); panic = (big & down).astype(float); n_big = big.astype(float)...rolling(60, min_periods=1).sum(); n_panic = panic...rolling(60, min_periods=1).sum(); ratio = safe_divide(n_panic, n_big)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 164 | stock_daily, stock_adj_factor |
 | `pegh5` | value | 低优 | PEG 的 5 年增长版 = 未复权收盘价 / (5 年 EPS 复合增速 × EPS_TTM) | `1. EPS_Growth_5Y = (BasicEPS_Y_t / BasicEPS_Y_{t-1260})^(1/5) - 1
 2. PEGH5 = ClosePrice / (EPS_Growth_5Y * BasicEPS_TTM)
-   Factor = -CrossSectionalRank(PEGH5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 2600 | stock_income, stock_balancesheet, stock_daily, stock_finance |
-| `price_distance_from_52w_low` | momentum | 高优 | 距 52 周低点的距离 = (现价 − 250 日最低收盘) / 250 日最低收盘 | `Dist = (hfq_close - roll_min(hfq_close, 252)) / roll_min(hfq_close, 252)  # 参考库: (adj - low_252) / low_252` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 480 | stock_daily, stock_adj_factor |
-| `price_to_52w_high` | momentum | 高优 | 52 周高点接近度 = 现价 / 250 日最高收盘价 − 1（越接近 0 越靠近年内高点） | `Proximity = hfq_close / roll_max(hfq_close, 252) - 1  # 参考库: adj / adj.rolling(252, min_periods=120).max() - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 480 | stock_daily, stock_adj_factor |
+   Factor = -CrossSectionalRank(PEGH5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 2600 | stock_income, stock_balancesheet, stock_daily, stock_finance |
+| `price_distance_from_52w_low` | momentum | 高优 | 距 52 周低点的距离 = (现价 − 250 日最低收盘) / 250 日最低收盘 | `Dist = (hfq_close - roll_min(hfq_close, 252)) / roll_min(hfq_close, 252)  # 参考库: (adj - low_252) / low_252` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 480 | stock_daily, stock_adj_factor |
+| `price_to_52w_high` | momentum | 高优 | 52 周高点接近度 = 现价 / 250 日最高收盘价 − 1（越接近 0 越靠近年内高点） | `Proximity = hfq_close / roll_max(hfq_close, 252) - 1  # 参考库: adj / adj.rolling(252, min_periods=120).max() - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 480 | stock_daily, stock_adj_factor |
+| `qf_cash_margin_floor_4q` | quarterly_quality | 高优 | 最近四季经营现金收入比最低值 | `min(q_ocf_to_sales(P-k),k=0..3)/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_cash_margin_vol_4q` | quarterly_quality | 低优 | 最近四季经营现金收入比波动 | `std_population(q_ocf_to_sales(P-k),k=0..3)/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_cash_margin_yoy_change` | quarterly_quality | 高优 | 单季度经营现金收入比同比改善 | `(q_ocf_to_sales(P)-q_ocf_to_sales(P-4))/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_core_roe_floor_4q` | quarterly_quality | 高优 | 最近四季扣非ROE最低值 | `min(q_dt_roe(P-k),k=0..3)/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_core_roe_vol_4q` | quarterly_quality | 低优 | 最近四季扣非ROE波动 | `std_population(q_dt_roe(P-k),k=0..3)/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_core_roe_yoy_change` | quarterly_quality | 高优 | 单季度扣非ROE同比改善 | `(q_dt_roe(P)-q_dt_roe(P-4))/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_noncore_roe_gap` | quarterly_quality | 低优 | 单季度ROE中的非经常损益贡献差 | `(q_roe(P)-q_dt_roe(P))/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_roa_yoy_change` | quarterly_quality | 高优 | 单季度资产净利率同比改善 | `(q_npta(P)-q_npta(P-4))/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_roe_yoy_change` | quarterly_quality | 高优 | 单季度ROE同比改善 | `(q_roe(P)-q_roe(P-4))/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_sales_growth_accel` | quarterly_quality | 高优 | 单季度收入同比增速的环比变化 | `(q_sales_yoy(P)-q_sales_yoy(P-1))/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_sales_growth_floor_4q` | quarterly_quality | 高优 | 最近四季收入同比增长的最低值 | `min(q_sales_yoy(P-k),k=0..3)/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
+| `qf_sales_growth_vol_4q` | quarterly_quality | 低优 | 最近四季收入同比增长波动 | `std_population(q_sales_yoy(P-k),k=0..3)/100` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 1100 | stock_financial_indicator |
 | `quality_composite` | quality | 高优 | 质量复合 = ROE(TTM)、毛利率(TTM)、经营现金流/总资产 三项截面 z 分数等权均值 | `Ratio_i = ① NetProfit/Equity ② (Revenue−Cost)/Revenue ③ OCF/TotalAssets
-Factor = mean_i( cs_zscore(Ratio_i) )   # 至少 2 项有效才合成` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_cashflow, stock_income, stock_balancesheet |
-| `rd_intensity` | quality | 高优 | 研发强度（TTM）= 研发费用TTM / 营业收入TTM | `RDIntensity = RDExpense_TTM / OperatingRevenue_TTM` | 2019-05-01 | 2019-05-06 → 2026-09-18 | 700 | stock_income |
-| `rel_mom_ind_10d` | sector | 高优 | 行业相对动量（个股 10 日收益 − 所属行业 10 日收益） | `rel_mom_ind = ret_10d(stock) - ret_10d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `rel_mom_ind_20d` | sector | 高优 | 行业相对动量（个股 20 日收益 − 所属行业 20 日收益） | `rel_mom_ind = ret_20d(stock) - ret_20d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `rel_mom_ind_250d` | sector | 高优 | 行业相对动量（个股 250 日收益 − 所属行业 250 日收益） | `rel_mom_ind = ret_250d(stock) - ret_250d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 480 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `rel_mom_ind_3d` | sector | 高优 | 行业相对动量（个股 3 日收益 − 所属行业 3 日收益） | `rel_mom_ind = ret_3d(stock) - ret_3d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `rel_mom_ind_5d` | sector | 高优 | 行业相对动量（个股 5 日收益 − 所属行业 5 日收益） | `rel_mom_ind = ret_5d(stock) - ret_5d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `rel_mom_ind_60d` | sector | 高优 | 行业相对动量（个股 60 日收益 − 所属行业 60 日收益） | `rel_mom_ind = ret_60d(stock) - ret_60d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `rel_turnover_ind_20d` | sector | 低优 | 行业内相对换手 = 个股 20 日平均换手率 − 所属行业成员均值 | `rel_turnover_ind = turnover_rate - ind_mean(turnover_rate)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor, stock_finance |
-| `rel_vol_ind_20d` | sector | 低优 | 行业内相对波动 = 个股 20 日波动 − 所属行业成员 20 日波动均值 | `vol20 = roll_std(ret, 20, min_periods=5); rel_vol_ind_20d = vol20 - ind_mean(vol20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `ret_autocorr_1d_20` | momentum | 高优 | 日收益一阶自相关（20 日窗口）：正 = 涨后跟涨（动量），负 = 均值回归（反转） | `AC = Corr(ret, shift(ret, 1), 20)  # 参考库: ret_w.rolling(20).corr(ret_w.shift(1))` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `ret_efficiency_20` | momentum | 高优 | 20 日路径效率 = \|20 日净收益\| / 20 日收益的绝对值和（Kaufman ER） | `ER = \|Σ_{20} r\| / Σ_{20} \|r\|, r = 日收益  # 参考库同名侧写: kama_efficiency_20（\|adj.diff(20)\| / rolling_sum(\|adj.diff()\|)）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `ret_ind_rel_1d` | sector | 高优 | 行业相对 1 日收益 = 个股当日收益 − 所属行业当日收益 | `ind_ret = df.groupby(['Date','industry'])['ret'].transform('mean'); ret_ind_rel_1d = df['ret'] - ind_ret` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
-| `ret_kurt_20` | risk | 低优 | 20 日收益峰度（日收益滚动四阶矩，反向） | `kurt = _ret_wide(daily).rolling(20, min_periods=15).kurt()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `ret_skew_20` | risk | 低优 | 20 日收益偏度（日收益滚动三阶矩，反向） | `skew = _ret_wide(daily).rolling(20, min_periods=15).skew()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `ret_skew_60` | risk | 低优 | 60 日收益偏度（日收益滚动三阶矩，反向） | `skew = _ret_wide(daily).rolling(60, min_periods=40).skew()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
-| `revenue_cagr_3y` | growth | 高优 | 3 年营业收入复合增速 = (营收TTM_t / 营收TTM_{t−12Q})^(1/3) − 1 | `EPS_Growth_5Y = (BasicEPS_Y_t / BasicEPS_Y_{t-1260})^(1/5) - 1  （因子库.md #2 Growth 章节 PEG 系 pegh5 的复合增速式，逐字；本实现把 5 年/1260 天换成 3 年/12 个报告期，标的换成营业收入 TTM）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income |
-| `reversal_2d` | momentum | 低优 | 2 日收益（超短周期反转的原始信号，方向在因子外部用） | `Reversal2 = hfq_close(T) / hfq_close(T-2) - 1  # 参考库: close.groupby(Code).pct_change(2)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 23 | stock_daily, stock_adj_factor |
-| `roa_ttm` | quality | 高优 | 总资产收益率（TTM）= 归母净利润TTM / 期末总资产 | `ROA = NetProfit / TotalAssets` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_balancesheet |
+Factor = mean_i( cs_zscore(Ratio_i) )   # 至少 2 项有效才合成` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_cashflow, stock_income, stock_balancesheet |
+| `rd_intensity` | quality | 高优 | 研发强度（TTM）= 研发费用TTM / 营业收入TTM | `RDIntensity = RDExpense_TTM / OperatingRevenue_TTM` | 2019-05-01 | 2019-05-06 → 2026-09-21 | 700 | stock_income |
+| `rel_mom_ind_10d` | sector | 高优 | 行业相对动量（个股 10 日收益 − 所属行业 10 日收益） | `rel_mom_ind = ret_10d(stock) - ret_10d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `rel_mom_ind_20d` | sector | 高优 | 行业相对动量（个股 20 日收益 − 所属行业 20 日收益） | `rel_mom_ind = ret_20d(stock) - ret_20d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `rel_mom_ind_250d` | sector | 高优 | 行业相对动量（个股 250 日收益 − 所属行业 250 日收益） | `rel_mom_ind = ret_250d(stock) - ret_250d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 480 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `rel_mom_ind_3d` | sector | 高优 | 行业相对动量（个股 3 日收益 − 所属行业 3 日收益） | `rel_mom_ind = ret_3d(stock) - ret_3d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `rel_mom_ind_5d` | sector | 高优 | 行业相对动量（个股 5 日收益 − 所属行业 5 日收益） | `rel_mom_ind = ret_5d(stock) - ret_5d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `rel_mom_ind_60d` | sector | 高优 | 行业相对动量（个股 60 日收益 − 所属行业 60 日收益） | `rel_mom_ind = ret_60d(stock) - ret_60d(industry_index)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `rel_turnover_ind_20d` | sector | 低优 | 行业内相对换手 = 个股 20 日平均换手率 − 所属行业成员均值 | `rel_turnover_ind = turnover_rate - ind_mean(turnover_rate)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor, stock_finance |
+| `rel_vol_ind_20d` | sector | 低优 | 行业内相对波动 = 个股 20 日波动 − 所属行业成员 20 日波动均值 | `vol20 = roll_std(ret, 20, min_periods=5); rel_vol_ind_20d = vol20 - ind_mean(vol20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `ret_autocorr_1d_20` | momentum | 高优 | 日收益一阶自相关（20 日窗口）：正 = 涨后跟涨（动量），负 = 均值回归（反转） | `AC = Corr(ret, shift(ret, 1), 20)  # 参考库: ret_w.rolling(20).corr(ret_w.shift(1))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `ret_efficiency_20` | momentum | 高优 | 20 日路径效率 = \|20 日净收益\| / 20 日收益的绝对值和（Kaufman ER） | `ER = \|Σ_{20} r\| / Σ_{20} \|r\|, r = 日收益  # 参考库同名侧写: kama_efficiency_20（\|adj.diff(20)\| / rolling_sum(\|adj.diff()\|)）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `ret_ind_rel_1d` | sector | 高优 | 行业相对 1 日收益 = 个股当日收益 − 所属行业当日收益 | `ind_ret = df.groupby(['Date','industry'])['ret'].transform('mean'); ret_ind_rel_1d = df['ret'] - ind_ret` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | tdx_daily, tdx_blocks, stock_daily, stock_adj_factor |
+| `ret_kurt_20` | risk | 低优 | 20 日收益峰度（日收益滚动四阶矩，反向） | `kurt = _ret_wide(daily).rolling(20, min_periods=15).kurt()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `ret_skew_20` | risk | 低优 | 20 日收益偏度（日收益滚动三阶矩，反向） | `skew = _ret_wide(daily).rolling(20, min_periods=15).skew()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `revenue_cagr_3y` | growth | 高优 | 3 年营业收入复合增速 = (营收TTM_t / 营收TTM_{t−12Q})^(1/3) − 1 | `EPS_Growth_5Y = (BasicEPS_Y_t / BasicEPS_Y_{t-1260})^(1/5) - 1  （因子库.md #2 Growth 章节 PEG 系 pegh5 的复合增速式，逐字；本实现把 5 年/1260 天换成 3 年/12 个报告期，标的换成营业收入 TTM）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income |
+| `reversal_2d` | momentum | 低优 | 2 日收益（超短周期反转的原始信号，方向在因子外部用） | `Reversal2 = hfq_close(T) / hfq_close(T-2) - 1  # 参考库: close.groupby(Code).pct_change(2)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 23 | stock_daily, stock_adj_factor |
+| `roa_ttm` | quality | 高优 | 总资产收益率（TTM）= 归母净利润TTM / 期末总资产 | `ROA = NetProfit / TotalAssets` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_balancesheet |
 | `roc_12` | technical | 高优 | 12 日 ROC 变动率（后复权），无量纲 | `adj = _adjusted_close(daily)
 roc = adj.groupby(level="Code").transform(
     lambda s: s.pct_change(12, fill_method=None)
-)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 44 | stock_daily, stock_adj_factor |
-| `roe_ttm` | quality | 高优 | 净资产收益率（TTM）= 归母净利润TTM / 归母股东权益 | `ROE = NetProfit_Parent_TTM / SE_without_MI` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_balancesheet |
+)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 44 | stock_daily, stock_adj_factor |
+| `roe_ttm` | quality | 高优 | 净资产收益率（TTM）= 归母净利润TTM / 归母股东权益 | `ROE = NetProfit_Parent_TTM / SE_without_MI` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_balancesheet |
 | `roe_ttm_lag63d` | quality | 高优 | 63 个交易日（约一季度）前的 ROE(TTM) —— 刻画「季报之间的漂移」 | `ROE = NetProfit_Parent / TotalEquity
-   Factor = ROE_TTM(T − 63 个交易日)   # 参考库 lag 参数默认 0` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_balancesheet |
+   Factor = ROE_TTM(T − 63 个交易日)   # 参考库 lag 参数默认 0` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_balancesheet |
 | `rsi_14` | technical | 低优 | 14 日 Wilder RSI（相对强弱指标），值域 [0,100] | `1. Gain = Max(Close - PrevClose, 0)
 2. Loss = Max(PrevClose - Close, 0)
 3. AvgGain = EMA(Gain, 14) [使用 Wilder's Smoothing]
@@ -1404,7 +1682,7 @@ roc = adj.groupby(level="Code").transform(
 5. RS = AvgGain / AvgLoss
 6. RSI = 100 - 100 / (1 + RS)
 其中 Wilder's Smoothing 等价于 EMA with com = period - 1
-参数: period: RSI 周期，默认为 14` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 300 | stock_daily, stock_adj_factor |
+参数: period: RSI 周期，默认为 14` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 300 | stock_daily, stock_adj_factor |
 | `rsi_spread_6_14` | technical | 高优 | 日频 RSI(6) − RSI(14)：短期动能相对中期动能的强弱差 | `delta = pct_chg / 100
 def _rsi(delta, n):
     gain = delta.clip(lower=0.0)
@@ -1416,13 +1694,13 @@ def _rsi(delta, n):
     rs = safe_divide(avg_gain, avg_loss + 1e-10)
     return 100.0 - 100.0 / (1.0 + rs)
 
-spread = _rsi(delta, 6) - _rsi(delta, 14)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 300 | stock_daily, stock_adj_factor |
+spread = _rsi(delta, 6) - _rsi(delta, 14)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 300 | stock_daily, stock_adj_factor |
 | `rsrs_beta_18` | technical | 高优 | RSRS 斜率 beta：18 日 high~low 滚动 OLS 斜率（阻力相对支撑的上升速度） | `# 折算到复权空间再回归,避免除权日 high/low 阶跃污染斜率(见 _compute_rsrs_beta)
 scale = _adjusted_close(daily) / daily["close"].replace(0, np.nan)
 high = daily["high"] * scale
 low = daily["low"] * scale
 beta, _ = _compute_rsrs_beta(high, low, window=18)
-# 本项目口径：beta = roll_cov(low, high, 18) / roll_var(high, 18)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
+# 本项目口径：beta = roll_cov(low, high, 18) / roll_var(high, 18)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
 | `rsrs_zscore_18` | technical | 高优 | RSRS 标准分：18 日 OLS 斜率相对自身 200 日历史的标准分 | `scale = _adjusted_close(daily) / daily["close"].replace(0, np.nan)
 high = daily["high"] * scale
 low = daily["low"] * scale
@@ -1432,75 +1710,280 @@ beta, _ = _compute_rsrs_beta(high, low, window=18)
 roll_mean = rolling_group_mean(beta, 400, min_periods=100)
 roll_std = rolling_group_std(beta, 400, min_periods=100)
 zscore = safe_divide(beta - roll_mean, roll_std + 1e-8)
-# 本项目口径：窗口取 200 个交易日（M=200，见 因子库.md 的 rsrs 条目）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 400 | stock_daily, stock_adj_factor |
-| `rv_term_structure` | coupling | 低优 | 波动率期限结构 = 20 日 RV / 60 日 RV（短端相对长端的高低） | `RV_n = std(ret(1), n);  TermStructure = RV_20 / RV_60` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 320 | stock_daily, stock_adj_factor |
-| `seal_float_strength_20` | disclosure_detail | 高优 | 20 日涨停事件平均封单流通比 | `event_mean(sealed_flow_ratio,20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_limit_up |
-| `seal_reopen_pressure_20` | disclosure_detail | 低优 | 20 日涨停事件平均对数开板次数 | `event_mean(log1p(open_count),20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_limit_up |
-| `seal_turnover_strength_20` | disclosure_detail | 高优 | 20 日涨停事件平均对数封单成交比 | `event_mean(log1p(sealed_turnover_ratio),20)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_limit_up |
-| `share_issuance_yoy` | growth | 低优 | 总股本同比（股本扩张 = 增发/送转/股权激励的摊薄幅度） | `growth = total_share(T) / total_share(T-4报告期) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_balancesheet |
-| `short_balance_ratio_change_20d` | margin | 低优 | 融券余额占比变化 =（融券余额 / 流通市值）的 20 个交易日变化（空头加仓，低者优） | `total_mv_m = fin["total_mv"].reindex(m.index); short_ratio = safe_divide(m["rqye"], total_mv_m); change = short_ratio.groupby(level="Code").diff(20); return cross_sectional_rank(-change)【本实现：total_mv → 流通市值 = 未复权 close × float_share（用户口径）；不取反（方向交给 higher_is_better=False）；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail, stock_daily, stock_finance |
-| `short_interest_volatility_20d` | margin | 低优 | 融券余量 20 日变异系数 CV=std/mean（空头仓位稳定性，低者优） | `roll_std = rqyl.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).std()); roll_mean = rqyl.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); cv = safe_divide(roll_std, roll_mean); cv = cv.clip(0, 2); return cross_sectional_rank(-cv)【本实现：不取反（方向交给 higher_is_better=False）；clip 交给引擎缩尾；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_margin_detail |
-| `short_sell_volume_ratio` | margin | 高优 | 融券卖出占比 = 融券卖出量 / 当日成交量（活跃做空） | `vol_t = d["vol"].reindex(m.index); ratio = safe_divide(m["rqmcl"], vol_t); ratio = ratio.clip(0, 1); return cross_sectional_rank(ratio)【本实现：分子分母取**同一个交易日**（见 note），再整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_margin_detail, stock_daily |
-| `short_squeeze_risk` | margin | 高优 | 逼空风险 = 融券余量 / 融资余额（做空拥挤，高者优=潜在逼空反转） | `squeeze = safe_divide(m["rqyl"], m["rzye"]); squeeze = squeeze.clip(0, 10); return cross_sectional_rank(squeeze)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_margin_detail |
-| `short_term_reversal_5` | momentum | 高优 | 5 日短周期反转 = −(5 日动量)（近 5 日超买者排前） | `ShortReversal5 = -Mom5 = -(hfq_close(T) / hfq_close(T-5) - 1)  # 参考库: cross_sectional_rank(-mom5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_daily, stock_adj_factor |
+# 本项目口径：窗口取 200 个交易日（M=200，见 因子库.md 的 rsrs 条目）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 400 | stock_daily, stock_adj_factor |
+| `rv_term_structure` | coupling | 低优 | 波动率期限结构 = 20 日 RV / 60 日 RV（短端相对长端的高低） | `RV_n = std(ret(1), n);  TermStructure = RV_20 / RV_60` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 320 | stock_daily, stock_adj_factor |
+| `seal_float_strength_20` | disclosure_detail | 高优 | 20 日涨停事件平均封单流通比 | `event_mean(sealed_flow_ratio,20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_limit_up |
+| `seal_reopen_pressure_20` | disclosure_detail | 低优 | 20 日涨停事件平均对数开板次数 | `event_mean(log1p(open_count),20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_limit_up |
+| `seal_turnover_strength_20` | disclosure_detail | 高优 | 20 日涨停事件平均对数封单成交比 | `event_mean(log1p(sealed_turnover_ratio),20)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_limit_up |
+| `share_issuance_yoy` | growth | 低优 | 总股本同比（股本扩张 = 增发/送转/股权激励的摊薄幅度） | `growth = total_share(T) / total_share(T-4报告期) - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_balancesheet |
+| `short_balance_ratio_change_20d` | margin | 低优 | 融券余额占比变化 =（融券余额 / 流通市值）的 20 个交易日变化（空头加仓，低者优） | `total_mv_m = fin["total_mv"].reindex(m.index); short_ratio = safe_divide(m["rqye"], total_mv_m); change = short_ratio.groupby(level="Code").diff(20); return cross_sectional_rank(-change)【本实现：total_mv → 流通市值 = 未复权 close × float_share（用户口径）；不取反（方向交给 higher_is_better=False）；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail, stock_daily, stock_finance |
+| `short_interest_volatility_20d` | margin | 低优 | 融券余量 20 日变异系数 CV=std/mean（空头仓位稳定性，低者优） | `roll_std = rqyl.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).std()); roll_mean = rqyl.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); cv = safe_divide(roll_std, roll_mean); cv = cv.clip(0, 2); return cross_sectional_rank(-cv)【本实现：不取反（方向交给 higher_is_better=False）；clip 交给引擎缩尾；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_margin_detail |
+| `short_sell_volume_ratio` | margin | 高优 | 融券卖出占比 = 融券卖出量 / 当日成交量（活跃做空） | `vol_t = d["vol"].reindex(m.index); ratio = safe_divide(m["rqmcl"], vol_t); ratio = ratio.clip(0, 1); return cross_sectional_rank(ratio)【本实现：分子分母取**同一个交易日**（见 note），再整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_margin_detail, stock_daily |
+| `short_squeeze_risk` | margin | 高优 | 逼空风险 = 融券余量 / 融资余额（做空拥挤，高者优=潜在逼空反转） | `squeeze = safe_divide(m["rqyl"], m["rzye"]); squeeze = squeeze.clip(0, 10); return cross_sectional_rank(squeeze)【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_margin_detail |
+| `short_term_reversal_5` | momentum | 高优 | 5 日短周期反转 = −(5 日动量)（近 5 日超买者排前） | `ShortReversal5 = -Mom5 = -(hfq_close(T) / hfq_close(T-5) - 1)  # 参考库: cross_sectional_rank(-mom5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_daily, stock_adj_factor |
 | `small_order_crowding` | fundflow | 低优 | 小单拥挤度 = 小单毛量占比相对自身 20 日中枢的偏离（散户异常拥挤=见顶信号，低者优） | `small_vol = mf["buy_sm_vol"] + mf["sell_sm_vol"]
 total_vol = (buy_sm_vol + sell_sm_vol + buy_md_vol + sell_md_vol
              + buy_lg_vol + sell_lg_vol + buy_elg_vol + sell_elg_vol)
 small_pct = small_vol / total_vol.replace(0, np.nan)
 return cross_sectional_rank(-small_pct)
 ★ 本实现（口径级偏离，见 note）：
-crowd = small_pct / small_pct.rolling(20, min_periods=10).mean() - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_main_fund_flow, stock_daily |
-| `sortino_ratio_60` | risk | 高优 | 60 日 Sortino 比率 = 均收益 / 下行波动（正向） | `mean60 = ret.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=30).mean()); down = ret.where(ret < 0); down_std = down.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=5).std()); sortino = safe_divide(mean60, down_std + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
-| `sp_ttm` | value | 高优 | 营收市值比（市销率倒数）= 营业收入TTM / 总市值 | `sp = 1.0 / finance["ps_ttm"].replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income, stock_daily, stock_finance |
+crowd = small_pct / small_pct.rolling(20, min_periods=10).mean() - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_main_fund_flow, stock_daily |
+| `sortino_ratio_60` | risk | 高优 | 60 日 Sortino 比率 = 均收益 / 下行波动（正向） | `mean60 = ret.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=30).mean()); down = ret.where(ret < 0); down_std = down.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=5).std()); sortino = safe_divide(mean60, down_std + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor |
+| `sp_ttm` | value | 高优 | 营收市值比（市销率倒数）= 营业收入TTM / 总市值 | `sp = 1.0 / finance["ps_ttm"].replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income, stock_daily, stock_finance |
 | `super_large_order_intensity` | fundflow | 高优 | 超大单强度 = 5 日累计超大单净买入额 / 5 日累计八列毛额（主力大额持续收集筹码） | `elg_net = (mf["buy_elg_amount"] - mf["sell_elg_amount"]) / _total_amount(mf)
 return cross_sectional_rank(elg_net)
 ★ 本实现（口径级偏离，见 note）：分子分母各自 5 日累计后再相除
-intensity = elg_net.rolling(5, min_periods=3).sum() / total.rolling(5, min_periods=3).sum()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 29 | stock_main_fund_flow, stock_daily |
-| `tail_risk_pct_60` | risk | 低优 | 尾风险频率 = 60 日内 \|z\|>2 的极端收益占比（反向） | `z = safe_divide(ret - mean60, std60 + 1e-10); freq = z.abs().gt(2).groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=30).mean())` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 240 | stock_daily, stock_adj_factor |
-| `td_setup_count` | pattern | 高优 | TD setup：20 日内 close ≤ 4 日前 close 的交易日**占比**（0~1，超卖衰竭程度） | `cond = (adj_close <= adj_close.shift(4)).astype(int); seg = (~cond).groupby(Code).cumsum(); count = cond.groupby([Code, seg]).cumsum(); 参考库: cross_sectional_rank(count)   # 连续段计数` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 70 | stock_daily, stock_adj_factor |
-| `three_black_crows` | pattern | 高优 | 三只黑鸦：20 日内「收盘<开盘 且 收盘<前收」的交易日**占比**（0~1，连续阴跌强度） | `cond = (close < open) & (close < pre_close); seg = (~cond).groupby(Code).cumsum(); count = cond.groupby([Code, seg]).cumsum(); 参考库: cross_sectional_rank(count)   # 连续段计数` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `time_since_52w_high` | momentum | 低优 | 距最近一次 250 日新高的**交易日**数（0 = 今天创的年内新高） | `at_high = (hfq_close >= roll_max(hfq_close, 252));  DaysSince = bars since the last at_high（截断到 249）` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 960 | stock_daily, stock_adj_factor |
+intensity = elg_net.rolling(5, min_periods=3).sum() / total.rolling(5, min_periods=3).sum()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 29 | stock_main_fund_flow, stock_daily |
+| `tail_risk_pct_60` | risk | 低优 | 尾风险频率 = 60 日内 \|z\|>2 的极端收益占比（反向） | `z = safe_divide(ret - mean60, std60 + 1e-10); freq = z.abs().gt(2).groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=30).mean())` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 240 | stock_daily, stock_adj_factor |
+| `td_setup_count` | pattern | 高优 | TD setup：20 日内 close ≤ 4 日前 close 的交易日**占比**（0~1，超卖衰竭程度） | `cond = (adj_close <= adj_close.shift(4)).astype(int); seg = (~cond).groupby(Code).cumsum(); count = cond.groupby([Code, seg]).cumsum(); 参考库: cross_sectional_rank(count)   # 连续段计数` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 70 | stock_daily, stock_adj_factor |
+| `three_black_crows` | pattern | 高优 | 三只黑鸦：20 日内「收盘<开盘 且 收盘<前收」的交易日**占比**（0~1，连续阴跌强度） | `cond = (close < open) & (close < pre_close); seg = (~cond).groupby(Code).cumsum(); count = cond.groupby([Code, seg]).cumsum(); 参考库: cross_sectional_rank(count)   # 连续段计数` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `time_since_52w_high` | momentum | 低优 | 距最近一次 250 日新高的**交易日**数（0 = 今天创的年内新高） | `at_high = (hfq_close >= roll_max(hfq_close, 252));  DaysSince = bars since the last at_high（截断到 249）` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 960 | stock_daily, stock_adj_factor |
 | `top_list_net_rate_20` | event | 高优 | 龙虎榜净买率 = 20 日上榜净买额 / 20 日上榜成交额（无上榜则 NaN） | `NetRate_20 = sum(NetAmount, 20d) / sum(Amount, 20d)
 # NetAmount = 龙虎榜买入额 - 卖出额；Amount = 龙虎榜成交额
-# 参考库 net_rate 的日频定义 = NetAmount / Amount * 100，本因子是它的 20 日聚合` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_top_list |
-| `total_leverage_ratio` | margin | 低优 | 总杠杆率 = 融资融券余额 / 流通市值（高杠杆=平仓风险大，低者优） | `mv_t = f["total_mv"].reindex(m.index); ratio = safe_divide(m["rzrqye"], mv_t); ratio = ratio.clip(0, 0.5); return cross_sectional_rank(-ratio)【本实现：total_mv → 流通市值 = 未复权 close × float_share（用户口径）；方向用 higher_is_better=False 标注而不是写进值；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_margin_detail, stock_daily, stock_finance |
-| `trend_strength_60` | momentum | 高优 | 60 日趋势强度 = 带符号的线性回归 R²（价格对时间回归） | `R2 = Corr(t, hfq_close, 60)^2 （= OLS 的 R²）;  Factor = sign(Corr) * R2  # 参考库无同名因子；同类见 rsrs_r2_18 / macd_trend_strength` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_adj_factor |
+# 参考库 net_rate 的日频定义 = NetAmount / Amount * 100，本因子是它的 20 日聚合` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_top_list |
+| `total_leverage_ratio` | margin | 低优 | 总杠杆率 = 融资融券余额 / 流通市值（高杠杆=平仓风险大，低者优） | `mv_t = f["total_mv"].reindex(m.index); ratio = safe_divide(m["rzrqye"], mv_t); ratio = ratio.clip(0, 0.5); return cross_sectional_rank(-ratio)【本实现：total_mv → 流通市值 = 未复权 close × float_share（用户口径）；方向用 higher_is_better=False 标注而不是写进值；结果整体下移 1 个交易日】` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_margin_detail, stock_daily, stock_finance |
+| `trend_strength_60` | momentum | 高优 | 60 日趋势强度 = 带符号的线性回归 R²（价格对时间回归） | `R2 = Corr(t, hfq_close, 60)^2 （= OLS 的 R²）;  Factor = sign(Corr) * R2  # 参考库无同名因子；同类见 rsrs_r2_18 / macd_trend_strength` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_adj_factor |
 | `trix_12_20` | technical | 高优 | TRIX：(后复权收盘价的 12 日三重 EMA) 的 20 日变化率 | `wide = _adjusted_close(daily).unstack("Code")
 trix = _trix_wide(wide)
-# _trix_wide = 三重指数平滑(12) 的 20 日变化率` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 400 | stock_daily, stock_adj_factor |
+# _trix_wide = 三重指数平滑(12) 的 20 日变化率` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 400 | stock_daily, stock_adj_factor |
 | `trix_signal_gap` | technical | 高优 | TRIX 与其 20 日信号线的乖离（TRIX − MA20(TRIX)）/ \|MA20(TRIX)\| | `wide = _adjusted_close(daily).unstack("Code")
 trix = _trix_wide(wide)
 signal = trix.rolling(20, min_periods=10).mean()
-gap = trix.sub(signal).div(signal.abs() + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 400 | stock_daily, stock_adj_factor |
-| `turnover_anomaly_20` | liquidity | 低优 | 换手率异常：20 日均换手 / 60 日均换手 − 1 | `to_20 = rolling_group_mean(turnover, 20); to_60 = rolling_group_mean(turnover, 60); anomaly = to_20 / to_60 - 1.0` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 128 | stock_daily, stock_finance |
+gap = trix.sub(signal).div(signal.abs() + 1e-10)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 400 | stock_daily, stock_adj_factor |
+| `turnover_anomaly_20` | liquidity | 低优 | 换手率异常：20 日均换手 / 60 日均换手 − 1 | `to_20 = rolling_group_mean(turnover, 20); to_60 = rolling_group_mean(turnover, 60); anomaly = to_20 / to_60 - 1.0` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 128 | stock_daily, stock_finance |
 | `turnover_f_20` | value | 低优 | 20 日平均自由流通换手率（% = vol/free_share×100），低换手排前 | `avg_turnover = turnover_rate_f.groupby(level='Code').transform(
-    lambda s: s.rolling(20, min_periods=10).mean())` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_finance |
+    lambda s: s.rolling(20, min_periods=10).mean())` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_finance |
 | `turnover_f_delta_5` | value | 低优 | 自由流通换手率的 5 日变化率（下降 = 浮筹被吸收） | `delta = turnover_rate_f.groupby(level='Code').transform(
     lambda s: s.pct_change(5, fill_method=None))
-delta = delta.clip(-1, 3)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_finance |
-| `turnover_std_20` | liquidity | 低优 | 换手率波动：20 日换手率标准差（流动性不稳定的代理） | `to_vol = rolling(20, min_periods=10).std(); Factor = -to_vol` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_finance |
-| `ulcer_index_20` | risk | 低优 | 溃疡指数 = 20 日窗口内回撤平方均值的平方根（回撤面积，反向） | `peak = adj.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).max()); dd = adj / peak.replace(0, np.nan) - 1.0; dd_sq = (dd ** 2).groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); ulcer = dd_sq.pow(0.5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 92 | stock_daily, stock_adj_factor |
-| `var_95_20` | risk | 高优 | 20 日 VaR(95%) = 日收益的 5% 历史分位（≤0，越负尾部越厚） | `var = _ret(daily).groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).quantile(0.05))` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `vol_120` | risk | 低优 | 120 个交易日已实现波动率（日收益滚动标准差） | `ReturnStd = StdDev(DailyReturn) over 6*21 trading days` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 240 | stock_daily, stock_adj_factor |
-| `vol_clustering_20` | risk | 低优 | 波动聚集 = \|日收益\| 的 20 日 lag-1 自相关（反向） | `abs_ret = _ret(daily).abs().unstack("Code"); lag = abs_ret.shift(1); ac = abs_ret.rolling(20, min_periods=10).corr(lag)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `vol_of_rv` | coupling | 低优 | 波动的波动 = 20 日 RV 在 60 日窗口内的标准差（不稳定度） | `VoV = std( roll_std(ret(1), 20), 60 )` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 320 | stock_daily, stock_adj_factor |
-| `vol_of_vol_20` | risk | 低优 | 波动之波动 = \|日收益\| 的 20 日标准差（反向） | `roll(df, "absret", 20, "std", min_periods=5)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 56 | stock_daily, stock_adj_factor |
-| `vol_ratio_ma5_ma20` | liquidity | 高优 | 量能短长比：5 日均量 / 20 日均量 | `ma_5 = rolling_group_mean(vol, 5); ma_20 = rolling_group_mean(vol, 20); ratio = safe_divide(ma_5, ma_20 + 1e-8)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily |
-| `volume_dry_up` | liquidity | 低优 | 缩量（地量）：20 日最低成交量 / 20 日均量 | `vol_min_20 = rolling(20, min_periods=10).min(); vol_ma_20 = rolling(20, min_periods=10).mean(); dryness = vol_min_20 / vol_ma_20.replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily |
-| `volume_price_divergence_score` | pattern | 低优 | 量价背离得分：20 日价动量截面 z − 20 日量动量截面 z（值高 = 价升量缩） | `price_mom=adj_close.pct_change(20); vol_mom=vol.pct_change(20); pr=cs_rank(price_mom); vr=cs_rank(vol_mom); 参考库: cross_sectional_rank(pr - vr)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
+delta = delta.clip(-1, 3)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_finance |
+| `turnover_std_20` | liquidity | 低优 | 换手率波动：20 日换手率标准差（流动性不稳定的代理） | `to_vol = rolling(20, min_periods=10).std(); Factor = -to_vol` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_finance |
+| `ulcer_index_20` | risk | 低优 | 溃疡指数 = 20 日窗口内回撤平方均值的平方根（回撤面积，反向） | `peak = adj.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).max()); dd = adj / peak.replace(0, np.nan) - 1.0; dd_sq = (dd ** 2).groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).mean()); ulcer = dd_sq.pow(0.5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 92 | stock_daily, stock_adj_factor |
+| `var_95_20` | risk | 高优 | 20 日 VaR(95%) = 日收益的 5% 历史分位（≤0，越负尾部越厚） | `var = _ret(daily).groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).quantile(0.05))` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `vol_120` | risk | 低优 | 120 个交易日已实现波动率（日收益滚动标准差） | `ReturnStd = StdDev(DailyReturn) over 6*21 trading days` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 240 | stock_daily, stock_adj_factor |
+| `vol_clustering_20` | risk | 低优 | 波动聚集 = \|日收益\| 的 20 日 lag-1 自相关（反向） | `abs_ret = _ret(daily).abs().unstack("Code"); lag = abs_ret.shift(1); ac = abs_ret.rolling(20, min_periods=10).corr(lag)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `vol_of_rv` | coupling | 低优 | 波动的波动 = 20 日 RV 在 60 日窗口内的标准差（不稳定度） | `VoV = std( roll_std(ret(1), 20), 60 )` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 320 | stock_daily, stock_adj_factor |
+| `vol_of_vol_20` | risk | 低优 | 波动之波动 = \|日收益\| 的 20 日标准差（反向） | `roll(df, "absret", 20, "std", min_periods=5)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 56 | stock_daily, stock_adj_factor |
+| `vol_ratio_ma5_ma20` | liquidity | 高优 | 量能短长比：5 日均量 / 20 日均量 | `ma_5 = rolling_group_mean(vol, 5); ma_20 = rolling_group_mean(vol, 20); ratio = safe_divide(ma_5, ma_20 + 1e-8)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily |
+| `volume_dry_up` | liquidity | 低优 | 缩量（地量）：20 日最低成交量 / 20 日均量 | `vol_min_20 = rolling(20, min_periods=10).min(); vol_ma_20 = rolling(20, min_periods=10).mean(); dryness = vol_min_20 / vol_ma_20.replace(0, np.nan)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily |
+| `volume_price_divergence_score` | pattern | 低优 | 量价背离得分：20 日价动量截面 z − 20 日量动量截面 z（值高 = 价升量缩） | `price_mom=adj_close.pct_change(20); vol_mom=vol.pct_change(20); pr=cs_rank(price_mom); vr=cs_rank(vol_mom); 参考库: cross_sectional_rank(pr - vr)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
 | `volume_ratio` | value | 低优 | 量比 = 当日成交量 / 过去 5 日平均成交量（低者优） | `vol_ratio = finance["volume_ratio"]
-return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 40 | stock_daily, stock_finance |
-| `volume_tilt_20` | liquidity | 高优 | 量能倾斜：20 日量加权收益 − 等权收益（正 = 收益主要来自放量日） | `wsum = rolling_sum(pct_chg * vol, 20, min_periods=10); vsum = rolling_sum(vol, 20, min_periods=10); vw = safe_divide(wsum, vsum); ew = rolling_mean(pct_chg, 20, min_periods=10); tilt = vw - ew` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily, stock_adj_factor |
-| `vwap_daily_deviation` | liquidity | 高优 | 收盘价对当日 VWAP 的偏离：close / (amount/vol) − 1 | `vwap = safe_divide(amount, vol); deviation = safe_divide(close - vwap, vwap)` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 30 | stock_daily |
-| `winner_rate` | chip | 低优 | 获利盘比例 = 现价以下的筹码占比（未复权 close 口径） | `winner_rate = below_close; return cross_sectional_rank(-perf["winner_rate"])` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `winner_rate_acceleration` | chip | 低优 | 获利盘比例的加速度（二阶差分：5 日变化的 5 日变化） | `wr_chg = wr.groupby(level="Code").transform(lambda s: s.diff(5)); accel = wr_chg.groupby(level="Code").transform(lambda s: s.diff(5)); return cross_sectional_rank(-accel)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 40 | stock_cyq_chips |
-| `winner_rate_reversal_signal` | chip | 高优 | 获利盘极端反转信号 = −\|获利盘 − 0.5\|（50% 附近=多空平衡=排前） | `distance = -(cyq["winner_rate"] - 0.5).abs(); return cross_sectional_rank(distance)` | 2018-01-02 | 2018-01-02 → 2026-09-18 | 20 | stock_cyq_chips |
-| `yoy_revenue` | growth | 高优 | 营业收入（TTM）同比增速 | `YoY = Revenue_TTM_t / Revenue_TTM_{t-4Q} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 700 | stock_income |
-| `zero_return_fraction_20` | liquidity | 低优 | 零收益日占比：20 日里 \|涨跌幅\| < 0.1% 的交易日的比例 | `zero = daily["pct_chg"].abs().lt(0.1).astype(float); freq = rolling(20, min_periods=10).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-18 | 60 | stock_daily |
+return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 40 | stock_daily, stock_finance |
+| `volume_tilt_20` | liquidity | 高优 | 量能倾斜：20 日量加权收益 − 等权收益（正 = 收益主要来自放量日） | `wsum = rolling_sum(pct_chg * vol, 20, min_periods=10); vsum = rolling_sum(vol, 20, min_periods=10); vw = safe_divide(wsum, vsum); ew = rolling_mean(pct_chg, 20, min_periods=10); tilt = vw - ew` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily, stock_adj_factor |
+| `vwap_daily_deviation` | liquidity | 高优 | 收盘价对当日 VWAP 的偏离：close / (amount/vol) − 1 | `vwap = safe_divide(amount, vol); deviation = safe_divide(close - vwap, vwap)` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 30 | stock_daily |
+| `winner_rate` | chip | 低优 | 获利盘比例 = 现价以下的筹码占比（未复权 close 口径） | `winner_rate = below_close; return cross_sectional_rank(-perf["winner_rate"])` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `winner_rate_acceleration` | chip | 低优 | 获利盘比例的加速度（二阶差分：5 日变化的 5 日变化） | `wr_chg = wr.groupby(level="Code").transform(lambda s: s.diff(5)); accel = wr_chg.groupby(level="Code").transform(lambda s: s.diff(5)); return cross_sectional_rank(-accel)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 40 | stock_cyq_chips |
+| `winner_rate_reversal_signal` | chip | 高优 | 获利盘极端反转信号 = −\|获利盘 − 0.5\|（50% 附近=多空平衡=排前） | `distance = -(cyq["winner_rate"] - 0.5).abs(); return cross_sectional_rank(distance)` | 2018-01-02 | 2018-01-02 → 2026-09-21 | 20 | stock_cyq_chips |
+| `yoy_revenue` | growth | 高优 | 营业收入（TTM）同比增速 | `YoY = Revenue_TTM_t / Revenue_TTM_{t-4Q} - 1` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 700 | stock_income |
+| `zero_return_fraction_20` | liquidity | 低优 | 零收益日占比：20 日里 \|涨跌幅\| < 0.1% 的交易日的比例 | `zero = daily["pct_chg"].abs().lt(0.1).astype(float); freq = rolling(20, min_periods=10).mean()` | 2018-01-01 | 2018-01-02 → 2026-09-21 | 60 | stock_daily |
 
 ## 口径备注（实测坑）
 
 - **`adx_14`**：参考库出处：factors.md `类别 price` / trend_pattern.py 的 adx_14。★ 参考库的 `_directional_movement` 是私有函数、文档未展开；本文件按 Wilder 的标准定义实现（up=high−high[-1]、dn=low[-1]−low，plus_dm 取 up>dn 且 up>0，minus_dm 对称，各自与 TR 一起做 alpha=1/14 的 Wilder 平滑，DI=100×DM/ATR）。★ 偏离：参考库用未复权 `pre_close` 且乘 `scale` 折算到复权空间；本文件直接用`shift(hfq_close,1)` 当昨收（复权空间里两者在有交易的日子恒等，停牌日更准），不再需要 scale。★ `min_count=7` 对齐参考库的 `min_periods=7`：DX 在「多空双方 DM 同时为 0」（长期停牌/一字板）时是 NaN，满窗要求会让 ADX 在真实数据上留下 14 天的空洞。★ ADX ∈ [0,100]；DX = 100×|DI+−DI-|/(DI++DI-) ∈ [0,100]，其 14 日均值同界。
+- **`afx_bs_cap_rese`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_const_materials`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_debt_invest`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_decr_in_disbur`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_deriv_assets`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_deriv_liab`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_div_payable`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_div_receiv`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_estimated_liab`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_fix_assets_total`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_fixed_assets_disp`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_hfs_assets`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_int_payable`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_int_receiv`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_invest_real_estate`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_loan_oth_bank`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_long_pay_total`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_lt_amor_exp`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_lt_eqt_invest`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_lt_payable`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_lt_payroll_payable`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_lt_rec`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_nca_within_1y`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_ordin_risk_reser`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_assets`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_comp_income`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_cur_assets`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_cur_liab`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_debt_invest`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_eqt_tools`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_nca`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_ncl`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_pay_total`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_payable`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_oth_rcv_total`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_payroll_payable`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_produc_bio_assets`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_pur_resale_fa`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_sold_for_repur_fa`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_special_rese`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_specific_payables`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_surplus_rese`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_taxes_payable`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_trading_fl`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_bs_undistr_porfit`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_beg_bal_cash`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_beg_bal_cash_equ`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_c_cash_equ_end_period`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_c_disp_withdrwl_invest`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_c_fr_oth_operate_a`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_c_paid_invest`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_c_recp_cap_contrib`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_c_recp_return_invest`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_decr_def_inc_tax_assets`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_decr_oper_payable`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_eff_fx_flu_cash`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_end_bal_cash_equ`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_finan_exp`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_ifc_cash_incr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_im_n_incr_cash_equ`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_im_net_cashflow_oper_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_incl_cash_rec_saims`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_incl_dvd_profit_paid_sc_ms`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_incr_def_inc_tax_liab`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_incr_oper_payable`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_loss_disp_fiolta`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_loss_fv_chg`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_loss_scr_fa`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_n_depos_incr_fi`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_n_disp_subs_oth_biz`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_n_incr_clt_loan_adv`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_n_incr_loans_oth_bank`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_n_recp_disp_fiolta`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_n_recp_disp_sobu`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_net_profit`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_oth_cash_pay_oper_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_oth_cash_recp_ral_fnc_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_oth_cashpay_ral_fnc_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_oth_pay_ral_inv_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_oth_recp_ral_inv_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_pay_handling_chrg`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_proc_issue_bonds`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_stot_cash_in_fnc_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_stot_cashout_fnc_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_stot_inflows_inv_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_stot_out_inv_act`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_cf_use_right_asset_dep`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_adminexp_of_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ar_turn`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_arturn_days`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_assets_turn`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_basic_eps_yoy`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_bps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ca_turn`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_capital_rese_ps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_capitalized_to_da`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_cash_to_liqdebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_cash_to_liqdebt_withinterest`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_cfps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_cfps_yoy`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_cogs_of_sales`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_current_exint`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_daa`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_diluted2_eps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_dp_assets_to_eqt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_dtprofit_to_profit`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ebit`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ebit_of_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ebit_ps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ebit_to_interest`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ebitda`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_eqt_to_debt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_eqt_to_interestdebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_eqt_to_talcapital`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_equity_yoy`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_expense_of_sales`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_extra_item`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_fa_turn`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_fcfe`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_fcff`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_finaexp_of_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_fixed_assets`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_gc_of_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_gross_margin`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_impai_ttm`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_interestdebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_interst_income`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_inv_turn`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_invest_capital`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_investincome_of_ebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_invturn_days`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_longdebt_to_workingcapital`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_n_op_profit_of_ebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_netdebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_networking_capital`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_non_op_profit`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_noncurrent_exint`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_npta`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ocf_to_debt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ocf_to_interestdebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ocf_to_netdebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ocf_to_opincome`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ocf_to_or`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ocf_to_profit`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_ocfps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_op_income`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_op_to_debt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_op_to_ebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_op_to_liqdebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_opincome_of_ebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_profit_dedt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_adminexp_to_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_dtprofit`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_dtprofit_to_profit`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_exp_to_sales`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_finaexp_to_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_gc_to_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_gr_qoq`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_gr_yoy`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_gsprofit_margin`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_impair_to_gr_ttm`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_investincome`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_investincome_to_ebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_netprofit_margin`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_netprofit_qoq`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_netprofit_yoy`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_ocf_to_or`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_op_qoq`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_op_to_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_op_yoy`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_opincome`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_opincome_to_ebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_profit_qoq`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_saleexp_to_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_q_salescash_to_or`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_rd_exp`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_retained_earnings`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_retainedps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_revenue_ps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_roe_avg`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_saleexp_to_gr`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_salescash_to_or`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_surplus_rese_ps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_tangible_asset`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_tangibleasset_to_netdebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_tax_to_ebt`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_total_fa_trun`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_valuechange_income`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_fi_working_capital`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_ass_invest_income`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_basic_eps`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_biz_tax_surchg`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_comm_exp`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_comm_income`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_compr_inc_attr_m_s`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_compr_inc_attr_p`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_continued_net_profit`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_ebitda`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_fin_exp_int_inc`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_forex_gain`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_int_exp`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_int_income`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_n_oth_b_income`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_oth_compr_income`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
+- **`afx_is_other_bus_cost`**：本地扩展公式；仅用截至当晚已披露的12月31日年度报告，按源表独立保留公告修订版本。年度结构比率分母必须为正且超过阈值，缺失不补零，单独零值保留。年度同比按报告期滞后4季，缺年保持NaN；不将累计YTD比率直接当成日频值。asinh仅为单调压缩极端值，不做因子内截面缩尾/排名。ratio为同币种或每股同单位比值，delta按供应商原单位相减；year-end单季度字段代表Q4。正负方向仅代表字段暴露的高低，不宣称收益方向；固定池和源表历史修订局限沿用项目约定。只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。
 - **`amihud_asymmetry_20`**：两个滚动均值各自在**同类日**上取（涨跌日分别成池），min_count=5 = 参考库 min_periods=5 —— 注意它数的是「窗口内有几天上涨」而不是「有几个有效值」，所以极端单边行情（20 日全涨）会让分母变 NaN，这是参考库的原意。收益用 ctx.ret（后复权），停牌日 NaN 自动落在两个池子之外。★ 分母保护：用 safe_div(min_abs_den=1e-12) 代替原文的 `down/(up+1e-12)`。两者**只在 up≫1e-12 时等价**——原文那个加法项在参考库的 ×1e8 量纲下是纯零保护（illiq~1e-2），而本族不带 ×1e8（见模块 docstring 第 4 条），illiq 只有 ~1e-10，照抄会把比值系统性扰动。用 pandas 逐格复算实测：与原文写法差 max 1.5e-1 / 10.6%（正是这个常数项造成），改用 safe_div 后语义等价（up 为 NaN 时同样得 NaN）且无扰动。注：正/负两侧都少于 5 个有效交易日时分母为 NaN → 输出 NaN，这是参考库的原意。
 - **`amihud_daily_5`**：★ 偏离参考库：去掉原文的 ×1e8 常数（原文 `df['absret']/df['amount']*1e8`），与同族 amihud_daily_20 / liquidity_shock_20 保持同一量纲（1/元）；截面 rank 完全不受常数影响。min_count=2 = 参考库 min_periods=2。5 日窗对停牌更敏感、对资金流出更灵敏，与 20 日版互补。
 - **`amihud_parkinson_ratio`**：参考库同名因子的思路：**单位波动带来的价格冲击**。分母用 Parkinson 波动（只用日内高低价、对成交稀疏不敏感），比用收盘价标准差更干净。⚠️ 单位：`stock_daily.amount` 是元，Amihud 保留元级量纲（不乘 1e8）——这里只取**比率**，量纲自己约掉，乘不乘常数不影响截面排序。⚠️ high/low 用**未复权**价：Parkinson 是日内比值，除权日会有一个交易日的失真，但 20 日均值把它摊薄到可忽略（与参考库一致）。
@@ -1560,8 +2043,6 @@ return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-1
 - **`chip_peak_growing`**：★ 出处：参考库 `factors/chip_deep.py`。`chip_peak_dominance` = 最大单档权重占比，对应摘要表的 `peak_purity` 字段（参考库另有 `chip_peak_purity` = 该量的**水平**；本地首批 16 个因子没有注册它，`peak_purity` / `skew` / `kurt` 这几个字段都是本批第一次用）。★ 主峰纯度的水平受**股价水平**影响（档宽固定 0.1/0.01 元时，股价越高单档占比越小），做 5 日**差分**正好把这个个体固定效应消掉：实测 ρ(·, peak_purity 字段) = +0.2082（2026 逐日截面中位）→ 与水平近乎正交，是比水平更干净的一版。★ 契约的 NaN 策略：窗口内出现 NaN 即 NaN（停牌日筹码行缺失 → 该日 NaN）。
 - **`chip_position`**：★ 口径：close 用未复权（见 avg_cost_premium 的说明）；cost_5/95pct → p10/p90。★ 定义辨析（重要）：这是**价格空间**的相对位置，不是**筹码质量空间**的百分位。真正的「现价在筹码分布中的分位数」= F(close) = below_close = winner_rate 因子本身（已精确算好）；本因子是它的价格空间线性近似，二者秩相关高但不相等（价格空间对分布形态敏感，质量空间不敏感）。因此本因子取值可以越出 [0,1]（现价高于 p90 时 >1、低于 p10 时 <0），这是参考库的原式，不做截断——截断会把「突破筹码密集区」这一最有信息量的状态压平。参考库 rank 取负（位置高=接近上方套牢区=阻力大）。
 - **`chip_range_normalized`**：与 chip_concentration 的分位组合不同（这里 25/75，那里 10/90）：一个度量核心 50% 筹码、一个度量 80% 筹码的宽度。cost_15/85pct → p25/p75。参考库 rank 取负（区间窄排前）。
-- **`chip_resistance_distance`**：★ 参考库用 cost_85pct，本表取 p75（最近分位）。★ 口径：close 未复权。实测中位数 2018/2019/2020 = −0.021 / −0.041 / −0.033 —— **中位股票现价略高于 p75**（与 winner_rate 中位 0.79~0.87 一致），p25 分位 −0.24/−0.20/−0.15 才是「现价在成本带下方」的一侧；正值意味着现价已跌到成本带内（上方有解套抛压）。参考库 rank 取负。
-- **`chip_support_distance`**：★ 参考库用 cost_15pct，本表取 p25（最近分位，故支撑位比参考库**更低**、距离更大）。★ 口径：close 未复权。与 chip_resistance_distance 是一对镜像（同一构造、上下两侧）。
 - **`chip_tail_risk`**：★ 出处：参考库 `factors/chip_deep.py`（Class 2，读 cyq_chips 原始档位）。摘要表的 `kurt` 字段 = 加权四阶中心矩 − 3（超额峰度），与参考库的 `chip_kurtosis` 逐字同口径（都是 Σw·(p−μ)^4/σ^4 − 3）——**本批之前没有任何因子用过这个字段**。2026 实测：中位 13.44、p99 169.05、min −1.9529、max 418.34，恒 > −3（chips.py 2019 年实测中位数 25、p99 164，量级一致 ✓）。★ 注意与 chips.py 的 `chip_cost_kurtosis_20d` 区分：那个是分位点代理(p75−p25)/(p90−p10)，是**有界**的比值；本因子是四阶矩，量纲为 1 但值域极宽（2026 实测 [−1.95, 418]）→ 引擎的 1%/99% 截面 winsor 后仍有少数极端值，这是**原口径**（参考库也没截断）。实测两者 ρ = −0.0970（几乎正交，不是同一个量）。★ 参考库的 `chip_kurtosis` 在 std≈0 时取 −3，本表同情形给 NaN（fea/chips.py 在 sd>0 时才写 kurt）—— 2026 实测摘要表 `n_levels` 最小 6、中位 101，单档筹码的格子 **0 个**，无影响。
 - **`chip_win_peak_frac`**：★ 出处：参考库 `factors/chip_deep_extra.py`。参考库定义：max(percents[prices ≤ close]) / Σpercents[prices ≤ close]。★ 与 `peak_purity`（**全分布**最大单档权重，摘要表字段）的区别：本因子把分母限制在**现价下方**（只统计获利盘），因此「下方集中」与「全分布集中」是两件事 —— 实测 ρ(·, peak_purity 字段) = +0.6942（中度相关，不是重述）、ρ(·, below_close 字段) = −0.5300（获利盘越多、下方峰反而越分散：获利筹码被摊到更宽的价位上）、ρ(·, chip_deep_trap_ratio) = +0.4252；对首批 16 个因子的最大 |ρ| = 0.6847（~chip_cr3_factor，同为「筹码向少数价位集中」的度量，但本因子的分母只含现价下方）→ 新维度。2026 实测值域 [0.0117, 1]、中位 0.3138。★ 语义：获利筹码集中成峰=主力成本密集单一（吸筹完成/锁筹），分散=浮筹多、涨时兑现压力大。是「吸筹 vs 出货」的形态维度。
 - **`close_location_20d`**：参考库出处：factors.md `类别 price` / fac_new_daily.py 的 close_location_20d。★ 复权：参考库这条**没有**走 `_adjusted_close`（用的是原始 high/low/close），  在除权日会被污染；本文件按项目硬约束改成 hfq 口径 ——   `(hfq_close − shift(hfq_close,20)) / (max(hfq_high,20) − min(hfq_low,20))`。★ 值域：分子 ≤ 分母（20 日振幅包含这 20 日的全部价格），所以理论上 ∈ [−1, 1]；  实测在 [−1,1] 内（分子分母同口径时严格成立）。★ 分母保护：20 日完全无振幅时 safe_div 给 NaN。
@@ -1582,7 +2063,6 @@ return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-1
 - **`cp_value_momentum_div`**：★ 用**差**而不是积：表达的是「便宜但近期没涨」（错配），与「又便宜又强」（共振）是两种不同的信号。参考库里这种 `rank(A) − rank(B)` 型有几十个，本文件只保留 3 个分歧型（价值-动量、两融-趋势、筹码-换手各一）。
 - **`cp_value_quality`**：经典的「便宜且好」（格雷厄姆式）。★ 两个父因子的 ac1 都 ≈0.999（季度才变一次），所以本因子**也是慢变量**：2026 单年只有约 4 个独立样本，IC 不可信；它的价值在于作为**风格暴露**进模型，而不是独立 alpha。
 - **`cvar_95_120`**：公式行逐字抄自 Class1 risk / cvar_95_120。★ 偏离参考库**实现**：参考用 5 个分位数取平均做黎曼近似（它自己的注释说明这是为了向量化），本实现按任务书口径取「窗口内 ≤5% 分位那部分的**均值**」= 精确历史 CVaR（参考库「意义」里写的也是「取最坏 5% 日收益的均值」）。120 日窗口下尾部期望 6 个样本，两种算法差异很小。min_count=60 = 参考 min_periods。实现：roll_quantile 取 q05（NaN 忽略）→ 掩码 r<=q05 → 窗口内尾部求和 / 尾部天数（都是 cumsum 类，无逐日循环）。
-- **`cyqp_average_cost_premium`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
 - **`cyqp_cost_premium_change_20`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
 - **`cyqp_cost_tail_asymmetry`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
 - **`cyqp_cost_width_70`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
@@ -1590,7 +2070,6 @@ return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-1
 - **`cyqp_cost_width_change_20`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
 - **`cyqp_historical_range_position`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
 - **`cyqp_mean_median_gap`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
-- **`cyqp_price_cost_position`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
 - **`cyqp_tail_width_share`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
 - **`cyqp_winner_acceleration_5`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
 - **`cyqp_winner_change_20`**：来源：学习资料/factors.md 筹码收益系列；返回原始值，排名由引擎执行。与旧筹码档位推算因子分开命名，不能假定两者完全相等。精确按日落格，缺失不前填；winner_rate 按百分数除以 100，超出 [0,100] 置 NaN；非正成本和逆序分位点置 NaN。收盘后数据供下一交易日使用；滚动窗口要求全窗有效。
@@ -1612,6 +2091,35 @@ return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-1
 - **`ebitda_to_market`**：参考库 §9 Value #6 的公式逐字，但 **EBITDA 用白名单字段近似**（上游 `stock_financial_indicator` 有 `ebitda` 水平值，但它是**累计 YTD**、且不在 `ctx.ind()` 的安全字段表里 —— 见汇报的「需要引擎扩字段」）：
     EBITDA = ebit + depr_fa_coga_dpba + amort_intang_assets + lt_amort_deferred_exp
 ★ **实测精度**（2024FY，4831 只可比）：与供应商 `ebitda` 的**中位相对差 −4.0%**，|差| < 5% 占 32.8%、< 20% 占 69.0% —— 自算值系统性**偏低**，因为白名单的折旧字段（固定资产折旧、油气资产折耗、生产性生物资产折旧）不含**使用权资产折旧 /投资性房地产折旧**等科目（2019 年新租赁准则后对零售、航空、餐饮影响较大）。所以本因子是「EBITDA 的下界近似」，量级与排序可用，绝对值不要与供应商口径混用。★ 四个分项在原始表里实测**非空率 100%**（2012/2016/2020/2024 年报均如此），「非零率」62%~99%（长期待摊摊销最常为 0，那是真实值）—— 故直接相加，**不做 nan→0**（缺失只可能来自报告期缺失，此时整格应为 NaN）。★ 与 `valuation.cfp_ttm` 的分工：EBITDA 加回了折旧摊销（非现金），比经营现金流更贴近「经营性盈利能力」，且不受营运资本变动的影响。
+- **`efx_annual_earnings_yield`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_dividend_gap`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_dragon_net_intensity`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_dragon_ratio_balance`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_forecast_revision_delay`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_free_turnover`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_limit_first`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_limit_float_fraction`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_limit_openings`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_limit_reseal_span`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_limit_signed_move`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_limit_streak`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_limit_trade_share`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_limit_turnover`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_limit_win_fraction`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_lu_board_density`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_lu_final`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_lu_first`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_lu_move`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_lu_one_price`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_lu_seal_amount`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_lu_seal_volume`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_seal_float`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_top_amount_rate`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_top_float`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_top_imbalance`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_top_move`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_top_turnover`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
+- **`efx_volume_ratio`**：本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。
 - **`elg_net_60d_to_mv`**：★ 单位：分子 `* 1e4`（万元→元），参考库写得很清楚，本实现照抄。★ 市值口径偏离：参考库用 `fin['circ_mv']`（流通市值），本实现用 **总市值** = `ctx.px('close') × ctx.px('total_share')`（项目约定，与本族 `mf_net_amount_intensity` 一致）。close 是**未复权**价（PIT 安全）。`min_count=20` = 参考库 `min_periods=20`。无北向持股数据时，超大单是外资/产业资本的最佳代理。
 - **`eom_14`**：参考库 Class1 `eom_14`（technical_daily.py）逐字如上，`min_periods=7` = 14//2，与本实现的 min_count=7（N//2）**一致**。参考库返回 `cross_sectional_rank(eom_avg)`，本因子返回原始值。★ 参考库注释明确写了「**除** box_ratio 而不是乘」（「Multiplication would reward high-volume/narrow-range days and is the inverse of the named indicator」），本实现照抄除法。★ 中点位移走**后复权**口径（参考库用 `scale = adj/close` 折算 high/low，数学上就是复权价），避免除权日伪位移。★ 振幅 0（一字板）→ `box_ratio` 分母 0 → `eom` NaN（参考库 `.replace(0, np.nan)` 同义）。★ 掩码 `traded(T) & traded(T-1)`：`distance` 是跨日量；停牌日 `vol` 本来就是 NaN，所以这层掩码只额外挡住「复牌日」（mid 从停牌前的陈旧值跳到复牌价）。★ 量纲是 **元²/股**（数量级 1e-9~1e-5），不要与参考库的绝对水平对齐；截面 rank 不受常数因子影响。值域无界但极小。
 - **`ep_ttm`**：★ 负 PE 的口径选择：**保留**。这里用 PIT 对齐的归母净利润TTM 做分子，亏损股的 ep 是真正的负数（不是 0 也不是 NaN），排名上自然落到最「贵」的一端，语义连续、不丢样本。对照组 pe_ttm_absolute 走的是「置 NaN」口径，两者互补。分母是市值（恒正），但仍走 safe_div + min_abs_den=1e6（元）。
@@ -1714,7 +2222,6 @@ return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-1
 - **`margin_repay_deceleration`**：分子的 `rzche` 是**流量**（覆盖外 NaN），分母是 5 个交易日前的同一列，地板 1 元 —— 实测 96.8% 的格子有值（只有 3.2% 因为「5 天前偿还额恰好为 0」被地板挡成 NaN，这是正确的：从 0 到任意值的「变化率」没有定义）。实测 2026-09-10 p1/p50/p99 = -0.87 / -0.042 / +5.96，是重尾的正数分布。★ 重尾的实测厚度（沙箱 2012~2015）：|值| > 10 只占 **1.02%**、> 100 占 0.11%、> 1000 占 0.013%，最大 1.19e6（来自「5 天前偿还额≈1 元 → 今天正常偿还」的个股，是真实数据不是脏值）。契约上限 1e8 内，且引擎的 `cs_rank` 会做 (0.01, 0.99) winsor，故不影响排序；但**下游若要用原始值（不是 rank）请自行截尾**。
 - **`margin_repay_shock`**：参考库 `min_periods=10` → 本实现 `min_count=10`（窗口内至少 10 个有效观测）。★ 分母均值的有效个数口径由 `ctx.roll_mean` 保证（它在有效值上取均值），不是「把缺失当 0 除以 20」。实测 2026-09-10 p1/p50/p99 = 0.055 / 0.855 / 3.29（参考库 clip(0,5) 在 p99 之外，未实现）。停牌日 `rzche` 仍是上游真值（实测停牌期间融资盘会继续还款），不会变 NaN。
 - **`margin_velocity`**：周转速度 = 当日融资交易额 / 存量余额，量纲 1/日。实测 2026-09-10 p1/p50/p99 = 0.0093 / 0.081 / 1.21（参考库 clip(0,2) 在 p99 之外，未实现）。与 `margin_buy_pressure` / `margin_net_flow_ratio` 共用分母但含义不同：本因子是**双边**成交强度（周转），那两个分别是**单边买入**与**净买入**。⚠️ 但**与 `margin_buy_pressure` 实测高度相关**：沙箱（2012~2015）日内 rank 相关中位数 **0.944**（上游原始表同日截面 0.966）—— 因为 A 股融资盘买入/偿还额量级接近，两项之和近似是买入项的 2 倍常数缩放。**下游用法建议：与 `margin_buy_pressure` 二选一**；若都要留，本因子的增量信息主要在「偿还端活跃度」，可考虑改用 (rzche−rzmre)/rzye 取正交残差。（此处不改定义是为了忠于参考库的公式原文。）
-- **`market_cap_concentration_20d`**：市值剧烈波动 = 市场对公司价值的共识度低 / 信息不对称高。★ 偏离：参考库用 min_periods=10，我们用**严格窗口**（窗口内有一个 NaN 就 NaN）。理由：市值的两个因子（close、total_share）都是前向填充的状态量，上市之后不存在停牌缺口，唯一会产生 NaN 的是「上市不足 20 天」，而次新股正是应该被排除的区间。★ 停牌期市值是水平量（不波动），所以停牌本身不会抬高这个波动率 ——它与供应商 total_mv 同口径。
 - **`marubozu_ratio_10d`**：参考库 Class1 `marubozu_ratio_10d`（trend_pattern.py）逐字如上，`min_periods=5` = 10//2，与本实现的 min_count=5 **完全一致**。窗口是 **10 日**（不是 20 日）——任务书里唯一一个 10 日窗的形态因子，本实现照抄。★ `is_marubozu` 用 `is_green` **相乘**而不是与（参考库原样）：`(upper+lower)/rng` 无定义（rng=0）时参考库靠 `.replace(0, nan)` 让`nan < 0.1` 为 False → 0；本实现用 `ok = rng > 0` 显式判 NaN。★ 掩码只用 `traded(T)`。值域 [0,1]。
 - **`max_drawdown_120`**：★ 窗口口径（想清楚后写在这里）：dd = hfq_close / roll_max(hfq_close,120) − 1，即「当前价相对**含当日在内的最近 120 个交易日**最高价」的回撤，恒 ≤0（roll_max 的窗口含当日，故比值 ≤1；停牌期间 hfq 前向填充，不会造假回撤）。**不用**教科书式的「窗口内峰谷最大回撤」：那个要窗口内的运行最大值（峰值可早于窗口起点），一次 roll_max 表达不了，得物化 (T,C,120) 张量；而且参考库明说 drawdown_120 是「8.10 删除的 max_drawdown_120 的合规重建」，口径就是本文这个。min_count=60 = min_periods。
 - **`max_drawdown_60`**：逐字抄自 Class1 risk / drawdown_60（即被删除的 max_drawdown_60 的合规重建），窗口口径同 max_drawdown_120。min_count=30 = min_periods。
@@ -1744,11 +2251,29 @@ return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-1
 - **`mf_tier_flow_agreement_20`**：**本文件新造**。（双记口径：Σ4buy ≡ Σ4sell ⇒ 四档净额之和恒为 0，见模块 docstring §一.①） 与 `mf_big_mid_net_corr_20` 的分工：那个用**相关系数**（对幅度敏感，被大流量日主导），本因子用**符号一致频率**（只看方向、对幅度免疫）——同样的相关性可以由「每天小幅同向」或「几天大幅同向」产生，两者对「资金结构是否稳定」的含义完全不同。★★ 符号判定**必须**先做有限值掩码再比较：`np.sign(NaN)` 是 NaN 而 `NaN != NaN` 为 True，写成 `sign(a) != sign(b)` 会把缺失日**静默计成「不同向」**（这类 bug 已在 `mf_flow_stability_20d` 的 note 里记录过一次）。⚠ **取值卡片化警告**：20 日均值只有 21 个可能取值，`fea/eval.py` 的 LOWCARD 判据是「每日唯一值中位 ≤ 20」——沙箱自检阶段必看每日截面唯一值数，不足就地砍。
 - **`mf_vol_amount_divergence`**：正 = 净流入的「手数占比」大于「金额占比」→ 净买入发生在**低价位**；负 = 金额占比更大 → 净买入发生在**高价位**（拉升式买入）。两个占比都是**同表内的无量纲分数**：分子分母同单位（手/手、万元/万元），所以**不需要任何换算**（跨表才需要）。★ 不做参考库的 `.clip(-0.5, 0.5)`（契约禁止因子内 winsor，引擎统一缩尾）。
 - **`mfi_14`**：参考库出处：factors.md `类别 price` / technical_daily.py 的 mfi_14。★ 复权：TP = (hfq_high + hfq_low + hfq_close)/3，方向判定 `diff(tp)` 因此  在除权日不会误判（参考库的 `scale` 折算由价格层统一完成）。★ 成交量语义：`vol` 是**流量**，停牌日是 NaN（价格层明确不补 0）。  但停牌日 tp 也被前向填充 -> tp_chg == 0 -> 正负两个条件都不成立 ->   该日资金流计 0。这是**正确**的：停牌当天确实没有资金流，  `rolling(14).sum()` 的语义就是「窗口内累计净流入」，不是「日均」。★ **分母保护**：负向资金流之和精确为 0（14 日全是上涨）时，  参考库的 `+1e-10` 会给出 1e10 量级的假比值 -> 引擎值域告警；  本文件用 `ctx.safe_div` 给 NaN，MFI 保持 [0,100] 的值域。★ 方向：参考库正向排名（资金流入推动排前），本因子同样 True。
+- **`mfx_dc_amount`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_dc_pct_change`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_dc_pressure`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_dc_range`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_dc_turnover_rate`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_dc_volume`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_index_amount`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_index_gap`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_index_pressure`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_index_range`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_index_volume`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_minute_amplitude`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_minute_volume_concentration`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_minute_weighted_pressure`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_tdx_amount`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_tdx_volume`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_ths_gap`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_ths_premium`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
+- **`mfx_ths_volume`**：本地候选定义，至少45个有效配对日。只用截至D日行情，供D+1交易。不读取当前板块成分，不直接把所有股票相同的市场序列输出为因子。每日等权中位数对应当日源库覆盖集合，供应商回填/指数集合历史变化的局限仍存在；相关性不代表收益方向。
 - **`momentum_10`**：★ 后复权（hfq），不是前复权：`adj` 在参考库里叫 daily_adj.parquet（qfq），照抄会破坏 PIT。停牌日 hfq_close 被前向填充 → 停牌段收益为 0、复牌跳空计入累计收益（口径正确，不要再用 ffill 去「修」）。★ 清洗口径：走 `_ret_k`（= Π(1+ret(1)) − 1），单日 |收益|>60% 的复权脏数据毒化整个窗口；**不用 `ctx.ret(k)`** 是因为它拿「k 日累计 >60%」当脏数据判据，实测 k=250 时误杀 48% 的有效格且全是强势股（详见 `_ret_k` 的 ★ 段）。介于短周期反转与月度动量之间，实测常是三者里最弱的一档。
 - **`momentum_120`**：★ 后复权（hfq），不是前复权：`adj` 在参考库里叫 daily_adj.parquet（qfq），照抄会破坏 PIT。停牌日 hfq_close 被前向填充 → 停牌段收益为 0、复牌跳空计入累计收益（口径正确，不要再用 ffill 去「修」）。★ 清洗口径：走 `_ret_k`（= Π(1+ret(1)) − 1），单日 |收益|>60% 的复权脏数据毒化整个窗口；**不用 `ctx.ret(k)`** 是因为它拿「k 日累计 >60%」当脏数据判据，实测 k=250 时误杀 48% 的有效格且全是强势股（详见 `_ret_k` 的 ★ 段）。对应参考库的 alpha_125d / return_126d（125/126 交易日 ≈ 120），窗口对齐半年。
 - **`momentum_20`**：★ 后复权（hfq），不是前复权：`adj` 在参考库里叫 daily_adj.parquet（qfq），照抄会破坏 PIT。停牌日 hfq_close 被前向填充 → 停牌段收益为 0、复牌跳空计入累计收益（口径正确，不要再用 ffill 去「修」）。★ 清洗口径：走 `_ret_k`（= Π(1+ret(1)) − 1），单日 |收益|>60% 的复权脏数据毒化整个窗口；**不用 `ctx.ret(k)`** 是因为它拿「k 日累计 >60%」当脏数据判据，实测 k=250 时误杀 48% 的有效格且全是强势股（详见 `_ret_k` 的 ★ 段）。A 股月度动量效应显著；与 reversal_2d / short_term_reversal_5 方向相反，建模时不要同时用（会互相抵消）。
 - **`momentum_250`**：★ 后复权（hfq），不是前复权：`adj` 在参考库里叫 daily_adj.parquet（qfq），照抄会破坏 PIT。停牌日 hfq_close 被前向填充 → 停牌段收益为 0、复牌跳空计入累计收益（口径正确，不要再用 ffill 去「修」）。★ 清洗口径：走 `_ret_k`（= Π(1+ret(1)) − 1），单日 |收益|>60% 的复权脏数据毒化整个窗口；**不用 `ctx.ret(k)`** 是因为它拿「k 日累计 >60%」当脏数据判据，实测 k=250 时误杀 48% 的有效格且全是强势股（详见 `_ret_k` 的 ★ 段）。★ warmup 必须 ≥480：250 交易日 ≈ 365 日历天，给少了每年分区的头 100 多天会静默错。
-- **`momentum_60`**：★ 后复权（hfq），不是前复权：`adj` 在参考库里叫 daily_adj.parquet（qfq），照抄会破坏 PIT。停牌日 hfq_close 被前向填充 → 停牌段收益为 0、复牌跳空计入累计收益（口径正确，不要再用 ffill 去「修」）。★ 清洗口径：走 `_ret_k`（= Π(1+ret(1)) − 1），单日 |收益|>60% 的复权脏数据毒化整个窗口；**不用 `ctx.ret(k)`** 是因为它拿「k 日累计 >60%」当脏数据判据，实测 k=250 时误杀 48% 的有效格且全是强势股（详见 `_ret_k` 的 ★ 段）。与 momentum_20 相关性高（同方向），只差一个尺度，适合二选一或做正交化。
 - **`net_margin_ttm`**：参考库 #35 npm_ttm 的公式未指明净利口径，这里统一归母（见文件头口径总纲）。营收用 revenue（营业收入），不是 total_revenue（营业总收入）。净利率可以为负（亏损），是正常的截面读数。地板 100 万元营收：TTM 营收低于此的主板公司等于空壳，比率无意义。
 - **`new_high_60_event`**：`new_low_60_event` 的镜像（把 low/min 换成 high/max），偏离与理由逐条相同。★ 与 event2.py 的 `new_high_frequency_60` **互补不重复**：那个是「60 日内创新高的**天数占比**」（频率，无时间结构），本因子是「新高事件的**衰减加权和**」（越近期的新高权重越大，多次新高累积）。两者在**持续创新高**的股票上相关，但本因子对「最近才突破」的股票给更高分。窗口/半衰期同 `new_low_60_event`（N=10, H=5）。★ 实测零值占比 82.35%、|value|max = 5.7938（同样是 10 天连续新高）、非空率 100.00%。与 `new_low_60_event` 的截面秩相关 −0.238（互为镜像，符号相反是预期行为）。
 - **`new_high_frequency_60`**：★ 复权基座必须是**后复权** `ctx.hfq("close")`：参考库用的 daily_adj.parquet 是前复权（历史值会随未来分红重算，PIT 红线）。后复权锚定序列起点，除权日不产生假新高。停牌日 hfq_close 被前向填充（= 上一日价），除非整窗横盘否则不会误判为新高。`min_count=30` 对齐参考库 min_periods=30（窗口内至少半年数据）。值域 [0,1]；次新股上市满 30 个交易日后才有值 → 上市初期为 NaN（正常）。
@@ -1761,6 +2286,9 @@ return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-1
 - **`ocf_to_profit`**：★ 分母用**带符号**的归母净利润并设 100 万元地板：净利为负的公司得到**负值**（经营现金流覆盖不了亏损），符合语义。**刻意不用 |NetProfit|** —— 那会把「亏损但现金流为正」的公司排到截面最顶端（方向完全反了）；同文件的 cash_profit_ratio 用 |NP| 是因为它构造的是「超额现金流的相对量」，两者的分母保护动机不同。|NP| < 100 万元视为盈亏平衡、比率无意义 → NaN。
 - **`ocf_to_revenue`**：参考库未单列（其 ind 表里的 ocf_to_or 是**累计 YTD** 口径，被契约 §5 禁用，故这里用 ctx.ttm 从现金流量表重算）。**银行业例外**：经营现金流被存款/同业资金进出主导，该比值对银行没有「收入含金量」的含义 —— 银行会散布到截面两端，下游按行业中性化时会自动处理。
 - **`one_word_limit_down_freq_20`**：★ 与 event2.py 的 `one_word_limit_up_freq_20` **镜像**（那边是一字**涨停**），唯一的结构差异是跌停判定：那边用 `pct_chg >= 9.8`，本因子用 **LL 优先（`limit == 'D'`）+ 价格近似回退**（与同文件 `limit_down_event_5` 共用`_limit_grid`），因为一字跌停的样本比一字涨停少一个量级，供应商标记带来的判定差更容易影响分布。`high == low` 是一字板的**定义**（全天只成交在一个价位），除权日不产生假值（high/low 是同日同尺度量）。停牌日 `pct_chg` 为 NaN → 该日按「无观测」记 NaN（不参与均值），故 `min_count=5`（对齐参考库 min_periods=5，与 event2 的同款因子一致）。值域严格 [0,1]；**零膨胀（固有）**：从没打过一字跌停的股票恒为 0 —— 这是正确的 0，不是缺失（event2 对一字涨停同款因子给了同样的结论）。**实测**：零值占比 94.31%、|value|max = 0.30（20 天里 6 个一字跌停）、非空率 100.00% —— 刚好压在「>95% 说明口径太稀」的红线之内。注意 20 日窗口内有效观测不足 5 天时是 NaN（次新股/长期停牌），沙箱实测有 167 行 NaN（518,591 / 518,758 行）。与 `consecutive_limit_down` 的区别：那个数「连续几个跌停」（不要求一字），本因子数「跌停里有多少是一字」（流动性冻结的指纹）。
+- **`open5_amt_log`**：★ 执行/容量口径，不是 alpha 声称。与 share 版的区别：share 是**相对**结构（这只票自己开盘占全天的比重），log 版是**绝对**池子大小 —— 执行层要估「这笔单子最多下多少钱」用的是后者（`单笔上限 ≈ 开盘 5 分钟成交额 × 参与率`），而 share 版回答的是「同规模下谁的开盘更厚」。两者不可互相替代。取对数是因为原始金额跨 4~5 个数量级，截面 rank 虽然能吃掉量级、但下游若要做线性回归或分层，对数尺度更稳。停牌 / 未落格 -> NaN（不填 0；填 0 的 log 是 −inf）。
+- **`open5_amt_share`**：★ 执行/容量口径：高 = 开盘时段流动性池厚，按开盘价成交的冲击更小、可容纳的资金更多。**不是**收益方向的声称。口径见 fea/open5.py：首 5 分钟 = 当日第一根 bar（厂商时间戳 09:35，区间右端）。实测全池中位 ≈ 8.1%（2026Q1）、且随年份单调上行（2010 约 2.6% → 2025 约 8.0%）——做时序比较请用本文件的 _pct20 版本，或只依赖逐日截面 rank。另：项目原有执行层只用「信号日全日成交额的 1%」限容量（V63/analysis.py:272-273），本因子是给它换成**开盘时段**口径的原料。
+- **`open5_amt_share_pct20`**：★ 执行/容量口径，不是 alpha 声称。为什么要这一版：占比本身有**长期漂移**（2010 中位 2.6% → 2025 中位 8.0%，见 fea/open5.py 与 README 的交付记录），直接跨年比较会把「全市场都在变」误读成「这只票变了」。时序分位把每只票自己的 20 日历史当基准，漂移与个股规模一起约掉。`ctx.roll_rank` 是 WorldQuant 的 Ts_Rank（窗口最后一个值在窗口内的百分位，返回 [0,1]），min_count=10 = 20//2，与参考库 `_roll_sum(x,20,10)` 的 `min_periods` 约定一致。★ 与 open5_amt_share 高度相关（同一分子分母，只差一次时序排名）——下游若做冗余筛除，这两个应当**视作一簇**。
 - **`opm_npm_spread`**：**本文件新造**。★ 为什么用一个**价差**而不是两个水平：`营业利润率` 与 `净利率` 两个水平各自都是慢变量，但它们的**差**在截面上的离散度大得多、时序也更快 ——差刻画的是「营业利润在非经常性损益、税、少数股东损益这一路上损耗了多少」，而这一路的构成**每年都在变**（减值、投资收益、税率优惠），所以价差不是慢变量的线性重标定。被删的 `gross_margin_change` / `net_margin_change` 是**时序差分**（还是慢变量），本因子是**同日截面内的两个水平之差**，机制不同。方向取负：损耗越大，盈利质量越差。
 - **`order_size_concentration`**：逐字复刻参考库（`fund_flow_deep.py`），只把 `cross_sectional_rank` 交给引擎。★ **符号是必需的，不是装饰**：实测「无符号 HHI」与 `mf_order_concentration`（大单毛额占比，判定当时在册）的截面 rank 相关 **−0.940** —— 四档 HHI 与「大单占比」在数学上几乎互为镜像（HHI 高 ⟺ 某一档独大 ⟺ 四档越不平均），去掉符号就是又一个重复因子。乘上 `sign(smart_direction)` 后与 `mf_big_order_ratio` 相关降到 **+0.650**、与 `mf_smart_dumb_divergence` **+0.623**（2026 年逐日截面 rank，上游表直接复算）——这正是参考库 thesis 想做的「区分两种高集中情形」。取值域：HHI ∈ [0.25, 1]（四档的下界），乘符号后 ∈ [−1,−0.25] ∪ [0.25,1]，以 0 为界分两侧；`sign(0)=0` 的格子（净额恰好为 0，测度零）给出 0，与参考库一致。分子分母同为**万元**（毛额口径，不受双记影响），比值无量纲、无需换算。
 - **`order_size_ratio_change`**：逐字复刻参考库（`fund_flow_deep.py`）。二阶变化抓机构参与的**拐点**（占比从 10% 升到 20% = 刚介入；已在 40% 高位 = 可能出货），与同族其它因子互补：实测与 `mf_order_concentration`（占比**水平**）相关 +0.308、与 `big_vs_small_divergence_5d`（净额口径的 5 日变化）相关 **+0.086** —— 「毛额占比的变化」与「净额方向的变化」是两件事，不冗余。毛额口径本身不受双记影响（Σ4 毛额 = 八列总额）。★ 与 `mf_tier_net_spread_20` 的区别：后者是四档净额占比的 20 日极差（分歧度），本因子是单边占比的 5 日变化（参与度），实测相关仅 +0.16。
@@ -1777,6 +2305,18 @@ return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-1
 - **`pegh5`**：参考库 §9 Value #2 逐字，两处口径实现说明：① **EPS 序列自算**（白名单无 basic_eps）：EPS_TTM = 归母净利TTM / 当期股本；5 年前的 EPS 用 `lag_ttm(NP, 20)`（20 个**报告期** = 5 年）配同一套股本口径 ——**增速因此等于归母净利 TTM 的 5 年复合增速**（股本是同一个乘数、在比值里相消）。这样做的理由：参考库的 `BasicEPS_Y` 序列不做复权，A 股高送转会把 EPS 名义值砍到 1/10，伪造出 −90% 的「EPS 崩塌」；用净利口径则送转/拆股完全无影响。**代价**：增发摊薄不体现在增速里（下游若要每股口径需另建因子）。② **符号与定义域**：增长率两端都 > 0 才算，且要求 **g5 > 0**（负增长时 PEG 无意义，参考库取 −rank(PEGH5) 会把「负增速 = 负 PEG」顶到「最便宜」的一端，方向完全反了）。分母（g5 × EPS）加 1e-3 地板，防 g5→0+ 炸出 1e11 量级的假值。③ **量纲**：按参考库字面公式，PEGH5 = PE_TTM / g5（g5 为小数），即比常见 PEG（PE / 增速百分数）**大 100 倍**，与同族 `peg_252d` 不同量纲 ——但两者都只出 rank，排序不受影响（见两个 note 的对照）。④ **实测口径代价**：要求 g5 > 0 会丢掉「5 年零增长/负增长」的样本（估值上它们是「贵」的一端，不是「便宜」的一端）——缺失与「成长性差」强相关，下游注意。⑤ 起点 = 实测首个有效日 **2016-01-18**（见 `FIN_START_DEEP20`）：20 个报告期的回看要等到 2015Q4 的报告期才凑得齐，2012~2015 四个整年必然全空。
 - **`price_distance_from_52w_low`**：与 price_to_52w_high 一起构成 George-Hwang 效应的两端：贴着一年的低点 = 持续阴跌，远离低点 = 趋势健康。值域 [0, +∞)。★ 同样偏离参考库两处：窗口 252→250 交易日、min_periods=120→要求满 250 日（理由见 price_to_52w_high）。复权基座保证除权日不会造出假新低。
 - **`price_to_52w_high`**：George-Hwang 52 周高点效应在 A 股的实现。★ warmup=480（250 交易日窗口）。★ 偏离两处：(1) 参考库窗口是 252 交易日，本实现用 250（52 周 ≈ 250 个交易日，差 2 日对「年内高点」的位置无实质影响），公式串保留参考库原文以利溯源；(2) 参考库用 min_periods=120（上市不足半年也给值），本实现要求**满 250 日**，否则次新股的「52 周高点」其实是上市以来的高点，口径不同。值域 (−1, 0]，越接近 0 = 越贴近年内高点（上方套牢盘最少）。
+- **`qf_cash_margin_floor_4q`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_cash_margin_vol_4q`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_cash_margin_yoy_change`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_core_roe_floor_4q`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_core_roe_vol_4q`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_core_roe_yoy_change`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_noncore_roe_gap`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_roa_yoy_change`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_roe_yoy_change`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_sales_growth_accel`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_sales_growth_floor_4q`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
+- **`qf_sales_growth_vol_4q`**：本轮自定义单季度质量候选，原始字段来自上游接口字典，沿用财务版本表的公告时点。字段百分数除以100转比例；同比差为比例差，非同比增长率。lag按报告期且取当时已知版本，非日频位移；四季统计要求连续四个报告期全部有效，std为总体标准差。2026Q2发现52只池内股票五个核心字段同时为0，保守将该报告期的整组值标为缺失；单个字段真实零值及负值保留，非有限值为NaN；不回退到旧报告来掩盖缺失。仅用于当晚生成、次日交易；方向为经济解释，未经收益检验。源表若已覆盖旧版本或追溯修订公告日，无法凭现存快照还原真实历史到达时间。
 - **`quality_composite`**：★ **与参考库的有意偏离**：参考库 §5 Quality #10 是 AQR QMJ 的「**6 项比率直接相加**」，本实现是「**3 项比率截面标准化后等权**」。两条理由：① 直接相加**量纲不可比**（ROE ~0.1、毛利率 ~0.3、(OCF+ICF)/总资产 ~0.05，相加等于给毛利率 3 倍权重）；② 参考库第 6 项 `NetProfit / (OpCashInflow + InvCashInflow)` 的分母可以为负/近零（参考库自己要用 `filter=True` 挡 ±inf），在契约 §3.4「除法一律带保护」下会被 NaN 掉大半样本。★ **合成口径**：每项先 `ctx.cs_zscore(x, mask=ctx.universe)`（**逐交易日的截面**标准化，只用当日主板股票，**绝不使用全样本统计量** —— 那会引入未来信息），再等权平均。三项是：**盈利能力**（ROE_TTM）、**定价能力**（毛利率 TTM）、**现金创造**（经营现金流 TTM / 期末总资产）—— 分别对应利润表、利润表的毛利率结构、现金流量表，三张表各取一个，刻意不重叠。★ **缺失处理**：允许**至少 2 项有效**（`nanmean`），此时用有效项的均值。理由：银行/券商没有可比的 `oper_cost`（毛利率恒为 NaN），若要求 3 项全有，整个金融板块会被排除；要求 2 项则它们由 ROE + 现金流质量代表。只有 1 项有效的格子返回 NaN（**不给单因子冒充复合因子**）。★ **与既有因子的关系（重要）**：本因子是三个已落盘因子（`roe_ttm`、`gpm_ttm`、`ocf_to_asset` 的等价物）的线性组合，**与 `roe_ttm` 的相关性最高**（ROE 的截面分散度最大）。它的价值是「一次拿到一个已经中性化的质量分」，下游做因子筛选时**不应**再同时保留全部成分因子（共线）。
 - **`rd_intensity`**：★ 参考库未收录（研发投入维度）。**起点 2019-05-01（偏离 start=None）**：上游 `rd_exp` 在 2012~2017 的年报行里 **97%~100% 是精确的 0.0**（实测：2012-2014 正值占比 0.03%，2015 起 3%，2017 才 25%），因为 2018 年新准则（财会[2018]15号）之前研发费用普遍混在管理费用里、**不单独披露** —— 那是「没披露」而不是「没研发」。2018 年报起披露率跳到 87%~88%。不设起点的话 2012-2017 的因子值是「一大片 0 + 零星正值」，虽然不是常数，但截面完全没有区分度。取 2019-05-01 = 全部主板公司 2018 年报都已公告，TTM 窗口口径统一。口径说明：用**费用化**的 `rd_exp`；`r_and_d`（资产负债表时点字段）实测99% 是 0（只有资本化的开发支出），不值得用。
 - **`rel_mom_ind_10d`**：逐字抄参考库 cat-sector-c1 的同名因子定义（`个股 k 日收益 − 行业等权 k 日收益`）。★★ **行业归属是本项目自建的动态行业**（见模块 docstring §二），不是参考库那份无日期的快照成分股表 —— 参考库自己就是因为快照非 PIT 才禁用了 6 个 sector 因子。★ 与参考库的实现差异：行业收益用**指数点位**（市值加权），参考库用**等权**行业均值；理由见模块 docstring §三.3。经济含义：剥离板块 β 之后的个股超额 —— 同一行业里跑赢同伴的股票延续性更强，绝对动量受行业轮动干扰大。
@@ -1792,7 +2332,6 @@ return cross_sectional_rank(-vol_ratio)` | 2018-01-01 | 2018-01-02 → 2026-09-1
 - **`ret_ind_rel_1d`**：逐字抄参考库 cat-sector-c1 `ret_ind_rel_1d`（唯一一个 1 日窗口的行业相对因子）。★★ 行业归属是自建动态行业（模块 docstring §二），非快照成分股。与 `rel_mom_ind_3d` 的关系：那是 3 日累计，本因子是**当日单日**超额 ——在 1 日预测期上信息衰减最快，短窗口是必要的（参考库把它单独放在`fac_cand_daily.py` 而不是常规族里，也是这个理由）。
 - **`ret_kurt_20`**：逐字抄自 Class1 risk / ret_kurt_20。min_count=15 = 参考 min_periods。★ 返回的是**超额**峰度（减 3 之后，正态 ≈ 0），与 pandas `.kurt()` 同口径；不是原始的四阶矩比。★ 数值守卫 |kurt| > 1e4 → NaN：同 ret_skew_20 的退化窗口（m2→0 → m4/m2² 爆炸），实测垃圾值全部 >1e8（含 ±inf），真实值 <1e3，中间同样是空的。
 - **`ret_skew_20`**：逐字抄自 Class1 risk / ret_skew_20。min_count=15 = 参考 min_periods。用 `ctx.roll_skew`（与 pandas `.rolling(n).skew()` 同口径：有偏偏度再乘 sqrt(n(n-1))/(n-2) 去偏）。★ 数值守卫 |skew| > 100 → NaN：一字板/长期停牌后价格不动会让 m2→0、m3/m2^1.5 爆炸，实测截面双峰（真实值 <10、垃圾值 >1000、中间 0 个格子）。
-- **`ret_skew_60`**：逐字抄自 Class1 risk / ret_skew_60。min_count=40 = 参考 min_periods（60 日窗口要 40 个样本）。★ 数值守卫 |skew| > 100 → NaN（同 ret_skew_20：退化窗口 m2→0 会让偏度爆炸）。
 - **`revenue_cagr_3y`**：★★ 起点显式写 2014-01-01（不是 default_start）：本因子要 lag_ttm(REV, 12)，上游财报最早只到 2010Q1、TTM 最早算到第 83 期（2010FY）→ lag 12 最早在当期报告期 >= 95（2013Q4）时可达，实测首个有效日 2014-01-22、2014-04 起覆盖稳定。2012/2013 两整年会是全 NaN，而引擎目前在整年全 NaN 时会崩（见文件头 DEEP_LAG_START 的说明）。★★ 符号问题（本家族第二个大坑）：`(x_t/x_{t−k})^(1/k) − 1` 在 x 为负时无定义。本实现要求**两端都 > 0**，否则置 NaN。理由：① 分母为负时比值的符号会反转（−1亿 → +0.5亿 会算出 +2 倍的「增长」）；② 严格 > 0 而不是 ≥ 0：营收近零的壳公司一旦有了一点收入，`(x/0)^(1/3)` 会炸成任意大的值。★ 亏损转盈的样本**置 NaN 而非保留**：CAGR 的定义是「几何平均」，它对符号翻转型样本没有可解释的含义；保留它们（例如取 |分母|）会把「扭亏」这个事件伪装成一个巨大的正增长，在截面上系统性高估困境反转股。代价是 CAGR 因子在亏损股上缺失（截面偏向盈利样本），这是**有意的**。★ 口径：12 个**报告期**（3 年），不是日频 t-756；12 期需要更深的版本表，由引擎的 `years_for_window(lag_years=3)` 覆盖。早期年份（数据起点后的头 3 年）会有一段 NaN，属正常。
 - **`reversal_2d`**：参考库 fac_short_term.py 的 reversal_2d **不做取负**（值就是 2 日收益），方向由下游处理 —— 本实现照抄该口径，用 higher_is_better=False 标注方向。★ 与 short_term_reversal_5 不同：那个参考库里显式取了负号。反转因子理论上不需要复权（2 日内除权概率低），这里仍走 `_ret_k`（后复权），一致性优先，且能挡掉复权因子脏行造的假暴跌。
 - **`roa_ttm`**：★ 分子用**归母**净利润，与既有 roe_ttm / yoy_net_profit 同口径 —— 这样 ROE = ROA × 权益乘数 的杜邦恒等式在本家族内逐格成立（权益乘数同样用归母权益）。参考库只写 NetProfit，未指明是否含少数股东。分母用**期末**总资产（参考库同）；平均资产口径要取前一期报表，PIT 更脆。银行的总资产收益率天然很低（~0.8%），是行业属性不是异常。
@@ -2402,7 +2941,9 @@ factors/           因子实现：一个家族一个文件，import 即注册
          **2023/2024 块 58.0 GB（离上限只剩 2 GB）** ⇒ 后段年份 **jobs ≤ 4**。
       ⚠️ 爆内存的表现是 **`BrokenProcessPool`**（worker 被内核杀掉），**不是** `MemoryError`
          —— 别当成"偶发故障"重试，重试只会再爆一次。
-      ⚠️ `main.py dayhash` 默认 fork `min(16, 核数-1)` 个 worker，**别和别的重活同时跑**
+      ⚠️ `main.py dayhash` 的并行度走的是 `resources.safe_jobs()`：**只能 1 或 2**
+         （2026-09-22 核对；文档此前写的"默认 fork min(16, 核数-1)"是 09-16 的旧行为，已不成立）。
+         即便只有 1~2 个 worker，它仍要读全库因子的尾部窗口，**别和别的重活同时跑**
          （2026-09-17 那次 OOM 就发生在 dayhash 与 2 因子重算并行时）。
     新因子尽量声明 `fin_fields`（不声明 = 该因子触发"全字段"衍生层）。
 16. **去糟粕是常规动作，不是一次性清理**：`main.py dedup` 出冗余簇、
@@ -2682,6 +3223,8 @@ days_ok = ctx.next_trading_day(days)
 > `dt_netprofit_yoy` / `bps_yoy` 四个字段（该文件 docstring §一 有「为什么之前零消费」的复盘）。
 > 白名单本身**没有变**，用别的字段仍然会 `KeyError`。
 
+**2026-09-21 白名单增量**：经上游接口字典核对，`q_roe, q_dt_roe, q_npta, q_ocf_to_sales, q_sales_yoy` 作为明确的单季度字段加入 `IND_QUARTERLY`，可以通过 `ctx.ind(field, lag=k)` 使用。累计 YTD 字段仍禁止直接使用；季度统计按报告期滞后，不能按日频平移。五字段同时为零的源表占位保护在 `quarterly_quality.py` 内执行，不改变其他家族。
+
 **时点比率**（`end_date` 上的瞬时量，可直接用）：
 `debt_to_assets, current_ratio, quick_ratio, cash_ratio, assets_to_eqt, ca_to_assets,
 nca_to_assets, tbassets_to_totalassets, int_to_talcap, currentdebt_to_debt,
@@ -2790,4 +3333,84 @@ EOF
 辅助检查默认追加到此区；分诊记录是执行前计划，不能作为已删除或删除成功的凭据。
 
 <!-- FEA:REPORTS:BEGIN -->
+# 因子分诊报告（去糟粕）· 2026-09-22 本轮（人工合并成一节）
+
+> 依据 = `main.py dedup` 的全量实测（**656 因子 × 2018~2026、|ρ|≥0.95**，2026-09-22 09:14 完成）：
+> **37 簇 / 58 个候选**。★ 实际删除 **57 个**，保留 1 个（父依赖，见下）。
+> · 完整簇清单 / 代表清单：`artifacts/audits/dedup_20260922/{REPORT.md,representatives.json}`
+> · 逐因子理由与摘除路径：`scripts/prune_factors.py` 的 `DELETE`（2026-09-22 段）
+> · 删除前全量备份：`artifacts/backups/prune_20260922/`（58 产物目录 + 58 状态文件 + 源码/配置）
+> · 删除后：注册对象 661 → **604**（因子 656 → **599**，标签 5 不变）；`main.py docs` 已刷新本手册的字典
+
+## 删除结果（按摘除路径 —— 四种注册机制各走各的）
+
+| 摘除路径 | 数量 | 哪些 |
+|:--|--:|:--|
+| `conf/field_expansion.json` 删条目 | 39 | `afx_*`（该 JSON 就是这族的注册源） |
+| 并入文件自带的 `REJECTED_CANDIDATES` | 12 | `efx_*` 3 个（field_events.py）、`mfx_*` 9 个（field_markets.py） |
+| AST 摘 `@register` 块 | 6 | chips.py 2、cyq_perf.py 2、valuation.py 1、volatility.py 1 |
+| 删产物目录 + 状态文件 | 57 + 57 | 全部候选（保留的 1 个已还原） |
+
+★ `scripts/prune_factors.py` 本轮补齐了两件事：**按机制分派摘除**（老实现只认 `@register(FactorSpec(name=...))`，
+对 conf 目录驱动与 `REJECTED_CANDIDATES` 两族会「未定位到」却照样删产物 ⇒ 下次 `main.py run` 全部复活），
+以及**依赖守卫**（见下节）。
+
+## 保留 1 个：`momentum_60`（不是漏删）
+
+`momentum_60` 与 `sortino_ratio_60` 的 |ρ|=0.953，但它同时是**两个存活耦合因子的父依赖**：
+`cp_momentum_highvol_60`（`z(momentum_60)×z(vol_120)`）、`cp_quality_momentum`（`z(roe_ttm)×z(momentum_60)`）。
+删掉父因子后子因子的 `ctx.load_factor` 会**静默**返回全 NaN（只 warning）⇒ 表现为「非空率 0%」而不报错。
+同 2026-09-17 轮保留 `mf_big_order_ratio` / `short_term_reversal_5` 的道理 —— 本轮已把这条判据固化成
+`prune_factors.py` 的**依赖守卫**（拦下即退出码 2，未改任何代码或数据）。
+
+## 分簇对照（每簇留 1 个代表；`→` 左边是被删的）
+
+| 簇 | 代表（保留） | |ρ| 范围 | 删除 |
+|--:|:--|:--|:--|
+| 10 | `afx_fi_npta` | [0.908, 1.000] | `afx_fi_roa`、`afx_fi_roa2_yearly`、`afx_fi_roa_dp`、`afx_fi_roa_yearly`、`afx_fi_roe`、`afx_fi_roe_waa`、`afx_fi_roe_yearly`、`afx_fi_roic`、`afx_fi_roic_yearly` |
+| 6 | `afx_bs_oth_assets` | [0.957, 1.000] | `afx_bs_oth_liab`、`afx_is_n_commis_income`、`afx_is_n_oth_income`、`afx_is_oper_exp`、`afx_is_oth_b_income` |
+| 5 | `afx_fi_ebit_of_gr` | [0.924, 0.998] | `afx_fi_netprofit_margin`、`afx_fi_op_of_gr`、`afx_fi_profit_to_gr`、`afx_fi_profit_to_op` |
+| 4 | `mfx_dc_pressure` | [0.883, 0.988] | `mfx_minute_pressure`、`mfx_tdx_pressure`、`mfx_ths_pressure` |
+| 4 | `mfx_dc_range` | [0.963, 0.998] | `mfx_dc_swing`、`mfx_tdx_range`、`mfx_ths_range` |
+| 3 | `afx_fi_diluted2_eps` | [0.961, 0.997] | `afx_fi_dt_eps`、`afx_fi_eps` |
+| 3 | `avg_cost_premium` | [0.943, 0.992] | `chip_resistance_distance`、`cyqp_average_cost_premium` |
+| 2 | `afx_cf_beg_bal_cash` | [0.976, 0.976] | `afx_cf_c_cash_equ_beg_period` |
+| 2 | `afx_cf_c_cash_equ_end_period` | [0.976, 0.976] | `afx_cf_end_bal_cash` |
+| 2 | `afx_cf_im_net_cashflow_oper_act` | [1.000, 1.000] | `afx_cf_st_cash_out_act` |
+| 2 | `afx_fi_basic_eps_yoy` | [0.985, 0.985] | `afx_fi_dt_eps_yoy` |
+| 2 | `afx_fi_cogs_of_sales` | [0.998, 0.998] | `afx_fi_grossprofit_margin` |
+| 2 | `afx_fi_ebit` | [0.989, 0.989] | `afx_fi_profit_prefin_exp` |
+| 2 | `afx_fi_eqt_to_interestdebt` | [0.978, 0.978] | `afx_fi_tangasset_to_intdebt` |
+| 2 | `afx_fi_fcfe` | [0.963, 0.963] | `afx_fi_fcfe_ps` |
+| 2 | `afx_fi_fcff` | [0.974, 0.974] | `afx_fi_fcff_ps` |
+| 2 | `afx_fi_n_op_profit_of_ebt` | [1.000, 1.000] | `afx_fi_nop_to_ebt` |
+| 2 | `afx_fi_ocf_to_debt` | [0.952, 0.952] | `afx_fi_ocf_to_shortdebt` |
+| 2 | `afx_fi_q_gr_qoq` | [0.997, 0.997] | `afx_fi_q_sales_qoq` |
+| 2 | `afx_fi_q_netprofit_margin` | [0.998, 0.998] | `afx_fi_q_profit_to_gr` |
+| 2 | `afx_fi_q_netprofit_yoy` | [0.951, 0.951] | `afx_fi_q_profit_yoy` |
+| 2 | `afx_fi_retainedps` | [0.976, 0.976] | `afx_fi_undist_profit_ps` |
+| 2 | `afx_fi_revenue_ps` | [1.000, 1.000] | `afx_fi_total_revenue_ps` |
+| 2 | `afx_fi_roe_avg` | [0.966, 0.966] | `afx_fi_roe_dt` |
+| 2 | `afx_is_basic_eps` | [0.982, 0.982] | `afx_is_diluted_eps` |
+| 2 | `afx_is_compr_inc_attr_p` | [0.987, 0.987] | `afx_is_t_compr_income` |
+| 2 | `bollinger_width_20` | [0.981, 0.981] | `market_cap_concentration_20d` |
+| 2 | `chip_median_distance` | [0.957, 0.957] | `chip_support_distance` |
+| 2 | `chip_position` | [0.957, 0.957] | `cyqp_price_cost_position` |
+| 2 | `downside_upside_vol_60` | [0.952, 0.952] | `ret_skew_60` |
+| 2 | `sp_ttm` | [0.974, 0.974] | `efx_annual_sales_yield` |
+| 2 | `efx_top_amount_rate` | [1.000, 1.000] | `efx_top_participation` |
+| 2 | `efx_top_imbalance` | [0.968, 0.968] | `efx_top_net_rate` |
+| 2 | `mfx_dc_pct_change` | [0.988, 0.988] | `mfx_ths_pct_change` |
+| 2 | `mfx_dc_turnover_rate` | [0.965, 0.965] | `mfx_ths_turnover_rate` |
+| 2 | `mfx_minute_amplitude` | [0.959, 0.959] | `mfx_minute_realized_vol` |
+| 2 | `sortino_ratio_60` | [0.953, 0.953] | `momentum_60` |
+
+> ★ 覆盖率校核：`keep` 的排序依据（`state/eval/summary.json`）只覆盖 306 个旧因子 ⇒
+> 新因子同簇时 `keep` 与质量无关；交付物 `REPORT.md` 单列了 9 簇「覆盖率最高成员」的差异（Δ ≤ 2.8pp）。
+
+## 保留但标注低置信
+
+- `ac1 > 0.995` 的财务/慢变量：单年只有约 4 个独立样本（季报），IC 统计上不可信；
+  同时它们换手≈0，无法独立产生交易信号 —— 作为**风格暴露/控制变量**保留。
+- `ac1 < 0.10` 的日内/资金流瞬时因子：日频全换手，必须按**成本后**收益复核。
 <!-- FEA:REPORTS:END -->
