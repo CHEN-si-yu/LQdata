@@ -69,7 +69,7 @@ max |corr| 降到 **0.509**。全过程数字见该因子 note 与交付报告�
 （2026-09-15 实测确认）。处置缺一不可：
     ① `FactorSpec(..., deps=("stock_margin_detail",), lagged_ok=("stock_margin_detail",))`
        —— 不写，`register()` 在注册期直接抛错；
-    ② 在**原始网格上把因子算完**，**最后一步** `return ctx.lag_grid(grid, 1)`。
+    ② 在**原始网格上把因子算完**，**最后一步** `return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))`。
 不做的话：T 日的因子值今天算对、明天数据到达后**静默变成另一个值**，没有任何报错。
 `margin_chip_cost_gap` 同时用 margin 与筹码：**先各自算完、再相减、最后统一下移一格**。
 
@@ -119,7 +119,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from fea.spec import FactorSpec, register
+from fea.spec import FactorSpec, register, LAGGED_DATASETS
 
 # ---------------------------------------------------------------- 常量
 FLOW = "stock_main_fund_flow"
@@ -420,28 +420,6 @@ def order_size_concentration(ctx):
     return hhi * np.sign(f.main_net("amt"))
 
 
-@register(FactorSpec(
-    name="order_size_ratio_change", group=GROUP,
-    deps=(FLOW, DAILY),
-    desc="订单规模比变化 = 大单+超大单毛额占比的 5 日变化（大单占比提升=机构参与加深）",
-    formula='big_total = (ff["buy_lg_amount"] + ff["sell_lg_amount"]\n'
-            '             + ff["buy_elg_amount"] + ff["sell_elg_amount"])\n'
-            'total = _total_amount(ff); big_ratio = big_total / total\n'
-            'chg = big_ratio.groupby(level="Code").transform(lambda s: s.diff(5))\n'
-            'return cross_sectional_rank(chg)',
-    start=FLOW_START, warmup_days=W10, higher_is_better=True,
-    note="逐字复刻参考库（`fund_flow_deep.py`）。二阶变化抓机构参与的**拐点**"
-         "（占比从 10% 升到 20% = 刚介入；已在 40% 高位 = 可能出货），"
-         "与同族其它因子互补：实测与 `mf_order_concentration`（占比**水平**）相关 +0.308、"
-         "与 `big_vs_small_divergence_5d`（净额口径的 5 日变化）相关 **+0.086** —— "
-         "「毛额占比的变化」与「净额方向的变化」是两件事，不冗余。"
-         "毛额口径本身不受双记影响（Σ4 毛额 = 八列总额）。"
-         "★ 与 `mf_tier_net_spread_20` 的区别：后者是四档净额占比的 20 日极差（分歧度），"
-         "本因子是单边占比的 5 日变化（参与度），实测相关仅 +0.16。",
-))
-def order_size_ratio_change(ctx):
-    f = _F2(ctx)
-    return ctx.diff(f.big_share(), 5)
 
 
 @register(FactorSpec(
@@ -517,41 +495,6 @@ def super_large_order_intensity(ctx):
 # 二、结构 / 持续族（4 个）
 # ══════════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="mf_big_small_divergence", group=GROUP,
-    deps=(FLOW, DAILY),
-    desc="大小单背离 = (大单净买额 − 小单净买额) / 当日八列毛额（机构与散户分歧，分歧顶点伴转折）",
-    formula='big_net = (ff["buy_lg_amount"] - ff["sell_lg_amount"]\n'
-            '           + ff["buy_elg_amount"] - ff["sell_elg_amount"])\n'
-            'small_net = ff["buy_sm_amount"] - ff["sell_sm_amount"]\n'
-            'divergence = (big_net - small_net) / _total_amount(ff)\n'
-            'return cross_sectional_rank(divergence)',
-    start=FLOW_START, warmup_days=W1, higher_is_better=True,
-    note="逐字复刻参考库（`fund_flow.py`）。"
-         "★★ **这是本族唯一保留的高相关因子，下游请按需剔除（诚实的量化交代）**："
-         "由 " + _DE + " 可知四档净额之和恒为 0，于是"
-         "「大单净额 − 小单净额 = 2×大单净额 + 中单净额」—— 本因子在代数上就是"
-         "「大单净额」加一个固定权重的「中单净额」，**任何窗口平滑都消不掉这个恒等关系**。"
-         "实测（2026 年逐日截面 rank）：与 `mf_big_order_ratio` **+0.938**、"
-         "与 `mf_smart_dumb_divergence` **+0.963**、与 `mf_small_order_ratio` −0.906"
-         "（后两者判定当时在册，随后已被主 Agent 从 `fundflow.py` 收口时裁掉；"
-         "数字来自上游表复算，不依赖它们在册）。"
-         "试过的三条改口径路线都被否掉："
-         "(a) 换成量口径 → 相关 0.938（几乎不变，量/额在双记下等价）；"
-         "(b) 按各自档位毛额归一 → 就是参考库的 `mf_smart_dumb_divergence` 本身（相关 1.000）；"
-         "(c) 改成买/卖对数不对称之差 → 与它相关 **1.000**"
-         "（单调变换保序）。"
-         "保留的理由只有两条：参考库 `fund_flow.py` 里它就是这个名字与这个公式"
-         "（下游可能按名字对接），且「机构买、散户卖」的**联合方向**读起来比单看大单净额直观。"
-         "**若下游做因子筛选，本因子与上述两条高度共线，建议只保留其中一条。**"
-         "分母 = 八列毛额（万元，含双记的 ×2 常数，对截面排名无影响）；"
-         "分子分母同表同量纲，无需换算。",
-))
-def mf_big_small_divergence(ctx):
-    f = _F2(ctx)
-    tot = f.g("tot_amt")
-    div = ctx.safe_div(f.main_net("amt") - f.g("net_amt", "sm"), tot, min_abs_den=1e-6)
-    return div
 
 
 
@@ -647,7 +590,7 @@ def mf_amount_weighted_direction(ctx):
     start=CHIP_START, warmup_days=M20, higher_is_better=False,
     note="★★ 两融 PIT 铁律（本因子的处置是：**两边各自算完 → 相减 → 最后统一下移一格**）："
          "`rzmre` 的 T 日值要到 T+1 才可得，而筹码层是当日可得 —— 若只位移融资那一侧，"
-         "会在两融名单变动的日子里造出「跨日拼接」的假信号；统一 `ctx.lag_grid(grid, 1)` "
+         "会在两融名单变动的日子里造出「跨日拼接」的假信号；统一 `ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))` "
          "后，T 日的因子值只用到 ≤ T−1 的两融记录与 ≤ T−1 的筹码快照（保守但严格无泄漏）。"
          "★ 价格口径（本因子最容易踩的坑）：融资买入的加权成本用 **`ctx.px(\"close\")`（未复权）**，"
          "因为筹码层的 `mean` 是**未复权**口径（`fea/chips.py` docstring「口径一」）。"
@@ -678,70 +621,13 @@ def margin_chip_cost_gap(ctx):
     cost = _mg_cost(ctx, _mg_flow(ctx, df, day, "rzmre"))   # 元/股（未复权口径）
     chip_mean = ctx.chip("mean")                            # 元/股（未复权口径）
     gap = ctx.safe_div(cost, chip_mean, min_abs_den=1e-3) - 1.0
-    return ctx.lag_grid(gap, 1)
+    return ctx.lag_grid(gap, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 五、两融结构（2 个）—— ★ 滞后表，lag_grid 是最后一步
 # ══════════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="margin_balance_ma_divergence", group="margin",
-    deps=(MARGIN,),
-    lagged_ok=(MARGIN,),
-    desc="融资余额偏离 20 日均线幅度 = (rzye − MA20)/MA20（极端偏离预示均值回归）",
-    formula='rzye = m["rzye"]\n'
-            'ma20 = rzye.groupby(level="Code").transform(\n'
-            '    lambda s: s.rolling(20, min_periods=10).mean())\n'
-            'div = safe_divide(rzye - ma20, ma20); div = div.clip(-0.1, 0.1)\n'
-            'return cross_sectional_rank(div)\n'
-            '★ 本实现的状态量口径（见 note）：asof 前向填充 + **20 个交易日新鲜度掩码**\n'
-            'stale = 最近 20 个交易日内无该股两融记录 → div = NaN',
-    start=None, warmup_days=M20, higher_is_better=True,
-    note="★ 两融 PIT 铁律：`lagged_ok=(\"stock_margin_detail\",)` + **最后一步** "
-         "`ctx.lag_grid(grid, 1)` —— T 日只用 ≤ T−1 的两融记录。"
-         "参考库写的是 `margin_detail.parquet`（其面板已 shift(1)），本实现等价。"
-         "★ 偏离：不做参考库的 `.clip(-0.1, 0.1)`（契约禁止因子内 winsor）。"
-         "实测 2026-09-10 上游原始表 p1/p50/p99 = −0.106 / −0.0006 / +0.107 —— "
-         "参考库的 clip(±0.1) 恰好压在 p1/p99 上（说明它本来就是手工缩尾），"
-         "引擎的截面 1%/99% 缩尾覆盖同一批极端值，且口径统一。"
-         "★★ **冗余警示（实测，必须看）**：本因子与既有 margin 因子的相关很高 ——"
-         "沙箱 2026 逐日截面 rank 相关：`margin_leverage_trend_10d` **+0.883**、"
-         "`margin_flow_asymmetry_10d` +0.818、`margin_balance_20d` +0.811"
-         "（单日最高 0.930）。根因是数学的：余额平滑增长时"
-         "「(rzye − MA20)/MA20 ≈ g × 9.5」而「20 日变化率 ≈ g × 20」（g = 日均增速），"
-         "两者都是同一个 g 的（近似）单调变换 —— 截面上必然高相关。"
-         "★ 试过的解耦方案**实测反而更差**，故保留参考库原式：把偏离按自身 60 日标准差"
-         "归一化（「极端度」）后，与 `margin_flow_asymmetry_10d` 的相关升到 **+0.794**"
-         "（未归一化时 +0.659，同一口径对比），因为归一化引入的波动本身与资金流波动同向。"
-         "**处置建议**：本因子与上述三条属于同一个「杠杆趋势」簇，"
-         "下游做因子筛选时**至多保留其一**；保留本因子的唯一理由是它多了一层"
-         "「相对自身中枢的位置」语义（见下方方向说明）。"
-         "`min_count=10` = 参考库 min_periods。"
-         "★ 方向标注为「大者优」沿用参考库的 `rank(div)`；但请注意其**语义是均值回归**"
-         "（两端偏离都可能回归），即该因子的有效信息是**非单调**的；"
-         "而上面那三条同簇因子是**趋势**语义（大者优）—— 两条高相关、语义相反的因子"
-         "同时进线性模型会互相抵消，这一点务必交由筛选环节处理。"
-         "停牌日：余额是状态量，`asof` 前向填充（实测上游停牌日仍有行且余额在变）。"
-         "★★ **「已退出两融名单」的股票怎么处理（实测驱动的一次修复）**："
-         "余额是状态量，asof 会把最后一条记录无限前向填充 —— 于是**退市/退出两融的股票**"
-         "在 20 日窗内余额恒定 → 偏离度恒等于 0，即「余额没变化」的假信号。"
-         "更严重的是**一致性**：掩码之前，同一格的值取决于面板起点（全量跑的 warmup 伸到上一年、"
-         "读得到上一年的最后一条记录 → 0；增量跑读不到 → NaN），"
-         "实测 7 只 2025 年 1~4 月退出两融的股票在 2026-09-04~09-14 每天 7~20 格两趟不一致。"
-         "现在 `_mg_state` 统一加**新鲜度掩码**（最近 20 个交易日内必须有该股的两融记录，"
-         "否则 NaN），并按交易日距离（而非「读到没读到」）判定 —— "
-         "实测：全量跑 vs `--start 2026-09-01` 的尾部跑，19,540 格**逐格相同、非空模式一致**；"
-         "`main.py audit-pit`（截断到 2026-05-18 / 2026-09-14 重算）两个样本日 **0 个不一致**。"
-         "实测值域：2026 年 |value|max = 2.93（未 clip，重尾），中位数 −0.0125。",
-))
-def margin_balance_ma_divergence(ctx):
-    df, day = _mg_load(ctx)
-    if df is None:
-        return _empty(ctx)
-    rzye = _mg_state(ctx, df, day, "rzye")
-    ma20 = ctx.roll_mean(rzye, 20, min_count=_MIN[20])
-    return ctx.lag_grid(ctx.safe_div(rzye - ma20, ma20, min_abs_den=DEN), 1)
 
 
 

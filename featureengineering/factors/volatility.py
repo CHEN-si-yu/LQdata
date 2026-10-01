@@ -135,8 +135,9 @@ def _beta(ctx, ret: np.ndarray, mkt: np.ndarray, n: int, mc: int) -> np.ndarray:
     `roll_var` 只吃二维，所以把市场收益写成 (T,1) 而不是 (T,C) —— 结果完全一样，
     但省掉 3483 列重复计算。
     """
-    return ctx.safe_div(ctx.roll_cov(ret, mkt, n, mc),
-                        ctx.roll_var(mkt, n, mc), min_abs_den=1e-12)
+    paired_market = np.where(np.isfinite(ret) & np.isfinite(mkt), mkt, np.nan)
+    return ctx.safe_div(ctx.roll_cov(ret, paired_market, n, mc),
+                        ctx.roll_var(paired_market, n, mc), min_abs_den=1e-12)
 
 
 
@@ -257,13 +258,9 @@ def max_drawdown_60(ctx):
     desc="回撤持续期 = 价格低于 120 日滚动前高的连续天数（上限 120）",
     formula="rolling_high = adj.groupby(level=\"Code\").transform(lambda s: s.rolling(120, min_periods=1).max()); "
             "in_dd = adj.lt(rolling_high * 0.999); duration = _consecutive_count(in_dd).clip(upper=120)",
-    start=None, warmup_days=W120, higher_is_better=False,
-    note="逐字抄自 Class1 risk / drawdown_duration_120。★ 偏离任务书的一句话描述：任务书写「px < 历史最高」，"
-         "本实现按参考库用 **120 日滚动前高**（roll_max(px,120)）——全历史最高需要全历史面板，"
-         "增量重算无法给出「与全量一致」的 warmup。"
-         "0.999 的容忍带、上限 120 都照抄参考库；min_count=1 = 参考 min_periods=1（上市首日即有前高）。"
-         "连续段用 maximum.accumulate 向量化，没有逐日 Python 循环。",
-))
+    start=None, warmup_days=500, higher_is_better=False,
+    note='120日滚动高点之下的连续天数，上限120；嵌套依赖最多239个交易日，预热500日历天。',
+version=2,))
 def drawdown_duration_120(ctx):
     px = ctx.hfq("close")
     high = ctx.roll_max(px, 120, min_count=1)
@@ -307,25 +304,6 @@ def var_95_20(ctx):
     return mx.roll_quantile(_ret(ctx), 20, 0.05, min_count=10)
 
 
-@register(FactorSpec(
-    name="cvar_95_120", group="risk", deps=PRICE_DEPS,
-    desc="120 日 CVaR(95%) = 窗口内 ≤5% 分位那部分收益的均值（尾部期望损失）",
-    formula="quantiles = [ret_w.rolling(120, min_periods=60).quantile(q) for q in (0.01, 0.02, 0.03, 0.04, 0.05)]; "
-            "cvar_w = sum(quantiles) / len(quantiles)",
-    start=None, warmup_days=W120, higher_is_better=True,
-    note="公式行逐字抄自 Class1 risk / cvar_95_120。★ 偏离参考库**实现**：参考用 5 个分位数取平均"
-         "做黎曼近似（它自己的注释说明这是为了向量化），本实现按任务书口径取「窗口内 ≤5% 分位那部分的"
-         "**均值**」= 精确历史 CVaR（参考库「意义」里写的也是「取最坏 5% 日收益的均值」）。"
-         "120 日窗口下尾部期望 6 个样本，两种算法差异很小。min_count=60 = 参考 min_periods。"
-         "实现：roll_quantile 取 q05（NaN 忽略）→ 掩码 r<=q05 → 窗口内尾部求和 / 尾部天数（都是 cumsum 类，无逐日循环）。",
-))
-def cvar_95_120(ctx):
-    r = _ret(ctx)
-    q05 = mx.roll_quantile(r, 120, 0.05, min_count=60)
-    tail = np.isfinite(r) & (r <= q05)
-    s = ctx.roll_sum(np.where(tail, r, 0.0), 120)
-    n = ctx.roll_count(np.where(tail, 1.0, np.nan), 120)
-    return ctx.safe_div(s, n, min_abs_den=0.5)      # 每个窗口至少 1 个尾部样本
 
 
 @register(FactorSpec(
@@ -334,16 +312,13 @@ def cvar_95_120(ctx):
     formula="z = safe_divide(ret - mean60, std60 + 1e-10); "
             "freq = z.abs().gt(2).groupby(level=\"Code\").transform(lambda s: s.rolling(60, min_periods=30).mean())",
     start=None, warmup_days=W120, higher_is_better=False,
-    note="逐字抄自 Class1 risk / tail_risk_pct_60。嵌套窗口：60 日标准化 + 60 日频率 = 120 个交易日，"
-         "故 warmup=240（同 N=120 的口径）。min_count=30 = 参考 min_periods。"
-         "★ 偏离：参考库把 |z| 算不出来的日子（停牌）当 False 计进分母（pandas 的 NaN.gt() → False），"
-         "会把长期停牌股的尾风险稀释掉；本实现额外要求窗口内 ≥30 个真实交易日，否则置 NaN。",
-))
+    note='60日标准化收益再统计60日极端值频率；分子分母均只计有效z，至少30个有效z。',
+version=2,))
 def tail_risk_pct_60(ctx):
     r = _ret(ctx)
     z = ctx.safe_div(r - ctx.roll_mean(r, 60, min_count=30),
                      ctx.roll_std(r, 60, min_count=30), min_abs_den=1e-12)
-    freq = ctx.roll_mean((np.abs(z) > 2).astype(np.float64), 60, min_count=30)
+    freq = ctx.roll_mean(np.where(np.isfinite(z), (np.abs(z) > 2).astype(np.float64), np.nan), 60, min_count=30)
     # 同 loss_probability_20：概率必须落在 [0,1]，挡掉 cumsum 差分的 −1e−16
     return np.where(_valid_count(ctx, r, 60) >= 30, np.clip(freq, 0.0, 1.0), np.nan)
 
@@ -385,15 +360,8 @@ def ret_kurt_20(ctx):
     desc="60 日市场贝塔（对沪深300，反向）",
     formula="beta = _rolling_beta(wide, mkt, 60, 30)  # "
             "Beta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window",
-    start=None, warmup_days=W60, higher_is_better=False, version=2,
-    note="★ 基准偏离：参考库的 `_market_proxy(wide)` 是**全池等权**市场收益，本实现按要求改用"
-         "**沪深300（000300.SH）**——它是可投资的、有真实指数数据的基准，且与下游基准一致。"
-         "min_count=30 = 参考 `_rolling_beta(..., 60, 30)`。"
-         "实现：市场收益取 (T,1) 广播进 roll_cov/roll_var（**两者都按各自窗口内的有效对数/有效天数"
-         "做分母**，与 pandas 的 `rolling().cov()/var()` 同口径）。"
-         "停牌日 ret 为 NaN → 该窗口若有效天数不足 30 则为 NaN。"
-         "★★ v2（2026-09-17）：`mathx.roll_cov` 修了分母用固定 n 的 bug（见该函数注释）——"
-         "本因子是它的下游，历史值整体重算过；修前在「窗口内有停牌/缺失」的股票上是失真的值。",
+    start=None, warmup_days=W60, higher_is_better=False, version=3,
+    note='Cov与Var均使用股票收益、指数收益成对有效的同一窗口，min_count=30。',
 ))
 def beta_60(ctx):
     return _beta(ctx, _ret(ctx), _market_ret(ctx)[:, None], 60, 30)
@@ -406,12 +374,8 @@ def beta_60(ctx):
     desc="60 日特质波动率 = 剔除市场暴露后残差的标准差（反向）",
     formula="beta = _rolling_beta(wide, mkt, 60, 30); resid = wide - beta.multiply(mkt, axis=0); "
             "idio = resid.rolling(60, min_periods=30).std()",
-    start=None, warmup_days=W60, higher_is_better=False, version=2,
-    note="逐字抄自 Class1 risk / idio_vol_60；基准同 beta_60（沪深300）。"
-         "min_count=30 = 参考 min_periods。残差 = ret − beta×mkt，beta 用同一 60 日窗口的滚动估计"
-         "（与参考的 _rolling_beta 一致，不做全样本回归，故是严格 PIT 的）。"
-         "★★ v2（2026-09-17）：随 `mathx.roll_cov` 的分母 bug 修复整体重算"
-         "（残差里含 beta，beta 错则残差也错）。",
+    start=None, warmup_days=260, higher_is_better=False, version=3,
+    note='滚动60日beta残差再取60日标准差；119日有效预热。Beta使用成对样本。',
 ))
 def idio_vol_60(ctx):
     r = _ret(ctx)
@@ -420,18 +384,6 @@ def idio_vol_60(ctx):
     return ctx.roll_std(resid, 60, min_count=30)
 
 
-# ══════════════════════════════════════════════════════════════ 波动结构
-@register(FactorSpec(
-    name="vol_of_vol_20", group="risk", deps=PRICE_DEPS,
-    desc="波动之波动 = |日收益| 的 20 日标准差（反向）",
-    formula="roll(df, \"absret\", 20, \"std\", min_periods=5)",
-    start=None, warmup_days=W20, higher_is_better=False,
-    note="逐字抄自 Class1 risk / vol_of_vol_20d。口径就是参考库的「|日收益| 的 20 日 std」"
-         "（不是「波动率序列的波动」——那个在参考库里叫 vol_of_vol_60，本家族未选）。"
-         "min_count=5 = 参考 min_periods。",
-))
-def vol_of_vol_20(ctx):
-    return ctx.roll_std(np.abs(_ret(ctx)), 20, min_count=5)
 
 
 @register(FactorSpec(
@@ -453,25 +405,6 @@ def vol_clustering_20(ctx):
     return np.where(np.abs(c) <= 1.0, c, np.nan)
 
 
-# ══════════════════════════════════════════════════════════════ 风险调整收益
-@register(FactorSpec(
-    name="sortino_ratio_60", group="risk", deps=PRICE_DEPS,
-    desc="60 日 Sortino 比率 = 均收益 / 下行波动（正向）",
-    formula="mean60 = ret.groupby(level=\"Code\").transform(lambda s: s.rolling(60, min_periods=30).mean()); "
-            "down = ret.where(ret < 0); "
-            "down_std = down.groupby(level=\"Code\").transform(lambda s: s.rolling(60, min_periods=5).std()); "
-            "sortino = safe_divide(mean60, down_std + 1e-10)",
-    start=None, warmup_days=W60, higher_is_better=True,
-    note="逐字抄自 Class1 risk / sortino_ratio_60。★ 偏离任务书的一句话描述：任务书写「60 日**超额**收益均值」，"
-         "参考库用的是**原始**均收益（不减无风险利率，A 股日频也没有合适的无风险日利率口径），照抄参考库。"
-         "分母 = 负收益子样本的 60 日 roll_std，min_count=5（必须的放松：60 日里负收益约 28 天）；"
-         "分子 min_count=30 = 参考 min_periods。",
-))
-def sortino_ratio_60(ctx):
-    r = _ret(ctx)
-    mean60 = ctx.roll_mean(r, 60, min_count=30)
-    down_std = ctx.roll_std(np.where(r < 0, r, np.nan), 60, min_count=5)
-    return ctx.safe_div(mean60, down_std, min_abs_den=1e-12)
 
 
 # ══════════════════════════════════════════════════════════════ 行为 / 频率
@@ -502,3 +435,20 @@ def panic_selling_ratio_60(ctx):
 
 
 
+
+
+
+@register(FactorSpec(
+    name="sortino_ratio_60", group="risk",
+    desc="60 日 Sortino 比率 = 均收益 / 下行波动（正向）",
+    formula='mean60 = ret.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=30).mean()); down = ret.where(ret < 0); down_std = down.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=5).std()); sortino = safe_divide(mean60, down_std + 1e-10)',
+    deps=PRICE_DEPS, warmup_days=128, start="2018-01-01", version=1,
+    higher_is_better=True,
+    note="逐字抄自 Class1 risk / sortino_ratio_60。参考库使用原始均收益，不减无风险利率。分母为负收益子样本的 60 日 roll_std，min_count=5；分子 min_count=30。",
+))
+def sortino_ratio_60(ctx):
+    ret = _ret(ctx)
+    mean60 = ctx.roll_mean(ret, 60, min_count=30)
+    down = np.where(ret < 0, ret, np.nan)
+    down_std = ctx.roll_std(down, 60, min_count=5, ddof=1)
+    return ctx.safe_div(mean60, down_std + 1e-10)

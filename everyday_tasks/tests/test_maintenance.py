@@ -29,7 +29,7 @@ class MaintenanceTests(unittest.TestCase):
                 except ValueError:continue
                 p=patch.object(paths,name,self.root/rel);p.start();self.pp.append(p)
         paths.ensure_dirs();paths.STATE_ROOT.mkdir(parents=True,exist_ok=True)
-        self.cfg=config.load();self.cfg['download'].update(redundancy_days=0,revision_days=0)
+        self.cfg=config.load();self.cfg['download'].update(redundancy_days=0,revision_days=0,source_count_audit=False)
         self.cfg['api']['concurrency']=1;self.cfg['dayhash']['enabled']=False
         self.cal=pd.bdate_range('2025-01-01','2026-12-31').strftime('%Y-%m-%d').tolist()
     def tearDown(self):

@@ -48,13 +48,44 @@ from fea.spec import all_specs               # noqa: E402
 import factors                               # noqa: F401,E402
 
 PY = "/autodl-fs/data/miniconda3/bin/python"
-MEM_CURRENT = Path("/sys/fs/cgroup/memory.current")
-MEM_MAX = Path("/sys/fs/cgroup/memory.max")
+
+
+def _cgroup_files():
+    """当前 cgroup 的 (用量, 上限) 文件。
+
+    ★ 2026-09-25：原来写死 cgroup **v2** 的 `/sys/fs/cgroup/memory.{current,max}`，
+      而在 cgroup **v1** 的容器里这两个文件不存在 → `main.py rebuild --dry-run`
+      直接 `FileNotFoundError` 崩掉（实测本机就是 v1：`/sys/fs/cgroup/memory/...`）。
+      重建入口因为一行"打印内存"而整个不可用，代价太大。两种布局都试，都没有就返回
+      `(None, None)` —— 采样退化为"未知"，而**不**阻断重建。
+    """
+    v2 = (Path("/sys/fs/cgroup/memory.current"), Path("/sys/fs/cgroup/memory.max"))
+    if v2[0].exists() and v2[1].exists():
+        return v2
+    v1 = (Path("/sys/fs/cgroup/memory/memory.usage_in_bytes"),
+          Path("/sys/fs/cgroup/memory/memory.limit_in_bytes"))
+    if v1[0].exists() and v1[1].exists():
+        return v1
+    return None, None
+
+
+MEM_CURRENT, MEM_MAX = _cgroup_files()
 
 
 def _mem_gb() -> float:
+    if MEM_CURRENT is None:
+        return 0.0
     try:
         return int(MEM_CURRENT.read_text()) / 2 ** 30
+    except Exception:
+        return 0.0
+
+
+def _mem_limit_gb() -> float:
+    if MEM_MAX is None:
+        return 0.0
+    try:
+        return int(MEM_MAX.read_text()) / 2 ** 30
     except Exception:
         return 0.0
 
@@ -109,6 +140,11 @@ def _scan_thin(cfg, year: int, min_ratio: float = 0.05,
     """
     zero, thin = [], []
     for s in (specs if specs is not None else all_specs()):
+        # ★ 对齐区间（整年早于该因子的真实起点）本来就是填充值 → 非空率低是**预期**，
+        #   不是垃圾分区。不跳过的话，每次跑早年份都会把 30 个晚起点因子误报成
+        #   「整年全 NaN」。见 FactorSpec.align_fill。
+        if year < int(s.resolved_start(cfg)[:4]):
+            continue
         man = Manifest.load(cfg.state_dir, s.name)
         v = man.partitions.get(str(year))
         if not v or not int(v.get("rows", 0)):
@@ -131,14 +167,16 @@ def _year_done(eng: Engine, cfg, year: int, specs: list | None = None) -> bool:
     y1 = min(f"{year}-12-31", int_to_str(eng.baseline_last_day()))
     y0 = f"{year}-01-01"
     for s in (specs if specs is not None else all_specs()):
-        if not s.enabled or s.resolved_start(cfg) > y1:
+        # ★★ 要求的**分区下界**是 `align_start`（= default_start），不是真实起点：
+        #   对齐区间（`resolved_start` 之前的年份）也必须有分区，否则晚起点因子
+        #   会被当成"已覆盖"而永远不补对齐分区。见 FactorSpec.align_fill。
+        if not s.enabled or s.align_start(cfg) > y1:
             continue
-        # ★ 起点晚于年初的因子（如研发类 2019-05-01）只要求它自己起点之后的那段
-        start = max(y0, s.resolved_start(cfg))
+        start = max(y0, s.align_start(cfg))
         man = Manifest.load(cfg.state_dir, s.name)
         if man.recipe != eng._recipe(s) or _real_gap(eng, man, start, y1):
             return False
-        partition = cfg.factors_dir / s.name / f"year={year}" / "data.parquet"
+        partition = cfg.factor_root(s) / s.name / f"year={year}" / "data.parquet"
         if not partition.exists():
             return False
         expected = man.partitions.get(str(year), {}).get("file_identity")
@@ -214,7 +252,8 @@ def main() -> int:
         print(f"年份区间为空：{y_from}..{y_to}")
         return 1
     print(f"回填 {y_from}..{y_to} · default_start={cfg.default_start} · "
-          f"并行 {args.jobs} · cgroup 上限 {int(MEM_MAX.read_text()) / 2 ** 30:.0f} GB · "
+          f"并行 {args.jobs} · cgroup 上限 "
+          f"{f'{_mem_limit_gb():.0f} GB' if MEM_MAX is not None else '未知'} · "
           f"当前 {_mem_gb():.2f} GB")
     plan = []
     for y in range(y_from, y_to + 1):

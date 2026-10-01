@@ -1,0 +1,52 @@
+{
+  "objective": "experiments2/V16 monthly Top1 same-lookback positive momentum gate",
+  "gate": "hold selected Top1 only when its own same-lookback return is strictly >0; else empty target/cash",
+  "official_signal_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "official_signal_sessions_expected": 242,
+  "official_final_liquidation_day": "2026-07-01",
+  "extended_signal_window": [
+    "2023-01-03",
+    "2026-09-23"
+  ],
+  "extended_final_liquidation_day": "2026-09-24",
+  "prices_and_amount_only": true,
+  "data_root": "/root/autodl-fs/model/trainingdata",
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "rule": {
+    "signal": "first observed trading session of each calendar month at close",
+    "factor": "adjusted close(T) / adjusted close(T-lookback) - 1",
+    "ranking": "descending cross-sectional total return; equal-weight fixed Top1",
+    "execution": "next trading session open",
+    "lookbacks_under_test": [
+      20,
+      60
+    ],
+    "positive_momentum_gate": "hold selected Top1 only when its own same-lookback return is strictly >0; else empty target/cash",
+    "same_ledger_ungated_comparator": "V15 monthly Top1 for each lookback",
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "final_liquidation": "last day of each ledger window, forced at open by audited account engine"
+  },
+  "cost_model": {
+    "account_money": 100000.0,
+    "lot_size": 100,
+    "max_participation": 0.01,
+    "commission_rate": 0.00025,
+    "min_commission": 5.0,
+    "transfer_rate": 1e-05,
+    "stamp_sell_rate": 0.0005,
+    "slippage_rate": 0.0003
+  },
+  "account_engine_source": "isolated V16 copy of V15 audited account_engine.py; V15 and V9 untouched",
+  "runner_sha256": "77c64373b96d2f5f64bef3a9bc785abb3164204b3226ebdb38cd6e5548dfcba3",
+  "account_engine_sha256": "825c7a9cee48479ecd75eb1e9787afdbd25e6e7d4cf06826564c6ec34737e20a",
+  "created_at": "2026-09-27 17:58:22"
+}

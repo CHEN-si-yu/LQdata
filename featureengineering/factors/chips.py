@@ -155,21 +155,6 @@ def _close(ctx) -> np.ndarray:
     return np.asarray(ctx.px("close"), dtype=np.float64)
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# 一、获利盘（winner_rate）家族 —— 5 个
-# ══════════════════════════════════════════════════════════════════════════
-@register(FactorSpec(
-    name="winner_rate", group="chip", deps=DEPS,
-    desc="获利盘比例 = 现价以下的筹码占比（未复权 close 口径）",
-    formula='winner_rate = below_close; return cross_sectional_rank(-perf["winner_rate"])',
-    start=CHIP_START, warmup_days=W_FIELD, higher_is_better=False,
-    note="★ 直接取摘要表的 below_close —— 它就是「用未复权 close 精确算出的 F(close)」"
-         "（逐档比较 p <= close 后按归一化权重求和），与参考库 cyq_perf.winner_rate 同义。"
-         "参考库 rank 取负（高获利盘=获利了结压力=反转信号）；本框架只出原始值，方向看此标注。"
-         "已 clip 到 [0,1]（仅挡 1e-15 量级的浮点噪声）。",
-))
-def winner_rate(ctx):
-    return _wr(ctx)
 
 
 
@@ -207,26 +192,6 @@ def winner_rate_reversal_signal(ctx):
     return -np.abs(_wr(ctx) - 0.5)
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# 二、现价 vs 筹码成本（4 个；全部用未复权 close）
-# ══════════════════════════════════════════════════════════════════════════
-@register(FactorSpec(
-    name="avg_cost_premium", group="chip", deps=DEPS_PX,
-    desc="平均成本溢价 = (现价 − 筹码加权均价) / 筹码加权均价",
-    formula='premium = safe_divide(close_adj - weight_avg, weight_avg + 1e-10); '
-            'premium = premium.clip(-1, 5); return cross_sectional_rank(premium)',
-    start=CHIP_START, warmup_days=W_FIELD, higher_is_better=True,
-    note="★ 口径偏离：参考库用 `_close_adj_basis(daily)`（复权），本项目**必须**用"
-         "ctx.px('close')（未复权）—— 本摘要表的 mean 是未复权价（实测 close/p50≈1.01、"
-         "close/mean≈1.07，见模块 docstring 的验证）。照抄参考库的复权折算会错两个数量级。"
-         "★ 另一处偏离：**去掉**参考库的 `clip(-1, 5)` —— 契约规定 winsor 一律由引擎"
-         "（1%/99% 截面 winsorize）统一做，因子内不做。单边下界 −1 本来也压不住什么，"
-         "mean>0 时下溢只到 −1（close→0）。",
-))
-def avg_cost_premium(ctx):
-    mean = ctx.chip("mean")
-    close = _close(ctx)
-    return ctx.safe_div(close - mean, mean, min_abs_den=MIN_PRICE)
 
 
 @register(FactorSpec(
@@ -290,19 +255,6 @@ def chip_concentration_change_20d(ctx):
     return -ctx.diff(ctx.chip("width"), 20)
 
 
-@register(FactorSpec(
-    name="chip_range_normalized", group="chip", deps=DEPS,
-    desc="归一化筹码区间（中间 50% 筹码的相对宽度）= (p75 − p25) / p50",
-    formula='spread = (perf["cost_85pct"] - perf["cost_15pct"]) / perf["cost_50pct"]; '
-            'return cross_sectional_rank(-spread)',
-    start=CHIP_START, warmup_days=W_FIELD, higher_is_better=False,
-    note="与 chip_concentration 的分位组合不同（这里 25/75，那里 10/90）："
-         "一个度量核心 50% 筹码、一个度量 80% 筹码的宽度。cost_15/85pct → p25/p75。"
-         "参考库 rank 取负（区间窄排前）。",
-))
-def chip_range_normalized(ctx):
-    spread = ctx.chip("p75") - ctx.chip("p25")
-    return ctx.safe_div(spread, ctx.chip("p50"), min_abs_den=MIN_PRICE)
 
 
 
@@ -346,19 +298,6 @@ def chip_cv_factor(ctx):
     return ctx.safe_div(ctx.chip("std"), ctx.chip("mean"), min_abs_den=MIN_PRICE)
 
 
-@register(FactorSpec(
-    name="chip_gini_factor", group="chip", deps=DEPS,
-    desc="筹码基尼系数（高=筹码集中在少数价位=价格锚定清晰）",
-    formula='s = _compute_chip_factor(..., "chip_gini"); return cross_sectional_rank(s)',
-    start=CHIP_START, warmup_days=W_FIELD, higher_is_better=True,
-    note="摘要表的 gini 由 fea/chips.py 按加权基尼标准式算："
-         "G = 2·Σ(i+1)·w_(i)/(n·Σw) − (n+1)/n（权重已归一化，Σw=1）。"
-         "实测 2019：[0.22, 0.98]、中位数 0.866，恒非负 ✓（无负值、无 >1）。"
-         "注：筹码按价格档**升序**排列后各档权重天然不等，故 gini 水平偏高，这是口径本身的"
-         "性质（价格档密度在低价区更密），不是数据问题——截面排序仍可用。",
-))
-def chip_gini_factor(ctx):
-    return ctx.chip("gini")
 
 
 

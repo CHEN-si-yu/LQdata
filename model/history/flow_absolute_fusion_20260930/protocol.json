@@ -1,0 +1,64 @@
+{
+  "frozen_at": "2026-09-30 18:18:53",
+  "human_correlation_threshold": 0.7,
+  "source_sha256": "28387e27e23133379d5538f70be3ef13d03f6c427d3d2e385a0d414ce3758843",
+  "seed_pairs": [
+    [
+      "V50",
+      "V62"
+    ],
+    [
+      "V51",
+      "V63"
+    ],
+    [
+      "V52",
+      "V64"
+    ],
+    [
+      "V53",
+      "V65"
+    ]
+  ],
+  "quarters": [
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "flow_weight_candidates": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "target_size_candidates": [
+    5,
+    10,
+    20
+  ],
+  "period_candidates": [
+    1,
+    5
+  ],
+  "cost_gate_candidates": [
+    0.0,
+    1.0
+  ],
+  "band": 40,
+  "primary": {
+    "flow_weight": 0.5,
+    "topn": 10,
+    "period": 5,
+    "phase_reporting": "every phase equal descriptive mean; never best phase",
+    "cost_gate_multiplier": 1.0,
+    "band": 40
+  },
+  "planned_clean_blocks": 16,
+  "cases_per_block": 180,
+  "planned_cash_accounts": 2880,
+  "mechanism": "rank signals: equal predeclared cross-family percentile blend; admission/cash from calibrated technical1d raw return. Never treat normalized rank as return. Same-seed pairing; all four seeds/all quarter windows. Endpoint comparisons use same explicit gate policy; gated technical rank endpoint is not native fee-adjusted utility.",
+  "selection": "validation-only prototype; no fixed test readout in this lab, no parameter/seed/phase selected on fixed test; existing fitted predictions, no new model training or release promotion; overlap retained",
+  "materialization": "no new experiment unit yet; future fusion implementation must be self-contained, meet three-script159-file contract and explicit component/weight lineage; changing learning model needs fresh fitted folds"
+}

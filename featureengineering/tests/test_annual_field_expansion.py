@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from fea.context import FactorContext
 from fea.deriv import Derivative, load_vintages, period_of, FIELD_SOURCE
-from fea.field_expansion import CATALOG, annual_alias
+from fea.field_expansion import ANNUAL_ALIASES, CATALOG, annual_alias
 from fea.panel import Panel
 from fea.spec import REGISTRY
 import factors
@@ -51,17 +51,27 @@ class AnnualExpansionTests(unittest.TestCase):
         with self.assertRaises(KeyError):c.annual(DS,'invented_field')
 
     def test_namespaced_alias_loader_and_existing_source_unchanged(self):
-        ds1,ds2='stock_income','stock_financial_indicator'
-        a1,a2=annual_alias(ds1,'ebitda'),annual_alias(ds2,'ebitda')
-        def read(ds,columns,**kwargs):
-            d={'stock_code':['A'],'ann_date':['2025-03-10'],'f_ann_date':['2025-03-10'],
-               'end_date':['2024-12-31'],'ebit':[10 if ds==ds1 else 30],'ebitda':[10 if ds==ds1 else 30]}
+        """别名加载器：逻辑名 → (数据集, 物理列)，且**跨表同名不串味**。
+
+        ★ 2026-09-24 质检瘦身删掉 `afx_fi_ebitda` 之后，全库**再也没有**
+          同一个字段名被两张表同时取别名的情况（实测两两数据集的别名交集全为空），
+          所以这里改成：① 用存活的单表别名验证加载路径；② 用**结构性断言**把
+          "命名空间必须带数据集前缀"这条不变量钉住 —— 以后谁再加跨表同名别名，
+          仍然会被这条挡住。
+        """
+        a1 = annual_alias('stock_income', 'ebitda')
+        self.assertEqual(ANNUAL_ALIASES[a1], ('stock_income', 'ebitda'))
+        for logical, (ds, _f) in ANNUAL_ALIASES.items():
+            self.assertTrue(logical.startswith(f"annual__{ds}__"),
+                            f"别名 {logical} 没有带数据集前缀，跨表同名会串味")
+        def read(ds, columns, **kwargs):
+            d = {'stock_code': ['A'], 'ann_date': ['2025-03-10'], 'f_ann_date': ['2025-03-10'],
+                 'end_date': ['2024-12-31'], 'ebitda': [10], 'ebit': [10]}
             return pd.DataFrame(d)[columns]
-        vt=load_vintages(SimpleNamespace(read=read),2024,2025,frozenset([a1,a2,'ebit']))
-        self.assertEqual(vt[a1].iloc[0],10)
-        self.assertEqual(vt[a2].iloc[0],30)
-        self.assertEqual(vt.ebit.iloc[0],10)
-        self.assertEqual(FIELD_SOURCE['ebit'],ds1)
+        vt = load_vintages(SimpleNamespace(read=read), 2024, 2025, frozenset([a1, 'ebit']))
+        self.assertEqual(vt[a1].iloc[0], 10)
+        self.assertEqual(vt.ebit.iloc[0], 10)
+        self.assertEqual(FIELD_SOURCE[a1], 'stock_income')
 
     def test_every_catalog_formula_has_real_dependencies_and_finite_guard(self):
         for entry in CATALOG:

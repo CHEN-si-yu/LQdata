@@ -311,8 +311,9 @@ _AGG_FIELDS = ("below_90", "upper_110", "win_peak_frac", "loss_peak_frac")
 
 def _year_aggregate(ctx, year: int) -> dict | None:
     """按年缓存的聚合结果（None = 该年没有分区）。"""
-    if year in _AGG:
-        return _AGG[year]
+    cache_key=(ctx.up, tuple(ctx.panel.codes), year)
+    if cache_key in _AGG:
+        return _AGG[cache_key]
     df = ctx.dataset("stock_cyq_chips", columns=list(_RAW_COLS), years=(year, year))
     agg = None
     if not df.empty:
@@ -327,7 +328,7 @@ def _year_aggregate(ctx, year: int) -> dict | None:
         pass
     if len(_AGG) > 12:
         _AGG.clear()
-    _AGG[year] = agg
+    _AGG[cache_key] = agg
     return agg
 
 
@@ -337,7 +338,7 @@ _GRID: dict[tuple, np.ndarray] = {}
 def _raw_grid(ctx, field: str) -> np.ndarray:
     """把某年的聚合结果铺到当前面板 (T, C) 上（精确落格：缺则 NaN）。"""
     panel = ctx.panel
-    key = (int(panel.dates[0]), int(panel.dates[-1]), panel.C, field)
+    key = (ctx.up, int(panel.dates[0]), int(panel.dates[-1]), tuple(panel.codes), field)
     hit = _GRID.get(key)
     if hit is not None:
         return hit
@@ -406,58 +407,8 @@ def cost_skew_ratio(ctx):
     return ctx.safe_div(lower, upper, min_abs_den=MIN_PRICE)
 
 
-@register(FactorSpec(
-    name="cost_convergence_signal", group="chip", deps=DEPS,
-    desc="成本收敛信号 = (p90 − p10) 的 20 个交易日**变化率**（收敛=筹码向成本中枢凝聚）",
-    formula='cyq = context.load("cyq_perf.parquet"); width = cyq["cost_95pct"] - cyq["cost_5pct"]; '
-            'chg = width.groupby(level="Code").transform(lambda s: s.pct_change(20, fill_method=None)); '
-            'chg = chg.clip(-1, 1); return cross_sectional_rank(-chg)',
-    start=CHIP_START, warmup_days=60, higher_is_better=True,
-    note="★ 出处：参考库 `factors/chip_cost_extended.py`。"
-         "值是**收敛量**（= 参考库的 −chg，正 = 宽度收窄），与 chips.py 的 "
-         "`chip_concentration_change_20d`（= −diff(width)）同一约定 —— 参考库 rank(−chg) "
-         "「分布收窄=筹码集中排前」的方向由 higher_is_better=True 表达，数值不取反两次。"
-         "★ 与 `chip_concentration_change_20d` 的差别是**差分口径**：本因子是**绝对价差** "
-         "(p90−p10) 的 20 日**变化率**（pct_change，无量纲、自动按股价水平归一），"
-         "那个是**归一化宽度** width=(p90−p10)/p50 的 20 日**差分**（带 p50 量纲）。"
-         "两者都度量「宽度在收窄」，实测逐日截面 ρ = +0.9241 —— **高度共线**，"
-         "下游若要压因子数，这两个里留一个即可（本因子对低价股的绝对价差变动更敏感、"
-         "对股价水平不敏感，那个相反）。"
-         "★ 参考库的 `clip(-1, 1)` 未保留（winsor 由引擎统一做）：去掉后值域是 "
-         "「宽度放大 >100% 时为负」——2026 实测 value ∈ [−11.65, +0.937]、中位 0.0037、"
-         "5.24% 的格子 < −1（那 5% 恰好是参考库 clip 掉的部分，截面排序不受影响，"
-         "因为 rank 只关心顺序）。"
-         "★ 2018 年开头约 20 个交易日为 NaN（20 日窗口要读到 2017 年，上游无数据）。",
-))
-def cost_convergence_signal(ctx):
-    spread = ctx.chip("p90") - ctx.chip("p10")
-    return -ctx.pct_change(spread, 20, min_abs_den=MIN_PRICE)
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# 四、距离族（3 个）—— 现价对三类成本中枢的**相对距离**，全部用未复权 close
-#     参考库对三者都用 rank(+distance)（价格在成本中枢上方 = 多数持仓者盈利）
-# ══════════════════════════════════════════════════════════════════════════
-@register(FactorSpec(
-    name="chip_median_distance", group="chip", deps=DEPS_PX,
-    desc="中位数成本距离 = (现价 − p50) / 现价（正=过半持仓者盈利）",
-    formula='median_series = _compute_chip_factor(..., "chip_median_price"); '
-            'close = daily_panel["close"]; common = close.index.intersection(median_series.index); '
-            'distance = (close.loc[common] - median_series.loc[common]) / close.loc[common].replace(0, np.nan); '
-            'return cross_sectional_rank(distance)',
-    start=CHIP_START, warmup_days=W_FIELD, higher_is_better=True,
-    note="★ 出处：参考库 `factors/chip_deep.py`。口径偏离：参考库用复权 close 与复权口径的 chip_median_price，本因子两边都用"
-         "**未复权**（摘要表的 p50 就是未复权价，见模块 docstring 口径 1）。"
-         "★ 与 avg_cost_premium 的关系：都是「现价 vs 成本中枢」的归一，但中枢不同"
-         "（p50 vs 加权 mean）、分母不同（close vs mean）→ **没有任何代数关系**。"
-         "实测逐日截面 ρ(·, avg_cost_premium) = +0.9150、ρ(·, chip_support_distance) = +0.9300"
-         "（chips.py 2019 年实测 0.974 / 0.979，同一量级）→ **高度共线**。"
-         "chips.py 曾以 0.974 为由排除它（预算耗尽），本批按用户清单实现；"
-         "下游若压因子数，这个与 avg_cost_premium 二选一。",
-))
-def chip_median_distance(ctx):
-    close = _close(ctx)
-    return ctx.safe_div(close - ctx.chip("p50"), close, min_abs_den=MIN_PRICE)
 
 
 

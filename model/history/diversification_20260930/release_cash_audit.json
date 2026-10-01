@@ -1,0 +1,75 @@
+{
+  "checked_at": "2026-09-30 12:42:28",
+  "signal_window": {
+    "start": "2026-07-01",
+    "end": "2026-09-29",
+    "days": 64,
+    "backtest_days": 62
+  },
+  "execution_window": [
+    "2026-07-02",
+    "2026-09-29"
+  ],
+  "execution_days": 63,
+  "net_daily_return_correlation": {
+    "V31": {
+      "V31": 1.0,
+      "V36": 0.9109698820706673,
+      "V38": 0.9002515304983544
+    },
+    "V36": {
+      "V31": 0.9109698820706673,
+      "V36": 1.0,
+      "V38": 0.9071622210105209
+    },
+    "V38": {
+      "V31": 0.9002515304983544,
+      "V36": 0.9071622210105209,
+      "V38": 1.0
+    }
+  },
+  "actual_holdings_overlap": [
+    {
+      "pair": [
+        "V31",
+        "V36"
+      ],
+      "holdings_jaccard_mean": 0.5318740399385561
+    },
+    {
+      "pair": [
+        "V31",
+        "V38"
+      ],
+      "holdings_jaccard_mean": 0.2284306195596518
+    },
+    {
+      "pair": [
+        "V36",
+        "V38"
+      ],
+      "holdings_jaccard_mean": 0.24129544290834612
+    }
+  ],
+  "accounts": {
+    "V31": {
+      "net_return": -0.11339515868297956,
+      "max_drawdown": -0.30965412513741986,
+      "fees": 991.0644682980001,
+      "trades": 106
+    },
+    "V36": {
+      "net_return": -0.010010727091029237,
+      "max_drawdown": -0.2223871716829816,
+      "fees": 987.484809103,
+      "trades": 98
+    },
+    "V38": {
+      "net_return": -0.06876973863723934,
+      "max_drawdown": -0.35350204655929995,
+      "fees": 1031.952963724,
+      "trades": 108
+    }
+  },
+  "existing_release_account_reproduced": true
+}

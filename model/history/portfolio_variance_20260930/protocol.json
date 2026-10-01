@@ -1,0 +1,50 @@
+{
+  "frozen_at": "2026-09-30 16:54:40",
+  "parents": [
+    "V62",
+    "V63",
+    "V64",
+    "V65"
+  ],
+  "new_units_if_framework_ready": [
+    "V66",
+    "V67",
+    "V68",
+    "V69"
+  ],
+  "weights": "strategy-only; may reuse full audited corresponding parent after64 fits and formal audits; not new model training",
+  "hypothesis_source": "clean validation family cash correlations0.62..0.71 despite lower rank correlation; prior pair-correlation diversification had inconsistent gains",
+  "lookback": 63,
+  "min_observations": 40,
+  "pool_size": 100,
+  "covariance_shrinkage": 0.2,
+  "estimation_only_clip": 0.2,
+  "risk_aversion_candidates": [
+    0.0,
+    1.0,
+    3.0
+  ],
+  "primary_risk_aversion": 3.0,
+  "target_size_candidates": [
+    5,
+    10,
+    20
+  ],
+  "period_candidates": [
+    1,
+    5
+  ],
+  "all_phases": true,
+  "band": 0,
+  "forecast_members_for_clean_fold": 1,
+  "default_cost_gate": 1.0,
+  "formula": "candidate expected forecast after native switching-fee utility minus kappa/n*(variance_c+2sumcov(c,current_target)); empty slots are cash; raw fourfold sum scales covariance penalty by4",
+  "selection": "none; all seeds and candidates; explicit zero-kappa reproduction; selected-stage clean validation only; no parameters chosen using fixed test",
+  "runtime": "independent helpers copied into analysis; fixed three-script and159-file contract; no snapshot writer or cross-unit imports",
+  "source_hashes": {
+    "portfolio_variance_core.py": "32838c9f99de865a48c220fad6cac47ca3dd7d82da578cb247993505a4aedb36",
+    "portfolio_variance_lab.py": "9f9bd6ad2d5ee56e9e695b15c4d054d34831eebad1fe9176a2835c06bde5c5e7"
+  },
+  "source_frozen_at": "2026-09-30 17:03:02",
+  "risk_proxy": "equal-slot marginal variance; current known sale-blocked carried positions included; unknown carried covariance falls back to native selection; no guarantee of actual target variance"
+}

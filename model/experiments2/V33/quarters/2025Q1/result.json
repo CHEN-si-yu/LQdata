@@ -1,0 +1,219 @@
+{
+  "quarter": "2025Q1",
+  "state": "complete",
+  "recipe": {
+    "implementation": "V11 LGBMRanker recipe, as used by V27",
+    "objective": "lambdarank",
+    "metric": "ndcg@2",
+    "label": "ascending within-date rank of forward label_ret_5d; ties share rank; integer relevance 0..3",
+    "factor_features": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d",
+      "rel_mom_ind_250d",
+      "rel_vol_ind_20d",
+      "rel_mom_ind_10d",
+      "tail_risk_pct_60",
+      "volume_dry_up",
+      "rel_mom_ind_60d",
+      "price_to_52w_high",
+      "id2_close_vs_pm_vwap_20",
+      "inside_bar_count_20",
+      "ret_kurt_20",
+      "cost_skew_ratio",
+      "overnight_sign_consistency_20d",
+      "margin_balance_volatility_20d",
+      "mfx_index_range",
+      "mf_open_close_divergence_10d",
+      "bollinger_width_20"
+    ],
+    "asset_one_hot_features": [
+      "asset_0",
+      "asset_1",
+      "asset_2",
+      "asset_3"
+    ],
+    "n_estimators": 180,
+    "learning_rate": 0.03,
+    "num_leaves": 7,
+    "max_depth": 3,
+    "min_child_samples": 80,
+    "feature_fraction": 0.8,
+    "bagging_fraction": 0.8,
+    "bagging_freq": 1,
+    "reg_alpha": 2.0,
+    "reg_lambda": 20.0,
+    "label_gain": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "seed": 17,
+    "threads_per_worker": 1,
+    "early_stopping": false,
+    "sample_weight": null,
+    "deterministic": true,
+    "force_col_wise": true
+  },
+  "protocol_sha256": "0e822e23d194d2885518ba52dc5b8385cbd9b0767baa4764f94421b5e21d503e",
+  "feature_selection_sha256": "5e92e787da59cc842cdd5990c663d7d6506d7971bcf443ce6fa41f555be99e1a",
+  "lightgbm_version": "4.7.0",
+  "factor_semantics": "zscore_win1_99_v1",
+  "data_built_at": "2026-09-27 14:19:24",
+  "features": [
+    "mf_tier_flow_agreement_20",
+    "rel_mom_ind_3d",
+    "rel_mom_ind_5d",
+    "gap_down_recover_freq_20d",
+    "rel_mom_ind_250d",
+    "rel_vol_ind_20d",
+    "rel_mom_ind_10d",
+    "tail_risk_pct_60",
+    "volume_dry_up",
+    "rel_mom_ind_60d",
+    "price_to_52w_high",
+    "id2_close_vs_pm_vwap_20",
+    "inside_bar_count_20",
+    "ret_kurt_20",
+    "cost_skew_ratio",
+    "overnight_sign_consistency_20d",
+    "margin_balance_volatility_20d",
+    "mfx_index_range",
+    "mf_open_close_divergence_10d",
+    "bollinger_width_20",
+    "asset_0",
+    "asset_1",
+    "asset_2",
+    "asset_3"
+  ],
+  "n_features": 24,
+  "n_train_days_before_label_filter": 1694,
+  "train_first": "2018-01-02",
+  "train_last": "2024-12-24",
+  "first_test": "2025-01-02",
+  "last_test": "2025-03-31",
+  "purge_rule": "train_day_index + 5 < first_test_day_index",
+  "purged_trading_sessions": 5,
+  "max_label_date_used": "2024-12-24",
+  "n_train_queries": 1694,
+  "n_train_rows_after_label_filter": 6776,
+  "train_group_size_min": 4,
+  "train_group_size_max": 4,
+  "n_test_days": 57,
+  "monthly_signal_dates": [
+    "2025-01-02",
+    "2025-02-05",
+    "2025-03-03"
+  ],
+  "fit_seconds": 0.356,
+  "rss_gib": {
+    "after_panel_load": 0.398,
+    "at_completion": 0.407
+  },
+  "top_features_by_gain": [
+    {
+      "feature": "cost_skew_ratio",
+      "gain": 995.1859850883484
+    },
+    {
+      "feature": "mf_tier_flow_agreement_20",
+      "gain": 758.3973917961121
+    },
+    {
+      "feature": "inside_bar_count_20",
+      "gain": 750.7881588935852
+    },
+    {
+      "feature": "rel_mom_ind_250d",
+      "gain": 742.0488719940186
+    },
+    {
+      "feature": "id2_close_vs_pm_vwap_20",
+      "gain": 703.6806240081787
+    },
+    {
+      "feature": "mfx_index_range",
+      "gain": 657.2864828109741
+    },
+    {
+      "feature": "rel_mom_ind_10d",
+      "gain": 616.7091550827026
+    },
+    {
+      "feature": "mf_open_close_divergence_10d",
+      "gain": 614.9467566013336
+    },
+    {
+      "feature": "tail_risk_pct_60",
+      "gain": 596.6902618408203
+    },
+    {
+      "feature": "margin_balance_volatility_20d",
+      "gain": 586.678982257843
+    },
+    {
+      "feature": "gap_down_recover_freq_20d",
+      "gain": 502.6304420232773
+    },
+    {
+      "feature": "price_to_52w_high",
+      "gain": 492.3809199333191
+    },
+    {
+      "feature": "volume_dry_up",
+      "gain": 490.6134400367737
+    },
+    {
+      "feature": "rel_mom_ind_3d",
+      "gain": 485.8294996023178
+    },
+    {
+      "feature": "overnight_sign_consistency_20d",
+      "gain": 484.37923312187195
+    },
+    {
+      "feature": "ret_kurt_20",
+      "gain": 476.94806027412415
+    },
+    {
+      "feature": "rel_mom_ind_60d",
+      "gain": 452.54734241962433
+    },
+    {
+      "feature": "rel_mom_ind_5d",
+      "gain": 434.15264773368835
+    },
+    {
+      "feature": "rel_vol_ind_20d",
+      "gain": 396.4493088722229
+    },
+    {
+      "feature": "bollinger_width_20",
+      "gain": 353.0409393310547
+    },
+    {
+      "feature": "asset_0",
+      "gain": 101.9702696800232
+    },
+    {
+      "feature": "asset_3",
+      "gain": 35.73979949951172
+    },
+    {
+      "feature": "asset_1",
+      "gain": 7.55072021484375
+    },
+    {
+      "feature": "asset_2",
+      "gain": 0.0
+    }
+  ],
+  "model_sha256": "8aa3859cc0642ceb67a316ecdc3d4f0309840a0becaef2bdbc4690b7e3cdeab7",
+  "predictions_sha256": "19153ee71a4d223045503693e90ac69864b059b3aadbbdb014c1e786835c5440",
+  "model_file": "ranker.txt",
+  "predictions_file": "predictions.csv",
+  "worker_pid": 69074,
+  "seconds_total": 2.521
+}

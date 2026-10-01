@@ -5,27 +5,58 @@
 全量 / 增量两条路径都在 `prepare()` 里，块怎么算在 `build_year()` 与 `BLOCKS` 里。
 
     trainingdata/
-      meta.json                              清单 / 边界 / 上游指纹 / 逐年摘要 / 覆盖率
-      factors/year=YYYY/data.parquet         trade_date, stock_code, <337 个特征>
-      target/year=YYYY/data.parquet          trade_date, stock_code, <5 个 target>
+      meta.json                              清单 / 边界 / 逐年摘要 / 覆盖率 / 值口径
+      factors/year=YYYY/data.parquet         trade_date, stock_code, <上游当前的股票因子列>
+      target/year=YYYY/data.parquet          trade_date, stock_code, <label 列>
       amount/year=YYYY/data.parquet          trade_date, stock_code, amount  ← 每日成交额（元）
-      fac_sample/year=YYYY/data.parquet      trade_date, stock_code, <20 个抽样特征>
+      fac_sample/year=YYYY/data.parquet      trade_date, stock_code, <抽样因子列>
+      market_factors/year=YYYY/data.parquet  trade_date, <市场因子 × 原值/滚动 z 两列>  ← 每日一行
+      prices/year=YYYY/data.parquet          trade_date, stock_code, <7 列原始价 + adj_factor>  ← 回测
 
-## 四块产物各自的定位（2026-09-20 由原来的七块收敛）
+## 本层的边界（用户 2026-09-25 定；2026-09-26 就 `prices` 一处反转）
 
-| 块 | 装什么 | 谁用 | 动它会改 `panel_digest` 吗 |
-|:--|:--|:--|:--|
-| `factors` | 全部特征的**当日截面 rank**，方向已统一成"越大越好" | 训练/评价 | **会** |
-| `target` | 1d/3d/5d/10d/20d 五个 target（`label_ret_*d`）的收益原值 | 训练/评价 | **会** |
-| `amount` | 每日**成交额（元）**，用户口径叫"市场所有的流动性" | 回测/策略 | 不会 |
-| `fac_sample` | `factors` 里**随机抽 20 列**（seed=42），值逐字取自 `factors` | 冒烟/最小输入 | 不会 |
+`trainingdata/` 与 `preparingdata.py` 是**整个 model 项目的最上游**：**对齐**上游产物、
+落成一份可增量维护的快照，本身**不加工口径**（不复权、不填充、不算收益、不改标签）。
 
-★ **`panel_digest` 只哈希 `columns.features` + `columns.labels` + 逐年 `files.factors.sha`。**
-  哈希串里**不含块名**（块名只用来查 key），所以块改名本身**不换锚点** —— 但前提是
-  块名常量与 meta 的 key **同步**改；只改一头会静默换掉锚点（实测漏改会得到
-  `d90b20cf37710f94`，而正确值是 `798ccb32214853a8`）。
-  所以 `amount` / `fac_sample` 是**只增不改**的：补建它们不会作废任何已有结论。
-  反过来，`factors`/`target` 一变，所有锚在这个指纹上的结论都要重跑 —— 这条界线要守住。
+- ⇒ **不受下游模型训练相关的约束**。下游要什么（策略、门控、特征子集），在下游自己解决；
+  不因为某个实验单元要读，就往快照里加块、加列、改口径。
+- ⇒ 出现差异时**改后面**（实验单元、docs 对单元的约定），不改这里去迁就下游。
+- ★ **唯一的例外：`prices`（回测价格）**。它确实来自模块①、不是因子侧产物，2026-09-25 曾按
+  上面的规则移出；**2026-09-26 用户定再放回来做一块**（消费方只读本地快照、不再各自连模块①），
+  而且它与因子落在**同一条日期轴**上：日常增量一起刷新，不会出现"因子刷到 9-24、价格停在 9-23"
+  这种两轴错位。这一块仍然**只复制不加工**：7 列原始价 + `adj_factor`，
+  复权 / 前向填充 / 停牌与涨跌停判定全在消费方（见 `experiments/V2` 的 `Prices`）。
+  它走 `ensure_block`（与 amount/fac_sample/market 同一条路）⇒ 不存在旧版那种
+  "引导条件永远建不出来"的死循环。
+- 五块里直接读模块①（`RAW_DATA`）的是 **`amount`（流量）与 `prices`（价格）**；
+  `factors` / `target` / `market_factors` 三块来自因子侧产物。
+
+## 数据块
+
+`factors` 保存**统一方向的逐日缩尾+z-score**（`VALUES_SEMANTICS`，见下）；`target` 保存各持有期
+收益标签（**原值，不做变换**）；`amount` 保存每日成交额；`fac_sample` 用 seed=42 从完整因子中
+抽取 20 列（值逐字取自 `factors`）；`market_factors` 保存 61 个市场标量，每个因子**原值 + 滚动
+252 日 z** 两列（每行一个交易日，主键只有 `trade_date`）。
+
+★ 市场块的日期轴与 `factors` 对齐（2018 起），但**部分市场因子起点更晚**
+（7 个 `mkt_limit_*` 是 2020-01-02、`mkt_idx_growth_value_spread20` 是 2019-07-02…），
+所以它们的**原值列有一段前缀 NaN** —— 这是设计如此，不是缺数；`check()` 只报"首个有效值
+之后还有空洞"。滚动 z 列另有一段 252 交易日的预热期 NaN（2018 全年为空）。
+
+## ★ 因子列的值口径（2026-09-25 变更，改之前先读完这段）
+
+**旧口径**：直接搬上游算好的 `rank` 列（当日截面百分位），翻转过的是 `1−rank`，取值全在 `[0,1]`。
+
+**现口径** `zscore_win1_99_v1`：改读上游 `value` **原值**，自己做逐日横截面
+「1%/99% 缩尾 → 减均值除标准差 → 兜底截断 ±10 → 按方向取负」，见 `_standardize`。
+两处细节：缩尾分位点重合时**不缩尾**（稀疏事件因子）；缩尾后退化则**退回原值**再标准化
+（离散因子实测会退化）。逐行计算 ⇒ **PIT 安全**；缩尾分位与上游算 rank 时同源 ⇒
+**当日名次不变**（IC/排序结论不受影响）。
+
+口径写在 `meta.semantics` 里。**此前面板没有任何值口径标记**，换了口径在产物上看不出来 ——
+下游若按旧口径（缺失填 0.5、`(x−0.5)×2`）消费，会**静默**得到错误输入。
+
+`--check` 的取值口径探针（「有界 + 逐日 mean≈0/std≈1」）就是防"没做标准化/半新半旧"的。
 
 ## 增量：窗口取多少天，是标签定的
 
@@ -60,13 +91,17 @@
     python preparingdata.py --check            # 只校验不写：meta ↔ 文件 ↔ 上游
     python preparingdata.py --amount-only      # 只补 amount（每日成交额）
     python preparingdata.py --fac-sample-only  # 只补 fac_sample（因子抽样）
-    python preparingdata.py --meta-only [--freeze]  # 只补 meta 派生字段（不碰数据、不读因子侧）
+    python preparingdata.py --market-only      # 只补 market_factors（市场因子，每日一行）
+    python preparingdata.py --meta-only  # 只补 meta 派生字段（不碰数据、不读因子侧）
     python preparingdata.py --out trainingdata_new --full   # 写到另一份目录（现有产物一字不动）
 
     --jobs 4      读并发（默认 6；共享盘上有别的任务在跑时别开大）
     --lookback N  增量回溯交易日数（默认 = 最长标签 h + 1 + 7，见上）
 
 ★ **本脚本是唯一的写入口**：模型侧（各单元的 `mx/`）只读 `trainingdata/`，绝不写。
+★ **默认采用上游当前的股票因子集** —— 上游增删因子，快照跟着变，这就是本层的职责。
+  下游已训好的权重能不能吃新的列，是下游自己的事（重训，或用 `--features-from` 把清单
+  钉在某一版：给一份 meta.json 或快照目录即可）。
 ★ 必须用 `/autodl-fs/data/miniconda3/bin/python`（非登录 shell 的 `python` 没有 pandas）。
 ★ 产物位置：`--out` > `$MX_DATA` > `<脚本目录>/trainingdata`。
 
@@ -95,13 +130,13 @@ for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXP
 
 import argparse                                                  # noqa: E402
 import gc                                                        # noqa: E402
-import hashlib                                                   # noqa: E402
 import json                                                      # noqa: E402
 import re                                                        # noqa: E402
 import shutil                                                    # noqa: E402
 import sys                                                       # noqa: E402
 import tempfile                                                  # noqa: E402
 import time                                                      # noqa: E402
+import warnings                                                  # noqa: E402
 from concurrent.futures import ThreadPoolExecutor                # noqa: E402
 from datetime import datetime, timedelta                         # noqa: E402
 from functools import lru_cache                                  # noqa: E402
@@ -125,12 +160,32 @@ FACTORS_ROOT = Path(os.environ.get("MX_UPSTREAM", ROOT / "../featureengineering"
 FACTORS_DIR = Path(os.environ.get("MX_FACTORS_DIR", FACTORS_ROOT / "data" / "factors")).resolve()
 #: 因子的状态目录（manifest 在这，回答"某因子覆盖哪些年"时零 I/O）
 FACTORS_STATE = Path(os.environ.get("MX_FACTORS_STATE", FACTORS_ROOT / "state")).resolve()
-#: 模块① 的原始数据表。**只有 `amount` 块用** —— 四块里唯一不来自因子侧的一块。
+#: 模块① 的原始数据表。**`amount` 与 `prices` 两块用** —— 五块里仅有的两块不来自因子侧。
 RAW_DATA = Path(os.environ.get("MX_RAW_DATA", FACTORS_ROOT.parent / "datadownload" / "data")).resolve()
+#: 市场因子产物目录（模块② 的**另一个**输出根，与 `data/factors` 并列；每日一行、无股票列）。
+MARKET_FACTORS_DIR = Path(os.environ.get(
+    "MX_MARKET_FACTORS_DIR", FACTORS_ROOT / "data" / "market_factors")).resolve()
 
 #: 五个 target 的名字。上游把它们和普通因子存在同一个目录（靠 `is_label` 区分）。
 LABEL_NAMES = ("label_ret_1d", "label_ret_3d", "label_ret_5d",
                "label_ret_10d", "label_ret_20d")
+
+# ---------------------------------------------------------------- 因子列的**值口径**
+#: 写进 `meta.semantics`。面板此前**没有任何值口径标记**（`panel_digest` 只哈希列名与文件 sha，
+#: 抓不到值语义），于是"换了口径"与"没换"在产物上完全看不出来 —— 下游只能靠人记。
+#: 有了这个字段，一份面板是哪套编码可以自证。**改口径必须同时改这个字符串。**
+VALUES_SEMANTICS = "zscore_win1_99_v1"
+
+#: 逐日横截面标准化的三个参数。取值刻意与**因子侧算 rank 时**用的是同一套
+#: （`featureengineering/conf/config.yaml` 的 `winsor: [0.01, 0.99]` / `min_cross_section: 100`），
+#: 这样面板的值与上游 `rank` 列**排序完全一致**（见 `_standardize` 的说明）。
+Z_WINSOR = (0.01, 0.99)
+Z_MIN_COUNT = 100
+#: 标准化结果的兜底截断。实测"缩尾+z"的 |z| 最大约 7，正常交易日**不会生效**；
+#: 它只防"某天截面标准差异常小"时冒出天文数字（纯 z-score 实测有个股 |z| 达 27~44）。
+Z_CLAMP = 10.0
+#: 市场因子滚动 z 的窗口（交易日）。只用 t 及**之前**的值 → PIT 安全。
+MK_Z_WINDOW = 252
 
 
 class Cfg:
@@ -147,6 +202,7 @@ class Cfg:
         self.factors_root = FACTORS_ROOT
         self.factors_dir = FACTORS_DIR
         self.factors_state = FACTORS_STATE
+        self.market_factors_dir = MARKET_FACTORS_DIR
         self.raw_data = RAW_DATA
         self.labels = list(LABEL_NAMES)
         #: 产物根：`--out` > `$MX_DATA` > `<root>/trainingdata`
@@ -213,7 +269,6 @@ def now() -> str:
 # ============================================================================
 
 # ---- 块名。2026-09-20 由七块收敛成四块：factors / target / amount / fac_sample
-#: **必建**的两块：特征矩阵与标签。`panel_digest` 只认这两块。
 FK, TK = "factors", "target"
 #: 布局的必建两块。另两块 `amount` / `fac_sample` 在第 5 节定义，同样必建（见 `ALL_KINDS`）。
 KINDS = (FK, TK)
@@ -355,6 +410,20 @@ def list_factor_names(cfg: Cfg) -> list[str]:
     return sorted(p.name for p in d.iterdir() if p.is_dir())
 
 
+def list_market_factor_names(cfg: Cfg) -> list[str]:
+    """**市场因子**产物目录下的全部名字。
+
+    ★ 与 `list_factor_names` 是两个并列的目录（`data/factors` vs `data/market_factors`），
+      上游用 `FactorSpec.is_market` 区分、落到不同的 root（`fea/config.py:factor_root`）。
+      这里绝不能把两边合并 —— 市场因子是每日一行的标量，混进 478 列的股票面板会让
+      `_place` 直接失败（它按 (trade_date, stock_code) 两键落格）。
+    """
+    d = cfg.market_factors_dir
+    if not d.exists():
+        return []
+    return sorted(p.name for p in d.iterdir() if p.is_dir())
+
+
 # ---------------------------------------------------------------- 股票池 / 价格层
 @lru_cache(maxsize=4)
 def _engine(cfg_root: str, cfg_yaml: str):
@@ -378,8 +447,6 @@ def _engine(cfg_root: str, cfg_yaml: str):
 #   从布局里摘掉了（实测它恒为 True，详见模块头部）。它们曾是本文件里**唯一**构造
 #   上游 `fea.Panel` 的地方，删掉顺带让每年的构建少一次 `universe_for`（纯白算：掩码
 #   以前也没进 `_coverage`，只被原样写盘）。要恢复请从 git 取回。
-#   注意：上游**股票池口径指纹** `universe_fp` 仍在 `meta.source` 里，那是另一回事，
-#   由 `_universe_fp()` 算，与本块无关。
 
 
 def last_upstream_day(cfg: Cfg) -> str:
@@ -406,42 +473,6 @@ def upstream_eval_summary(cfg: Cfg) -> list[dict]:
         return []
 
 
-# ---------------------------------------------------------------- 上游指纹（版本配方锁定用）
-def upstream_fingerprint(cfg: Cfg) -> dict:
-    """上游数据的指纹 —— 写进单元 recipe，回答「这一版结论建立在哪份数据上」。
-
-    三样东西：
-      ① `factors_dir` 与最新因子日（产物里实际出现的最后一天）；
-      ② 模块② 的**日台账**（`log*/dayhash.tsv`，按天 MD5）最新一份的哈希与最后一天；
-      ③ 股票池口径的来源（`factors_state/eval/summary.json` 的行数/时间戳）。
-    """
-    import hashlib
-    fp: dict = {"factors_dir": str(cfg.factors_dir)}
-    try:
-        fp["last_factor_day"] = last_upstream_day(cfg)
-    except Exception as exc:                       # noqa: BLE001
-        fp["last_factor_day"] = f"<err: {type(exc).__name__}>"
-
-    ledgers = sorted(cfg.factors_root.glob("log*/dayhash.tsv"))
-    if ledgers:
-        p = ledgers[-1]
-        try:
-            text = p.read_text(encoding="utf-8")
-            lines = [l for l in text.splitlines() if l.strip()]
-            fp["ledger"] = {"path": str(p.relative_to(cfg.factors_root)),
-                            "sha256": hashlib.sha256(text.encode()).hexdigest()[:16],
-                            "n_days": max(0, len(lines) - 1),
-                            "last": lines[-1].split("\t")[0] if len(lines) > 1 else "",
-                            "mtime": datetime.fromtimestamp(p.stat().st_mtime).strftime("%Y-%m-%d %H:%M")}
-        except OSError:
-            pass
-    s = cfg.factors_state / "eval" / "summary.json"
-    if s.exists():
-        fp["eval_summary"] = {"n": len(upstream_eval_summary(cfg)),
-                              "mtime": datetime.fromtimestamp(s.stat().st_mtime).strftime("%Y-%m-%d %H:%M")}
-    return fp
-
-
 # ============================================================================
 # 4. 初加工（原 `mx/prepared.py`）
 # ============================================================================
@@ -458,7 +489,6 @@ LOW_COV_REL = 0.5               # 低于当年均值的一半 → 告警
 LOW_COV_ABS = 0.15              # 或绝对值低于它 → 告警
 DEFAULT_JOBS = 6                # 共享盘 + 常有别的任务在跑：默认别开大
 REDUNDANT_DAYS = 7              # 增量回溯的**冗余覆盖**天数（用户 2026-09-20 要的，见 `lookback_for`）
-ROOT_SCRIPT = Path(__file__).resolve()      # 本脚本自己的字节也进上游指纹
 
 
 def lookback_for(cfg: Cfg, labels: list[str] | None = None) -> int:
@@ -488,11 +518,29 @@ def upstream_specs(cfg: Cfg) -> dict[str, dict]:
     have = set(list_factor_names(cfg))
     out: dict[str, dict] = {}
     for s in all_specs():
-        if s.name in have:
+        # ★ 刻意**排除**市场因子：它们没有 `stock_code`、没有 rank 列，混进这份清单会
+        #   让它们进入 478 列的股票面板。市场因子走 `market_specs()` 这条独立的路。
+        if s.name in have and not getattr(s, "is_market", False):
             out[s.name] = {"is_label": bool(getattr(s, "is_label", False)),
                            "higher_is_better": bool(getattr(s, "higher_is_better", True)),
                            "group": str(getattr(s, "group", ""))}
     return out
+
+
+def market_specs(cfg: Cfg) -> list[str]:
+    """市场因子的名字清单（只取**有产物目录**的那些），排序后返回。
+
+    ★ 方向：上游 61 个市场因子的 `higher_is_better` **清一色是默认 True**
+      （`factors/market.py` / `market2.py` 的注册处都没传这个参数），也就是说这个语义
+      对市场因子**实际未被填写**。所以这里不透出方向、也不做翻转 —— 编造一个方向
+      比不做更危险。真要方向，得先让因子侧把 `higher_is_better` 填对。
+    """
+    _factors_registered(str(cfg.factors_root))        # noqa: SLF001
+    from fea.spec import all_specs
+
+    have = set(list_market_factor_names(cfg))
+    return sorted(s.name for s in all_specs()
+                  if getattr(s, "is_market", False) and s.name in have)
 
 
 def _factor_years(cfg: Cfg, name: str) -> list[int]:
@@ -556,19 +604,23 @@ def build_axis(cfg: Cfg, lo: str, hi: str, log=print) -> tuple[list[str], np.nda
 
 
 # ================================================================ 落格：一个因子 → 扁平网格
-def _place(df: pd.DataFrame, *, source: str, flip: bool, codes_index: pd.Index,
+def _place(df: pd.DataFrame, *, source: str, codes_index: pd.Index,
            days_index: pd.Index, n_days: int, C: int,
            codes: np.ndarray | None = None,
            days_int: np.ndarray | None = None) -> tuple[np.ndarray, int, int]:
     """把一列因子落到 (T×C,) 扁平网格（日为主序）。返回 (数组, 命中数, 丢弃数)。
 
-    `source`：特征取 `rank` 列（当日截面百分位），标签取 `value` 列（收益原值）。
+    `source`：特征与标签都取 `value` 列。**特征取原值**（随后由 `_standardize` 做
+    逐日缩尾+z-score），标签取原值直接落盘（未来收益，不做任何变换）。
+
+    ★ 本函数**不做方向翻转**（2026-09-25 改口径时从 `_place` 挪进 `_standardize`）。
+      翻转必须与标准化在同一处，否则会出现"先 `1−rank` 再 z-score"这类半新半旧的组合。
 
     ## 两条路径
 
     上游产物绝大多数是"整年满格"（每个交易日 × 全部代码都有一行）。这时**不需要**逐行做
     字符串→索引的映射：行序天然就是 (日, 码)，直接 `reshape` 即可。这条快路很重要 ——
-    通用路径的 `Index.get_indexer` 要哈希 84 万条字符串，**握着 GIL**，8 个线程也跑不满 1 个核
+    通用路径的 `Index.get_indexer` 要索引 84 万条字符串，**握着 GIL**，8 个线程也跑不满 1 个核
     （实测 1.1 核、单年 4 分钟；快路后降到几十秒）。
 
     快路的正确性由三件事保证（都通过才走）：行数 = 天数×代码数、日期向量**逐元素**等于
@@ -581,8 +633,6 @@ def _place(df: pd.DataFrame, *, source: str, flip: bool, codes_index: pd.Index,
             if (np.array_equal(df["stock_code"].head(C).to_numpy(dtype=object), codes)
                     and np.array_equal(df["stock_code"].tail(C).to_numpy(dtype=object), codes)):
                 v = df[source].to_numpy(dtype=np.float32, copy=True)
-                if flip:
-                    v = np.float32(1.0) - v      # 方向统一：1−rank 仍是 [0,1]，NaN 保持 NaN
                 return v, int(v.size), 0
 
     di = days_index.get_indexer(df["trade_date"].to_numpy(dtype=object))
@@ -591,16 +641,66 @@ def _place(df: pd.DataFrame, *, source: str, flip: bool, codes_index: pd.Index,
     v = df[source].to_numpy(dtype=np.float32, copy=False)
     out = np.full(n_days * C, np.nan, dtype=np.float32)
     out[di[ok] * C + ci[ok]] = v[ok]
-    if flip:
-        out = np.float32(1.0) - out          # 方向统一：1−rank 仍是 [0,1]，NaN 保持 NaN
     return out, int(ok.sum()), int((~ok).sum())
+
+
+def _standardize(flat: np.ndarray, n_days: int, C: int, flip: bool) -> np.ndarray:
+    """把落格后的**原值**做成逐日横截面的「缩尾 + z-score」，并按需翻转方向。
+
+    ## 口径（`VALUES_SEMANTICS = "zscore_win1_99_v1"`）
+
+    每行（= 每个交易日）独立地：
+      ① 按 1%/99% 分位缩尾 ② 减均值除标准差 ③ 兜底截断 ±`Z_CLAMP` ④ 需要则取负。
+
+    ★ **逐行计算 ⇒ PIT 安全**：只用当日截面，不碰任何未来数据。
+    ★ **不改当日排序**：缩尾分位与因子侧算 `rank` 时用的是同一套，所以本列的名次与上游
+      `rank` 列一致（只可能在并列处不同）。这是"换口径不动 IC/名次结论"的依据。
+
+    ## 两处刻意的处理
+
+    **缩尾分位点重合时跳过缩尾**：稀疏事件因子（如只有一个涨停日）的 1%/99% 分位点会相等，
+      此时缩尾会把唯一的事件压成常数。因子侧 `cs_rank` 对这个情形有同样的处理
+      （`featureengineering/fea/panel.py:193-195`），这里保持一致的语义。
+
+    **缩尾后退化则退回原值**：离散/事件型因子（实测 `limit_down_event_5` 全截面只有 5 个
+      不同取值）缩尾后可能整行同值、标准差为 0。若直接标准化会把整列变成 NaN（`cs_zscore`
+      的保护行为），等于**静默丢掉一个因子**。这类行改用原始值再标准化一次，保住信号。
+    """
+    from fea.mathx import cs_zscore
+
+    x = flat.reshape(n_days, C).astype(np.float64)
+    # ★ `np.errstate` 只管浮点异常，管不住 nan-functions 走的 `warnings.warn`。
+    #   全 NaN 行（晚起点因子在更早的年份）必然会触发 "All-NaN slice / Mean of empty slice /
+    #   Degrees of freedom <= 0" —— 这是**预期**情形且已被下面的逻辑显式处理，
+    #   不静音的话每个因子-年都会刷一遍，日志会被淹掉。
+    with np.errstate(all="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        lo = np.nanquantile(x, Z_WINSOR[0], axis=1)[:, None]
+        hi = np.nanquantile(x, Z_WINSOR[1], axis=1)[:, None]
+        usable = np.isfinite(lo) & np.isfinite(hi) & (lo < hi)   # 分位点重合 → 不缩尾
+        xw = np.where(usable, np.clip(x, lo, hi), x)
+
+        sd = np.nanstd(xw, axis=1)
+        degen = (~(sd > 0)) & (np.isfinite(xw).sum(axis=1) >= Z_MIN_COUNT)
+        if degen.any():
+            xw[degen] = x[degen]
+
+        z = cs_zscore(xw, min_count=Z_MIN_COUNT)   # 复用上游：含 常量/除零 → NaN 保护
+        z = np.clip(z, -Z_CLAMP, Z_CLAMP)          # NaN 经 clip 仍是 NaN
+        if flip:
+            z = -z                                  # 方向统一成「越大越好」
+    return z.astype(np.float32).ravel()
 
 
 def _cols(cfg: Cfg, year: int, names: list[str], flip_map: dict[str, bool], source: str,
           codes_index: pd.Index, days_index: pd.Index, n_days: int, C: int,
           *, jobs: int, what: str, codes: np.ndarray, days_int: np.ndarray,
-          log=print) -> tuple[dict[str, np.ndarray], dict]:
-    """并发读若干因子的**一年**产物并落格。返回 (列字典, 逐因子统计)。"""
+          log=print, standardize: bool = False) -> tuple[dict[str, np.ndarray], dict]:
+    """并发读若干因子的**一年**产物并落格。返回 (列字典, 逐因子统计)。
+
+    `standardize=True` 时对落格后的原值再做逐日「缩尾 + z-score」与方向翻转（特征走这条）；
+    `False` 时原样落盘（**标签**走这条 —— 未来收益是原值，不做任何变换）。
+    """
     from fea.store import read_year
 
     out: dict[str, np.ndarray] = {}
@@ -610,7 +710,7 @@ def _cols(cfg: Cfg, year: int, names: list[str], flip_map: dict[str, bool], sour
         df = read_year(cfg.factors_dir, nm, int(year))
         if df is None or len(df) == 0:
             return nm, None
-        return nm, _place(df, source=source, flip=flip_map[nm], codes_index=codes_index,
+        return nm, _place(df, source=source, codes_index=codes_index,
                           days_index=days_index, n_days=n_days, C=C,
                           codes=codes, days_int=days_int)
 
@@ -621,6 +721,8 @@ def _cols(cfg: Cfg, year: int, names: list[str], flip_map: dict[str, bool], sour
                 stat[nm] = {"hit": 0, "dropped": 0, "missing_year": True}
             else:
                 arr, hit, dropped = r
+                if standardize:
+                    arr = _standardize(arr, n_days, C, flip_map.get(nm, False))
                 out[nm] = arr
                 stat[nm] = {"hit": hit, "dropped": dropped, "missing_year": False}
             if log and (k % 50 == 0 or k == len(names)):
@@ -650,14 +752,6 @@ def _coverage(cols: dict[str, np.ndarray], n_days: int, C: int) -> dict:
             "mean": round(float(by_day.mean()), 4), "min": round(float(by_day.min()), 4),
             "first_day_cov": round(float(by_day[0]), 4),
             "last_day_cov": round(float(by_day[-1]), 4)}
-
-
-def _sha_cols(cols: dict) -> str:
-    h = hashlib.sha256()
-    for k in sorted(cols):
-        h.update(k.encode())
-        h.update(np.ascontiguousarray(cols[k]).tobytes())
-    return h.hexdigest()[:16]
 
 
 # ================================================================ 构建一年
@@ -693,13 +787,17 @@ def build_year(cfg: Cfg, year: int, days_new: list[str], codes: np.ndarray,
 
     codes_index = pd.Index(codes)
     days_index = pd.Index(np.asarray(days_new, dtype=object))
-    # ★ get_indexer 的哈希表是**懒建**的：先串行预热一次，再进线程池并发（否则有竞态）
+    # 先串行预热索引，再进入线程池，避免索引首次初始化发生竞态。
     codes_index.get_indexer(codes[:1])
     days_index.get_indexer(np.asarray(days_new[:1], dtype=object))
 
     flip_map = {f: (directions.get(f, 1) < 0) for f in feats}
-    X, stat_x = _cols(cfg, year, feats, flip_map, "rank", codes_index, days_index, n_new, C,
-                      jobs=jobs, what="特征", codes=codes, days_int=di_new, log=log)
+    # ★ 2026-09-25 口径变更：特征从"读上游算好的 `rank` 列"改成"读 `value` 原值 +
+    #   `_standardize` 自己做逐日缩尾+z-score"。同一次改动里加 `semantics` 标记，
+    #   否则换了口径在产物上完全看不出来。
+    X, stat_x = _cols(cfg, year, feats, flip_map, "value", codes_index, days_index, n_new, C,
+                      jobs=jobs, what="特征", codes=codes, days_int=di_new, log=log,
+                      standardize=True)
     Y, _ = _cols(cfg, year, labels, {l: False for l in labels}, "value", codes_index, days_index,
                  n_new, C, jobs=jobs, what="标签", codes=codes, days_int=di_new, log=log)
     # ★ 2026-09-20：原来这里还算一块 `universe`（股票池掩码）并落盘。删掉的原因见模块
@@ -738,8 +836,7 @@ def build_year(cfg: Cfg, year: int, days_new: list[str], codes: np.ndarray,
         p = year_file(root if root is not None else root_of(cfg), kind, year)
         atomic_parquet(tab, p)
         sizes[kind] = {"rows": int(tab.num_rows), "cols": int(tab.num_columns),
-                       "mb": round(p.stat().st_size / 1e6, 1), "bytes": int(p.stat().st_size),
-                       "sha": _sha_cols(cols)}
+                       "mb": round(p.stat().st_size / 1e6, 1), "bytes": int(p.stat().st_size)}
         del tab, fields
     cov = _coverage(X, n_days, C)
     miss = sorted(k for k, v in stat_x.items() if v["missing_year"])
@@ -772,45 +869,13 @@ def _days_of(root: Path, kind: str, year: int) -> list[str]:
 # ================================================================ 读产物
 
 
-# ================================================================ 指纹
-def _universe_fp(cfg: Cfg) -> str:
-    """模块② 的**股票池指纹**（含冻结名单的内容哈希）。
-
-    ★ 为什么必须进快照指纹：`rank` 是**当日截面百分位**，股票池变了（3485 → 2115），
-      同一天的 rank 全体变化。若只跑增量，就只有窗口内那几十天是新口径、
-      其余 15 年还是旧口径 —— **静默不一致**（网格/行数/覆盖率全都正常）。
-      模块② 的 `Engine.universe_fp` 正好把这口径（前缀/ST/上市天数/冻结名单哈希）编码成一个串。
-    """
-    try:
-        eng = _engine(str(cfg.factors_root), str(cfg.root))     # noqa: SLF001
-        return str(getattr(eng, "universe_fp", "") or "")
-    except Exception:                        # noqa: BLE001
-        return ""
-
-
-def _fingerprint(cfg: Cfg, sc: dict, names: list[str], directions: dict) -> dict:
-    """上游指纹：因子集合 + 方向表 + 覆盖端点 + 各因子的分区年 + 股票池 + 日台账哈希。
-
-    `per_factor_years` 是用来发现"上游回填了历史"的：单个年份新增分区 → 那一年必须整年重建
-    （增量窗口只有最近几十天，盖不住历史回填）。
-    `universe_fp` 是用来发现"股票池口径变了"的：变了就必须**全量重建**（见 `prepare` 的判定）。
-    """
-    h = hashlib.sha256()
-    h.update("|".join(sorted(names)).encode())
-    h.update("|".join(f"{k}:{directions[k]}" for k in sorted(directions)).encode())
-    led = (upstream_fingerprint(cfg).get("ledger") or {})
-    h.update(str(led.get("sha256", "")).encode())
-    h.update(f"{sc['span'][0]}~{sc['span'][1]}".encode())
-    py = {n: sorted(int(y) for y in (v.get("years") or [])) for n, v in sc["per_factor"].items()}
-    h.update("|".join(f"{n}:{','.join(map(str, ys))}" for n, ys in sorted(py.items())).encode())
-    ufp = _universe_fp(cfg)
-    h.update(ufp.encode())
-    h.update((ROOT_SCRIPT.read_bytes() if ROOT_SCRIPT.exists() else b""))   # 脚本自身也进指纹
-    return {"factors_dir": str(cfg.factors_dir), "fingerprint": h.hexdigest()[:16],
-            "universe_fp": ufp,
-            "n_products": sc["n_factors"], "first_upstream_day": sc["span"][0],
-            "last_upstream_day": sc["span"][1], "ledger": led,
-            "per_factor_years": py}
+def source_description(cfg: Cfg, sc: dict) -> dict:
+    """记录上游位置、日期范围和分区覆盖。"""
+    per_years = {n: sorted(int(y) for y in (v.get("years") or []))
+                 for n, v in sc["per_factor"].items()}
+    return {"factors_dir": str(cfg.factors_dir), "n_products": sc["n_factors"],
+            "first_upstream_day": sc["span"][0], "last_upstream_day": sc["span"][1],
+            "per_factor_years": per_years}
 
 
 def _years_with_new_partitions(meta_old: dict, sc: dict) -> set[int]:
@@ -832,7 +897,7 @@ def derive_feature_sets(meta: dict, min_cov: float = 0.005) -> dict[str, list[st
     所以"从 YYYY 年起可用的因子有哪些"是个每次都要问的问题。与其让每个单元去扫
     `per_factor_years`，不如在初加工时算好写进 meta，单元只写 `DATA={"features": "core_2018"}`。
 
-    ★ 为什么能在**冻结快照**上算：它只用 meta 里已经存着的 `years[*].coverage.per_factor`
+    ★ 为什么能独立于上游计算：它只用 meta 里已经存着的 `years[*].coverage.per_factor`
       （每个因子在每年的非空占比），不需要读任何上游文件 —— 所以"补这个字段"不等于"重建数据"。
 
     `core_YYYY` = 在 **YYYY 到最后一个已建年份里每年都有非空值**的特征（覆盖 ≥ `min_cov`）。
@@ -872,95 +937,34 @@ def derive_feature_sets(meta: dict, min_cov: float = 0.005) -> dict[str, list[st
     return slim
 
 
-def attach_meta_fields(cfg: Cfg, *, freeze: bool = False, unfreeze: bool = False,
-                       reason: str = "", log=print) -> dict:
-    """**只补 meta 的派生字段**（特征集、冻结标记），不碰任何数据文件、不读因子侧。
-
-    用途：需要给下游（单元 `DATA={...}`）补料、或改快照的冻结状态时走这条，
-    而不是重跑初加工 —— 重跑会换掉 `panel_digest`，让所有已出结论作废。
-
-    ★ `--unfreeze` 也走这里：**解冻不该逼人重建**。日常跑 `preparingdata.py` 做增量
-      要求快照不是冻结态，而"解冻"本身只是一次标记翻转。
-    """
+def attach_meta_fields(cfg: Cfg, *, log=print) -> dict:
+    """只补 meta 中的特征集，不改数据文件、不读取上游因子。"""
     root = root_of(cfg)
     meta = load_meta(root)
     if not meta:
-        raise SystemExit(f"✘ 还没有产物（{root}）—— 没有 meta 就无从补字段")
+        raise SystemExit(f"✘ 还没有产物（{root}）")
     meta["feature_sets"] = derive_feature_sets(meta)
-    if unfreeze and (meta.get("frozen") or {}).get("on"):
-        old = meta.pop("frozen")
-        log(f"    🔓 已解冻（原锚点 panel_digest={((old.get('anchors') or {}).get('panel_digest'))}）"
-            f"—— 之后 `preparingdata.py` 可正常跑增量")
-    if freeze:
-        cur = {k: meta[k] for k in ("panel_digest", "built_at") if k in meta}
-        meta["frozen"] = {
-            "on": True, "since": now(), "reason": reason or "因子侧要在别处继续开发，模型侧只用当前快照",
-            "anchors": {"panel_digest": cur.get("panel_digest"),
-                        "upstream_fingerprint": (meta.get("source") or {}).get("fingerprint"),
-                        "n_features": len(meta["columns"]["features"]),
-                        "n_labels": len(meta["columns"]["labels"]),
-                        "axis": [meta["axis"]["start"], meta["axis"]["end"]]}}
     save_json(meta_path(root), meta)
-    sizes = {k: len(v) for k, v in meta["feature_sets"].items()}
-    log(f"  ✔ meta 派生字段已更新（**未触碰任何数据文件、未读因子侧**）")
-    log(f"    特征集：{sizes}")
-    if freeze:
-        f = meta["frozen"]
-        log(f"    🔒 快照已冻结：panel_digest={f['anchors']['panel_digest']} · "
-            f"上游指纹={f['anchors']['upstream_fingerprint']}")
-        log(f"       要重建请显式 `preparingdata.py --full --unfreeze`")
+    log(f"  ✔ meta 特征集已更新：{ {k: len(v) for k, v in meta['feature_sets'].items()} }")
     return meta
-
-
-def panel_digest(meta: dict) -> str:
-    """面板指纹：列清单 + 逐年文件指纹（写进训练 summary，回答"这一版建在哪份数据上"）。"""
-    h = hashlib.sha256()
-    h.update("|".join(meta["columns"]["features"]).encode())
-    h.update("|".join(meta["columns"]["labels"]).encode())
-    for y in sorted(meta.get("years") or {}):
-        v = meta["years"][y]
-        h.update(f"{y}:{v.get('rows')}:{(v.get('files') or {}).get(FK, {}).get('sha')}".encode())
-    return h.hexdigest()[:16]
 
 
 # ================================================================ 主流程
 def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
             jobs: int = DEFAULT_JOBS, lookback: int | None = None,
-            unfreeze: bool = False, root: str | Path | None = None,
+            root: str | Path | None = None,
             features: list[str] | None = None, direction: dict[str, int] | None = None,
             log=print) -> dict:
-    """全量 / 增量 / 指定年份 构建 trainingdata。`mode` ∈ {auto, full, incremental}。
-
-    ★ **快照冻结闸门**：`meta.json:frozen.on` 为真时，本函数直接拒绝——因为重建会把
-      "上游当前的样子"煮进快照，而那个样子可能正在被别处改（见 README「数据快照冻结」）。
-      要显式重建得加 `--unfreeze`。只补 meta 派生字段走 `attach_meta_fields`（不碰数据）。
-    """
+    """全量、增量或指定年份构建训练数据。"""
     t_all = time.time()
-    # ★ `root` 允许**另建一份快照**（不进原地）。为什么需要它：现行 `trainingdata/` 是
-    #   **冻结快照**，所有已出结论都锚在它的 `panel_digest` 上；上游来了新因子时
-    #   若原地重建，旧结论全部作废、且**没有对照组**。另建一份才能做
-    #   "同一套配方、只换特征集"的干净 A/B（见 README §3「数据快照冻结」）。
     root = Path(root).resolve() if root else root_of(cfg)
     if root != root_of(cfg):
         log(f"  ★ 本次写到**另一份快照**：{root}（现有快照 {root_of(cfg)} 不动）")
     meta_old = load_meta(root)
-    fr = meta_old.get("frozen") or {}
-    if fr.get("on") and not unfreeze:
-        a = fr.get("anchors") or {}
-        raise SystemExit(
-            "✘ trainingdata 快照已冻结，拒绝重跑初加工。\n"
-            f"    锚点：panel_digest={a.get('panel_digest')} · 上游指纹={a.get('upstream_fingerprint')}\n"
-            f"    冻结于 {fr.get('since')}：{fr.get('reason')}\n"
-            "    · 只想补 meta 派生字段（特征集等）→ `python preparingdata.py --meta-only`\n"
-            "    · 确实要按上游**当前**的样子重建 → `python preparingdata.py --full --unfreeze`\n"
-            "      （重建后面板指纹会变，所有基于旧快照的结论都需要重跑）")
-    if unfreeze and fr.get("on"):
-        log("  ⚠️ --unfreeze：本次将按上游当前状态重建，旧的 panel_digest 锚点随即失效")
     force_full = (mode == "full") or not meta_old
     log(f"══ 初加工 trainingdata{'（全量）' if mode == 'full' else ''}")
     log(f"  产物：{root}")
 
-    sc = scan(cfg, log=log)
     specs = upstream_specs(cfg)
     feats = sorted(n for n, v in specs.items() if not v["is_label"])
     labels = sorted(n for n, v in specs.items() if v["is_label"])
@@ -980,11 +984,15 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
                                  f"    —— 上游改了 higher_is_better，锁清单也复现不出旧产物")
         feats = list(features)
         labels = [l for l in labels if l in set(specs)] or labels
+    # 源身份只跟随本次实际写入的特征与标签。新增但未纳入锁定清单的因子
+    # 不应触发 `_years_with_new_partitions` 把 2018 起所有年度重建一遍。
+    sc = scan(cfg, names=sorted(set(feats) | set(labels)), log=log)
     lo, hi = sc["span"]
     if not lo:
         raise SystemExit("✘ 上游没有任何因子产物")
     log(f"  特征 {len(feats)} · 标签 {len(labels)} · 需翻转 "
-        f"{sum(1 for f in feats if directions[f] < 0)}（这些存 1−rank，语义统一成「越大越好」）")
+        f"{sum(1 for f in feats if directions[f] < 0)}"
+        f"（这些存 −z，语义统一成「越大越好」）· 值口径 {VALUES_SEMANTICS}")
 
     days, codes = build_axis(cfg, lo, hi, log=log)
     by_year: dict[int, list[str]] = {}
@@ -1000,7 +1008,7 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
             raise SystemExit(f"✘ --years {years} 与日期轴 {min(by_year)}~{max(by_year)} 无交集")
         by_year = {y: by_year[y] for y in want}
     built = sorted(by_year)
-    fp = _fingerprint(cfg, sc, feats + labels, directions)
+    source = source_description(cfg, sc)
     have_years = {int(y) for y in (meta_old.get("built_years") or [])}
 
     # ---- 决定做什么
@@ -1009,49 +1017,25 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
         plan = {y: ("full", None) for y in built}
         why = "全量重建" if force_full else f"指定年份 {built}"
     else:
-        same_fp = fp["fingerprint"] == ((meta_old.get("source") or {}).get("fingerprint"))
         last_old = (meta_old.get("axis") or {}).get("last_built_day")
-        if same_fp and last_old and hi <= str(last_old):
-            log(f"  ⊘ 无新增：上游最新日 {hi} ≤ 已建 {last_old}，且上游指纹未变 → 跳过（零 I/O）")
-            # ★ 布局里的两个**可选块**（amount / fac_sample）走**独立计划轴**，不能跟着这里
-            #   一起早退（见 `stale_block_years`）：它们与因子侧的新增无关，可能只是还没建过。
-            ensure_block(cfg, AK, root, log=log)
-            ensure_block(cfg, SK, root, log=log)
-            ensure_prices_if_enabled(cfg, root, log=log)
-            return {"action": "skip", "reason": "无新增", "rebuilt": {},
-                    "meta": load_meta(root) or meta_old}
-        # ★★ 股票池口径变了（如 2026-09-18 的 3485 → 2115 冻结名单）必须**全量重建**：
-        #    rank 是当日截面百分位 ⇒ 池子一换，每天的值全体变化。若只跑增量，
-        #    窗口内那几十天是新口径、其余 15 年还是旧口径 —— 网格/行数/覆盖率**全都正常**，
-        #    没有任何体检能发现，只能靠这里挡住。
-        uni_old = (meta_old.get("source") or {}).get("universe_fp")
-        uni_now = fp.get("universe_fp")
         missing = [y for y in built if y not in have_years]
-        grew = _years_with_new_partitions(meta_old, sc)     # 上游回填了哪些年
-        # ★ 判定用 `uni_old != uni_now`（**缺锚点也算变了**）：老 meta 里没有这个字段就
-        #   无法证明口径没变，宁可全量重建也不要留下"半新半旧"的快照。
-        if uni_now and uni_old != uni_now:
-            plan = {y: ("full", None) for y in built}
-            why = (f"★ 股票池口径变了（或旧 meta 缺锚点）→ 全量重建\n"
-                   f"    universe_fp: {uni_old[-30:] if uni_old else '（旧 meta 无此字段）'}\n"
-                   f"              → {uni_now[-30:]}\n"
-                   f"    （增量只会让窗口内那几天变成新口径，其余年份静默留在旧口径）")
-        else:
-            idx = {d: i for i, d in enumerate(days)}
-            j_last = idx.get(str(last_old))
-            if j_last is None:                   # 上次末日不在新轴上（上游回撤过数据）
-                j_last = max((i for d, i in idx.items() if d <= str(last_old)), default=0)
-            win_lo = days[max(0, j_last - lb)]
-            for y in built:
-                tail = [d for d in by_year[y] if d >= win_lo]
-                if tail:
-                    plan[y] = ("incr", tail)
-            # ★ 上游**回填历史**（新增年份分区）时窗口盖不住 → 那些年份整年重建
-            for y in (set(missing) | set(grew)):
-                plan[y] = ("full", None)
-            why = (f"增量：窗口 {win_lo} ~ {hi}（只重写受影响的年份）"
-                   + (f"；{len(missing)} 个年份从未建过 → 整年重建" if missing else "")
-                   + (f"；上游新增分区 {sorted(grew)} → 整年重建" if grew else ""))
+        grew = _years_with_new_partitions(meta_old, sc)
+        # 每次执行都刷新回溯窗口，以纳入上游对近期数据的修订。
+        idx = {d: i for i, d in enumerate(days)}
+        j_last = idx.get(str(last_old))
+        if j_last is None:                   # 上次末日不在新轴上（上游回撤过数据）
+            j_last = max((i for d, i in idx.items() if d <= str(last_old)), default=0)
+        win_lo = days[max(0, j_last - lb)]
+        for y in built:
+            tail = [d for d in by_year[y] if d >= win_lo]
+            if tail:
+                plan[y] = ("incr", tail)
+        # ★ 上游**回填历史**（新增年份分区）时窗口盖不住 → 那些年份整年重建
+        for y in (set(missing) | set(grew)):
+            plan[y] = ("full", None)
+        why = (f"增量：窗口 {win_lo} ~ {hi}（只重写受影响的年份）"
+               + (f"；{len(missing)} 个年份从未建过 → 整年重建" if missing else "")
+               + (f"；上游新增分区 {sorted(grew)} → 整年重建" if grew else ""))
 
     log(f"  ▸ {why}")
     if not plan:
@@ -1074,8 +1058,7 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
                           directions, jobs=jobs, log=log, keep=keep, root=root)
         info["action"] = act
         # ★★ `build_year` **只产出 `factors` / `target`** —— 这一年的 `amount` / `fac_sample`
-        #   文件还在原地没动（它们走独立计划轴），所以它们在该年 `files` 里的记录（sha/bytes）
-        #   必须**从旧 meta 搬过来**。整年记录被 `info` 顶替掉的话，这两块的指纹就没了，
+        #   文件还在原地没动（它们走独立计划轴），所以它们在该年 `files` 里的记录（行列数与文件大小）
         #   而 `ensure_block` 只补"文件陈旧/缺失"的块 —— 文件好好的，它不会补，于是**静默丢失**。
         #   （2026-09-20 实测踩到：跑一次日常增量后 `years.2026.files.amount` 就成了空。）
         _old_files = (years_meta.get(str(y)) or {}).get("files") or {}
@@ -1088,11 +1071,15 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
     meta = {
         "version": META_VERSION,
         "built_at": now(),
-        "source": {**fp, "scan": {"n": sc["n_factors"], "partition_years": sc["years"],
-                                  "per_factor_years": fp["per_factor_years"]}},
+        "source": {**source, "scan": {"n": sc["n_factors"], "partition_years": sc["years"],
+                                  "per_factor_years": source["per_factor_years"]}},
         "columns": {"features": feats, "labels": labels,
                     "direction": {n: directions[n] for n in feats},
                     "n_flipped": sum(1 for f in feats if directions[f] < 0)},
+        # ★ 因子列的**值口径**（2026-09-25 新增）。此前面板没有任何值口径标记，
+        #   `panel_digest` 只哈希列名与文件 sha ⇒ "换了口径"在产物上完全看不出来。
+        #   改口径必须同时改 `VALUES_SEMANTICS`，否则这个字段会说谎。
+        "semantics": VALUES_SEMANTICS,
         "axis": {"start": min(v["start"] for v in years_meta.values()),
                  "end": max(v["end"] for v in years_meta.values()),
                  "n_days": len(days), "n_codes": len(codes),
@@ -1105,15 +1092,13 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
     # ★★ 上面这个 meta 是**从零重建**的，而 `amount` / `fac_sample` 的记录是事后由
     #   `_record_block` 单独写进去的（它们走独立计划轴，见下）—— 不搬过来的话，
     #   **任何一次 `prepare()`（含日常增量）都会把这两块的记录抹掉**；随后 `ensure_block`
-    #   只补"文件陈旧"的块，文件没陈旧就一声不吭，于是"这块数据是哪一版"的指纹**静默消失**。
     #   （2026-09-20 实测踩到：跑一次日常增量后 meta 顶层就没这两个 key 了。）
     #   先原样搬过来，下面 `ensure_block` 真重建时会用新的 `_record_block` 覆盖掉。
-    for _k in (*ALL_KINDS, "prices"):
+    for _k in (*ALL_KINDS, MK):
         if _k in meta_old:
             meta[_k] = meta_old[_k]
 
     meta["feature_sets"] = derive_feature_sets(meta)      # 单元 DATA={"features":"core_2018"} 用
-    meta["panel_digest"] = panel_digest(meta)
     save_json(meta_path(root), meta)
     log(f"  ✔ meta 已写（本次 {meta['seconds']}s）")
 
@@ -1121,9 +1106,12 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
     #   —— 它们会再读一次 meta、补上 `years[y].files.<块>` 与顶层同名 key 后写回，
     #   放在前面会被这里覆盖。为什么不能塞进上面的 plan：`prepare()` 的"无新增"快路径
     #   会直接 return，而这两块与因子侧没有共同的失效条件（见 `stale_block_years`）。
-    ensure_block(cfg, AK, Path(root), log=log)
-    ensure_block(cfg, SK, Path(root), log=log)
-    ensure_prices_if_enabled(cfg, Path(root), rebuilt_years=plan.keys(), log=log)
+    #   `rebuilt_years` 必须传：这三块的陈旧判据（文件在不在 / 日期轴 / 列名）**抓不到"值变了"**，
+    #   而 `fac_sample` 是 `factors` 的逐字副本 ⇒ 不传的话换口径后它会留着旧值（详见 `ensure_block`）。
+    ensure_block(cfg, AK, Path(root), rebuilt_years=plan.keys(), log=log)
+    ensure_block(cfg, SK, Path(root), rebuilt_years=plan.keys(), log=log)
+    ensure_block(cfg, PK, Path(root), rebuilt_years=plan.keys(), log=log)
+    ensure_market(cfg, Path(root), rebuilt_years=plan.keys(), log=log)
 
     _summary(meta, log=log)
     # ★ `rebuilt` 交回给调用方喂台账：`{"年": "full"/"incr"}` —— 只有**本次真的重建了**
@@ -1196,7 +1184,9 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
     for y in built:
         info = meta["years"][y]
         exp = int(info["days"]) * C
-        for kind in (*ALL_KINDS, *(("prices",) if meta.get("prices") else ())):
+        # ★ 只查**双键块**（`ALL_KINDS`）。市场块是单键、每日一行，期望行数是 `days` 而不是
+        #   `days × C`，混进来会被报成"行数不符" —— 它在本函数后半段有自己的一段校验。
+        for kind in ALL_KINDS:
             p = year_file(root, kind, int(y))
             if not p.exists():
                 # 四块都必建。缺 `amount`/`fac_sample` 时用 `--amount-only` / `--fac-sample-only` 补。
@@ -1215,7 +1205,7 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
             #   这是"增量把窗口外旧行算了两遍"的**唯一现场证据** —— 行数总和与
             #   meta 里虚高的天数自洽，比行数/比字节都抓不到它（真踩过）。
             #   只查"与 factors 逐日同形"的那几块 —— 这是四块的共同契约。
-            if (kind in ALL_KINDS or kind == "prices") and C:
+            if kind in ALL_KINDS and C:
                 td = pq.read_table(p, columns=["trade_date"]).column("trade_date").to_pylist()
                 cnt = pd.Series(td).value_counts()
                 off = cnt[cnt != C]
@@ -1225,18 +1215,40 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
                                     f" —— 增量重复写入或产物损坏，请 --full 重建")
         cov = info["coverage"]
         ycols = list(cov["per_factor"])
-        # 因子"全年无值"只有在**它本该有值**时才算问题：比对该因子的起点年
-        # （晚起点因子在更早的年份里整列为空是正常的，不该刷屏）
-        first_y = {n: (min(ys) if ys else 9999)
-                   for n, ys in ((meta.get("source") or {}).get("scan") or {})
-                   .get("per_factor_years", {}).items()}
-        bad = sorted(k for k, v in cov["per_factor"].items()
-                     if v == 0.0 and int(y) >= first_y.get(k, 0))
-        early = sorted(k for k, v in cov["per_factor"].items()
-                       if v == 0.0 and int(y) < first_y.get(k, 0))
+        # 因子"全年无值"只有在**它本该有值**时才算问题。
+        # ★ 判据不能是"分区/起点年"，两者都**结构性地答不了这个问题**：
+        #   ① 上游按对齐契约给每个因子都铺了 2018 起的年分区（`scan()` 的
+        #      `per_factor_years` 与 manifest 的 `min_date` 对晚起点因子同样是 2018-01-02）；
+        #   ② `FactorSpec.start` 只表示"从哪天起有真实值"，其前年份是**对齐区间**，
+        #      值由 `align_fill` 决定 —— 整列为空正是 `align_fill=nan` 的**设计结果**。
+        #   2026-09-25 实测：按分区年判会把 36 个因子-年误报成"上游分区少了"，真问题被淹没。
+        # ⇒ 唯一站得住的判据是**去上游实测那一年那一列有没有方差**：
+        #   整列无有限值（上游本年没有观测）或恒为常量（上游以 0 表达"未披露"）⇒
+        #   逐日 z-score 必然为空，**是设计内行为，不是丢数据**（常量经 `cs_zscore`
+        #   的常量保护得 NaN —— 见 `_standardize` 的说明）。
+        #   只对**当年零覆盖**的那几个因子读上游（2018/2019 各十几列，其余年份 0 列），
+        #   所以这条判据的代价与问题数量成正比，不会随面板变宽而变贵。
+        def _upstream_variance(nm: str, yy: str) -> bool | None:
+            """上游那一年那一列有没有方差。None = 分区文件缺失（问不到）。"""
+            p = year_file(cfg.factors_dir, nm, int(yy))
+            if not p.exists():
+                return None
+            a = pq.read_table(p, columns=["value"]).column("value").to_numpy(zero_copy_only=False)
+            a = a[np.isfinite(a)]
+            return bool(a.size and a.std() > 0)
+
+        bad, no_obs = [], []
+        for k, v in cov["per_factor"].items():
+            if v != 0.0:
+                continue
+            if _upstream_variance(k, y) is False:
+                no_obs.append(k)     # 上游本年无方差 ⇒ 标准化后为空，正常
+            else:                    # 有方差却整列空（或分区都没了）⇒ 真丢了
+                bad.append(k)
+        bad, no_obs = sorted(bad), sorted(no_obs)
         if bad:
-            problems.append(f"{y}: {len(bad)} 个因子全年无值、但它们的起点更早"
-                            f"（例：{bad[:3]}）—— 上游这一年的分区是不是少的？")
+            problems.append(f"{y}: {len(bad)} 个因子整年无值、但上游本年**有方差**"
+                            f"（例：{bad[:3]}）—— 对齐或落格丢了数据")
         by_day = cov.get("by_day") or []
         floor = max(LOW_COV_ABS, LOW_COV_REL * float(cov["mean"]))
         low = [i for i, r in enumerate(by_day) if r < floor]
@@ -1246,32 +1258,92 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
                             f"—— 上游这几天是不是写盘写了一半？")
         log(f"  {y}: {info['days']} 天 × {C} 只 = {exp:,} 行 · 覆盖 均{cov['mean']:.3f} "
             f"末日{cov['last_day_cov']:.3f} · 因子 {len(ycols)} 个"
-            + (f"（另有 {len(early)} 个晚起点因子本年无值，正常）" if early else "")
+            + (f"（另有 {len(no_obs)} 个因子本年上游无方差、整列为空，正常）" if no_obs else "")
             + (f" · ⚠️ {len(low)}/{info['days']} 天低于 {floor:.2f}" if low else ""))
         rows_total += exp
+    # ---- 市场因子块（**单键** `trade_date`、每日一行）★ 不能混进上面那个循环：
+    #   那里的期望行数是 `days × C`，市场块是 `days`，混着查会把正常的块报成坏的。
+    if meta.get(MK):
+        mcols = list((meta.get(MK) or {}).get("columns") or [])
+        raw_cols = [c for c in mcols if not c.endswith(MK_Z_SUFFIX)]
+        mrows_total = 0
+        for y in built:
+            p = year_file(root, MK, int(y))
+            if not p.exists():
+                problems.append(f"{y}/{MK}: 文件缺失（用 --market-only 补）")
+                continue
+            pf = pq.ParquetFile(p)
+            days_f = set(_days_of(root, FK, int(y)))
+            rm = pq.read_table(p, columns=["trade_date"]).column("trade_date").to_pylist()
+            if len(rm) != len(set(rm)):
+                problems.append(f"{y}/{MK}: trade_date 有重复 —— 市场块的主键是单键，必须唯一")
+            if set(rm) != days_f:
+                problems.append(f"{y}/{MK}: 日期轴与 factors 不一致"
+                                f"（缺 {len(days_f - set(rm))} 天 / 多 {len(set(rm) - days_f)} 天）")
+            if pf.metadata.num_rows != len(days_f):
+                problems.append(f"{y}/{MK}: 行数 {pf.metadata.num_rows} ≠ 交易日数 {len(days_f)}")
+            if mcols and tuple(pf.schema_arrow.names) != ("trade_date",) + tuple(mcols):
+                problems.append(f"{y}/{MK}: 列签名与 meta 不一致"
+                                f"（因子侧增删了市场因子？跑 --market-only 重建）")
+            # 原值列：**只允许前缀缺值**（晚起点因子在该因子声明起点之前没有产物），
+            # 首个有效值之后**不允许再有空洞** —— 那才是"数据丢了"。
+            # ★ 不能写成"整列不得有 NaN"：实测 7 个 `mkt_limit_*` 声明起点是 2020-01-01、
+            #   `mkt_idx_growth_value_spread20` 是 2019-07-02，本块的日期轴却与 `factors` 对齐
+            #   （2018 起），reindex 出来的前缀自然全是 NaN —— 那是**设计如此**，不是上游坏了。
+            if raw_cols:
+                t2 = pq.read_table(p, columns=raw_cols)
+                for c in t2.column_names:
+                    a = t2[c].to_numpy(zero_copy_only=False)
+                    fin = np.isfinite(a)
+                    if fin.all():
+                        continue
+                    if not fin.any():
+                        continue          # 整列为空 = 该因子本年还没开始，正常
+                    first = int(np.flatnonzero(fin)[0])
+                    hole = int((~fin[first:]).sum())
+                    if hole:
+                        problems.append(f"{y}/{MK}/{c}: 首个有效值之后还有 {hole} 个空洞"
+                                        f" —— 上游市场因子出洞了")
+            mrows_total += pf.metadata.num_rows
+        log(f"  ▸ {MK}：{len(built)} 年 · {len(raw_cols)} 个因子 × 2 列 · {mrows_total:,} 行"
+            + ("（晚起点因子的前缀、z 列前 252 个交易日为预热期，均属正常）" if mcols else ""))
     # ---- 取值域抽查（★ 这条是"最贵的错"的廉价探测器）
-    # 只抽若干列：X 必须是 [0,1] 的截面百分位（翻转过的是 1−rank，仍在 [0,1]）。
+    # 只抽若干列：X 必须是**逐日横截面**的「缩尾 + z-score」，取值有界（±Z_CLAMP）、
+    # 逐日均值≈0、逐日标准差≈1。
     # 历史教训：V1 时代 `clip:[0.001,0.999]` 作用在 `−rank`（值域 [−1,0]）上，把 83 个被翻转的
     # 特征整列压成常数 0.001 —— 37% 的特征等于没有，而当时所有体检都没发现。
+    # 2026-09-25 起口径从 [0,1] 的 rank 换成 z-score，这套探针改成"越界 + 逐日矩"两条：
+    # 前者抓"翻转到一半/裁剪口径错"，后者抓"根本没做标准化（比如误读了上游 rank 列）"。
     probe = feats[:: max(1, len(feats) // 8)][:8] if feats else []
     if probe:
         bad = []
         for y in built:
-            t = pq.read_table(year_file(root, FK, int(y)), columns=probe)
+            t = pq.read_table(year_file(root, FK, int(y)), columns=["trade_date"] + probe)
+            dates = np.asarray(t["trade_date"].to_pylist(), dtype=object)
             for c in probe:
                 a = t[c].to_numpy(zero_copy_only=False)
                 fin = np.isfinite(a)
                 if not fin.any():
                     continue
                 lo_v, hi_v = float(a[fin].min()), float(a[fin].max())
-                if lo_v < -1e-6 or hi_v > 1 + 1e-6:
-                    bad.append(f"{y}/{c}: [{lo_v:.4f}, {hi_v:.4f}]")
+                if lo_v < -(Z_CLAMP + 1e-4) or hi_v > Z_CLAMP + 1e-4:
+                    bad.append(f"{y}/{c}: [{lo_v:.4f}, {hi_v:.4f}] 越界")
+                    continue
+                # 逐日矩：只查**该列当天有效样本足够**的日子，避免稀疏列误报
+                dfp = pd.DataFrame({"d": dates, "v": a})
+                g = dfp.groupby("d")["v"].agg(["count", "mean", "std"])
+                g = g[g["count"] >= Z_MIN_COUNT]
+                if len(g) == 0:
+                    continue
+                off = ((g["mean"].abs() > 1e-3) | ((g["std"] - 1).abs() > 5e-3)).sum()
+                if off > max(1, int(0.05 * len(g))):
+                    bad.append(f"{y}/{c}: {off}/{len(g)} 天的均值/标准差不符（均{lo_v:.3f}）")
         if bad:
-            problems.append(f"特征取值超出 [0,1]：{bad[:4]}（方向翻转/裁剪口径有问题？）")
-        log(f"  ▸ 取值域抽查：{len(built)} 年 × {len(probe)} 列 · "
-            + ("✔ 全部落在 [0,1]" if not bad else f"✘ {len(bad)} 列越界"))
+            problems.append(f"特征取值口径异常：{bad[:4]}（方向翻转/标准化口径有问题？）")
+        log(f"  ▸ 取值口径抽查：{len(built)} 年 × {len(probe)} 列 · "
+            + ("✔ 全部有界且逐日 mean≈0/std≈1" if not bad else f"✘ {len(bad)} 列异常"))
 
-    log(f"  ▸ factors 共 {rows_total:,} 行 · 面板指纹 {meta.get('panel_digest')}")
+    log(f"  ▸ factors 共 {rows_total:,} 行")
     for p in problems:
         log(f"  ✘ {p}")
     log("  ✔ 校验通过" if not problems else f"  ⚠️ {len(problems)} 处需要处理")
@@ -1287,7 +1359,7 @@ def _summary(meta: dict, log=print) -> None:
     log(f"  轴 {meta['axis']['start']} ~ {meta['axis']['end']} · "
         f"{meta['axis']['n_days']} 天 × {meta['axis']['n_codes']} 只")
     log(f"  特征 {len(meta['columns']['features'])} · 标签 {len(meta['columns']['labels'])} · "
-        f"翻转 {meta['columns']['n_flipped']} · 指纹 {meta['panel_digest']}")
+        f"翻转 {meta['columns']['n_flipped']} · 值口径 {meta.get('semantics', '?')}")
     log("  下一步：python main.py split <单元>    # 零成本看训练/验证/测试窗口")
 
 
@@ -1304,9 +1376,12 @@ def write_ledger(root: str | Path, *, action: str,
     用户 2026-09-20 要的：每天增量更新时生成一个新文件，好回答"某天那份快照长什么样"。
     - **一天一个文件**：`log/ledger_YYYY-MM-DD.tsv`。同日多次运行就覆盖 —— 要的是"最新台账"，
       不是运行流水。
-    - **一行一个数据文件**（四块 × 九年 = 36 行），列取自 `meta.json:years[*].files[*]`；
-      `mtime` 取自文件本身，所以一眼能看出**今天动了哪几个**。
-    - 为什么 TSV 不是 JSON：好 `diff` 好 `grep`，与上游 `dayhash.tsv` 同路子。
+    - **一行一个数据文件**（四块 × 九年 = 36 行，外加已启用的可选块），列取自
+      `meta.json:years[*].files[*]`；`mtime` 取自文件本身，所以一眼能看出**今天动了哪几个**。
+    - ★ 台账要覆盖**每一个被维护的块**，不能只写 `ALL_KINDS`：`market_factors`（与
+      `amount`/`fac_sample` 同类，由日常增量维护）也必须出现在台账里，否则"某天那份快照
+      长什么样"对它是**答不出来**的 —— 而 `meta["years"][y]["files"]` 里本来就有它
+      （2026-09-25 修：此前台账只遍历 `ALL_KINDS`，市场块 9 行全部缺失）。
     - ★ 由 `main()` 调，**不放进 `prepare()`** —— 台账是**运行记录**，运行从 CLI 来；
       放 `prepare()` 里会让探针/程序化调用也写（字节对拍时一天要跑几十次 `prepare`）。
 
@@ -1328,23 +1403,20 @@ def write_ledger(root: str | Path, *, action: str,
 
     head = [
         f"# trainingdata 台账 · 生成 {now()}",
-        f"# panel_digest={meta.get('panel_digest')}"
-        f"  上游指纹={(meta.get('source') or {}).get('fingerprint')}",
         f"# 本次动作={action or '-'}"
         + (f"  重建={sorted({y for _k, y in rb})}" if rb else ""),
-        "\t".join(("block", "year", "rows", "cols", "bytes", "sha", "mtime", "action")),
+        "\t".join(("block", "year", "rows", "cols", "bytes", "action")),
     ]
     body: list[str] = []
-    for kind in ALL_KINDS:
+    kinds = list(ALL_KINDS) + [MK]
+    for kind in kinds:
         for y in sorted(int(v) for v in (meta.get("years") or {})):
             rec = ((meta["years"].get(str(y)) or {}).get("files") or {}).get(kind) or {}
             f = year_file(root, kind, y)
             if not rec and not f.exists():
                 continue
-            mt = (datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-                  if f.exists() else "-")
             body.append("\t".join((kind, str(y), str(rec.get("rows", "-")), str(rec.get("cols", "-")),
-                                   str(rec.get("bytes", "-")), str(rec.get("sha", "-")), mt,
+                                   str(rec.get("bytes", "-")),
                                    rb.get((kind, y), "-"))))
     p.write_text("\n".join(head + body) + "\n", encoding="utf-8")
     log(f"  ✔ 台账已写：{p}（{len(body)} 个文件"
@@ -1360,12 +1432,19 @@ def write_ledger(root: str | Path, *, action: str,
 AK = "amount"
 #: 因子抽样块 = 从 `factors` 的特征里随机抽 N 列
 SK = "fac_sample"
+#: 回测价格块 = 模块① `stock_daily`(7 列) + `stock_adj_factor`(adj_factor)。见 `build_year_prices`。
+#: ★ 常量必须在这里（`ALL_KINDS` 在下面就要用它），构建函数在文件靠后的 prices 一节。
+PK = "prices"
 AMOUNT_COLUMNS = ("amount",)          # 除 KEY 外的列
+#: prices 块除 KEY 外的列；与 `experiments/V2/model.py:PRICE_COLUMNS` 逐字一致（消费方按它取列）。
+PRICE_COLUMNS = ("open", "high", "low", "close", "pre_close", "pct_chg", "vol", "adj_factor")
 FAC_SAMPLE_N = 20                   # 抽多少列
 FAC_SAMPLE_SEED = 42                # 固定种子 —— 抽样结果必须可复现，否则交付给别人对不上
 
-#: 布局里的**全部四块**，缺一不可（2026-09-20 起 `amount` / `fac_sample` 也是正式成员）。
-ALL_KINDS = tuple(KINDS) + (AK, SK)
+#: 布局里的**全部五块**，缺一不可（2026-09-20 起 `amount` / `fac_sample` 也是正式成员；
+#: 2026-09-26 起 `prices` 同样是）。★ 成员资格 = `check()` 按「双键、每日恰好 C 行」校验它、
+#: `prepare()` 的 meta 保留与 `write_ledger()` 的台账都带上它。
+ALL_KINDS = tuple(KINDS) + (AK, SK, PK)
 
 
 def fac_sample_features(meta: dict, n: int = FAC_SAMPLE_N,
@@ -1381,32 +1460,14 @@ def fac_sample_features(meta: dict, n: int = FAC_SAMPLE_N,
     return sorted(rng.choice(np.asarray(feats, dtype=object), size=k, replace=False).tolist())
 
 
-def _block_digest(years_meta: dict, years: list[int], kind: str) -> str:
-    """某一块的指纹 —— 各年该块文件 sha 按年拼起来哈希。
-
-    ★ 为什么每块要自己的一份：块的更新是**独立**的（`--amount-only` 只动 amount）。
-      没有这一项，块更新后没人能证明"这两个回测数字是不是同一份额度数据"。
-      它**不参与 `panel_digest`** —— 后者只哈希 columns + 逐年 `files[FK].sha`，见模块头部。
-    """
-    h = hashlib.sha256()
-    for y in sorted(years):
-        f = ((years_meta.get(str(y)) or {}).get("files") or {}).get(kind) or {}
-        h.update(f"{y}:{f.get('sha')}".encode())
-    return h.hexdigest()[:16]
-
-
 def _record_block(meta: dict, kind: str, years: list[int], extra: dict, root: Path,
                   log=print) -> dict:
-    """把一块的清单写进 meta 并落盘（**不动 `panel_digest`**）。"""
+    """把数据块的分区和列信息写入 meta。"""
     meta[kind] = {"years": sorted(int(y) for y in meta.get("built_years", years)
-                                  if kind in meta.get("years", {}).get(str(y), {}).get("files", {})),
-                  "built_at": now(),
-                  "digest": _block_digest(meta.get("years") or {},
-                     [int(y) for y in meta.get("built_years", years)
-                      if kind in meta.get("years", {}).get(str(y), {}).get("files", {})], kind), **extra}
+                                 if kind in meta.get("years", {}).get(str(y), {}).get("files", {})),
+                  "built_at": now(), **extra}
     save_json(meta_path(root), meta)
-    log(f"  ✔ {kind} 块完成，meta 已更新（panel_digest 保持 {meta.get('panel_digest')}，"
-        f"{kind} 指纹 {meta[kind]['digest']}）")
+    log(f"  ✔ {kind} 块完成，meta 已更新")
 
 
 def _write_block_year(root: Path, kind: str, year: int, days: list[str],
@@ -1436,7 +1497,7 @@ def _write_block_year(root: Path, kind: str, year: int, days: list[str],
             "start": days[0], "end": days[-1],
             "files": {kind: {"rows": int(tab.num_rows), "cols": int(tab.num_columns),
                              "mb": round(p.stat().st_size / 1e6, 1),
-                             "bytes": int(p.stat().st_size), "sha": _sha_cols(cols)}}}
+                             "bytes": int(p.stat().st_size)}}}
     del tab, fields
     return info
 
@@ -1501,28 +1562,32 @@ class Block:
     两个块的 `stale_*` / `build_*` / `_ensure_*` 原先各写一遍、几乎逐字相同，合并到这里。
     """
 
-    __slots__ = ("kind", "title", "cols", "build_year", "meta_extra")
+    __slots__ = ("kind", "title", "cols", "build_year", "meta_extra", "keys")
 
-    def __init__(self, kind: str, title: str, cols, build_year, meta_extra) -> None:
+    def __init__(self, kind: str, title: str, cols, build_year, meta_extra,
+                 keys: tuple[str, ...] = KEY) -> None:
         self.kind = kind              #: 块名（同时是 meta 顶层 key）
         self.title = title            #: 日志里的中文名
         self.cols = cols              #: (meta) -> 列清单；fac_sample 依赖 meta 的特征清单
         self.build_year = build_year  #: (cfg, year, days, codes, cols, *, log, root) -> info
         self.meta_extra = meta_extra  #: (meta, cols) -> 写进 meta 的额外字段
+        #: 该块的主键列。默认股票两键；**市场因子块只有 `trade_date` 一键**
+        #: （每日一行、无股票维），所以陈旧判据里的期望列签名必须跟着变。
+        self.keys = tuple(keys)
 
 
 def stale_block_years(root: str | Path, kind: str, *, log=None) -> list[int]:
-    """某块的**陈旧年份** —— 两个块共用一套判据：
+    """某块的**陈旧年份** —— 各块共用一套判据：
 
     ① 文件不存在；
-    ② 交易日集合与 `factors` 不一致（四块的共同契约就是"与 factors 逐日同形"）；
+    ② 交易日集合与 `factors` 不一致（各块的共同契约就是"与 factors 同一条日期轴"）；
     ③ 列清单与期望不一致 —— 这条是为 schema 演进留的：精度从 float32 提到 float64
        这类改动只比交易日集合抓不到（产物看着"行数对得上"，消费端读列时才炸）。
     """
     root = Path(root)
     meta = load_meta(root)
     blk = BLOCKS[kind]
-    want = tuple(KEY) + tuple(blk.cols(meta)) if meta.get("columns") else ()
+    want = tuple(blk.keys) + tuple(blk.cols(meta)) if meta.get("columns") else ()
     out = []
     for y in years_of(root, FK):
         p = year_file(root, kind, y)
@@ -1540,7 +1605,7 @@ def build_block(cfg: Cfg, kind: str, *, years: list[int] | None = None, log=prin
                 root: str | Path | None = None) -> dict:
     """导出某一块（全部年份或指定年份）。
 
-    ★ **不动 `factors`/`target`，因此不改 `panel_digest`** —— 已有结论与配方全部保持有效。
+    只更新指定的数据块。
       年份与日子一律**从既有 `factors` 分区读**（不重算日期轴），保证四块严格同形。
     """
     root = Path(root).resolve() if root else root_of(cfg)
@@ -1573,10 +1638,19 @@ def build_block(cfg: Cfg, kind: str, *, years: list[int] | None = None, log=prin
     return {"action": kind, "years": want}
 
 
-def ensure_block(cfg: Cfg, kind: str, root: Path, *, log=print) -> list[int]:
+def ensure_block(cfg: Cfg, kind: str, root: Path, *, rebuilt_years=(), log=print) -> list[int]:
     """把陈旧的某块补上（`prepare()` 的出口调它）。★ 必须在主 meta 写完之后 ——
-    `build_block` 会再读一次 meta 再写回，放前面会被主流程的 save_json 覆盖掉。"""
-    stale = stale_block_years(root, kind, log=log)
+    `build_block` 会再读一次 meta 再写回，放前面会被主流程的 save_json 覆盖掉。
+
+    `rebuilt_years`：本次**主流程真的重建过**的年份（`plan.keys()`）。这些年份必须连带重建，
+    因为 `stale_block_years` 的三条判据（文件在不在 / 日期轴 / 列名）**抓不到"值变了"**。
+
+    ★ 这一条不是可选的：`fac_sample` 是 `factors` 的**逐字副本**，而且它是**默认训练块**
+      （`experiments/V1/run.py` 的 `MX_DATA` 默认指向它）。2026-09-25 换值口径时，
+      日期轴与列名一个字都没变 ⇒ 不给 `rebuilt_years` 的话 `fac_sample` **不会重建**，
+      会静静留着旧口径的值，而下游读的是它。
+    """
+    stale = sorted(set(stale_block_years(root, kind, log=log)) | {int(y) for y in rebuilt_years})
     if not stale:
         return []
     build_block(cfg, kind, years=stale, log=log, root=root)
@@ -1607,44 +1681,200 @@ def build_year_fac_sample(cfg: Cfg, year: int, days: list[str], codes: np.ndarra
     return info
 
 
+# ---------------------------------------------------------------- prices（回测价格）
+#: 回测价格块：模块① 的原始日线（7 列）+ 复权因子，按 `(trade_date, stock_code)` 落进快照。
+#:
+#: ★ 用户 2026-09-26 定：**从模块① 复制一块进来**，让消费方（`experiments/V2`）只读本地
+#:   快照、不再自己连 `datadownload/`。这是对 2026-09-25"价格不属于本层"那条边界的
+#:   **有意反转**，理由与仍然成立的部分都写在模块头部；核心是**与因子同轴刷新**：
+#:   价格与 factors 落在同一条日期轴上，不会出现两轴错位。
+#: ★ 只复制、不加工：不复权、不前向填充、不裁停牌 —— 加工口径在消费方（V2 的 `Prices`）。
+#: 常量 `PK` / `PRICE_COLUMNS` 定义在第 5 节的常量区（`ALL_KINDS` 要先用到它们）。
 
 
-# 回测原料独立块：显式建立后由日常增量维护，四块核心数据不受影响。
-PK = "prices"
-PRICE_COLUMNS = ("open", "high", "low", "close", "pre_close", "pct_chg", "vol", "adj_factor")
+def build_year_prices(cfg: Cfg, year: int, days: list[str], codes: np.ndarray,
+                      cols: tuple[str, ...], *, log=print, root: Path | None = None) -> dict:
+    """导出**一年**的 `prices/year=YYYY/data.parquet` —— 回测用的原始价 + 复权因子。
 
-def build_year_prices(cfg, year, days, codes, cols, *, log=print, root=None):
-    root = root if root is not None else root_of(cfg)
-    index = pd.MultiIndex.from_product([days, codes], names=list(KEY))
-    out = {}
-    for dataset, names in [("stock_daily", PRICE_COLUMNS[:-1]), ("stock_adj_factor", ("adj_factor",))]:
-        src = Path(cfg.raw_data) / dataset / f"year={year}" / "data.parquet"
-        df = pq.ParquetFile(src).read(columns=list(KEY)+list(names)).to_pandas()
+    ★ 与 `amount` 同一套读法：直读模块① 的两张原始表、按 `(trade_date, stock_code)`
+      显式映射落格（**不按行号** —— 上游按列号落格踩过静默错位的坑），
+      日期直接用 `days`（已规范成 `YYYY-MM-DD`）。
+    ★ 存 **float64**，与模块① 逐位一致：
+      ① 价格要参与涨跌停的**分位取整**判定（`pre_close × 1.1` 四舍五入到分），float32 的
+         尾差足以让边界样本翻面；② `experiments/V2` 的 `Prices.verify_labels()` 会拿它重算
+         5 个 horizon 的收益与 `target` 逐格对拍（阈值 1e-5）。
+    ★ 缺格（停牌 / 池内票当年没有日线）保持 **NaN** —— 消费方正是靠这个 NaN 判"买不进"，
+      填 0 或前向填充都会把"不可交易"变成"可以交易"。
+    """
+    t0 = time.time()
+    C = len(codes)
+    if not days:
+        raise SystemExit(f"✘ {year} 年没有交易日，无法导出 prices 块")
+    days_index = pd.Index(np.asarray(days, dtype=object))
+    codes_index = pd.Index(codes)
+    out: dict[str, np.ndarray] = {}
+    dropped = 0
+    daily = tuple(c for c in cols if c != "adj_factor")
+    for table, names in (("stock_daily", daily), ("stock_adj_factor", ("adj_factor",))):
+        p = Path(cfg.raw_data) / table / f"year={int(year)}" / "data.parquet"
+        if not p.exists():
+            raise SystemExit(f"✘ 模块① 没有 {year} 年的 {table}：{p}\n"
+                             f"    （`MX_RAW_DATA` 指错了吧？当前 = {cfg.raw_data}）")
+        df = pd.read_parquet(p, columns=["stock_code", "trade_date", *names])
         df["trade_date"] = df["trade_date"].astype(str).str[:10]
         df["stock_code"] = df["stock_code"].astype(str)
-        df = df[df["trade_date"].isin(days) & df["stock_code"].isin(codes)]
-        if df.duplicated(list(KEY)).any():
-            raise ValueError(f"{src}: 重复主键，不能覆盖落格")
-        df = df.set_index(list(KEY)).reindex(index)
+        di = days_index.get_indexer(df["trade_date"].to_numpy(dtype=object))
+        ci = codes_index.get_indexer(df["stock_code"].to_numpy(dtype=object))
+        ok = (di >= 0) & (ci >= 0)
+        keep = di[ok] * C + ci[ok]
+        if len(np.unique(keep)) != len(keep):
+            raise SystemExit(f"✘ {year}/prices：模块① {table} 里有重复的 (交易日, 股票) 行 —— "
+                             f"落格会静默覆盖，先查上游")
         for name in names:
-            out[name] = df[name].to_numpy(dtype=np.float64)
-            if np.isinf(out[name]).any(): raise ValueError(f"{src}: {name} 存在无穷值")
-    info = _write_block_year(root, PK, year, days, codes, out)
-    log(f"  {year}: prices {info['rows']:,} 行，{info['files'][PK]['mb']} MB")
+            arr = np.full(len(days) * C, np.nan, dtype=np.float64)
+            arr[keep] = df[name].to_numpy(dtype=np.float64)[ok]
+            out[name] = arr
+        dropped += int((~ok).sum())
+        del df
+    info = _write_block_year(root if root is not None else root_of(cfg), PK, year, days, codes, out)
+    filled = int(np.isfinite(out["close"]).sum())
+    log(f"  {year}: prices 块 {info['days']} 天 × {C} 只 × {len(cols)} 列 = {info['rows']:,} 行 · "
+        f"收盘价非空 {filled / max(1, info['rows']):.1%}（缺口=停牌/退市，消费方判不可交易） · "
+        f"{info['files'][PK]['mb']}MB"
+        + (f" · 丢弃 {dropped:,} 行（日期/代码轴之外）" if dropped else "")
+        + f" · {round(time.time() - t0, 1)}s")
     return info
 
-def ensure_prices_if_enabled(cfg, root, rebuilt_years=(), log=print):
-    if not load_meta(root).get(PK): return []
-    years = sorted(set(stale_block_years(root, PK)) | {int(y) for y in rebuilt_years})
-    if years: build_block(cfg, PK, years=years, root=root, log=log)
-    return years
+
+# ---------------------------------------------------------------- market_factors
 
 
-#: 两个派生块的登记表。★ 放在这里（而不是常量区）是因为它引用 `build_year_*` ——
-#: 那两个函数必须先定义；模块级 dict 只要在**调用前**建好就行。
+# ---------------------------------------------------------------- market_factors
+#: 市场因子块：上游 `data/market_factors/<名>/year=YYYY/` 的**每日一行标量**。
+#:
+#: ★ 它与其余各块有两处根本不同，所以走**自己的写入器**、不用 `_write_block_year`：
+#:   ① 主键只有 `trade_date`（无股票维）—— `_write_block_year` 硬校验 `n_days×C` 行
+#:      并强制生成 `stock_code` 列（`len(v) != n` 直接 SystemExit）。
+#:   ② 每个因子落**两列**：原值 + 滚动 z-score。
+MK = "market_factors"
+MK_Z_SUFFIX = "_z252"
+
+
+def market_block_columns(meta=None) -> list[str]:       # noqa: ARG001  (Block.cols 的签名)
+    """市场块的全部列 = 每个因子「原值一列 + 滚动 z 一列」。
+
+    ★ 直接读**上游目录**而不是记在 meta 里：这样因子侧新增一个市场因子时，
+      列签名与产物立刻不一致 ⇒ `stale_block_years` 判陈旧 ⇒ 下次自动重建。
+      记在 meta 里就会漏掉新增（`fac_sample` 靠 `meta['columns']['features']` 是对的，
+      因为它的列清单本来就由主流程维护）。
+    """
+    d = MARKET_FACTORS_DIR
+    if not d.exists():
+        return []
+    out: list[str] = []
+    for p in sorted(d.iterdir()):
+        if p.is_dir():
+            out += [p.name, p.name + MK_Z_SUFFIX]
+    return out
+
+
+#: 本轮进程内的市场因子全历史缓存（`{(目录, 名): Series}`）。整块只有 ~1MB，读一次就够；
+#: 不加缓存的话「9 个年份各建一次 ⇒ 每个因子被重读 9 遍」。
+_MARKET_CACHE: dict[tuple[str, str], pd.Series] = {}
+
+
+def _market_series(cfg: Cfg, name: str) -> pd.Series:
+    """某市场因子的**全历史**序列（按日期升序）。
+
+    ★ 必须取全历史、不能只读当年：滚动 z 要往前看 252 个交易日，只读当年的话
+      **每年开头 252 天会算错**（而"值取决于我们碰巧从哪一年开始建"本身就是错的锚点）。
+      这与因子侧"预热锚定输出年份"是同一个原则。
+    """
+    key = (str(cfg.market_factors_dir), name)
+    hit = _MARKET_CACHE.get(key)
+    if hit is not None:
+        return hit
+    from fea.store import factor_years
+
+    parts = []
+    for y in sorted(int(x) for x in factor_years(cfg.market_factors_dir, name)):
+        p = year_file(cfg.market_factors_dir, name, y)
+        if p.exists():
+            parts.append(pq.ParquetFile(p).read(columns=["trade_date", "value"]).to_pandas())
+    if not parts:
+        s = pd.Series(dtype=np.float64)
+    else:
+        df = pd.concat(parts, ignore_index=True)
+        df["trade_date"] = df["trade_date"].astype(str).str[:10]
+        if df["trade_date"].duplicated().any():
+            raise ValueError(f"✘ 市场因子 {name}：跨年分区有重复交易日")
+        s = df.sort_values("trade_date", kind="stable").set_index("trade_date")["value"]
+        s = s.astype(np.float64)
+    _MARKET_CACHE[key] = s
+    return s
+
+
+def _rolling_z(s: pd.Series, window: int = MK_Z_WINDOW) -> pd.Series:
+    """过去 `window` 个交易日（**含当日**）的 z-score。
+
+    ★ 只用 t 及之前 ⇒ PIT 安全。窗口不足 `window` 天时为 NaN
+      （所以 2018 全年该列为 NaN —— 原值列始终有值，信息不丢）。
+    ★ 不做缩尾：实测 61 个市场因子的 |偏度| 全部 < 5，没有厚尾，缩尾只会白添一个参数。
+    """
+    if s.empty:
+        return s
+    m = s.rolling(window=window, min_periods=window).mean()
+    sd = s.rolling(window=window, min_periods=window).std(ddof=0)
+    with np.errstate(all="ignore"):
+        z = (s - m) / sd
+    return z.where(np.isfinite(z))
+
+
+def build_year_market(cfg: Cfg, year: int, days: list[str], codes: np.ndarray,
+                      cols: tuple[str, ...], *, log=print, root: Path | None = None) -> dict:
+    """导出**一年**的 `market_factors/year=YYYY/data.parquet`（每日一行、`trade_date` 单键）。"""
+    t0 = time.time()
+    root = root if root is not None else root_of(cfg)
+    names = [c for c in cols if not c.endswith(MK_Z_SUFFIX)]
+    idx = pd.Index(np.asarray(days, dtype=object))
+    fields: dict[str, pa.Array] = {"trade_date": pa.array(np.asarray(days, dtype=object))}
+    for nm in names:
+        s = _market_series(cfg, nm)
+        if s.empty:
+            raw = np.full(len(days), np.nan)
+            z = np.full(len(days), np.nan)
+        else:
+            raw = s.reindex(idx).to_numpy(dtype=np.float64)
+            z = _rolling_z(s).reindex(idx).to_numpy(dtype=np.float64)
+        if np.isinf(raw).any() or np.isinf(z).any():
+            raise ValueError(f"✘ 市场因子 {nm}：出现无穷值")
+        fields[nm] = pa.array(raw.astype(np.float32))
+        fields[nm + MK_Z_SUFFIX] = pa.array(z.astype(np.float32))
+    tab = pa.table(fields)
+    p = year_file(root, MK, year)
+    atomic_parquet(tab, p)
+    info = {"year": int(year), "days": len(days), "rows": int(tab.num_rows),
+            "start": days[0], "end": days[-1],
+            "files": {MK: {"rows": int(tab.num_rows), "cols": int(tab.num_columns),
+                           "mb": round(p.stat().st_size / 1e6, 1),
+                           "bytes": int(p.stat().st_size)}}}
+    log(f"  {year}: market_factors {info['rows']} 行 × {len(names)} 因子 × 2 列 "
+        f"· {info['files'][MK]['mb']}MB · {round(time.time() - t0, 1)}s")
+    del tab, fields
+    return info
+
+
+def ensure_market(cfg: Cfg, root: Path, *, rebuilt_years=(), log=print) -> list[int]:
+    """市场因子块：显式建立后由日常增量维护（与 amount / fac_sample 同一套）。"""
+    if not market_block_columns():
+        log("  ⊘ 上游没有市场因子目录，跳过 market_factors 块")
+        return []
+    return ensure_block(cfg, MK, Path(root), rebuilt_years=rebuilt_years, log=log)
+
+
+#: 派生块的登记表。★ 放在这里（而不是常量区）是因为它引用 `build_year_*` ——
+#: 那些函数必须先定义；模块级 dict 只要在**调用前**建好就行。
 BLOCKS: dict[str, Block] = {
-    PK: Block(kind=PK, title="回测价格块 prices", cols=lambda meta: PRICE_COLUMNS,
-              build_year=build_year_prices, meta_extra=lambda meta, cols: {"columns": list(cols), "enabled": True}),
     AK: Block(kind=AK, title="交易额度块 amount",
               cols=lambda meta: AMOUNT_COLUMNS,
               build_year=build_year_amount,
@@ -1654,6 +1884,19 @@ BLOCKS: dict[str, Block] = {
               build_year=build_year_fac_sample,
               meta_extra=lambda meta, cols: {"columns": list(cols),
                                              "seed": FAC_SAMPLE_SEED, "n": len(cols)}),
+    PK: Block(kind=PK, title="回测价格块 prices",
+              cols=lambda meta: PRICE_COLUMNS,          # noqa: ARG005  (Block.cols 的签名)
+              build_year=build_year_prices,
+              meta_extra=lambda meta, cols: {"columns": list(cols),
+                                             "source": "模块① stock_daily + stock_adj_factor"}),
+    # ★ 单键块：`keys` 必须显式给，否则陈旧判据会按 (trade_date, stock_code) 两键去对列签名。
+    MK: Block(kind=MK, title="市场因子块 market_factors",
+              cols=market_block_columns,
+              build_year=build_year_market,
+              meta_extra=lambda meta, cols: {"columns": list(cols),
+                                             "z_window": MK_Z_WINDOW,
+                                             "n_factors": len(cols) // 2},
+              keys=("trade_date",)),
 }
 
 # ============================================================================
@@ -1663,24 +1906,22 @@ def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="preparingdata.py",
         description="初加工：上游因子 → trainingdata/"
-                    "（factors / target / amount / fac_sample 四块）")
+                    "（factors 股票因子 / target 标签 / amount 流量 / "
+                    "market_factors 市场因子 / prices 回测价格，附 fac_sample 抽样副本）")
     m = ap.add_mutually_exclusive_group()
     m.add_argument("--full", "-f", action="store_true", help="全量重建（删旧、逐年重建）")
     m.add_argument("--incremental", "-i", action="store_true", help="强制增量（默认自动判断）")
     m.add_argument("--check", "-c", action="store_true", help="只校验不写")
     m.add_argument("--meta-only", action="store_true",
                    help="只补 meta 的派生字段（特征集等）—— ★ 不碰数据文件、不读因子侧")
-    m.add_argument("--prices-only", action="store_true", help="只补回测 prices，不改四块训练数据")
     m.add_argument("--amount-only", action="store_true",
-                   help="★ 只建/刷新 amount（每日成交额）—— 同上，不改 panel_digest")
+                   help="★ 只建/刷新 amount（每日成交额）")
     m.add_argument("--fac-sample-only", action="store_true",
-                   help="★ 只建/刷新 fac_sample（因子抽样）—— 同上，不改 panel_digest")
-    ap.add_argument("--freeze", action="store_true",
-                    help="（配 --meta-only）把当前快照标记为冻结：之后 prepare 会拒绝重跑")
-    ap.add_argument("--unfreeze", action="store_true",
-                    help="★ 解除冻结。配 --meta-only = 只翻转标记（不重建、不换指纹）；"
-                         "不配 = 允许本次按上游当前状态重建（会换 panel_digest）")
-    ap.add_argument("--reason", default="", help="冻结原因（写进 meta，便于日后追溯）")
+                   help="★ 只建/刷新 fac_sample（因子抽样）")
+    m.add_argument("--market-only", action="store_true",
+                   help="★ 只建/刷新 market_factors（市场因子：每日一行、原值+滚动z 两列）")
+    m.add_argument("--prices-only", action="store_true",
+                   help="★ 只建/刷新 prices（回测价格：模块① 的 7 列原始价 + 复权因子）")
     ap.add_argument("--years", "-y", type=int, nargs="+", default=None,
                     help="只加工这些年份（例：--years 2025 2026）")
     ap.add_argument("--jobs", "-j", type=int, default=DEFAULT_JOBS,
@@ -1692,8 +1933,9 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--out", default=None, metavar="DIR",
                     help="★ 写到**另一份目录**（相对脚本所在目录），现有 trainingdata/ 完全不动")
     ap.add_argument("--features-from", default=None, metavar="META_JSON",
-                    help="★ 按指定的 meta.json 的 `columns.features` 建（而不是用上游当前的因子集）。"
-                         "用途：① 与旧产物逐位对拍（保真验证）；② 冻结特征集，不随上游漂移")
+                    help="★ 把特征清单**钉在**指定 meta.json 的 `columns.features` 上"
+                         "（默认 = 上游当前的因子集，上游增删就跟着变）。给目录或 meta.json 都行。"
+                         "用途：① 与某份旧产物逐位对拍；② 冻结列集，不随上游漂移")
     return ap
 
 
@@ -1708,10 +1950,10 @@ def main(argv: list[str] | None = None) -> int:
         r = check(cfg)
         return 0 if r["ok"] else 1
     if a.meta_only:
-        attach_meta_fields(cfg, freeze=a.freeze, unfreeze=a.unfreeze, reason=a.reason)
+        attach_meta_fields(cfg)
         return 0
-    if a.prices_only:
-        r = build_block(cfg, PK, years=a.years, log=print)
+    if a.market_only:
+        r = build_block(cfg, MK, years=a.years, log=print)
         return 0
     if a.amount_only:
         r = build_block(cfg, AK, years=a.years, log=print)
@@ -1723,13 +1965,11 @@ def main(argv: list[str] | None = None) -> int:
         write_ledger(root_of(cfg), action=r.get("action", ""),
                      rebuilt={(SK, int(y)): SK for y in (r.get("years") or [])}, log=print)
         return 0
-    if a.freeze:
-        print("  ⚠️ --freeze 只与 --meta-only 搭配使用（冻结是给**当前快照**打标记，不是重建）")
-        return 1
-    if a.unfreeze and a.check:
-        print("  ⚠️ --unfreeze 要配 --meta-only（只翻标记）或单独用（允许重建）")
-        return 1
-
+    if a.prices_only:
+        r = build_block(cfg, PK, years=a.years, log=print)
+        write_ledger(root_of(cfg), action=r.get("action", ""),
+                     rebuilt={(PK, int(y)): PK for y in (r.get("years") or [])}, log=print)
+        return 0
     feats = direction = None
     if a.features_from:
         # ★ 既接受目录（`.../trainingdata`），也接受 meta.json 本身 —— 两种写法都会有人用
@@ -1741,13 +1981,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         feats = list(pm["columns"]["features"])
         direction = dict(pm["columns"].get("direction") or {})
-        print(f"  ★ 特征清单锁定为 {a.features_from} 的 {len(feats)} 列（不随上游漂移）")
+        print(f"  ★ 特征清单钉在 {a.features_from} 的 {len(feats)} 列（不随上游漂移）")
+    else:
+        print("  ★ 采用上游当前的股票因子集（上游增删因子，快照跟着变）")
 
     mode = "full" if a.full else ("incremental" if a.incremental else "auto")
     if out is not None and not a.full:
         print("  ⚠️ --out 建议配 --full 用（另建目录的语义就是「从头建一份」）")
     r = prepare(cfg, mode=mode, years=a.years, jobs=max(1, a.jobs),
-                lookback=a.lookback, unfreeze=a.unfreeze,
+                lookback=a.lookback,
                 features=feats, direction=direction)
     write_ledger(root_of(cfg), action=r.get("action", ""),
                  rebuilt=r.get("rebuilt") or {}, log=print)

@@ -6,11 +6,21 @@ from fea.spec import FactorSpec, register
 SOURCE_FIELDS = {}
 # 全历史数据质量验收的保留/起点决定；不依据收益筛选。
 REJECTED_CANDIDATES = {
-    "efx_annual_sales_yield",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "efx_top_net_rate",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "efx_top_participation",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
+    "efx_annual_sales_yield",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "efx_forecast_revision_delay",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "efx_top_net_rate",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "efx_top_participation",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
 }
 LATE_STARTS = {'efx_lu_board_density': '2019-08-14'}
+
+# ★★ 2026-09-25 时间轴对齐（见 FactorSpec.align_fill）：
+#   对齐区间（2018-01-01 ~ 真实起点）填什么。
+#   · 这里列出的因子填 **0**：上游对该区间"确实不支持"，且 0 有明确含义。
+#     `efx_lu_board_density` 吃 `stock_limit_up.boards`（文本 "3天2板"），
+#     实测该字段 2018/2019/2020 各年**全为空**，2019-08-14 才出现 ⇒ 序列不存在。
+#   · 未列出的因子填 **NaN**（默认）：上游干脆没有这张表/这段数据，
+#     保持"不知道"的语义，不用 0 冒充观测。
+ALIGN_FILL_ZERO = {'efx_lu_board_density'}
 
 
 def ratio(a,b):
@@ -77,6 +87,8 @@ def add(name,ds,fields,fn,desc,formula,window=60,start=None,date_field='trade_da
     SOURCE_FIELDS[name]={ds:list(fields)}
     @register(FactorSpec(name=name,group='field_events',deps=(ds,),desc=desc,version=2,
         formula=f'mean_{window}({formula}, observed rows only)',warmup_days=220,start=start,
+        # ★ 对齐区间填充值：见 ALIGN_FILL_ZERO 与 FactorSpec.align_fill
+        align_fill=(0.0 if name in ALIGN_FILL_ZERO else float("nan")),
         note='本地候选定义；D日收盘及当晚数据供D+1使用。无事件和字段缺失保持NaN；'
              '同股同日重复原因记录取中位数，再对窗口内有效事件取均值，至少1条；不是每日事件发生率。'
              '来源未保存逐次抓取时刻，历史回补可得性局限沿用平台约定；不宣称收益方向。'))

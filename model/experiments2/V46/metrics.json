@@ -1,0 +1,179 @@
+{
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "days": 601,
+  "signal_count": 30,
+  "selected_feature": "tail_risk_pct_60",
+  "feature_selection": {
+    "tail_risk_pct_60": {
+      "top20_quarters": 11,
+      "total_importance_quarters": 16,
+      "mean_normalized_gain_when_top20": 0.05012530267433634,
+      "v11_training_importance_rank": 8
+    }
+  },
+  "metrics": {
+    "V46 tail_risk_pct_60 Top2": {
+      "strategy": "V46 tail_risk_pct_60 Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.928312560882701,
+      "gross_return_same_fills": 0.9464273191595962,
+      "annualized_net_return": 0.3175724966891089,
+      "annualized_volatility": 0.18535396690701197,
+      "max_drawdown": -0.1317240432617508,
+      "fees": 1169.2341681645821,
+      "slippage_cost": 642.2416595249294,
+      "total_trading_cost": 1811.4758276895116,
+      "turnover": 2140805.5317497645,
+      "trades": 52,
+      "blocked_trade_events": 0,
+      "min_cash": 67.2427028067633,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V11 LambdaRank Top2": {
+      "strategy": "V11 LambdaRank Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.7629108467516739,
+      "gross_return_same_fills": 0.7962669279185683,
+      "annualized_net_return": 0.2688688824777674,
+      "annualized_volatility": 0.19249807520726464,
+      "max_drawdown": -0.18028735543940333,
+      "fees": 2123.4090999802106,
+      "slippage_cost": 1212.1990167094377,
+      "total_trading_cost": 3335.6081166896483,
+      "turnover": 4040663.3890314605,
+      "trades": 73,
+      "blocked_trade_events": 0,
+      "min_cash": 36.23176302149659,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "60d momentum Top2": {
+      "strategy": "60d momentum Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.8168833087203415,
+      "gross_return_same_fills": 0.8340410097812239,
+      "annualized_net_return": 0.28504209616172616,
+      "annualized_volatility": 0.19031334449173273,
+      "max_drawdown": -0.17408692642961987,
+      "fees": 1101.2663666494818,
+      "slippage_cost": 614.5037394388639,
+      "total_trading_cost": 1715.7701060883458,
+      "turnover": 2048345.7981295465,
+      "trades": 48,
+      "blocked_trade_events": 0,
+      "min_cash": 61.0696464866453,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "equal-weight hold": {
+      "strategy": "equal-weight hold",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.704429781154281,
+      "gross_return_same_fills": 0.7049877084547611,
+      "annualized_net_return": 0.25101704757332155,
+      "annualized_volatility": 0.18358444425751408,
+      "max_drawdown": -0.15421125715560013,
+      "fees": 25.907930048,
+      "slippage_cost": 29.8848,
+      "total_trading_cost": 55.792730047999996,
+      "turnover": 99616.0,
+      "trades": 4,
+      "blocked_trade_events": 0,
+      "min_cash": 328.2072699519849,
+      "max_positions": 4,
+      "max_abs_accounting_residual": 1.4551915228366852e-11
+    }
+  },
+  "v24_compatibility": {
+    "V11 LambdaRank Top2": {
+      "metric_abs_differences_vs_v24": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "daily_max_abs_differences_vs_v24": {
+        "equity_net": 4.9649213906377554e-05,
+        "equity_gross": 4.9906811909750104e-05,
+        "cash": 4.9985885652859e-08,
+        "fees_cumulative": 4.785097189596854e-07,
+        "slippage_cumulative": 3.9700057641312014e-07,
+        "turnover_cumulative": 0.0004646042361855507,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9977955801638885e-12,
+        "drawdown": 4.9713150263031025e-11
+      },
+      "daily_rows_match": 601,
+      "shares_json_exact_match": true,
+      "trade_count_equal": true,
+      "tolerance": 0.001
+    },
+    "60d momentum Top2": {
+      "metric_abs_differences_vs_v24": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "daily_max_abs_differences_vs_v24": {
+        "equity_net": 4.98676672577858e-05,
+        "equity_gross": 4.987750435248017e-05,
+        "cash": 4.3388297399360454e-08,
+        "fees_cumulative": 4.964820163877448e-07,
+        "slippage_cumulative": 3.8978271277301246e-08,
+        "turnover_cumulative": 0.00045753270387649536,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9993637701861715e-12,
+        "drawdown": 4.948530474280233e-11
+      },
+      "daily_rows_match": 601,
+      "shares_json_exact_match": true,
+      "trade_count_equal": true,
+      "tolerance": 0.001
+    },
+    "equal-weight hold": {
+      "metric_abs_differences_vs_v24": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "daily_max_abs_differences_vs_v24": {
+        "equity_net": 4.979799268767238e-05,
+        "equity_gross": 4.995721974410117e-05,
+        "cash": 4.801506747753592e-08,
+        "fees_cumulative": 2.000000165480742e-09,
+        "slippage_cumulative": 0.0,
+        "turnover_cumulative": 0.0,
+        "accounting_residual": 1.633148566038045e-21,
+        "daily_return_net": 4.951544382847395e-12,
+        "drawdown": 4.9866888396365994e-11
+      },
+      "daily_rows_match": 601,
+      "shares_json_exact_match": true,
+      "trade_count_equal": true,
+      "tolerance": 0.001
+    }
+  }
+}

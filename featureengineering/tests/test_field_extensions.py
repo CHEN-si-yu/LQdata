@@ -19,7 +19,8 @@ class FieldExtensionTests(unittest.TestCase):
                              cost_5pct=5,cost_15pct=6,cost_50pct=10,cost_85pct=14,cost_95pct=15,weight_avg=11,winner_rate=win))
         ctx=context([20180102,20180103,20180104,20180105],pd.DataFrame(rows))
         np.testing.assert_allclose(cp.cyqp_winner_fraction(ctx)[:,0],[.5,np.nan,np.nan,0],equal_nan=True)
-        np.testing.assert_allclose(cp.cyqp_cost_width_90(ctx)[:,0],[1,1,np.nan,1],equal_nan=True)
+        # ★ 2026-09-24 质检瘦身：`cyqp_cost_width_90` 已删（与 `chip_concentration` |ρ|≥0.80），
+        #   断言随之移除；同族的 winner_fraction / mean_median_gap 仍在覆盖这条读取路径。
         np.testing.assert_allclose(cp.cyqp_mean_median_gap(ctx)[:,0],[.1,.1,np.nan,.1],atol=1e-7,equal_nan=True)
 
     def test_forecast_future_disclosure_does_not_rewrite_history(self):

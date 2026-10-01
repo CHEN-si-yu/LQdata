@@ -259,30 +259,57 @@ def _remove_from_conf(names: set[str], conf: Path) -> list[str]:
     return removed
 
 
-def _add_rejected(path: Path, names: set[str]) -> list[str]:
+def _add_rejected(path: Path, names: set[str], why: str = "") -> list[str]:
     """把名字并进 `field_events.py` / `field_markets.py` 自带的 `REJECTED_CANDIDATES`。
 
     这两个文件本来就是 `if name in REJECTED_CANDIDATES: return`（构建期直接跳过），
-    所以「摘注册」= 往那个集合里加名字。原地改 `REJECTED_CANDIDATES = ...` 那一行，
-    幂等（先解析出当前集合，再取并集）。
+    所以「摘注册」= 往那个集合里加名字。幂等（先解析出当前集合，再取并集）。
+
+    ★★ 2026-09-24 修一个**会写坏源码**的缺陷：原实现用
+      `re.search(r"^REJECTED_CANDIDATES\\s*=\\s*(.*)$", src, re.M)` 定位，而 `.*$` 配 `re.M`
+      **只匹配单行** —— 两个文件里的集合都是多行字面量，于是：
+        · `literal_eval("{")` 抛异常 → `except` 把**现有集合静默当成空集**（并集丢了一半）；
+        · `m.end()` 只到 `{` 之后就结束 → 用新块替换那 28 个字符后，
+          **旧的成员行与收尾的 `}` 原样留在文件里**，变成一段孤立的字面量 ⇒ **语法错误**。
+      现在改成用 AST 取赋值的**真实结束位置**（`end_lineno` / `end_col_offset`），
+      整块替换；解析失败就**明确报错**而不是当成空集（静默降级比崩掉危险）。
     """
     src = path.read_text(encoding="utf-8")
-    m = re.search(r"^REJECTED_CANDIDATES\s*=\s*(.*)$", src, re.M)
+    m = re.search(r"^REJECTED_CANDIDATES\s*=", src, re.M)
     if not m:
         return []
     try:
-        cur = set(ast.literal_eval(m.group(1)) or ())
-    except Exception:                                          # noqa: BLE001
-        cur = set()
+        tree = ast.parse(src)
+    except SyntaxError as exc:                                 # 源文件本身就不合法 → 别动它
+        raise RuntimeError(f"{path.name} 当前就不是合法 Python，拒绝改：{exc}") from exc
+    node = None
+    for n in tree.body:
+        if isinstance(n, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id == "REJECTED_CANDIDATES" for t in n.targets):
+            node = n
+            break
+    if node is None:
+        return []
+    try:
+        cur = set(ast.literal_eval(node.value) or ())
+    except Exception as exc:                                   # noqa: BLE001
+        # ★ 不静默当空集：那会丢掉现有成员（并集变成覆盖），是**数据丢失**
+        raise RuntimeError(
+            f"{path.name} 的 REJECTED_CANDIDATES 无法解析成字面量集合（{exc}）；"
+            f"请人工核对后再跑") from exc
     added = sorted(names - cur)
     if not added:
         return []
+    tag = why or "见 scripts/prune_factors.py 的本轮清单"
     block = ("REJECTED_CANDIDATES = {\n"
-             + "".join(f'    "{n}",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单\n'
-                       for n in sorted(cur | names))
+             + "".join(f'    "{n}",   # {tag}\n' for n in sorted(cur | names))
              + "}")
+    # 用 AST 的行列位置精确切掉整个赋值语句（含右侧多行字面量）
+    lines = src.splitlines(keepends=True)
+    start = sum(len(x) for x in lines[:node.lineno - 1]) + node.col_offset
+    end = sum(len(x) for x in lines[:node.end_lineno - 1]) + node.end_col_offset
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(src[:m.start()] + block + src[m.end():], encoding="utf-8")
+    tmp.write_text(src[:start] + block + src[end:], encoding="utf-8")
     os.replace(tmp, path)
     return added
 
@@ -301,6 +328,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="按分诊清单三层删除因子")
     ap.add_argument("--apply", action="store_true", help="真的删（默认只预览）")
     ap.add_argument("--report", default="", help="可选独立导出路径；默认记入 README.md")
+    ap.add_argument("--list", default="", dest="list_path",
+                    help="从 JSON 读本轮清单（替代源码里的 DELETE 字典）。"
+                         "支持 {名字: 理由} 或 [名字, ...] 两种形态；"
+                         "200 个名字写死在源码里不可维护，大轮次一律走这个参数")
+    ap.add_argument("--why", default="", help="写进源码注释的理由标签（--list 时用）")
     args = ap.parse_args()
 
     from fea import store
@@ -308,12 +340,22 @@ def main() -> int:
 
     cfg = load_cfg()
     reg = _specs()
-    bad = [n for n in DELETE if n in PROTECTED]
+    todo_list = dict(DELETE)
+    if args.list_path:
+        raw = json.loads(Path(args.list_path).read_text(encoding="utf-8"))
+        if isinstance(raw, dict):
+            todo_list = {str(k): str(v) for k, v in raw.items()}
+        elif isinstance(raw, list):
+            todo_list = {str(k): (args.why or "本轮清单") for k in raw}
+        else:
+            raise SystemExit(f"--list 的 JSON 必须是对象或数组，实际是 {type(raw).__name__}")
+        print(f"本轮清单来自 {args.list_path}：{len(todo_list)} 个")
+    bad = [n for n in todo_list if n in PROTECTED]
     if bad:
         raise SystemExit(f"清单里有受保护的因子，拒绝执行：{bad}")
-    unknown = [n for n in DELETE if n not in reg]
-    missing = [n for n in DELETE if n not in reg]
-    todo = {n: r for n, r in DELETE.items() if n in reg}
+    unknown = [n for n in todo_list if n not in reg]
+    missing = unknown
+    todo = {n: r for n, r in todo_list.items() if n in reg}
 
     # ---- ★ 依赖守卫（2026-09-22 新增）：待删的名字里有没有谁是**存活因子**的父依赖？
     #   耦合因子（group='coupling'）的 `deps` 写的是父**因子名**；父因子被删 ⇒ 子因子的
@@ -416,7 +458,8 @@ def main() -> int:
     # ③ REJECTED_CANDIDATES 钩子：并进集合
     for f, ns in sorted(by_kind["rejected"].items()):
         p = ROOT / "factors" / f
-        added = _add_rejected(p, set(ns))
+        added = _add_rejected(p, set(ns), why=args.why or
+                              "本轮质检瘦身（工具：scripts/prune_factors.py）")
         miss = sorted(set(ns) - set(added))
         misses += miss
         print(f"  ✔ {f}：并入 REJECTED_CANDIDATES {len(added)} 个"

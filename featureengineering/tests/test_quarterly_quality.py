@@ -34,7 +34,9 @@ class QuarterlyQualityTests(unittest.TestCase):
         self.assertNotIn("roe", IND_SAFE)
         self.assertNotIn("q_eps", IND_SAFE)
         specs = [s for s in REGISTRY.values() if s.group == "quarterly_quality"]
-        self.assertEqual(len(specs), 12)
+        # ★ 2026-09-24 质检瘦身：`qf_roe_yoy_change`（零占比 100%、截面只有 2 个取值、
+        #   与 `qf_roa_yoy_change` |ρ|≥0.80）已删 ⇒ 该组由 12 个降到 11 个。
+        self.assertEqual(len(specs), 11)
         for spec in specs:
             self.assertEqual(spec.deps, ("stock_financial_indicator",))
             self.assertEqual(set(spec.fin_fields), set(qf.FIELDS))
@@ -44,7 +46,6 @@ class QuarterlyQualityTests(unittest.TestCase):
     def test_closed_form_values_use_report_period_lags_and_percent_units(self):
         c = context(raw_reports(), [20250420, 20250421])
         expected = {
-            "qf_roe_yoy_change": .07,
             "qf_core_roe_yoy_change": .07,
             "qf_roa_yoy_change": .07,
             "qf_sales_growth_accel": .04,
@@ -75,15 +76,20 @@ class QuarterlyQualityTests(unittest.TestCase):
             past = [20250319, 20250320, 20250419]
             np.testing.assert_array_equal(spec.fn(context(full, past)),
                                           spec.fn(context(raw[raw.pit <= past[-1]], past)))
-        out = qf.qf_roe_yoy_change(context(full, [20250530, 20250601]))
-        np.testing.assert_allclose(out[:, 0], [.07, .03], atol=1e-8)
+        # ★ 2026-09-24：原来这里硬编码 `qf_roe_yoy_change` 的期望值 [.07, .03]，
+        #   该因子已删。改成断言**本测试真正要验的东西** ——
+        #   「加了未来那份修订报告之后，历史那段的值不变」，
+        #   而不是换一个因子再硬编一个属于它的数字。
+        out_full = qf.qf_roa_yoy_change(context(full, [20250530, 20250601]))[:, 0]
+        out_raw = qf.qf_roa_yoy_change(context(raw, [20250530, 20250601]))[:, 0]
+        np.testing.assert_allclose(out_full, out_raw, atol=1e-12, equal_nan=True)
 
     def test_missing_quarter_cannot_be_replaced_with_previous_available(self):
         raw = raw_reports().drop(index=2)
         c = context(raw, [20250420])
         self.assertTrue(np.isnan(qf.qf_core_roe_floor_4q(c)).all())
         self.assertTrue(np.isnan(qf.qf_sales_growth_vol_4q(c)).all())
-        np.testing.assert_allclose(qf.qf_roe_yoy_change(c), .07)
+        np.testing.assert_allclose(qf.qf_roa_yoy_change(c), .07)
 
     def test_missing_revision_stays_missing(self):
         raw = raw_reports()
@@ -101,7 +107,7 @@ class QuarterlyQualityTests(unittest.TestCase):
         c = context(raw, [20240820, 20250420])
         self.assertTrue(np.isnan(qf.qf_noncore_roe_gap(c)[0, 0]))
         self.assertTrue(np.isnan(qf.qf_core_roe_floor_4q(c)[1, 0]))
-        np.testing.assert_allclose(qf.qf_roe_yoy_change(c)[1, 0], .07)
+        np.testing.assert_allclose(qf.qf_roa_yoy_change(c)[1, 0], .07)
 
     def test_individual_zero_negative_and_nonfinite(self):
         raw = raw_reports()
@@ -124,7 +130,7 @@ class QuarterlyQualityTests(unittest.TestCase):
         vt = load_vintages(up, 2024, 2025, fields=frozenset(qf.FIELDS))
         self.assertEqual(len(vt), 4)
         self.assertLessEqual(vt.pit.max(), 20250419)
-        self.assertTrue(np.isnan(qf.qf_roe_yoy_change(context(vt, [20250419]))).all())
+        self.assertTrue(np.isnan(qf.qf_roa_yoy_change(context(vt, [20250419]))).all())
 
 
 if __name__ == "__main__":

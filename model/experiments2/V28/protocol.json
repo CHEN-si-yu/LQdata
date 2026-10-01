@@ -1,0 +1,72 @@
+{
+  "version": "V28",
+  "objective": "Test a fixed consensus rank of raw 60-session and 250-session adjusted-price returns on the frozen 2024-01-02 to 2026-06-30 holdout.",
+  "holdout": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signal_dates": [
+    "2024-01-02",
+    "2024-02-01",
+    "2024-03-01",
+    "2024-04-01",
+    "2024-05-06",
+    "2024-06-03",
+    "2024-07-01",
+    "2024-08-01",
+    "2024-09-02",
+    "2024-10-08",
+    "2024-11-01",
+    "2024-12-02",
+    "2025-01-02",
+    "2025-02-05",
+    "2025-03-03",
+    "2025-04-01",
+    "2025-05-06",
+    "2025-06-03",
+    "2025-07-01",
+    "2025-08-01",
+    "2025-09-01",
+    "2025-10-09",
+    "2025-11-03",
+    "2025-12-01",
+    "2026-01-05",
+    "2026-02-02",
+    "2026-03-02",
+    "2026-04-01",
+    "2026-05-06",
+    "2026-06-01"
+  ],
+  "candidate_rule": "At the first available trading session of each month, calculate 60- and 250-session cumulative adjusted-close returns for each of the four banks, rank each window cross-sectionally in descending return order, average the two ordinal ranks with fixed equal 50/50 weights, and equal-weight the two lowest-mean-rank banks.",
+  "causal_cutoff": "Both price windows end on the signal-date close; neither window uses a later price. Orders execute at the next trading session open.",
+  "ties": "stock_code ascending within return ranks and mean-rank picks",
+  "portfolio_execution": "V11 final shared-cash ledger; 50/50 Top2; sell before buy; same fills, costs, corporate-action share adjustment, constraints, and no forced liquidation at end.",
+  "comparisons": [
+    "60d momentum Top2",
+    "V11 LambdaRank Top2",
+    "V24 stable-factor consensus Top2",
+    "equal-weight hold"
+  ],
+  "V24_source": "Frozen V24 membership_audit.json copied into V28 and verified byte-for-byte against the original; replayed under the same V11 ledger.",
+  "constraints": {
+    "retraining": false,
+    "parameter_sweep": false,
+    "holdout_driven_rule_changes": false,
+    "gpu": false
+  },
+  "ledger_costs": {
+    "initial_cash": 100000.0,
+    "commission": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer_fee": 1e-05,
+    "sell_stamp_duty": 0.0005,
+    "slippage": 0.0003,
+    "participation_cap": 0.01,
+    "lot_size": 100
+  },
+  "frequency_tables": "Quarterly and annual returns include only this common lifecycle; no additional exit-only date is appended.",
+  "source_hashes": {
+    "run.py": "309ea107334ecede8908ce7b94691dc51ceca5fc57c1f7c76d9f42a5fe808f4f",
+    "cash_engine.py": "64a89fdae173b057d7ef5277bde247f2c10bed96a7bdd2d2c0ce6f760df5bd38"
+  }
+}

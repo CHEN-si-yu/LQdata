@@ -1,0 +1,59 @@
+{
+  "created_at": "2026-09-30 14:20:47",
+  "data": "/root/autodl-fs/model/history/diversification_20260930/trainingdata_frozen",
+  "parent_units": [
+    "V50",
+    "V51",
+    "V52",
+    "V53"
+  ],
+  "seeds": [
+    3253,
+    4253,
+    5253,
+    6253
+  ],
+  "clean_blocks": 16,
+  "mechanism": "fresh buys conditional on actual carried holdings; past-only positive-correlation penalty; original hold_band40, execution rejection, fees, cash and quantity rules retained",
+  "lookback_sessions": 63,
+  "min_observations": 40,
+  "alpha_candidate_pool": 100,
+  "off_diagonal_shrinkage": 0.8,
+  "covariance_return_clip": 0.2,
+  "clip_scope": "estimation only; actual returns and execution prices unchanged",
+  "strengths": [
+    0.0,
+    0.1,
+    0.25
+  ],
+  "fixed_primary_strength": 0.25,
+  "topn": [
+    5,
+    10,
+    20
+  ],
+  "period": [
+    1,
+    5
+  ],
+  "band": 40,
+  "phase": "all",
+  "future_truncation_preflight": true,
+  "conditional_carried_position_preflight": true,
+  "zero_strength_exactness_preflight": true,
+  "future_strategy_units": [
+    "V58",
+    "V59",
+    "V60",
+    "V61"
+  ],
+  "publication": "queued after actual128-fold parent completion and16-fold CPU audits; four full-copy independent strategy-only units, checkpoint bytes reused; no test-driven penalty selection",
+  "no_formal_test_selection": true,
+  "script_sha256": {
+    "portfolio_diversity_core.py": "eea3e3d0acf2c7a4fd1fdd2decfe59fc9aef7e44dcc5fd62b372fb65a1e48603",
+    "portfolio_diversity_lab.py": "e4b1e3feadae7785aef604a451a2317592b66d72ba850394e1b43516de80a497"
+  },
+  "queue_script_sha256": "6659f7ecf92a52f585b7c139e53d64b8798c97f440b12ce8cf792aa2840bb123",
+  "strategy_unit_numerical_preflight": true,
+  "unit_source_freeze_enforced": true
+}

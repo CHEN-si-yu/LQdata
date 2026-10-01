@@ -416,29 +416,6 @@ def overnight_gap_vol_20(ctx):
     return ctx.roll_std(_overnight(ctx, _ok2(ctx)), 20, min_count=10, ddof=1)
 
 
-@register(FactorSpec(
-    name="overnight_intraday_ratio_20d", group=GROUP, deps=PRICE_DEPS,
-    desc="隔夜/日内收益强度比：20 日隔夜均值 ÷ |20 日日内均值|",
-    formula="oma = rolling(20).mean(overnight); ima = rolling(20).mean(intraday); "
-            "x = oma / (ima.abs() + 1e-6)",
-    start=PAT_START, warmup_days=W20, higher_is_better=True,
-    note="参考库 Class1 `overnight_intraday_ratio_20d`（fac_new_daily.py）逐字为 "
-         "`oma / (ima.abs() + 1e-6)`，`roll` 默认 min_periods=1 → 本实现两条腿都 min_count=10。"
-         "★ 分母是 **|日内均值的绝对值|**（不是 |日内| 的均值）—— 这是参考库的写法，"
-         "本实现照抄：它会在大样本上接近 0，所以比值可以很大（不是有界量）。"
-         "保留 `+1e-6` 地板（照抄参考库），**没有**把分母换成「接近 0 就 NaN」——"
-         "只加了一层 `safe_div(min_abs_den=0.0)` 挡精确 0，口径不变。"
-         "★ 实测（2026 全年 170 个交易日、1,553 万行）：|value| 最大值 1.005e5，"
-         "全样本只有 12 个格子 > 1e5、0 个 > 1e8 —— 尾部确实很重（分母小的时候），"
-         "但离体检红线远；这种重尾交给下游 winsor/rank（契约 §1 不许在因子里 winsor）。"
-         "★ 两条腿同用 `traded(T) & traded(T-1)` 掩码（隔夜腿需要 T-1，日内腿只需 T，"
-         "取并集让「隔夜 vs 日内」的对比落在同一批交易日上）。",
-))
-def overnight_intraday_ratio_20d(ctx):
-    ok = _ok2(ctx)
-    oma = ctx.roll_mean(_overnight(ctx, ok), 20, 10)
-    ima = ctx.roll_mean(_intraday(ctx, ok), 20, 10)
-    return ctx.safe_div(oma, np.abs(ima) + 1e-6, min_abs_den=0.0)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -492,21 +469,6 @@ def intraday_ma_60d(ctx):
     return _intraday_ma(ctx, 60, 30)
 
 
-@register(FactorSpec(
-    name="intraday_ret_momentum", group=GROUP, deps=PRICE_DEPS,
-    desc="日内收益因子：(close − open) / open，单日口径",
-    formula="intraday = (close - open) / open   # 参考库 cross_sectional_rank(intraday)",
-    start=PAT_START, warmup_days=W5, higher_is_better=True,
-    note="参考库 Class1 `intraday_ret_momentum`（price_deep.py）逐字为 "
-         "`(close - open)/open` 再取截面排名 —— 名字里有 momentum，但**定义就是单日日内收益**，"
-         "没有任何滚动窗口。本因子返回原始值（rank 由引擎做），方向不变。"
-         "★ 与同族 `intraday_ma_5d` 的区别：那个是 5 日均值，这个是**当日**值"
-         "（所以 warmup 只给 W5 冗余，面板右端 T 就是 T）。"
-         "★ 掩码只用 `traded(T)`。参考库用 `open.replace(0, np.nan)` 挡 0 价，"
-         "本实现用 `safe_div(min_abs_den=1e-8)`（后复权价最小量级 0.01，不误伤）。",
-))
-def intraday_ret_momentum(ctx):
-    return _intraday_1d(ctx)
 
 
 @register(FactorSpec(

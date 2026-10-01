@@ -1,0 +1,264 @@
+{
+  "algorithm": "SHA-256",
+  "scope": "V50 runner, V11 corrected ledger and holdout predictions, factor/price/amount input caches, and frozen V24/V34/V26 protocols and ledger references.",
+  "hashes": [
+    {
+      "role": "factor and market cache metadata",
+      "path": "/root/autodl-fs/model/trainingdata/meta.json",
+      "size_bytes": 432591,
+      "sha256": "0647bf2409c456cda47876c1ac580917152010548fb04ea2acf0f33c89db6d50"
+    },
+    {
+      "role": "V11 corrected shared-cash ledger engine",
+      "path": "/root/autodl-fs/model/experiments2/V11/analysis.py",
+      "size_bytes": 16287,
+      "sha256": "64a89fdae173b057d7ef5277bde247f2c10bed96a7bdd2d2c0ce6f760df5bd38"
+    },
+    {
+      "role": "common holdout protocol",
+      "path": "/root/autodl-fs/model/experiments2/V24/protocol.json",
+      "size_bytes": 3018,
+      "sha256": "de76124f3156b2352e533d600477586fde07e4586b63fd5511f1e57d194be288"
+    },
+    {
+      "role": "frozen V34 factor and execution protocol",
+      "path": "/root/autodl-fs/model/experiments2/V34/protocol.json",
+      "size_bytes": 2909,
+      "sha256": "7cbc230401354ada1344ce5892af6d8632e15d077e76d7fffa53b7fcb7cf3a73"
+    },
+    {
+      "role": "frozen V26 comparison protocol",
+      "path": "/root/autodl-fs/model/experiments2/V26/protocol.json",
+      "size_bytes": 2916,
+      "sha256": "4e56d889b92c9566cb92f7ed4c63cc576638240d8399b5defba6481fdb19f36d"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2024Q1/predictions.csv",
+      "size_bytes": 13067,
+      "sha256": "22cb9d9c8618587fa918fa33c6c39b04251a31e3809033350e84d21406926a2b"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2024Q2/predictions.csv",
+      "size_bytes": 13269,
+      "sha256": "2179c74b5b2736042d5f63ecc2fc15e903a8a72c1a2bd8ebb128bef8036c53f0"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2024Q3/predictions.csv",
+      "size_bytes": 14416,
+      "sha256": "efda0b576320b9688e2996ddecdddaafe377ca673ea711537bb52c3c1a9df0ac"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2024Q4/predictions.csv",
+      "size_bytes": 13712,
+      "sha256": "ed48b4a4199035ace2fe15485b994db3e9e6bded74fd5d7807449166a15ac114"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2025Q1/predictions.csv",
+      "size_bytes": 12831,
+      "sha256": "87fc6ec689e5e26ddad462b9637bc650bd9e272a6c1b137e2d414383bc9c40af"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2025Q2/predictions.csv",
+      "size_bytes": 13529,
+      "sha256": "d6c7158182b683f06db4a1106e3cc0ec8324b7be1df2c88828cbf25f9656ff22"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2025Q3/predictions.csv",
+      "size_bytes": 14854,
+      "sha256": "ce2cf50fbc1cfa212b373553376b5ca5ca7c4d6b9bb42d25157c88b71c9b7384"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2025Q4/predictions.csv",
+      "size_bytes": 13512,
+      "sha256": "8a17f8ec7e346b6944e1f6d10f6e60770fa44a48241b778b8221651b1af5f3c8"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2026Q1/predictions.csv",
+      "size_bytes": 12549,
+      "sha256": "ef4fdd720e09a44bf5d6e92bc71ec358c4250e084db608699f4fb3be75721024"
+    },
+    {
+      "role": "cached V11 quarterly predictions used for holdout schedule",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2026Q2/predictions.csv",
+      "size_bytes": 13524,
+      "sha256": "d57c2b12cfe56e2d879b29379c6f601e8f1828198cb015350e02b08700e498e9"
+    },
+    {
+      "role": "four-bank raw price cache 2018",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2018/data.parquet",
+      "size_bytes": 8064177,
+      "sha256": "dde7fc1c032d6f5001fda011242f70de3892fe4a2d045a9479fa2e64aa2ef695"
+    },
+    {
+      "role": "four-bank trading amount cache 2018",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2018/data.parquet",
+      "size_bytes": 2539773,
+      "sha256": "a26217734560e1fe6bc070fefe6de93dea7bca6ff0f7dc63e41749fe5cbef056"
+    },
+    {
+      "role": "four-bank raw price cache 2019",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2019/data.parquet",
+      "size_bytes": 8011747,
+      "sha256": "b94dd2282eeedfc68d31580591b033d704fd8f85604db28df32281f628a52502"
+    },
+    {
+      "role": "four-bank trading amount cache 2019",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2019/data.parquet",
+      "size_bytes": 2560263,
+      "sha256": "43bd41fde51d9835e377fd97919259764d4cf7404e67c5996312d4615e04124e"
+    },
+    {
+      "role": "four-bank raw price cache 2020",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2020/data.parquet",
+      "size_bytes": 7981420,
+      "sha256": "12c900b56e59f4ceb42e85fbef00902c3ddc23c1b34088843ee5830b51ad2e0f"
+    },
+    {
+      "role": "four-bank trading amount cache 2020",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2020/data.parquet",
+      "size_bytes": 2551218,
+      "sha256": "44cc8ca04284ca151f15728e318e70e669ed66e656257b231dbe63229352d44f"
+    },
+    {
+      "role": "four-bank raw price cache 2021",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2021/data.parquet",
+      "size_bytes": 8415454,
+      "sha256": "57ba0e3c86b3960121c91b4fb99afe6c34a41a35d392bafea78c7b0b39b39ec2"
+    },
+    {
+      "role": "four-bank trading amount cache 2021",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2021/data.parquet",
+      "size_bytes": 2546720,
+      "sha256": "ea525f4a7c2c1728ce9e505c7546a1e0ef1033d3a84d97b616070cc534b40065"
+    },
+    {
+      "role": "four-bank raw price cache 2022",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2022/data.parquet",
+      "size_bytes": 8169088,
+      "sha256": "f17d73b3197c0cf4c814571d59d866376ea9b454f7e44aa9ba35085f7191aa0a"
+    },
+    {
+      "role": "four-bank trading amount cache 2022",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2022/data.parquet",
+      "size_bytes": 2545226,
+      "sha256": "3c784d546cdc5274a3dece37386c903af0332a9dd2c4ce532f9d7ec41054c27f"
+    },
+    {
+      "role": "four-bank raw price cache 2023",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2023/data.parquet",
+      "size_bytes": 8258545,
+      "sha256": "7f61bd91337b949c769fb4bfa872399734379cbfd96e307d0e5b1e0fda8a0d87"
+    },
+    {
+      "role": "four-bank trading amount cache 2023",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2023/data.parquet",
+      "size_bytes": 2547252,
+      "sha256": "1babce59e8a99e6427e59141dc54ecfc240b2559451c3996f44a07b57168af7f"
+    },
+    {
+      "role": "four-bank raw price cache 2024",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2024/data.parquet",
+      "size_bytes": 8344932,
+      "sha256": "aa24f86c3fc5aa01448929b944cf68b267cbf8c055eae6f85fd70eedea4f96fc"
+    },
+    {
+      "role": "four-bank trading amount cache 2024",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2024/data.parquet",
+      "size_bytes": 2548763,
+      "sha256": "3931dc7e589ce902f6e814185ff7d97cb00078fd0f96f25589ff0533e869b668"
+    },
+    {
+      "role": "four-bank raw price cache 2025",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2025/data.parquet",
+      "size_bytes": 7974021,
+      "sha256": "0e40a42dd28f65d363ce525619dcb6aed4c13bef9d09861772d4d333a31f2949"
+    },
+    {
+      "role": "four-bank trading amount cache 2025",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2025/data.parquet",
+      "size_bytes": 2558716,
+      "sha256": "1c8987b6a8ba3afa2ab59e7736eb075532cbf02628bd8a6937bc860ea8f86623"
+    },
+    {
+      "role": "four-bank raw price cache 2026",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2026/data.parquet",
+      "size_bytes": 6011522,
+      "sha256": "79a76c2c190791ecd617d22e321b851ecd7f980e1391c678725df8c0ee0d20ed"
+    },
+    {
+      "role": "four-bank trading amount cache 2026",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2026/data.parquet",
+      "size_bytes": 1951840,
+      "sha256": "cf5c0e5c2af538af5dcb46836978192e985764cd57387f6cc57c2f1c4c18af7d"
+    },
+    {
+      "role": "harmonized factor cache 2024",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2024/data.parquet",
+      "size_bytes": 785042714,
+      "sha256": "6335193c5bf72a67385dec9d4225fae90ac4c27ae523619541f22fcd63ef828c"
+    },
+    {
+      "role": "harmonized factor cache 2025",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2025/data.parquet",
+      "size_bytes": 792807629,
+      "sha256": "0a2d8dc28194a7219b434cb9348a3de20b6e1cc2e9515ca5302914b8eaecc714"
+    },
+    {
+      "role": "harmonized factor cache 2026",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2026/data.parquet",
+      "size_bytes": 619037854,
+      "sha256": "e505a635ffef3b20cfe9e4ac4e9fe328463cb356ab0dfb8c99701229d3af9050"
+    },
+    {
+      "role": "frozen V24 ledger reference metrics.json",
+      "path": "/root/autodl-fs/model/experiments2/V24/metrics.json",
+      "size_bytes": 3602,
+      "sha256": "672466996b6392ceeffd671fa9f937e7e6704fd9a539135a09e307da434801e8"
+    },
+    {
+      "role": "frozen V24 ledger reference daily_equity.csv",
+      "path": "/root/autodl-fs/model/experiments2/V24/daily_equity.csv",
+      "size_bytes": 510223,
+      "sha256": "86bf061d78112b4496b461152e9775cf26aba9fbdcfb63fd74577ba310783714"
+    },
+    {
+      "role": "frozen V34 ledger reference metrics.json",
+      "path": "/root/autodl-fs/model/experiments2/V34/metrics.json",
+      "size_bytes": 5953,
+      "sha256": "7d6e6959752c642eb85ef66446297523e87a036a3959546d21d6a6ebcfe4696e"
+    },
+    {
+      "role": "frozen V34 ledger reference daily_equity.csv",
+      "path": "/root/autodl-fs/model/experiments2/V34/daily_equity.csv",
+      "size_bytes": 510657,
+      "sha256": "ea048c122834e50b949e58fb577219825bfed85fc0daf96961e289b5149138a8"
+    },
+    {
+      "role": "frozen V26 ledger reference metrics.json",
+      "path": "/root/autodl-fs/model/experiments2/V26/metrics.json",
+      "size_bytes": 5964,
+      "sha256": "59591911dedc00b748dd2ba0a9e7a1ef1229f2df387c23e25c48c4c2957bbcf1"
+    },
+    {
+      "role": "frozen V26 ledger reference daily_equity.csv",
+      "path": "/root/autodl-fs/model/experiments2/V26/daily_equity.csv",
+      "size_bytes": 511403,
+      "sha256": "742b8be98a7166a81de2285a5837be0cca6fb66ab76248c9ac4a1eaa5c4505ff"
+    },
+    {
+      "role": "V50 runner",
+      "path": "/root/autodl-fs/model/experiments2/V50/run_v50.py",
+      "size_bytes": 22658,
+      "sha256": "77a50e79dec3bb7fe49e4983b341c20f0ad9acace262bae408437182f7517ad0"
+    }
+  ]
+}

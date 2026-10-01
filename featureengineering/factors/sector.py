@@ -1,88 +1,14 @@
-"""板块 / 行业相对因子（17 个）—— **自建动态行业**，全部日频产出、只主板。
+"""动态行业代理：按历史收益相关性分组，不是官方行业成分。
 
-参考库有 15 个 sector 因子，本项目此前的覆盖是 **0 个**。难点不在公式，在**行业归属从哪来**。
+TDX 的 block_type=0 混有总市值、涨跌家数和概念序列，不能独立证明行业身份。
+候选仅保留 TDX 0 类中名称与 dc_blocks「行业板块」精确一致的指数；不做模糊匹配，
+不使用任何当前个股成分映射。分类字典缺失或交集为空时明确失败，不回退到全部0类。
+这是保守的行业候选子集：命名不同的真实行业会被排除，快照分类及厂商历史回填
+仍不能证明当年的实际可得版本。源字典变化作为输入修订触发重建。
 
-═══════════════════════════════════════════════════════════════════════════
-一、★★★ 为什么不用现成的行业成分股表
-═══════════════════════════════════════════════════════════════════════════
-
-上游有两张成分股表，**都是无日期的快照**：
-
-  · `tdx_block_stocks`（13 万行，618 个板块 × 成分股）
-  · `index_ths_constituent_stocks`（38 万行）
-
-拿**今天的**成分股去算 2015 年的「行业内均值」就是**前视**：今天的行业划分
-包含了「哪些公司后来被并入了这个行业」这一未来信息。
-参考库自己就是因为这个原因**禁用了 6 个 sector 因子**
-（`industry_relative_momentum_20` / `pb_industry_adjusted` / `ps_ttm_sector_neutral` /
-`sector_amount_momentum_5d` / `sector_amount_rank` / `sector_mv_rank`，
-见 `学习资料/factors.md` §六）。
-
-**本文件的解法：完全不用成分股表，自建「滚动相关性动态行业」。**
-
-═══════════════════════════════════════════════════════════════════════════
-二、动态行业的构造（PIT 安全，只用历史数据）
-═══════════════════════════════════════════════════════════════════════════
-
-```
-1. 行业清单 = tdx_blocks[block_type == 0].block_code（184 个）
-   ★ 实测：板块**代码前缀与类型不一一对应**（8805/8806/8807/8808/8809 里
-     0/1/2 三种类型混编）⇒ **必须**用 tdx_blocks 当字典筛，不能靠前缀。
-   ★ 它只回答「哪些序号是行业指数」，**不**回答「哪只股票属于谁」——
-     没有任何成分股信息，所以不引入第一种前视。
-     （board 创建得晚 ⇒ 那条指数序列起点就晚，**不会回溯**。）
-
-2. 行业日线收盘 ← `tdx_daily`（2010-01-04 起，618 个板块基本满格）
-
-3. 每年 Y 的归属：取 Y 年首个交易日**之前**的 250 个交易日，
-   corr(c, k) = corr(个股 c 的后复权日收益, 行业 k 的日收益)
-   assign[Y, c] = 相关性最高的那个 k；峰值相关 < 0.10 或有效日 < 120 → 无归属(NaN)
-   ★★ **只用 ≤ Y-01-01 的数据** ⇒ 时点安全、且跨日/跨次运行**可复现**
-      （这是「增量 == 全量」的前提：归属是年份的纯函数，不随面板窗口漂移）
-
-4. 逐日 ind_level[T, c] = 行业指数收盘(assign[year(T), c])
-   ★ 用**指数点位**而不是累积收益：点位天然连续，不会因为中间某天缺数据
-     把 cumprod 整段污染；行业 n 日收益 = level(T)/level(T−n) − 1 一步到位。
-
-5. 行业内均值 / 离散：成员掩码 W (C × 184) 逐年，
-   mean_k = (Σ_{c∈k} x_c) / (Σ_{c∈k} 1[x_c 有效]) —— **NaN 感知**，用两个矩阵乘实现
-```
-
-实测（2012 年归属，用 2010–2011 数据）：峰值相关 p10/p50/p90 = 0.50/0.64/0.78，
-峰值 < 0.10 的股票只占 0.3%，最终用到 142 个不同行业、最大行业占 10.8% —— 分布合理。
-
-═══════════════════════════════════════════════════════════════════════════
-三、★ 与参考库 sector 族的**逐条偏离**（都是刻意的）
-═══════════════════════════════════════════════════════════════════════════
-
-1. **`ind_ret_ma_*`：参考库把它们当「行业动能」特征，本文件同样，
-   但注意它们在截面上是**按行业分组的阶梯函数**（同行业所有股票同值）。
-   对横断面排序仍有信息（模型可以学到「哪个行业在动」），但它的**有效自由度
-   是 184 而不是 3484** —— 下游若做行业中性化要留意这一点，别误当成个股信号。
-
-2. **`ind_disp_ma_*`：参考库的版本是「行业日收益**横截面** std 的 20 日均值」
-   —— 那是一个**市场级常数**（每天全市场一个值），在横断面上的离散度恒为 0，
-   **对排序任务零信息**（与 `factors/breadth.py` 模块 docstring §一 同一条理由）。
-   ⇒ 本文件改成「**所属行业**成员日收益截面 std 的 20 日均值」：
-     每只股票取**自己行业**的分化度，不同行业的股票拿到不同的值，
-     截面上重新有区分度，语义也从「市场分化度」变成「我这行的分化度」。
-
-3. **`rel_mom_ind_*`：参考库用 `个股收益 − 行业等权收益`（差）**，本文件沿用。
-   ★ 行业收益 = **指数点位收益**（市值加权），不是等权平均 —— 这是与参考库的
-     一处实现差异：参考库的 `ind_mean(df,"ret")` 是**等权**行业均值。
-     选用指数口径的理由：指数点位是**上游直接给的**，不受本项目股票池
-     （只主板、剔 ST、剔次新）影响，跨年可比；等权口径会随股票池规则变化而漂移。
-
-4. **`rel_vol_ind_20d` / `rel_turnover_ind_20d`：参考库用**等权**行业内均值，
-   本文件必须同样用等权（指数口径没有「波动」「换手」这两个量）—— 见 §二.5。
-
-═══════════════════════════════════════════════════════════════════════════
-四、性能与内存（实测）
-═══════════════════════════════════════════════════════════════════════════
-
-归属计算要读 `stock_daily` + `stock_adj_factor` 的**面板起点之前**那一两年，
-所以每个 (因子, 年) 任务都会读一次。为避免重复，模块级按面板指纹记忆化
-（同一 worker 进程内多个因子/多年任务可复用）。单次归属计算实测 < 2 s。
+每年归属仅用该年之前250个交易日的成对收益相关性，至少120个有效日、峰值>=0.10。
+先为同一指数代码计算收益，再映射当年的归属，避免跨年切换指数点位产生伪收益。
+成员均值、离散及相对值按当年分组，缺失样本不计入分母；无归属保持NaN。
 """
 
 from __future__ import annotations
@@ -99,7 +25,7 @@ W_20 = 56
 W_60 = 128
 W_250 = 480   # 250 交易日窗：250×1.8+20
 
-IND_DEPS = ("tdx_daily", "tdx_blocks", "stock_daily", "stock_adj_factor")
+IND_DEPS = ("tdx_daily", "tdx_blocks", "dc_blocks", "stock_daily", "stock_adj_factor")
 NOTURN = "stock_finance"
 
 # 归属参数（见模块 docstring §二.3）
@@ -170,6 +96,8 @@ class _Sector:
             sub = L[np.ix_(np.flatnonzero(rm), col)]
             sub = np.where((a >= 0)[None, :], sub, np.nan)
             lvl[rm] = sub
+        self.index_levels = L
+        self.row_years = yr
         self.level = lvl
         prev = np.full_like(lvl, np.nan)
         prev[1:] = lvl[:-1]
@@ -181,6 +109,17 @@ class _Sector:
         self._years = years
         self._K = K
         self.ok = True
+        self.ret1 = self.index_return(ctx, 1)
+
+    def index_return(self, ctx, k):
+        previous = ctx.shift(self.index_levels, k)
+        r = ctx.safe_div(self.index_levels, previous, 1e-8) - 1.0
+        out = np.full((self.T, self.C), np.nan)
+        for year, assignments in self._assigns.items():
+            rows = np.flatnonzero(self.row_years == year)
+            cols = np.maximum(assignments, 0)
+            out[rows] = np.where(assignments[None, :] >= 0, r[np.ix_(rows, cols)], np.nan)
+        return out
 
     # ------------------------------------------------------------------
     def _assign(self, ctx, Y: int, panel) -> np.ndarray:
@@ -222,25 +161,23 @@ class _Sector:
         cidx = pos.reindex(cols).to_numpy()
         keep = np.isfinite(cidx)
         Rv = R.loc[common].to_numpy(np.float64)[:, keep]
-        Mv = MR.loc[common].to_numpy(np.float64)
+        Mv = MR.reindex(columns=list(self.kmap)).loc[common].to_numpy(np.float64)
         out = np.full(codes.size, -1, dtype=np.int64)
         if Rv.shape[1] == 0 or Mv.shape[1] == 0:
             return out
 
-        # 相关 = 标准化之后的内积（NaN 按 0 参与、分母用有效计数）
-        okR = np.isfinite(Rv)
-        okM = np.isfinite(Mv)
-        nR = okR.sum(0)
-        nM = okM.sum(0)
-        Rz = np.where(okR, Rv - np.nansum(Rv, 0) / np.maximum(nR, 1), 0.0)
-        Mz = np.where(okM, Mv - np.nansum(Mv, 0) / np.maximum(nM, 1), 0.0)
-        Rz = np.where(okR, Rz, 0.0)
-        Mz = np.where(okM, Mz, 0.0)
-        Rn = np.sqrt((Rz * Rz).sum(0))
-        Mn = np.sqrt((Mz * Mz).sum(0))
-        C = (Rz / np.maximum(Rn, 1e-12)).T @ (Mz / np.maximum(Mn, 1e-12))
-        # 有效共现日数：只有两侧都有值的日子才计数（否则相关被 0 稀释）
-        CC = okR.astype(np.float64).T @ okM.astype(np.float64)
+        # 缺失时按每对股票/行业的共同有效日期计算 Pearson，避免零填充偏差。
+        okR, okM = np.isfinite(Rv), np.isfinite(Mv)
+        rx, mx = np.where(okR, Rv, 0.), np.where(okM, Mv, 0.)
+        kr, km = okR.astype(float), okM.astype(float)
+        CC = kr.T @ km
+        den = np.maximum(CC, 1.)
+        sr, sm = rx.T @ km, kr.T @ mx
+        cov = rx.T @ mx - sr * sm / den
+        vr = (rx * rx).T @ km - sr * sr / den
+        vm = kr.T @ (mx * mx) - sm * sm / den
+        with np.errstate(all="ignore"):
+            C = cov / np.sqrt(np.maximum(vr, 0.) * np.maximum(vm, 0.))
         C = np.where(CC >= _MIN_OBS, C, np.nan)
         # ★ 用 −inf 填充后直接 max/argmax，**不用** nanmax/nanargmax：
         #   后者在「整行全 NaN」（窗口里没有任何有效共现日）时会抛 RuntimeWarning，
@@ -254,7 +191,7 @@ class _Sector:
 
     def _ind_ret(self, ctx, Y: int) -> pd.DataFrame:
         """[Y−2, Y−1] 的行业日收益（宽表：index=trade_date, columns=board_code）。"""
-        key = ("indret", Y)
+        key = (id(ctx.up), "indret", Y)
         hit = _IDXRET.get(key)
         if hit is not None:
             return hit
@@ -296,19 +233,19 @@ class _Sector:
         xz = np.where(okx, x, 0.0)
         cnt = okx.astype(np.float64) @ W                       # (T, K)
         s1 = xz @ W                                            # (T, K)
-        cnt = np.maximum(cnt, 1.0)
-        m = s1 / cnt
+        denom = np.maximum(cnt, 1.0)
+        m = s1 / denom
         if kind == "std":
             s2 = (xz * xz) @ W
-            v = np.maximum(s2 / cnt - m * m, 0.0)
+            v = np.maximum(s2 / denom - m * m, 0.0)
             m = np.sqrt(v)
         a = self._assigns.get(Y)
         if a is None:
             return np.full_like(x, np.nan)
         col = np.where(a >= 0, a, 0)
         out = m[:, col]
-        return np.where((cnt[:, col] > 0) if kind == "mean" else (cnt[:, col] > 1),
-                        out, np.nan)
+        valid = (a >= 0)[None, :] & (cnt[:, col] >= (1 if kind == "mean" else 2))
+        return np.where(valid, out, np.nan)
 
     def stat_by_row(self, x: np.ndarray, kind: str = "mean") -> np.ndarray:
         """逐年版本：面板跨年时逐段调用 `member_stat`。"""
@@ -324,23 +261,38 @@ class _Sector:
 _IDXRET: dict[tuple, pd.DataFrame] = {}
 
 
+def _verified_industry_boards(tdx, dc) -> np.ndarray:
+    """以明确行业类别交叉核验名称；只选择可解释候选，不猜数字占位名称。"""
+    required={"block_code","block_name","block_type"}
+    if tdx is None or dc is None or not required.issubset(tdx.columns) or not required.issubset(dc.columns):
+        raise RuntimeError("行业分类字典缺失或字段不完整")
+    industries=set(dc.loc[dc["block_type"].astype("string").eq("行业板块"),"block_name"].astype("string").dropna().str.strip())
+    industries.discard("")
+    keep=pd.to_numeric(tdx["block_type"],errors="coerce").eq(0) & tdx["block_name"].astype("string").str.strip().isin(industries)
+    result=np.sort(tdx.loc[keep,"block_code"].astype("string").dropna().str.replace(".TDX","",regex=False).str.strip().unique().astype(str))
+    result=np.unique(result[result!=""])
+    if not len(result):
+        raise RuntimeError("行业分类交叉核验没有候选指数，拒绝回退到混有统计序列的TDX 0类")
+    return result
+
+
 def _ind_boards(ctx) -> np.ndarray:
-    """行业板块代码（block_type == 0）。★ 必须查字典，不能靠代码前缀（见 docstring §二.1）。"""
-    key = "boards"
-    hit = _IDXRET.get(key)
-    if hit is not None:
-        return hit
-    bl = ctx.dataset("tdx_blocks", columns=["block_code", "block_type"])
-    out = np.array([], dtype=object)
-    if bl is not None and not bl.empty:
-        out = np.sort(bl.loc[bl["block_type"] == 0, "block_code"].astype(str).unique())
-    _IDXRET[key] = out
+    """读取指数类别字典；不读取股票当前行业成分。"""
+    # 缓存命中也记录全部逻辑输入，供依赖审计和历史修订追踪使用。
+    if hasattr(ctx,"accessed"):ctx.accessed.update(("tdx_blocks","dc_blocks"))
+    key=(id(ctx.up),"boards")
+    hit=_IDXRET.get(key)
+    if hit is not None:return hit
+    tdx=ctx.dataset("tdx_blocks",columns=["block_code","block_name","block_type"])
+    dc=ctx.dataset("dc_blocks",columns=["block_code","block_name","block_type"])
+    out=_verified_industry_boards(tdx,dc)
+    _IDXRET[key]=out
     return out
 
 
 def _sec(ctx) -> _Sector:
     panel = ctx.panel
-    key = (int(panel.dates[0]), int(panel.dates[-1]), int(panel.C))
+    key = (id(ctx.up), int(panel.dates[0]), int(panel.dates[-1]), tuple(panel.codes))
     hit = _CACHE.get(key)
     if hit is None:
         hit = _Sector(ctx)
@@ -357,9 +309,7 @@ def _ind_ret(ctx, k: int) -> np.ndarray:
     S = _sec(ctx)
     if not S.ok:
         return ctx.panel.empty()
-    lv = S.level
-    prev = ctx.shift(lv, k)
-    return ctx.safe_div(lv, prev, 1e-8) - 1.0
+    return S.index_return(ctx, k)
 
 
 def _rel(ctx, k: int) -> np.ndarray:
@@ -379,6 +329,7 @@ def _mk_rel(k: int, warm: int, note: str):
 
     fn.__name__ = name
     register(FactorSpec(
+    version=2,
         name=name, group="sector", deps=IND_DEPS,
         desc=f"行业相对动量（个股 {k} 日收益 − 所属行业 {k} 日收益）",
         formula=f"rel_mom_ind = ret_{k}d(stock) - ret_{k}d(industry_index)",
@@ -400,6 +351,7 @@ for _k, _w in ((3, W_3), (5, W_5), (10, W_20), (20, W_20), (60, W_60), (250, W_2
 
 
 @register(FactorSpec(
+    version=2,
     name="ret_ind_rel_1d",
     group="sector",
     deps=IND_DEPS,
@@ -434,6 +386,7 @@ def _mk_ind_ma(k: int, warm: int, enum: str):
 
     fn.__name__ = name
     register(FactorSpec(
+    version=2,
         name=name, group="sector", deps=IND_DEPS,
         desc=f"所属行业的 {k} 日平均日收益（行业动能）",
         formula=f"ind_ret = industry_index_daily_return; factor = ts_mean(ind_ret, {k})",
@@ -453,27 +406,6 @@ for _k, _w in ((3, W_3), (5, W_5), (20, W_20), (60, W_60)):
     _mk_ind_ma(_k, _w, "")
 
 
-@register(FactorSpec(
-    name="ind_mom_accel",
-    group="sector",
-    deps=IND_DEPS,
-    desc="行业动量加速度 = 行业 5 日均收益 − 行业 20 日均收益",
-    formula="accel = ts_mean(ind_ret, 5) - ts_mean(ind_ret, 20)",
-    start=SEC_START,
-    warmup_days=W_20,
-    higher_is_better=True,
-    note=("参考库没有这一条，但它是 `ind_ret_ma_5d` 与 `ind_ret_ma_20d` 的自然组合"
-          "（同族的 `momentum_accel_60_120` 在个股层已被删为 NOISE，"
-          "但那是在**个股**层：个股短长动量差被噪声主导；行业层是 184 个成员的平均，"
-          "噪声被压掉一个量级，同样的构念才站得住）。"
-          "★ 截面自由度同样是行业数（184），见 `ind_ret_ma_*` 的 note。"
-          "> 0 ⇒ 板块动能正在**抬升**（短均线高于长均线）。"),
-))
-def ind_mom_accel(ctx):
-    S = _sec(ctx)
-    if not S.ok:
-        return ctx.panel.empty()
-    return ctx.roll_mean(S.ret1, 5, 2) - ctx.roll_mean(S.ret1, 20, 10)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -481,6 +413,7 @@ def ind_mom_accel(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
+    version=2,
     name="rel_vol_ind_20d",
     group="sector",
     deps=IND_DEPS,
@@ -506,6 +439,7 @@ def rel_vol_ind_20d(ctx):
 
 
 @register(FactorSpec(
+    version=2,
     name="rel_turnover_ind_20d",
     group="sector",
     deps=(*IND_DEPS, NOTURN),
@@ -559,6 +493,7 @@ def _mk_disp(k: int, warm: int):
 
     fn.__name__ = name
     register(FactorSpec(
+    version=2,
         name=name, group="sector", deps=IND_DEPS,
         desc=f"所属行业内部的收益分化度（行业成员截面 std 的 {k} 日均值）",
         formula=f"ind_disp = cross_std(ret within my industry); factor = ts_mean(ind_disp, {k})",
@@ -577,7 +512,10 @@ def _mk_disp(k: int, warm: int):
     return fn
 
 
-for _k, _w in ((5, W_5), (20, W_20)):
+# ★ 2026-09-24 质检瘦身：`ind_disp_ma_20d` 已随 `ind_disp_ma_5d` 一起删除
+#   （两者 |ρ|≥0.80，代表留 5 日）。工厂函数生成的因子**AST 定位不到**，
+#   `prune_factors.py` 只能摘掉 5 日那个 —— 这一行是手工补的。
+for _k, _w in ((5, W_5),):
     _mk_disp(_k, _w)
 
 
@@ -586,6 +524,7 @@ for _k, _w in ((5, W_5), (20, W_20)):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
+    version=2,
     name="ind_beta_60",
     group="sector",
     deps=IND_DEPS,
@@ -609,5 +548,14 @@ def ind_beta_60(ctx):
     S = _sec(ctx)
     if not S.ok:
         return ctx.panel.empty()
-    return ctx.safe_div(ctx.roll_cov(ctx.ret(1), S.ret1, 60, 30),
-                        ctx.roll_var(S.ret1, 60, 30), min_abs_den=1e-12)
+    r = ctx.ret_clean(1)
+    paired = np.where(np.isfinite(r) & np.isfinite(S.ret1), S.ret1, np.nan)
+    return ctx.safe_div(ctx.roll_cov(r, paired, 60, 30),
+                        ctx.roll_var(paired, 60, 30), min_abs_den=1e-12)
+
+
+# 因子字典中显式说明行业代理的候选来源和局限。
+from fea.spec import REGISTRY as _SECTOR_REGISTRY
+for _sector_spec in _SECTOR_REGISTRY.values():
+    if _sector_spec.fn is not None and _sector_spec.fn.__module__ == __name__:
+        _sector_spec.note += " 行业代理采用TDX 0类与东方财富行业名称精确交集，只用过去收益分组；非官方成分行业。名称不匹配的行业不纳入，分类快照与厂商历史回填仍有历史可得性限制。"

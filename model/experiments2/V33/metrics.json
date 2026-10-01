@@ -1,0 +1,1125 @@
+{
+  "version": "V33",
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "days": 601,
+  "signal_count": 30,
+  "quarters": [
+    "2024Q1",
+    "2024Q2",
+    "2024Q3",
+    "2024Q4",
+    "2025Q1",
+    "2025Q2",
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "selected_features": [
+    "mf_tier_flow_agreement_20",
+    "rel_mom_ind_3d",
+    "rel_mom_ind_5d",
+    "gap_down_recover_freq_20d",
+    "rel_mom_ind_250d",
+    "rel_vol_ind_20d",
+    "rel_mom_ind_10d",
+    "tail_risk_pct_60",
+    "volume_dry_up",
+    "rel_mom_ind_60d",
+    "price_to_52w_high",
+    "id2_close_vs_pm_vwap_20",
+    "inside_bar_count_20",
+    "ret_kurt_20",
+    "cost_skew_ratio",
+    "overnight_sign_consistency_20d",
+    "margin_balance_volatility_20d",
+    "mfx_index_range",
+    "mf_open_close_divergence_10d",
+    "bollinger_width_20"
+  ],
+  "feature_selection": [
+    {
+      "rank": 1,
+      "feature": "mf_tier_flow_agreement_20",
+      "top20_quarter_count": 16,
+      "mean_normalized_gain_when_top20": 0.07313518998683682,
+      "selected_v33": true
+    },
+    {
+      "rank": 2,
+      "feature": "rel_mom_ind_3d",
+      "top20_quarter_count": 16,
+      "mean_normalized_gain_when_top20": 0.06728722680654979,
+      "selected_v33": true
+    },
+    {
+      "rank": 3,
+      "feature": "rel_mom_ind_5d",
+      "top20_quarter_count": 16,
+      "mean_normalized_gain_when_top20": 0.06289147292479422,
+      "selected_v33": true
+    },
+    {
+      "rank": 4,
+      "feature": "gap_down_recover_freq_20d",
+      "top20_quarter_count": 15,
+      "mean_normalized_gain_when_top20": 0.07330035921476682,
+      "selected_v33": true
+    },
+    {
+      "rank": 5,
+      "feature": "rel_mom_ind_250d",
+      "top20_quarter_count": 13,
+      "mean_normalized_gain_when_top20": 0.06855035931458645,
+      "selected_v33": true
+    },
+    {
+      "rank": 6,
+      "feature": "rel_vol_ind_20d",
+      "top20_quarter_count": 12,
+      "mean_normalized_gain_when_top20": 0.0597568910963752,
+      "selected_v33": true
+    },
+    {
+      "rank": 7,
+      "feature": "rel_mom_ind_10d",
+      "top20_quarter_count": 12,
+      "mean_normalized_gain_when_top20": 0.04270051547816694,
+      "selected_v33": true
+    },
+    {
+      "rank": 8,
+      "feature": "tail_risk_pct_60",
+      "top20_quarter_count": 11,
+      "mean_normalized_gain_when_top20": 0.05012530267433634,
+      "selected_v33": true
+    },
+    {
+      "rank": 9,
+      "feature": "volume_dry_up",
+      "top20_quarter_count": 10,
+      "mean_normalized_gain_when_top20": 0.046521863719063965,
+      "selected_v33": true
+    },
+    {
+      "rank": 10,
+      "feature": "rel_mom_ind_60d",
+      "top20_quarter_count": 10,
+      "mean_normalized_gain_when_top20": 0.045854531501927205,
+      "selected_v33": true
+    },
+    {
+      "rank": 11,
+      "feature": "price_to_52w_high",
+      "top20_quarter_count": 10,
+      "mean_normalized_gain_when_top20": 0.04505847522791099,
+      "selected_v33": true
+    },
+    {
+      "rank": 12,
+      "feature": "id2_close_vs_pm_vwap_20",
+      "top20_quarter_count": 10,
+      "mean_normalized_gain_when_top20": 0.044881460832808806,
+      "selected_v33": true
+    },
+    {
+      "rank": 13,
+      "feature": "inside_bar_count_20",
+      "top20_quarter_count": 8,
+      "mean_normalized_gain_when_top20": 0.05734555387757261,
+      "selected_v33": true
+    },
+    {
+      "rank": 14,
+      "feature": "ret_kurt_20",
+      "top20_quarter_count": 8,
+      "mean_normalized_gain_when_top20": 0.04865818901180609,
+      "selected_v33": true
+    },
+    {
+      "rank": 15,
+      "feature": "cost_skew_ratio",
+      "top20_quarter_count": 7,
+      "mean_normalized_gain_when_top20": 0.04632770564141977,
+      "selected_v33": true
+    },
+    {
+      "rank": 16,
+      "feature": "overnight_sign_consistency_20d",
+      "top20_quarter_count": 7,
+      "mean_normalized_gain_when_top20": 0.041902380710256946,
+      "selected_v33": true
+    },
+    {
+      "rank": 17,
+      "feature": "margin_balance_volatility_20d",
+      "top20_quarter_count": 6,
+      "mean_normalized_gain_when_top20": 0.05499657217942263,
+      "selected_v33": true
+    },
+    {
+      "rank": 18,
+      "feature": "mfx_index_range",
+      "top20_quarter_count": 6,
+      "mean_normalized_gain_when_top20": 0.03981923009032128,
+      "selected_v33": true
+    },
+    {
+      "rank": 19,
+      "feature": "mf_open_close_divergence_10d",
+      "top20_quarter_count": 5,
+      "mean_normalized_gain_when_top20": 0.05004244799142107,
+      "selected_v33": true
+    },
+    {
+      "rank": 20,
+      "feature": "bollinger_width_20",
+      "top20_quarter_count": 5,
+      "mean_normalized_gain_when_top20": 0.04861964457209078,
+      "selected_v33": true
+    }
+  ],
+  "metrics": {
+    "V33 stable-20-factor LambdaRank Top2": {
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.7177226771571603,
+      "gross_return_same_fills": 0.7532823095126358,
+      "annualized_net_return": 0.25510563859545354,
+      "annualized_volatility": 0.18897383462582984,
+      "max_drawdown": -0.1674161436034507,
+      "fees": 2245.558066262304,
+      "slippage_cost": 1310.4051692853789,
+      "total_trading_cost": 3555.9632355476824,
+      "turnover": 4368017.230951263,
+      "trades": 67,
+      "blocked_trade_events": 0,
+      "min_cash": 10.114403158513596,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "vs_V27_four_factor_LambdaRank_Top2": {
+        "net_return_difference_pp": 4.649394422398845,
+        "max_drawdown_difference_pp": -0.5791942228738467
+      },
+      "vs_V24_fixed_rank_Top2": {
+        "net_return_difference_pp": 0.4099977408770217,
+        "max_drawdown_difference_pp": -3.3184444679812075
+      },
+      "vs_V26_mf_tier_flow_agreement_20_Top2": {
+        "net_return_difference_pp": -12.936424606560992,
+        "max_drawdown_difference_pp": -1.2454207608690981
+      },
+      "vs_V11_LambdaRank_Top2": {
+        "net_return_difference_pp": -4.518816959451355,
+        "max_drawdown_difference_pp": 1.2871211835952634
+      },
+      "vs_60d_momentum_Top2": {
+        "net_return_difference_pp": -9.916063156318122,
+        "max_drawdown_difference_pp": 0.6670782826169175
+      },
+      "vs_equal_weight_hold": {
+        "net_return_difference_pp": 1.3292896002879306,
+        "max_drawdown_difference_pp": -1.3204886447850561
+      }
+    },
+    "V27 four-factor LambdaRank Top2": {
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.6712287329331719,
+      "gross_return_same_fills": 0.7050125746217888,
+      "annualized_net_return": 0.24072369220959766,
+      "annualized_volatility": 0.18756315248469532,
+      "max_drawdown": -0.16162420137471223,
+      "fees": 2138.6657809122694,
+      "slippage_cost": 1239.7183879496488,
+      "total_trading_cost": 3378.384168861918,
+      "turnover": 4132394.6264988296,
+      "trades": 70,
+      "blocked_trade_events": 0,
+      "min_cash": 36.581239869992714,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V24 fixed-rank Top2": {
+      "strategy": "V24 fixed-rank Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.7136226997483901,
+      "gross_return_same_fills": 0.754464335675076,
+      "annualized_net_return": 0.2538465425066201,
+      "annualized_volatility": 0.1864474647744364,
+      "max_drawdown": -0.13423169892363862,
+      "fees": 2580.9905889227243,
+      "slippage_cost": 1503.1730037460143,
+      "total_trading_cost": 4084.1635926687386,
+      "turnover": 5010576.679153383,
+      "trades": 81,
+      "blocked_trade_events": 0,
+      "min_cash": 3.4397542918886757,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V26 mf_tier_flow_agreement_20 Top2": {
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.8470869232227702,
+      "gross_return_same_fills": 0.8772311006691973,
+      "annualized_net_return": 0.2939714080157383,
+      "annualized_volatility": 0.18773458996493148,
+      "max_drawdown": -0.15496193599475971,
+      "fees": 1910.990462057419,
+      "slippage_cost": 1103.4272825854675,
+      "total_trading_cost": 3014.4177446428866,
+      "turnover": 3678090.9419515585,
+      "trades": 63,
+      "blocked_trade_events": 0,
+      "min_cash": 51.354374121292494,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V11 LambdaRank Top2": {
+      "strategy": "V11 LambdaRank Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.7629108467516739,
+      "gross_return_same_fills": 0.7962669279185683,
+      "annualized_net_return": 0.2688688824777674,
+      "annualized_volatility": 0.19249807520726464,
+      "max_drawdown": -0.18028735543940333,
+      "fees": 2123.4090999802106,
+      "slippage_cost": 1212.1990167094377,
+      "total_trading_cost": 3335.6081166896483,
+      "turnover": 4040663.3890314605,
+      "trades": 73,
+      "blocked_trade_events": 0,
+      "min_cash": 36.23176302149659,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "60d momentum Top2": {
+      "strategy": "60d momentum Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.8168833087203415,
+      "gross_return_same_fills": 0.8340410097812239,
+      "annualized_net_return": 0.28504209616172616,
+      "annualized_volatility": 0.19031334449173273,
+      "max_drawdown": -0.17408692642961987,
+      "fees": 1101.2663666494818,
+      "slippage_cost": 614.5037394388639,
+      "total_trading_cost": 1715.7701060883458,
+      "turnover": 2048345.7981295465,
+      "trades": 48,
+      "blocked_trade_events": 0,
+      "min_cash": 61.0696464866453,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "equal-weight hold": {
+      "strategy": "equal-weight hold",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.704429781154281,
+      "gross_return_same_fills": 0.7049877084547611,
+      "annualized_net_return": 0.25101704757332155,
+      "annualized_volatility": 0.18358444425751408,
+      "max_drawdown": -0.15421125715560013,
+      "fees": 25.907930048,
+      "slippage_cost": 29.8848,
+      "total_trading_cost": 55.792730047999996,
+      "turnover": 99616.0,
+      "trades": 4,
+      "blocked_trade_events": 0,
+      "min_cash": 328.2072699519849,
+      "max_positions": 4,
+      "max_abs_accounting_residual": 1.4551915228366852e-11
+    }
+  },
+  "quarterly_returns": [
+    {
+      "period": "2024Q1",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": 0.10385894137897989,
+      "gross_return_same_fills": 0.10626000000000002
+    },
+    {
+      "period": "2024Q2",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": 0.0852279082073184,
+      "gross_return_same_fills": 0.08676740462137755
+    },
+    {
+      "period": "2024Q3",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": 0.12013937529845231,
+      "gross_return_same_fills": 0.12313052680401149
+    },
+    {
+      "period": "2024Q4",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": 0.11588827055238515,
+      "gross_return_same_fills": 0.11600551306763585
+    },
+    {
+      "period": "2025Q1",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": 0.007089812625547198,
+      "gross_return_same_fills": 0.010172388267209787
+    },
+    {
+      "period": "2025Q2",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": 0.07954118527851795,
+      "gross_return_same_fills": 0.08039257638018582
+    },
+    {
+      "period": "2025Q3",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": -0.017539454447305536,
+      "gross_return_same_fills": -0.015600073498876932
+    },
+    {
+      "period": "2025Q4",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": 0.15626165141089476,
+      "gross_return_same_fills": 0.1571448211975235
+    },
+    {
+      "period": "2026Q1",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": -0.030744397354485753,
+      "gross_return_same_fills": -0.027361326152115062
+    },
+    {
+      "period": "2026Q2",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": -0.04168395424620619,
+      "gross_return_same_fills": -0.03778181988415008
+    },
+    {
+      "period": "2024Q1",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": 0.11399114051476,
+      "gross_return_same_fills": 0.1181000000000001
+    },
+    {
+      "period": "2024Q2",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": 0.07356163272080307,
+      "gross_return_same_fills": 0.07498194171938577
+    },
+    {
+      "period": "2024Q3",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": 0.1268039276953059,
+      "gross_return_same_fills": 0.12876834970074902
+    },
+    {
+      "period": "2024Q4",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": 0.09086324170766491,
+      "gross_return_same_fills": 0.09340250514759196
+    },
+    {
+      "period": "2025Q1",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": 0.026788354147952775,
+      "gross_return_same_fills": 0.02814944512470774
+    },
+    {
+      "period": "2025Q2",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": 0.06437238542290369,
+      "gross_return_same_fills": 0.06617062100107973
+    },
+    {
+      "period": "2025Q3",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": -0.037605075561050416,
+      "gross_return_same_fills": -0.035338901261569466
+    },
+    {
+      "period": "2025Q4",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": 0.14862203381580086,
+      "gross_return_same_fills": 0.1483958586230687
+    },
+    {
+      "period": "2026Q1",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": -0.01762891166654068,
+      "gross_return_same_fills": -0.015947461924181505
+    },
+    {
+      "period": "2026Q2",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": -0.04208286352604851,
+      "gross_return_same_fills": -0.0381812111320492
+    },
+    {
+      "period": "2024Q1",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.08488505485501974,
+      "gross_return_same_fills": 0.08811999999999998
+    },
+    {
+      "period": "2024Q2",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.06517818799038166,
+      "gross_return_same_fills": 0.06742832118032571
+    },
+    {
+      "period": "2024Q3",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.11684716801638917,
+      "gross_return_same_fills": 0.11969655435191995
+    },
+    {
+      "period": "2024Q4",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.08040620159929923,
+      "gross_return_same_fills": 0.08297472783296422
+    },
+    {
+      "period": "2025Q1",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.009053660862790025,
+      "gross_return_same_fills": 0.011299139691495652
+    },
+    {
+      "period": "2025Q2",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.09814119581471736,
+      "gross_return_same_fills": 0.09936794007138205
+    },
+    {
+      "period": "2025Q3",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.005756329338000743,
+      "gross_return_same_fills": 0.008241834519042923
+    },
+    {
+      "period": "2025Q4",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.17824736462915247,
+      "gross_return_same_fills": 0.1791594976872415
+    },
+    {
+      "period": "2026Q1",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.0011976618964009145,
+      "gross_return_same_fills": 0.004218575509473466
+    },
+    {
+      "period": "2026Q2",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": -0.06522546021791897,
+      "gross_return_same_fills": -0.06152622012610065
+    },
+    {
+      "period": "2024Q1",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.09017553964939995,
+      "gross_return_same_fills": 0.0916300000000001
+    },
+    {
+      "period": "2024Q2",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.07303943965520387,
+      "gross_return_same_fills": 0.07459343125322815
+    },
+    {
+      "period": "2024Q3",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.10516452902486106,
+      "gross_return_same_fills": 0.10833266304408418
+    },
+    {
+      "period": "2024Q4",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.10091905560529346,
+      "gross_return_same_fills": 0.10200448028143372
+    },
+    {
+      "period": "2025Q1",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.03487892700786288,
+      "gross_return_same_fills": 0.03704720232947989
+    },
+    {
+      "period": "2025Q2",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.06557929936020468,
+      "gross_return_same_fills": 0.06663655565790672
+    },
+    {
+      "period": "2025Q3",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.03681362927400644,
+      "gross_return_same_fills": 0.03910323325253939
+    },
+    {
+      "period": "2025Q4",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.1834688900388779,
+      "gross_return_same_fills": 0.18498255425036914
+    },
+    {
+      "period": "2026Q1",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": -0.017667637258826696,
+      "gross_return_same_fills": -0.015976091514613766
+    },
+    {
+      "period": "2026Q2",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": -0.023658893299641437,
+      "gross_return_same_fills": -0.022417736923538212
+    },
+    {
+      "period": "2024Q1",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.08675568726759986,
+      "gross_return_same_fills": 0.08997999999999995
+    },
+    {
+      "period": "2024Q2",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.07981561801466164,
+      "gross_return_same_fills": 0.08125692889682523
+    },
+    {
+      "period": "2024Q3",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.12760812158226753,
+      "gross_return_same_fills": 0.12798773685762965
+    },
+    {
+      "period": "2024Q4",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.1267870585044546,
+      "gross_return_same_fills": 0.12866091182883466
+    },
+    {
+      "period": "2025Q1",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.022620382308234266,
+      "gross_return_same_fills": 0.024856398675872082
+    },
+    {
+      "period": "2025Q2",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.06462672886165155,
+      "gross_return_same_fills": 0.06657984771640946
+    },
+    {
+      "period": "2025Q3",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.06159736346816613,
+      "gross_return_same_fills": 0.06444154403111413
+    },
+    {
+      "period": "2025Q4",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.14106044121248984,
+      "gross_return_same_fills": 0.14099131129487996
+    },
+    {
+      "period": "2026Q1",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": -0.0654013838102675,
+      "gross_return_same_fills": -0.063017958976606
+    },
+    {
+      "period": "2026Q2",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": -0.04072449773086506,
+      "gross_return_same_fills": -0.037581932841431076
+    },
+    {
+      "period": "2024Q1",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.08140207961190993,
+      "gross_return_same_fills": 0.08288000000000006
+    },
+    {
+      "period": "2024Q2",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.08302877497180705,
+      "gross_return_same_fills": 0.08383055126972638
+    },
+    {
+      "period": "2024Q3",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.11363007890568855,
+      "gross_return_same_fills": 0.11510925900074476
+    },
+    {
+      "period": "2024Q4",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.0787195795643898,
+      "gross_return_same_fills": 0.08169253120256093
+    },
+    {
+      "period": "2025Q1",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.021019970892491635,
+      "gross_return_same_fills": 0.021672628457475085
+    },
+    {
+      "period": "2025Q2",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.09546776181059524,
+      "gross_return_same_fills": 0.0964484819509841
+    },
+    {
+      "period": "2025Q3",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.054173543463965634,
+      "gross_return_same_fills": 0.0547237252184285
+    },
+    {
+      "period": "2025Q4",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.11709684343931048,
+      "gross_return_same_fills": 0.11724854519165961
+    },
+    {
+      "period": "2026Q1",
+      "strategy": "60d momentum Top2",
+      "net_return": -0.005909983648271333,
+      "gross_return_same_fills": -0.005110985499497289
+    },
+    {
+      "period": "2026Q2",
+      "strategy": "60d momentum Top2",
+      "net_return": -0.013748135136053996,
+      "gross_return_same_fills": -0.013532161914130647
+    },
+    {
+      "period": "2024Q1",
+      "strategy": "equal-weight hold",
+      "net_return": 0.09934207269952,
+      "gross_return_same_fills": 0.0999000000000001
+    },
+    {
+      "period": "2024Q2",
+      "strategy": "equal-weight hold",
+      "net_return": 0.07344572634810587,
+      "gross_return_same_fills": 0.07340847080138957
+    },
+    {
+      "period": "2024Q3",
+      "strategy": "equal-weight hold",
+      "net_return": 0.12686340136816399,
+      "gross_return_same_fills": 0.1268034504631208
+    },
+    {
+      "period": "2024Q4",
+      "strategy": "equal-weight hold",
+      "net_return": 0.11052163319818531,
+      "gross_return_same_fills": 0.11047528226115033
+    },
+    {
+      "period": "2025Q1",
+      "strategy": "equal-weight hold",
+      "net_return": 0.018781107165921185,
+      "gross_return_same_fills": 0.018774014271113693
+    },
+    {
+      "period": "2025Q2",
+      "strategy": "equal-weight hold",
+      "net_return": 0.08886671595345375,
+      "gross_return_same_fills": 0.08883377291899874
+    },
+    {
+      "period": "2025Q3",
+      "strategy": "equal-weight hold",
+      "net_return": -0.0026738392635798913,
+      "gross_return_same_fills": -0.0026729289349899377
+    },
+    {
+      "period": "2025Q4",
+      "strategy": "equal-weight hold",
+      "net_return": 0.1286823109153572,
+      "gross_return_same_fills": 0.12863838264231853
+    },
+    {
+      "period": "2026Q1",
+      "strategy": "equal-weight hold",
+      "net_return": -0.035723398917079985,
+      "gross_return_same_fills": -0.0357125939552686
+    },
+    {
+      "period": "2026Q2",
+      "strategy": "equal-weight hold",
+      "net_return": -0.04147882154292837,
+      "gross_return_same_fills": -0.04146581115106629
+    }
+  ],
+  "annual_returns": [
+    {
+      "period": "2024",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": 0.4973637329900773,
+      "gross_return_same_fills": 0.5069206535468078
+    },
+    {
+      "period": "2025",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": 0.23503327611329028,
+      "gross_return_same_fills": 0.2431867521207507
+    },
+    {
+      "period": "2026",
+      "strategy": "V33 stable-20-factor LambdaRank Top2",
+      "net_return": -0.07114680354804048,
+      "gross_return_same_fills": -0.06410938533979438
+    },
+    {
+      "period": "2024",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": 0.4700339982298518,
+      "gross_return_same_fills": 0.4834287927648273
+    },
+    {
+      "period": "2025",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": 0.20810588439113853,
+      "gross_return_same_fills": 0.21436527388269377
+    },
+    {
+      "period": "2026",
+      "strategy": "V27 four-factor LambdaRank Top2",
+      "net_return": -0.05896990010881342,
+      "gross_return_same_fills": -0.053519779645483156
+    },
+    {
+      "period": "2024",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.394398178754942,
+      "gross_return_same_fills": 0.4084264683062615
+    },
+    {
+      "period": "2025",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": 0.31311178101884996,
+      "gross_return_same_fills": 0.3217824235522988
+    },
+    {
+      "period": "2026",
+      "strategy": "V24 fixed-rank Top2",
+      "net_return": -0.06410591636989627,
+      "gross_return_same_fills": -0.057567197622041655
+    },
+    {
+      "period": "2024",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.42329343024679567,
+      "gross_return_same_fills": 0.4327589707010633
+    },
+    {
+      "period": "2025",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": 0.35310924773845564,
+      "gross_return_same_fills": 0.3620267609728667
+    },
+    {
+      "period": "2026",
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "net_return": -0.04090853381370474,
+      "gross_return_same_fills": -0.03803568062151097
+    },
+    {
+      "period": "2024",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.49101348678321055,
+      "gross_return_same_fills": 0.5004284679119164
+    },
+    {
+      "period": "2025",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 0.3188041062180802,
+      "gross_return_same_fills": 0.32757952034347415
+    },
+    {
+      "period": "2026",
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": -0.10346244303455587,
+      "gross_return_same_fills": -0.09823155511597426
+    },
+    {
+      "period": "2024",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.406943670916158,
+      "gross_return_same_fills": 0.41567308229337563
+    },
+    {
+      "period": "2025",
+      "strategy": "60d momentum Top2",
+      "net_return": 0.3171546681757871,
+      "gross_return_same_fills": 0.3200442876010625
+    },
+    {
+      "period": "2026",
+      "strategy": "60d momentum Top2",
+      "net_return": -0.01957686753047705,
+      "gross_return_same_fills": -0.018573984730308024
+    },
+    {
+      "period": "2024",
+      "strategy": "equal-weight hold",
+      "net_return": 0.4767644785137155,
+      "gross_return_same_fills": 0.4773224058141956
+    },
+    {
+      "period": "2025",
+      "strategy": "equal-weight hold",
+      "net_return": 0.2487184687281978,
+      "gross_return_same_fills": 0.24862453742160473
+    },
+    {
+      "period": "2026",
+      "strategy": "equal-weight hold",
+      "net_return": -0.07572045597141985,
+      "gross_return_same_fills": -0.075697553429671
+    }
+  ],
+  "reference_parity": {
+    "V27 four-factor LambdaRank Top2": {
+      "reference_dir": "V27",
+      "reference_strategy": "V27 four-factor LambdaRank Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.986888961866498e-05,
+        "equity_gross": 4.991519381292164e-05,
+        "cash": 4.546259901871963e-08,
+        "fees_cumulative": 4.7626940613554325e-07,
+        "slippage_cumulative": 5.035121830587741e-08,
+        "turnover_cumulative": 0.0004988294094800949,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9995077522346776e-12,
+        "drawdown": 4.9599990781246106e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 1.7763568394002505e-15,
+        "notional": 4.98488952871412e-06,
+        "fee": 4.635055006474431e-09,
+        "slippage_cost": 4.384681062674645e-09
+      },
+      "tolerance": 0.001
+    },
+    "V24 fixed-rank Top2": {
+      "reference_dir": "V24",
+      "reference_strategy": "V24 stable-factor consensus Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.9728609155863523e-05,
+        "equity_gross": 4.9911177484318614e-05,
+        "cash": 8.418169272772502e-08,
+        "fees_cumulative": 4.969260771758854e-07,
+        "slippage_cumulative": 2.539857177907834e-07,
+        "turnover_cumulative": 0.00047491397708654404,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.990601681909013e-12,
+        "drawdown": 4.983269352720754e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 1.7763568394002505e-15,
+        "notional": 4.842615453526378e-06,
+        "fee": 4.813784926227527e-09,
+        "slippage_cost": 4.558163624324152e-09
+      },
+      "tolerance": 0.001
+    },
+    "V26 mf_tier_flow_agreement_20 Top2": {
+      "reference_dir": "V26",
+      "reference_strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.977651406079531e-05,
+        "equity_gross": 4.9741705879569054e-05,
+        "cash": 4.67093173028843e-08,
+        "fees_cumulative": 4.434191396285314e-07,
+        "slippage_cumulative": 4.14532451031846e-07,
+        "turnover_cumulative": 0.0004597173538058996,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.999684694029227e-12,
+        "drawdown": 4.905198469629113e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 1.7763568394002505e-15,
+        "notional": 4.5930210035294294e-06,
+        "fee": 4.2803804944924195e-09,
+        "slippage_cost": 4.727905178469882e-09
+      },
+      "tolerance": 0.001
+    },
+    "V11 LambdaRank Top2": {
+      "reference_dir": "V26",
+      "reference_strategy": "V11 LambdaRank Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.9649213906377554e-05,
+        "equity_gross": 4.9906811909750104e-05,
+        "cash": 4.9985885652859e-08,
+        "fees_cumulative": 4.785097189596854e-07,
+        "slippage_cumulative": 3.9700057641312014e-07,
+        "turnover_cumulative": 0.0004646042361855507,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9977955801638885e-12,
+        "drawdown": 4.9713150263031025e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 1.7763568394002505e-15,
+        "notional": 4.983259714208543e-06,
+        "fee": 4.000014541816199e-09,
+        "slippage_cost": 4.288562394094697e-09
+      },
+      "tolerance": 0.001
+    },
+    "60d momentum Top2": {
+      "reference_dir": "V26",
+      "reference_strategy": "60d momentum Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.98676672577858e-05,
+        "equity_gross": 4.987750435248017e-05,
+        "cash": 4.3388297399360454e-08,
+        "fees_cumulative": 4.964820163877448e-07,
+        "slippage_cumulative": 3.8978271277301246e-08,
+        "turnover_cumulative": 0.00045753270387649536,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9993637701861715e-12,
+        "drawdown": 4.948530474280233e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 8.881784197001252e-16,
+        "notional": 4.543180693872273e-06,
+        "fee": 4.6955079824329005e-09,
+        "slippage_cost": 3.864208508730371e-09
+      },
+      "tolerance": 0.001
+    },
+    "equal-weight hold": {
+      "reference_dir": "V26",
+      "reference_strategy": "equal-weight hold",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.979799268767238e-05,
+        "equity_gross": 4.995721974410117e-05,
+        "cash": 4.801506747753592e-08,
+        "fees_cumulative": 2.000000165480742e-09,
+        "slippage_cumulative": 0.0,
+        "turnover_cumulative": 0.0,
+        "accounting_residual": 1.633148566038045e-21,
+        "daily_return_net": 4.951544382847395e-12,
+        "drawdown": 4.9866888396365994e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 4.440892098500626e-16,
+        "notional": 3.637978807091713e-12,
+        "fee": 8.881784197001252e-16,
+        "slippage_cost": 8.881784197001252e-16
+      },
+      "tolerance": 0.001
+    }
+  }
+}

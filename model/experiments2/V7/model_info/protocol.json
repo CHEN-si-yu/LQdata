@@ -1,0 +1,25 @@
+{
+  "signal": "first trading session each month at close; execute next trading session open",
+  "score": "cached V1 ensemble cross-sectional ordinal rank",
+  "momentum": "adjusted close(T)/adjusted close(T-60 sessions)-1 ordinal rank",
+  "primary_rule": "equal weight of score and 60-session momentum ranks; Top2, equal weight",
+  "ablations": [
+    "score-only Top2",
+    "momentum-only Top2"
+  ],
+  "no_retraining": true,
+  "no_parameter_sweep": true,
+  "execution": "same audited cash ledger; 100-share lots, capacity, limit locks, fees and slippage",
+  "window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "execution_end": "2026-07-01",
+  "snapshot_built_at": "2026-09-27 14:19:24",
+  "score_source": "/root/autodl-fs/model/experiments2/V1/model_pred/ensemble/score_meta.json",
+  "score_source_sha256": "37582c19709533ce1ee2723fd68aeb306ef3a5dd842f8befa98c4720957ce0a9",
+  "model_loader_sha256": "cb1e0d3d437773d7e3f7f83891001122d592fc20264f487276377a32a55f3f9b",
+  "engine_sha256": "51488d3311971ca9c8a143acd478edb66209e2c384dc1f133bd6b5a6378a8beb",
+  "script_sha256": "6a7bd5c126444d60e656a900302b7dd8e6238b8e6c6300d2e02f8d7c16ba049f",
+  "created_at": "2026-09-27 17:40:14"
+}

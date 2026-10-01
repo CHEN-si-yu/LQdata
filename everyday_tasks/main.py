@@ -22,6 +22,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
+import os
+import importlib.util
+if __name__ == "__main__":
+    shared_python = ROOT.parent / "miniconda3/bin/python"
+    if any(importlib.util.find_spec(n) is None for n in ("yaml", "pandas", "pyarrow", "requests")):
+        if shared_python.exists() and Path(sys.executable).resolve() != shared_python.resolve():
+            os.execv(str(shared_python), [str(shared_python), str(ROOT / "main.py"), *sys.argv[1:]])
+    sys.dont_write_bytecode = True
+
 from data_incremental import config as C  # noqa: E402
 
 # Apply limits before imports that initialize numerical libraries.
@@ -208,6 +217,9 @@ def cmd_run(args, cfg: dict) -> int:
     runner = P.Runner()
     client = _new_client(cfg)
     only = {s.strip() for s in args.only.split(",")} if getattr(args, "only", None) else None
+    if only and only - {d.name for d in R.enabled()}:
+        client.close()
+        raise ValueError("Unknown or disabled datasets: " + ", ".join(sorted(only - {d.name for d in R.enabled()})))
 
     # dry-run 不该等 4 小时：把闸门预算压到 0 —— 只探一轮（照发探测请求、不写数据、不 sleep），
     # 既能看到"上游到齐没有"，又能立刻拿到执行计划。
@@ -293,6 +305,16 @@ def cmd_run(args, cfg: dict) -> int:
     if rep.get("alerts_actionable"):
         rep["verdict"] = f"⚠️ 本轮有 {len(rep['alerts_actionable'])} 条需要处理的告警"
     report_mod.save(rep, append_log=not args.dry_run)
+    if not args.dry_run:
+        try:
+            from scripts.api_ledger import collect, write_ledger
+            T = rep.get("T") or __import__("datetime").date.today().isoformat()
+            write_ledger(collect(), paths.LOGS / "ledger" / ("LOG" + T[5:7] + T[8:10]), T)
+        except Exception as exc:
+            alert = f"Interface ledger failed: {exc}"
+            rep.setdefault("alerts", []).append(alert)
+            rep.setdefault("alerts_actionable", []).append(alert)
+            report_mod.save(rep, append_log=False)
 
     if cfg.get("viz", {}).get("summary", True):
         print(viz.render_summary(rep))

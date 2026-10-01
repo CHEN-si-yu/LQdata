@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 
@@ -26,16 +27,21 @@ COLUMNS = ["trade_date", "stock_code", "value", "rank"]
 # ★ 用户的硬性要求：「互相之间保持统一的格式，仅有日期允许长短不一样」。
 #   列名/列序/dtype/目录结构/分区方式/语义**全部逐字相同**，唯一允许的差异是起止日期。
 #   所以 dtype 在这里写死 —— 不能依赖各因子自己碰巧一致。
+MARKET_COLUMNS = ["trade_date", "value"]
+MARKET_DTYPES = {"trade_date": "string", "value": "float32"}
+
 DTYPES = {"trade_date": "string", "stock_code": "string",
           "value": "float32", "rank": "float32"}
 
 
 def _assert_schema(df: pd.DataFrame) -> pd.DataFrame:
     """写盘前的最后一道闸门：列序 + dtype 必须与契约完全一致。"""
-    if list(df.columns) != COLUMNS:
+    columns = MARKET_COLUMNS if list(df.columns) == MARKET_COLUMNS else COLUMNS
+    dtypes = MARKET_DTYPES if columns == MARKET_COLUMNS else DTYPES
+    if list(df.columns) != columns:
         raise ValueError(f"落盘列必须是 {COLUMNS}，实际是 {list(df.columns)}。"
                          f"（新因子不许自定义输出列 —— 见 fea/store.py 的统一格式契约）")
-    for c, want in DTYPES.items():
+    for c, want in dtypes.items():
         got = str(df[c].dtype)
         if got != want:
             raise ValueError(f"列 {c} 的 dtype 必须是 {want}，实际是 {got}")
@@ -84,9 +90,10 @@ def read_year(root: Path, name: str, year: int) -> pd.DataFrame:
     if not p.exists():
         return empty_frame()
     df = pd.read_parquet(p)
-    if df.empty or list(df.columns) != COLUMNS:
-        return empty_frame() if df.empty else df
-    for c, t in DTYPES.items():
+    if list(df.columns) not in (COLUMNS, MARKET_COLUMNS):
+        raise ValueError(f"未知因子文件格式：{p}: {list(df.columns)}")
+    dtypes = MARKET_DTYPES if list(df.columns) == MARKET_COLUMNS else DTYPES
+    for c, t in dtypes.items():
         if str(df[c].dtype) != t:
             df[c] = df[c].astype(t)
     return df
@@ -102,10 +109,59 @@ def read_factor(root: Path, name: str, years: list[int] | None = None) -> pd.Dat
 
 
 def _atomic_write(df: pd.DataFrame, path: Path, compression: str = "zstd") -> None:
+    """原子写 parquet。临时文件名带 PID —— 与 `manifest._atomic_json` 同一条理由。
+
+    同一进程内不同任务写的是不同路径，所以本函数今天没有实际竞态；但把 tmp 名
+    做成**确定性的**是同一个隐患：只要将来出现「两个进程写同一个分区」（例如
+    两个 `main.py run` 实例、或审计与生产并行），就会互相截断、`os.replace` 抛
+    `FileNotFoundError`。加 PID 的成本是零，就地一起修掉。
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    df.to_parquet(tmp, engine="pyarrow", compression=compression, index=False)
-    os.replace(tmp, path)
+    tmp = path.with_suffix(f"{path.suffix}.{os.getpid()}.tmp")
+    try:
+        df.to_parquet(tmp, engine="pyarrow", compression=compression, index=False)
+        os.replace(tmp, path)
+    except BaseException:
+        try: tmp.unlink()
+        except OSError: pass
+        raise
+
+
+# ================================================================ 写盘内容比对
+#: 上一次 `upsert_year` 的写盘判定（供 `Engine.run_year` 取用，随 manifest 落盘）。
+#: ★ 用模块级变量而不是改返回值：`upsert_year` 的调用点有多处，改签名波及面太大；
+#:   调用方是"写完立刻读"，每年一个独立进程，不存在并发歧义。
+LAST_WRITE: dict = {}
+
+
+def _content_identical(old: pd.DataFrame | None, new: pd.DataFrame,
+                       keys: list[str]) -> bool:
+    """两份分区是否**逐格相同**（按主键排序后比数值与字符串）。
+
+    为什么比内容而不是比文件字节：parquet 每次写出的**字节**都不保证一致
+    （压缩块边界、页脚、写盘时间戳），而"内容有没有变"才是真正关心的语义。
+
+    ★ 这是「历史不可变」守卫的**观测层**（2026-09-29 加）：
+      · 相同 ⇒ `upsert_year` 跳过写盘（省 IO；且 mtime 不变 ⇒ 下次 plan 的 L1a
+        不会把"逐字节重写"误判成"分区被外部改动"）；
+      · 不同 ⇒ 照写（本轮不拦截），但把差异摘要记进 `LAST_WRITE`，
+        由 `run_year` 落到 manifest、`daily.py` 汇总进 `report.json.partition_rewrites`。
+    """
+    if old is None or len(old) != len(new):
+        return False
+    if list(old.columns) != list(new.columns):
+        return False
+    if len(old) == 0:
+        return True
+    a = old.sort_values(keys, kind="stable").reset_index(drop=True)
+    b = new.sort_values(keys, kind="stable").reset_index(drop=True)
+    # 用 pandas 自己的 `Series.equals`：dtype 感知、NaN==NaN、
+    # 且对 `string` 扩展列安全（`np.array_equal(..., equal_nan=True)` 在
+    # 字符串列上会 `TypeError: ufunc 'isnan' not supported`，实测踩过）。
+    for c in a.columns:
+        if not a[c].equals(b[c]):
+            return False
+    return True
 
 
 def upsert_year(root: Path, name: str, year: int, new: pd.DataFrame,
@@ -132,10 +188,18 @@ def upsert_year(root: Path, name: str, year: int, new: pd.DataFrame,
     if new is None or len(new) == 0:
         return read_year(root, name, year)
 
-    new = new[COLUMNS].copy()
+    columns = MARKET_COLUMNS if list(new.columns) == MARKET_COLUMNS else COLUMNS
+    dtypes = MARKET_DTYPES if columns == MARKET_COLUMNS else DTYPES
+    _assert_schema(new)
+    keys = ["trade_date"] + (["stock_code"] if "stock_code" in columns else [])
+    if new.duplicated(keys).any():
+        raise ValueError(f"{name}: 重复主键")
+    new = new[columns].copy()
     old = read_year(root, name, year)
     if len(old):
-        old = old[COLUMNS].copy()
+        old = old[columns].copy()
+    old_prev = old          # ★ 写盘前的分区原样（下面 old 会被"按本次重算的天"裁掉一段）
+    if len(old):
         # ★★ 覆盖语义必须按「**本次重算了哪些天**」定，而不是按「新数据里出现了哪些天」定。
         #   两者只在一种情况下不同，但那一种**会静默留脏数据**：
         #   某天重算后**整列都是 NaN**（引擎不留行）→ 新数据里根本没有这一天 →
@@ -158,7 +222,6 @@ def upsert_year(root: Path, name: str, year: int, new: pd.DataFrame,
         n0 = len(merged)
         merged = merged[merged["trade_date"] <= cut]
         if len(merged) != n0:
-            import logging
             logging.getLogger("fea.store").warning(
                 "%s/%d：裁掉 %d 行晚于 %s 的陈旧行", name, year, n0 - len(merged), cut)
     if prune_before:
@@ -166,16 +229,33 @@ def upsert_year(root: Path, name: str, year: int, new: pd.DataFrame,
         n0 = len(merged)
         merged = merged[merged["trade_date"] >= cut]
         if len(merged) != n0:
-            import logging
             logging.getLogger("fea.store").warning(
                 "%s/%d：裁掉 %d 行早于声明起点 %s 的陈旧行", name, year, n0 - len(merged), cut)
-    merged = merged.sort_values(["trade_date", "stock_code"], kind="stable").reset_index(drop=True)
+    merged = merged.sort_values(keys, kind="stable").reset_index(drop=True)
     # ★ 统一 dtype 后再写：以前这里把 stock_code 转成 `category`（省内存），
     #   结果是 parquet 里成 dictionary 编码、读回来是 category 而不是 string ——
     #   跨因子不一致，违背「统一格式」。现在写盘前强制成契约里的 dtype。
-    for c, t in DTYPES.items():
+    for c, t in dtypes.items():
         merged[c] = merged[c].astype(t)
     _assert_schema(merged)
+    # ★★ 2026-09-29：写盘前的**内容比对**（「历史不可变」守卫的观测层，见 _content_identical）。
+    #   相同 ⇒ 跳过写盘；不同 ⇒ 照写，但把差异摘要放进 LAST_WRITE 供上层落台账。
+    if len(old_prev):
+        for c, t in dtypes.items():
+            if c in old_prev.columns and old_prev[c].dtype != t:
+                old_prev[c] = old_prev[c].astype(t)
+    identical = _content_identical(old_prev, merged, keys)
+    LAST_WRITE.clear()
+    LAST_WRITE.update({
+        "factor": name, "year": int(year), "identical": bool(identical),
+        "rows_old": int(len(old_prev)), "rows_new": int(len(merged)),
+        "nonnull_old": int(np.isfinite(old_prev["value"].to_numpy()).sum()) if len(old_prev) else 0,
+        "nonnull_new": int(np.isfinite(merged["value"].to_numpy()).sum()),
+    })
+    if identical:
+        log = logging.getLogger("fea.store")
+        log.debug("%s/%d：内容与旧分区逐格相同，跳过写盘", name, year)
+        return merged
     _atomic_write(merged, path, compression)
     return merged
 

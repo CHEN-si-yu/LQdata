@@ -100,8 +100,8 @@ def _rsi(ctx, close, n):
     loss = np.maximum(-d, 0.0)
     ag = ctx.ewm_mean(gain, alpha=1.0 / n, min_count=n)
     al = ctx.ewm_mean(loss, alpha=1.0 / n, min_count=n)
-    rs = ctx.safe_div(ag, al)            # ★ 分母保护：横盘时 al == 0 -> NaN
-    return 100.0 - 100.0 / (1.0 + rs)
+    total = ag + al
+    return np.where(np.isfinite(total) & (total == 0), 50., 100. * ctx.safe_div(ag, total))
 
 
 def _rsi_close(ctx, n):
@@ -180,18 +180,7 @@ def _bollinger_bandwidth_20(ctx):
         "其中 Wilder's Smoothing 等价于 EMA with com = period - 1\n"
         "参数: period: RSI 周期，默认为 14"),
     start=None, warmup_days=EMA_WARMUP, higher_is_better=False,
-    note="参考库出处：因子库.md「6、Reversal」第 2 条 rsi（同一段公式也出现在 "
-         "factors.md 的 rsi_spread_6_14 的 `_rsi` 私有函数里，口径一致）。"
-         "★ 偏离：参考库 rsi_spread_6_14 的 `_rsi` 用 `delta = pct_chg/100`，"
-         "本文件用 `diff(hfq_close)` —— 两者在正常交易日恒等，但 pct_chg 未经复权因子"
-         "还原（交易所给的 pct_chg 已在除权日调整过，实际也等价），统一走 hfq 更省心。"
-         "★ 分母保护：AvgLoss 精确为 0（连续上涨或长期停牌导致涨跌幅全为 0）时 "
-         "safe_div 给 NaN，理论上该点 RSI=100 —— 宁可缺一格也不给假极值。"
-         "★ 停牌日 hfq_close 被前向填充 -> 涨跌幅为 0（不是 NaN），RSI 会向中位漂移。"
-         "★ 方向：参考库 rsi_14_excess 取负向排名（高 RSI = 超买排后），本因子标 "
-         "higher_is_better=False，与之一致。"
-         "warmup 给 300 而不是 14×1.8+20=46：Wilder EMA 的种子残差要 ~200 个交易日"
-         "才衰减到 float32 精度以下，给少了增量与全量的值会在窗口头部不一致。"),
+    note='Wilder平滑，RSI=100*平均涨幅/(平均涨幅+平均跌幅)；全涨100、全跌0、全平50。',version=2,),
 )
 def rsi_14(ctx):
     return _rsi_close(ctx, 14)
@@ -217,7 +206,7 @@ def rsi_14(ctx):
          "★ 偏离：参考库分母写 `avg_loss + 1e-10`，本文件用 `ctx.safe_div`（分母为 0 给 "
          "NaN）。1e-10 在 RSI 的 0~1 量纲上等价于「分母为 0 时返回 1e10 量级的假值」，"
          "契约 §2.3 明令禁止哨兵/巨值，故改成 NaN。"
-         "★ 复权：参考库用 pct_chg（交易所口径），本文件用 diff(hfq_close)，正常交易日等价。"),
+         "★ 复权：参考库用 pct_chg（交易所口径），本文件用 diff(hfq_close)，正常交易日等价。",version=2,),
 )
 def rsi_spread_6_14(ctx):
     return _rsi_close(ctx, 6) - _rsi_close(ctx, 14)
@@ -314,25 +303,6 @@ def adx_14(ctx):
     return ctx.roll_mean(dx, 14, min_count=7)
 
 
-@register(FactorSpec(
-    name="di_plus_minus_ratio_14", group="technical", deps=DEPS,
-    desc="14 日 DI+/DI- 比率：多头相对空头的趋势优势，>1 = 上升趋势占优",
-    formula=(
-        "scale = _adjusted_close(daily) / daily[\"close\"].replace(0, np.nan)\n"
-        "di_plus, di_minus = _directional_movement(daily[\"high\"], daily[\"low\"],"
-        " daily[\"pre_close\"], scale, 14)\n"
-        "ratio = safe_divide(di_plus, di_minus + 1e-8)"),
-    start=None, warmup_days=EMA_WARMUP, higher_is_better=True,
-    note="参考库出处：factors.md `类别 price` / trend_pattern.py 的 di_plus_minus_ratio_14。"
-         "★ 偏离（分母保护）：参考库写 `di_minus + 1e-8`，但 DI 的量纲是百分数，"
-         "分母踩到 1e-8 时比值会飙到 1e10 —— 直接触发引擎「值域异常」（|value|>1e8）。"
-         "本文件用 `safe_div(..., min_abs_den=1e-4)`：DI- < 0.0001%（几个月没有一个"
-         "有效下移）时给 NaN，其余情况比值上界 1e6，安全。"
-         "★ 复权：同 adx_14，昨收走 `shift(hfq_close,1)`。"),
-)
-def di_plus_minus_ratio_14(ctx):
-    pdi, mdi = _dmi(ctx, 14)
-    return ctx.safe_div(pdi, mdi, min_abs_den=1e-4)
 
 
 @register(FactorSpec(
@@ -504,46 +474,6 @@ def bollinger_squeeze(ctx):
     return ctx.roll_rank(_bollinger_bandwidth_20(ctx), 250)
 
 
-@register(FactorSpec(
-    name="donchian_position_20", group="technical", deps=DEPS,
-    desc="Donchian 通道位置 ∈[0,1]：(close − 20日最低)/(20日最高 − 20日最低)",
-    formula=(
-        "close = daily[\"close\"]\n"
-        "# 用每日复权系数 (后复权基座/close) 折算 high/low 后再取 20 日极值,\n"
-        "# 避免除权日污染通道上下轨\n"
-        "scale = _adjusted_close(daily) / close.replace(0, np.nan)\n"
-        "adj_high = daily[\"high\"] * scale\n"
-        "adj_low = daily[\"low\"] * scale\n"
-        "adj = _adjusted_close(daily)\n\n"
-        "previous_high = adj_high.groupby(level=\"Code\").shift(1)\n"
-        "highest = previous_high.groupby(level=\"Code\").transform(\n"
-        "    lambda s: s.rolling(20, min_periods=10).max()\n"
-        ")\n"
-        "lowest = adj_low.groupby(level=\"Code\").transform(\n"
-        "    lambda s: s.rolling(20, min_periods=10).min()\n"
-        ")\n\n"
-        "position = safe_divide(adj - lowest, highest - lowest + 1e-10)\n"
-        "position = position.clip(0, 1)"),
-    start=None, warmup_days=20 * 2 + 20, higher_is_better=True,
-    note="参考库出处：factors.md `类别 price` / technical_pattern.py 的 donchian_position_20。"
-         "★ 口径**逐字照搬**了参考库的**不对称窗口**：上轨排除了当日"
-         "（`shift(1)` 后再取 20 日 max，窗口 = [T−20, T−1] 的 high），"
-         "下轨含当日（窗口 = [T−19, T] 的 low）。这不是笔误 —— 突破的定义就是"
-         "「今天的价格超过了此前的高点」，所以上轨必须排除今天。"
-         "★ `clip(0,1)` 同样是参考库的口径（通道位置的定义域边界），不是 winsor；"
-         "  代价是「突破」的信息被截断在 1.0，要突破幅度请用 donchian_breakout_20。"
-         "★ 值域 [0,1]，无量纲（分子分母同为价格单位）。"
-         "★ 复权：high/low/close 全部走 hfq，参考库的 `scale` 折算在本框架里"
-         "  由价格层统一完成，不需要再乘一次。"),
-)
-def donchian_position_20(ctx):
-    close = ctx.hfq("close")
-    high = ctx.hfq("high")
-    low = ctx.hfq("low")
-    highest = ctx.roll_max(ctx.shift(high, 1), 20)
-    lowest = ctx.roll_min(low, 20)
-    pos = ctx.safe_div(close - lowest, highest - lowest)
-    return np.clip(pos, 0.0, 1.0)
 
 
 
@@ -598,28 +528,6 @@ def atr_14_ratio(ctx):
 
 
 
-@register(FactorSpec(
-    name="close_location_20d", group="technical", deps=DEPS,
-    desc="收盘位置 = 20 日收益 / 20 日振幅，度量上涨的「上攻效率」",
-    formula=(
-        "h20 = roll(df, \"high\", 20, \"max\")\n"
-        "l20 = roll(df, \"low\", 20, \"min\")\n"
-        "chg20 = df.groupby(\"Code\")[\"close\"].shift(20)\n"
-        "vals = (df[\"close\"] - chg20) / (h20 - l20 + 1e-8)"),
-    start=None, warmup_days=20 * 2 + 20, higher_is_better=True,
-    note="参考库出处：factors.md `类别 price` / fac_new_daily.py 的 close_location_20d。"
-         "★ 复权：参考库这条**没有**走 `_adjusted_close`（用的是原始 high/low/close），"
-         "  在除权日会被污染；本文件按项目硬约束改成 hfq 口径 —— "
-         "  `(hfq_close − shift(hfq_close,20)) / (max(hfq_high,20) − min(hfq_low,20))`。"
-         "★ 值域：分子 ≤ 分母（20 日振幅包含这 20 日的全部价格），所以理论上 ∈ [−1, 1]；"
-         "  实测在 [−1,1] 内（分子分母同口径时严格成立）。"
-         "★ 分母保护：20 日完全无振幅时 safe_div 给 NaN。"),
-)
-def close_location_20d(ctx):
-    close = ctx.hfq("close")
-    h20 = ctx.roll_max(ctx.hfq("high"), 20)
-    l20 = ctx.roll_min(ctx.hfq("low"), 20)
-    return ctx.safe_div(close - ctx.shift(close, 20), h20 - l20)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -650,27 +558,6 @@ def dpo_20(ctx):
     return ctx.safe_div(ctx.shift(adj, 11) - ma20, ma20)
 
 
-@register(FactorSpec(
-    name="bias_20", group="technical", deps=DEPS,
-    desc="20 日乖离率 = close/MA20 − 1",
-    formula=(
-        "# 跨日 MA 窗口走复权基座,未复权 close 在除权日跳变会伪造负乖离\n"
-        "adj = _adjusted_close(daily_panel)\n"
-        "ma_20 = adj.groupby(level=\"Code\").transform(\n"
-        "    lambda s: s.rolling(20, min_periods=10).mean()\n"
-        ")\n"
-        "bias = adj / ma_20.replace(0, np.nan) - 1.0"),
-    start=None, warmup_days=20 * 2 + 20, higher_is_better=True,
-    note="参考库出处：factors.md `类别 price` / price.py 的 bias_20。"
-         "实现为 `safe_div(close − ma20, ma20)`，与 `close/ma20 − 1` 在数值上略有差异"
-         "（后者在 ma20 很大时更稳），但同为无量纲比值，截面排序一致。"
-         "★ 复权：走 hfq_close，除权日不伪造负乖离（参考库注释的原话）。"
-         "★ 方向：参考库正向排名（价格偏离中期成本的程度，极端正 = 超买但强势延续）。"),
-)
-def bias_20(ctx):
-    adj = ctx.hfq("close")
-    ma = ctx.roll_mean(adj, 20)
-    return ctx.safe_div(adj - ma, ma)
 
 
 
@@ -695,17 +582,7 @@ def bias_20(ctx):
         "ratio = safe_divide(pos_w, neg_w + 1e-10)\n"
         "mfi = 100.0 - 100.0 / (1.0 + ratio)"),
     start=None, warmup_days=14 * 2 + 20, higher_is_better=True,
-    note="参考库出处：factors.md `类别 price` / technical_daily.py 的 mfi_14。"
-         "★ 复权：TP = (hfq_high + hfq_low + hfq_close)/3，方向判定 `diff(tp)` 因此"
-         "  在除权日不会误判（参考库的 `scale` 折算由价格层统一完成）。"
-         "★ 成交量语义：`vol` 是**流量**，停牌日是 NaN（价格层明确不补 0）。"
-         "  但停牌日 tp 也被前向填充 -> tp_chg == 0 -> 正负两个条件都不成立 -> "
-         "  该日资金流计 0。这是**正确**的：停牌当天确实没有资金流，"
-         "  `rolling(14).sum()` 的语义就是「窗口内累计净流入」，不是「日均」。"
-         "★ **分母保护**：负向资金流之和精确为 0（14 日全是上涨）时，"
-         "  参考库的 `+1e-10` 会给出 1e10 量级的假比值 -> 引擎值域告警；"
-         "  本文件用 `ctx.safe_div` 给 NaN，MFI 保持 [0,100] 的值域。"
-         "★ 方向：参考库正向排名（资金流入推动排前），本因子同样 True。"),
+    note='保持后复权典型价格乘成交量的既有加权流量口径；MFI=100*正流量/(正流量+负流量)，全正100、全负0、全平50。它是复权加权资金流，非实际人民币净流入。',version=2,),
 )
 def mfi_14(ctx):
     tp = (ctx.hfq("high") + ctx.hfq("low") + ctx.hfq("close")) / 3.0
@@ -713,8 +590,9 @@ def mfi_14(ctx):
     chg = ctx.diff(tp, 1)
     pos = np.where(chg > 0, raw, 0.0)
     neg = np.where(chg < 0, raw, 0.0)
-    ratio = ctx.safe_div(ctx.roll_sum(pos, 14), ctx.roll_sum(neg, 14))
-    return 100.0 - 100.0 / (1.0 + ratio)
+    p = ctx.roll_sum(pos, 14); n = ctx.roll_sum(neg, 14)
+    total = p + n
+    return np.where(np.isfinite(total) & (total == 0), 50., 100. * ctx.safe_div(p, total))
 
 
 
@@ -724,97 +602,21 @@ def mfi_14(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 def _rsrs_beta(ctx, n=18):
-    """18 日滚动 OLS 斜率 beta = cov(low, high) / var(high)。
-
-    ★ 数值处理：先把 high/low 各自除以**当日后复权收盘价**再回归。
-      因为 beta = cov(low,high)/var(high) 对 high 和 low 的**同一个**正常数缩放不变，
-      除以 close 在数学上完全等价，但把数值从「hfq 基座」（老股的累计复权因子可以到 1e3，
-      价格 1e5 量级）压到 O(1)，避免 `roll_cov/roll_var` 在巨大均值上做差分的抵消误差。
-    ★ 用 `ctx.roll_cov` + `ctx.roll_var` 向量化实现，不写循环。
-    ★ `min_abs_den=1e-12`：18 日 high 完全不动（长期停牌）时 var == 0 -> NaN。
-      归一化之后 var 的合法量级是 1e-6~1e-2，1e-12 只挡退化的 0。
-    """
-    close = ctx.hfq("close")
-    h = ctx.safe_div(ctx.hfq("high"), close)
-    l = ctx.safe_div(ctx.hfq("low"), close)
+    """18日 low 对 high 的OLS斜率；使用同一后复权价格空间。"""
+    h = ctx.hfq("high")
+    l = ctx.hfq("low")
     return ctx.safe_div(ctx.roll_cov(l, h, n), ctx.roll_var(h, n), min_abs_den=1e-12)
 
 
 @register(FactorSpec(
     name="rsrs_beta_18", group="technical", deps=DEPS,
-    desc="RSRS 斜率 beta：18 日 high~low 滚动 OLS 斜率（阻力相对支撑的上升速度）",
+    desc='18日后复权low对high的滚动OLS斜率',
     formula=(
-        "# 折算到复权空间再回归,避免除权日 high/low 阶跃污染斜率(见 _compute_rsrs_beta)\n"
-        "scale = _adjusted_close(daily) / daily[\"close\"].replace(0, np.nan)\n"
-        "high = daily[\"high\"] * scale\n"
-        "low = daily[\"low\"] * scale\n"
-        "beta, _ = _compute_rsrs_beta(high, low, window=18)\n"
-        "# 本项目口径：beta = roll_cov(low, high, 18) / roll_var(high, 18)"),
-    start=None, warmup_days=18 * 2 + 20, higher_is_better=True, version=2,
-    note="★★ v2（2026-09-17）：`mathx.roll_cov` 修了「分母用固定 n」的 bug（见该函数注释）——"
-         "本因子是它的直接下游，历史值整体重算过。"
-         "参考库出处：factors.md `类别 price` / technical_pattern.py 的 rsrs_beta_18，"
-         "以及 因子库.md「4、Momentum」第 16 条 `rsrs`"
-         "（`Slope_t = Beta from OLS(Low_{t-N+1:t} ~ High_{t-N+1:t}), N=18`）。"
-         "★ 实现：滚动 OLS 斜率 = cov(low, high)/var(high)，用 `ctx.roll_cov` + "
-         "`ctx.roll_var` 向量化（都是 O(T·C) 的 cumsum 差分），**没有 Python 循环**。"
-         "★ 偏离（数值）：参考库把 high/low 乘 `scale = adj/close` 折算到复权空间；"
-         "  本框架的 `ctx.hfq(\"high\"/\"low\")` 已经是复权价（少一次折算），"
-         "  再各自除以当日 hfq 收盘价只为一个目的：把数值压到 O(1)。"
-         "  除以同一个正常数不改变斜率（beta 对分子分母同尺度缩放不变）。"
-         "★ beta 是**无量纲**的（cov(low,high)/var(high) 的单位是 low/high），"
-         "  所以不需要额外归一化；但它的绝对值会随「high 与 low 的相对波动」漂移。"
-         "★ 退化保护：18 日 high 完全不动（长期停牌）-> var == 0 -> NaN。"),
+        'cov(hfq_low,hfq_high,18)/var(hfq_high,18)'),
+    start=None, warmup_days=18 * 2 + 20, higher_is_better=True, version=3,
+    note='沿用本项目low~high的方向；直接回归后复权高低价。逐日除以不同收盘价并非共同常数缩放，会改变OLS斜率，已移除。'),
 )
 def rsrs_beta_18(ctx):
     return _rsrs_beta(ctx, 18)
 
 
-@register(FactorSpec(
-    name="rsrs_zscore_18", group="technical", deps=DEPS,
-    desc="RSRS 标准分：18 日 OLS 斜率相对自身 200 日历史的标准分",
-    formula=(
-        "scale = _adjusted_close(daily) / daily[\"close\"].replace(0, np.nan)\n"
-        "high = daily[\"high\"] * scale\n"
-        "low = daily[\"low\"] * scale\n"
-        "beta, _ = _compute_rsrs_beta(high, low, window=18)\n\n"
-        "# Z-score relative to 400-day rolling window\n"
-        "roll_mean = rolling_group_mean(beta, 400, min_periods=100)\n"
-        "roll_std = rolling_group_std(beta, 400, min_periods=100)\n"
-        "zscore = safe_divide(beta - roll_mean, roll_std + 1e-8)\n"
-        "# 本项目口径：窗口取 200 个交易日（M=200，见 因子库.md 的 rsrs 条目）"),
-    start=None, warmup_days=400, higher_is_better=True, version=2,
-    note="★★ v2（2026-09-17）：随 `mathx.roll_cov` 的分母 bug 修复整体重算"
-         "（z-score 里的 beta 正是该函数的输出）。"
-         "参考库出处：factors.md `类别 price` / technical_pattern.py 的 rsrs_zscore_18；"
-         "参数口径以 因子库.md「4、Momentum」第 16 条 `rsrs` 为准 ——"
-         "`RSRS_t = Z-Score(Slope_{t-M+1:t}), M=200`，即**200 个交易日**。"
-         "★ **偏离（窗口长度）**：factors.md 的代码注释写「400-day rolling window」，"
-         "  与 因子库.md 的 M=200（交易日）冲突。两个数字单位不同："
-         "  200 个**交易日** ≈ 280 个日历天，仍不等于 400。"
-         "  本文件以 因子库.md 的显式参数 M=200（交易日）为准，"
-         "  因为它是带参数名的规范定义，而 factors.md 那句只是行内注释。"
-         "  如需改为 400 个交易日，只改 `rsrs_zscore_18` 里的 200 与它的 warmup。"
-         "★ `warmup_days=400`（任务指定）：要覆盖 200 个交易日的 z-score 窗"
-         "  + 18 日回归窗，400 个日历天 ≈ 274 个交易日，够用且有余量。"
-         "★ `min_count=100`（= 参考库的 `min_periods=100`，但参考库窗口 400、"
-         "  本文件窗口 200，所以本文件的放松**相对更严格**）。"
-         "  为什么必须放松：`high`/`low` 属于价格层的 LEVELS，停牌日**前向填充**，"
-         "  所以**连续停牌 >= 18 个交易日**的股票，其 18 日窗口内 high 完全不动 ->"
-         "  `roll_var(high,18) == 0` -> `safe_div` 给 NaN -> beta 缺失。"
-         "  而 beta 一旦缺一天，200 日 z-score 窗就被 NaN 毒化 **200 个交易日**。"
-         "  实测：2012~2014 年截面勉强够用（1600~1900），但 2015 年千股停牌后"
-         "  截面从年初 1596 一路衰减到年末 1305（中位数 1385），"
-         "  低于契约 §7「日均截面 1500~3300」的下限。给 min_count=100 后回升。"
-         "★ 不给 min_count 的代价（原实现）：长期停牌股会被整段踢出截面，"
-         "  而停牌恰恰与「重组/重大事项」强相关 -> 缺失是**非随机**的，"
-         "  等于在截面上系统性剔除了事件股。这是比放松窗口更坏的性质。")
-)
-def rsrs_zscore_18(ctx):
-    beta = _rsrs_beta(ctx, 18)
-    # min_count=100：见 note —— 长期停牌会把 beta 打成 NaN，200 日窗若要求「全满」
-    # 会把千股停牌年份的截面从 ~2100 只砍到 ~1385 只（低于契约 §7 的 1500 下限）。
-    # 100 与参考库 `min_periods=100` 同值（参考库窗口 400，相对更松）。
-    mu = ctx.roll_mean(beta, 200, min_count=100)
-    sd = ctx.roll_std(beta, 200, min_count=100)
-    return ctx.safe_div(beta - mu, sd)

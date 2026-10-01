@@ -73,8 +73,21 @@ from fea.spec import FactorSpec, register
 FIN_START = None
 # TTM 4 季 + ann_date 最长滞后 15 个月 → 700 日历天（契约 §2）
 FIN_WARMUP = 700
-# ★ 上游字段受限的两个因子（见 rd_intensity / interest_coverage 的 note）
-RD_START = "2019-05-01"
+# ★★ 2026-09-25：由 "2019-05-01" 改为 None（跟随全局下界 2018-01-01）。
+#
+#   原来的理由是「上游字段在 2019 年前是『未披露』而不是真值（恒为精确 0.0）」。
+#   但**实测 2018 年**并非如此：
+#     · stock_income.fin_exp_int_exp  非空 17630 行，其中精确 0 占 **55.9%**
+#                                           ⇒ **44% 是有真实值的**
+#     · stock_income.rd_exp           非空 17630 行，其中精确 0 占 **50.7%**
+#                                           ⇒ **49% 是有真实值的**
+#   也就是说这两个字段在 2018 年**不是全 0**，按 2019-05-01 截断会把这 ~44%/49%
+#   的真实观测一起丢掉。作者的顾虑（早年 TTM 窗口对未披露公司偏窄）是真实的，
+#   但那属于 PIT 的正常语义 —— 引擎本来就按公告时点取"当时已知的最新版本"。
+#
+#   用户 2026-09-25 的硬约定：**因子必须在时间轴对齐到 default_start**，
+#   并且明确规定"只有上游确实不支持时才填充"。这里上游支持 ⇒ 放开真算、不填充。
+RD_START = None
 
 # ---------------------------------------------------------------- 上游字段
 # 累计制（-> TTM）
@@ -145,19 +158,6 @@ def roa_ttm(ctx):
     return ctx.safe_div(ctx.ttm(NP), ctx.point(TA), min_abs_den=MIN_CUR)
 
 
-@register(FactorSpec(
-    name="net_margin_ttm", group="quality", deps=DEP_I,
-    desc="销售净利率（TTM）= 归母净利润TTM / 营业收入TTM",
-    formula="NPM = NetProfit / OperatingRevenue",
-    start=FIN_START, warmup_days=FIN_WARMUP, higher_is_better=True,
-    fin_fields=("n_income_attr_p", "revenue"),
-    note="参考库 #35 npm_ttm 的公式未指明净利口径，这里统一归母（见文件头口径总纲）。"
-         "营收用 revenue（营业收入），不是 total_revenue（营业总收入）。"
-         "净利率可以为负（亏损），是正常的截面读数。"
-         "地板 100 万元营收：TTM 营收低于此的主板公司等于空壳，比率无意义。",
-))
-def net_margin_ttm(ctx):
-    return ctx.safe_div(ctx.ttm(NP), ctx.ttm(REV), min_abs_den=MIN_CUR)
 
 
 @register(FactorSpec(

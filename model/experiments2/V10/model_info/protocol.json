@@ -1,0 +1,29 @@
+{
+  "objective": "fixed monthly intersection of model-score Top2 and 60-session momentum Top2",
+  "window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "execution_only_exit_day": "2026-07-01",
+  "rule": {
+    "signal": "first trading session of each calendar month at close",
+    "score": "rank cached V1 ensemble score descending across finite-score names; select Top2",
+    "momentum": "rank adjusted close(T)/adjusted close(T-60 sessions)-1 descending; select Top2",
+    "selection": "hold only names in both independently ranked Top2 lists; 0/1/2 names allowed",
+    "allocation": "target 50% of current pre-trade NAV per selected name; unused target allocation remains cash",
+    "execution": "T+1 open; 100-share lots, 1% previous signal-day amount capacity, limit locks, 3bp slippage and fees",
+    "no_retraining": true,
+    "no_parameter_scan": true
+  },
+  "V1_source_hashes": {
+    "model.py": "cb1e0d3d437773d7e3f7f83891001122d592fc20264f487276377a32a55f3f9b",
+    "model_info/final_audit.json": "6605e9848406ca4d70312bc221b323c146f4fa1667acb81fe7702bc75378913c",
+    "model_pred/ensemble/score_meta.json": "37582c19709533ce1ee2723fd68aeb306ef3a5dd842f8befa98c4720957ce0a9",
+    "model_pred/ensemble/year=2025/data.parquet": "3ea8846e49e73d83b7e820a081ff25fa09415384916e99541053d65d42fd76a2",
+    "model_pred/ensemble/year=2026/data.parquet": "58adcf7cccbb477ba6b81dbd47dbc8cfecf4320b0545d300a8d5bef67cca6394"
+  },
+  "engine_sha256": "614fb6c3da6a4bc531c29c5916154c7b8fd0f9925805c9b748e1694b9476d42c",
+  "script_sha256": "10e1289f28fd12050515d029445c182b1e6e78c263846ffeba30bce19467a97c",
+  "snapshot_built_at": "2026-09-27 14:19:24",
+  "created_at": "2026-09-27 17:44:16"
+}

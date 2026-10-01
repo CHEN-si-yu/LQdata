@@ -1,0 +1,110 @@
+{
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "days_per_strategy": 601,
+  "monthly_signal_count": 30,
+  "bimonthly_update_count": 15,
+  "selected_feature": "id2_close_vs_pm_vwap_20",
+  "feature_selection": {
+    "id2_close_vs_pm_vwap_20": {
+      "top20_quarters": 10,
+      "total_importance_quarters": 16,
+      "mean_normalized_gain_when_top20": 0.0448814608328088
+    }
+  },
+  "metrics": {
+    "V34 id2_close_vs_pm_vwap_20 Top2": {
+      "strategy": "V34 id2_close_vs_pm_vwap_20 Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.9220926078219478,
+      "gross_return_same_fills": 0.9593723148371964,
+      "annualized_net_return": 0.3157858435864378,
+      "annualized_volatility": 0.18792659329339928,
+      "max_drawdown": -0.12891928479631332,
+      "fees": 2362.692232079848,
+      "slippage_cost": 1365.2784694451154,
+      "total_trading_cost": 3727.9707015249633,
+      "turnover": 4550928.231483719,
+      "trades": 72,
+      "blocked_trade_events": 0,
+      "min_cash": 77.63304206021712,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "return_over_volatility": 1.6803680525055813
+    },
+    "V47 id2_close_vs_pm_vwap_20 Top2 bimonthly": {
+      "strategy": "V47 id2_close_vs_pm_vwap_20 Top2 bimonthly",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.9891302512276252,
+      "gross_return_same_fills": 1.0065078101631793,
+      "annualized_net_return": 0.3348687108394115,
+      "annualized_volatility": 0.1852735242120783,
+      "max_drawdown": -0.1260933013245752,
+      "fees": 1097.5058825422927,
+      "slippage_cost": 640.2500110131565,
+      "total_trading_cost": 1737.7558935554493,
+      "turnover": 2134166.703377188,
+      "trades": 35,
+      "blocked_trade_events": 0,
+      "min_cash": 98.50579823198495,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "return_over_volatility": 1.8074288394066227
+    }
+  },
+  "bimonthly_vs_monthly": {
+    "net_return_difference_pp": 6.703764340567742,
+    "annualized_return_difference_pp": 1.90828672529737,
+    "max_drawdown_difference_pp": 0.2825983471738125,
+    "annualized_volatility_difference_pp": -0.26530690813209856,
+    "turnover_reduction_fraction": 0.531048042328412,
+    "total_cost_savings_fraction": 0.5338600990494364,
+    "fees_savings_fraction": 0.535485042173194,
+    "slippage_savings_fraction": 0.5310480423284119,
+    "return_over_volatility_difference": 0.1270607869010414
+  },
+  "v34_monthly_control_compatibility": {
+    "reference": "V34 daily_equity.csv, trades.csv, metrics.json",
+    "daily_rows": 601,
+    "daily_max_abs_differences": {
+      "equity_net": 4.989688750356436e-05,
+      "equity_gross": 4.995934432372451e-05,
+      "cash": 4.8018705456343014e-08,
+      "fees_cumulative": 4.67901372758206e-07,
+      "slippage_cumulative": 4.5618162403116003e-07,
+      "turnover_cumulative": 0.0004837196320295334,
+      "accounting_residual": 3.26629713207609e-21,
+      "daily_return_net": 4.998501612618611e-12,
+      "drawdown": 4.9974135940544784e-11
+    },
+    "metric_abs_differences": {
+      "net_return": 0.0,
+      "annualized_net_return": 0.0,
+      "fees": 0.0,
+      "slippage_cost": 0.0,
+      "total_trading_cost": 0.0,
+      "turnover": 0.0,
+      "max_drawdown": 0.0,
+      "annualized_volatility": 0.0,
+      "min_cash": 0.0
+    },
+    "shares_json_exact_match": true,
+    "trade_string_fields_exact_match": true,
+    "trade_numeric_max_abs_differences": {
+      "shares": 0.0,
+      "open": 0.0,
+      "fill": 1.7763568394002505e-15,
+      "notional": 2.3673143004998565e-05,
+      "fee": 4.620432036972488e-09,
+      "slippage_cost": 4.179234736056969e-09
+    },
+    "trades_equal": true,
+    "tolerance": 0.001
+  }
+}

@@ -14,7 +14,7 @@
     python main.py list           列出所有因子与本地进度
     python main.py status         汇总已落地因子统计
     python main.py check          基础体检：universe / 值域 / 格式；PIT 用 audit-pit
-    python main.py docs           更新 README.md 中的因子字典
+    python main.py docs           刷新 artifacts/catalog 的完整因子字典及 README 摘要
 
 ★ 上游数据（模块①）产出在 ../datadownload/data，本模块只读不写。
 """
@@ -28,6 +28,35 @@ import os
 import sys
 import time
 from pathlib import Path
+
+if __name__ == "__main__":
+    import importlib.util
+
+    # ★★ 2026-09-25：**无条件钉死共享解释器**（以前只在当前解释器缺 numpy 时才切）。
+    #
+    #   为什么必须钉：因子落盘值的末位取决于**浮点实现**。实测同一份代码 + 同一份输入
+    #   （逐文件 md5 核对）+ 同一个计算计划，只因为跑在另一套 numpy 上，87 个对象的
+    #   历史值就在末位变了，而 `main.py` 只能把它报成「无法解释的历史变化」并返回非零
+    #   （`arcsinh(float32)` 在 numpy 的 SIMD 核里与正确舍入差 24.76% 的输入）。
+    #   容器镜像里存在**第二套 python**（`/root/miniconda3/bin/python`，带自己的 numpy），
+    #   而本模块跑在与上游共享的盘上、多个端口并行 —— 不钉死就会出现「同一入口、
+    #   不同数值」且完全不留痕。缺 numpy 才切的老逻辑正好漏掉这种情况：那套 python
+    #   自己是带 numpy 的。
+    #
+    #   钉死之后：数值环境由 `fea/resources.py::numeric_env_fingerprint()` 写进每个因子的
+    #   `recipe`，环境一变 → 指纹变 → 引擎强制全量重建并在日志里写明原因，
+    #   不会再把两套浮点实现的结果混进同一份产物。
+    shared = Path(__file__).resolve().parent.parent / "miniconda3/bin/python"
+    if shared.exists() and Path(sys.executable).resolve() != shared.resolve():
+        missing = [n for n in ("numpy", "pandas", "pyarrow", "yaml")
+                   if importlib.util.find_spec(n) is None]
+        if missing:
+            print(f"[main] 当前解释器缺 {missing}，切换到共享环境 {shared}", flush=True)
+        os.execv(str(shared), [str(shared), str(Path(__file__).resolve()), *sys.argv[1:]])
+    if not shared.exists():
+        print(f"⚠️ 找不到共享解释器 {shared}，将用当前解释器运行；"
+              f"数值环境可能与其他运行不一致（见 fea/resources.py 的数值指纹）", flush=True)
+    sys.dont_write_bytecode = True
 
 # ★★ BLAS 线程数 —— **必须在 `import numpy` 之前设置**（numpy/BLAS 在导入时读这些变量）。
 #
@@ -47,6 +76,18 @@ for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS",
 from fea.resources import configure, safe_jobs
 if __name__ == "__main__":
     configure()
+    # ★ 数值环境指纹：登录式地印一行，方便把「这次的值是哪个环境算的」对上号。
+    #   它同时拼在每个因子的 recipe 里（见 fea/engine.py::_recipe）。
+    from fea.resources import numeric_env_fingerprint as _numenv
+    import numpy as _np
+    print(f"[env] python {sys.version.split()[0]} · numpy {_np.__version__} · "
+          f"数值指纹 {_numenv()}", flush=True)
+    # float32 超越函数探针（默认关闭）：FEA_FP_GUARD=<jsonl> 时按实际执行取证。
+    import os as _os
+    if _os.environ.get("FEA_FP_GUARD"):
+        from fea.resources import install_float32_guard
+        install_float32_guard(_os.environ["FEA_FP_GUARD"])
+        print(f"[guard] float32 超越函数探针已启用 → {_os.environ['FEA_FP_GUARD']}", flush=True)
 
 import numpy as np                                                       # noqa: E402
 import pandas as pd                                                      # noqa: E402
@@ -63,17 +104,9 @@ from fea.manifest import Manifest                        # noqa: E402
 from fea.spec import all_specs, get, REGISTRY            # noqa: E402
 
 BANNER = """
-╔══════════════════════════════════════════════════════════════════════════╗
-║  ★ 因子开发的四条硬约束（下游是 A 股日横断面回归排序任务）                ║
-║    ① 全部因子必须**日频**——对齐 (trade_date, stock_code) 面板后落盘      ║
-║    ② 只考虑**主板 + 非 ST**，约 3000+ 只                                  ║
-║       600/601/603/605（沪） + 000/001/002/003（深，含原中小板）           ║
-║       排除 创业板 300/301/302、科创板 688/689、北交所 832/833/920         ║
-║    ③ 输出起点由 conf/config.yaml 的 default_start 控制（见该配置，勿在此硬编码）║
-║    ④ 历史因子值不得因未来的分红事件而变化（禁用前复权 qfq）               ║
-║  ★ 统一格式：全部因子 4 列 trade_date/stock_code/value/rank，同 dtype；   ║
-║    唯一允许的差异是**起止日期**（见 main.py check 的格式统一性检查）      ║
-╚══════════════════════════════════════════════════════════════════════════╝
+日频因子工程：固定2115只股票；市场因子每日一个标量；默认输出2018年至上游最新日。
+股票/标签：trade_date, stock_code, value, rank。市场：trade_date, value。
+价格使用原始价与当时累计复权因子；滞后数据按可得日；未来收益仅作标签。
 """
 
 
@@ -173,166 +206,65 @@ def _pick(names: list[str], group: list[str] | None):
 
 # ------------------------------------------------------------------ 命令
 def cmd_run(args, cfg) -> int:
-    # ★ 沙箱运行**不参与**单实例保护：它的产物与状态都重定向到独立目录，
-    #   和生产 run 互不干扰。多 Agent 并行开发时每个 Agent 一个沙箱，
-    #   原来会被这条保护挡住（"已有因子进程在跑"），白白浪费时间。
-    if not args.force and not getattr(args, "sandbox", None):
-        others = _running_pids()
-        if others:
-            pids = " ".join(str(p) for p in others)
-            print(f"\n✘ 已有因子进程在跑（PID {pids}），拒绝启动。\n"
-                  f"  两个实例同时写共享盘会互相覆盖。\n"
-                  f"  确认要停：kill {pids}   （★ 不要用 pkill -f，会误杀自己）\n"
-                  f"  确实要并行：--force")
-            return 2
-
+    """只运行已经限制在一年的分片；外层负责内存隔离与台账。"""
+    if not getattr(args, "slice_worker", False):
+        from fea.daily import run
+        return run(args, cfg, _pick)
+    import json
+    from fea.daily import expand_dependencies
     specs = _pick(args.factors, args.group)
-    if not specs:
-        print("没有匹配的因子")
-        return 1
-
-    mode = "全量重建" if args.rebuild else "增量"
+    if getattr(args, "plan_file", None):
+        cfg.raw["_explicit_plan"] = json.loads(Path(args.plan_file).read_text())
     engine = Engine(cfg)
-    engine.force_refresh = bool(getattr(args, "refresh", False))
-    # ★ 默认右端点 = **上游基准表实际覆盖到的最后一天**，不是「今天」。
-    #   见 Engine.baseline_last_day 的说明：日历会延伸到未来，而财务类因子
-    #   只依赖已公告的季报，用「今天」会在一个上游数据还不存在的交易日上产出值。
-    if args.end:
-        end_i = str_to_int(args.end)
-        end_src = "（显式指定）"
-    else:
-        end_i = engine.baseline_last_day()
-        end_src = "（= 上游 stock_daily 的最后一天，闸门自动判定）"
-    print(BANNER)
-    print(f"因子工程 · {mode}更新 · 共 {len(specs)} 个因子 · "
-          f"截止 {int_to_str(end_i)} {end_src}")
-    print("-" * 78)
-    if args.start:
-        engine.override_start = str_to_int(args.start)
-        print(f"★ 只产出 {args.start} 之后的因子值（--start）")
-    print(f"股票池：主板 {len(engine.codes)} 只 · 交易日历 {len(engine.cal.days)} 天")
-
-    # ★★ 多年守卫（2026-09-17 加，因为**真的爆过**）：真正决定内存的不是"请求跨度"，
-    #   而是**计划里实际有几年的活**。价格层/派生层缓存只扩不缩，一旦计划跨多年，
-    #   每个 worker 都会把全历史读进内存（实测 7~8 GB/worker）——
-    #   2026-09-17 那次是「2 个因子 × 14 年 × jobs 4~8」，两次都在第 27 个任务上
-    #   被 OOM-Kill（报 `BrokenProcessPool`，不是 MemoryError，很容易误判成"偶发"）。
-    #   日增量/单年重建只跨 1~2 年，永远不会触发这里；多年历史请走按年分块的脚本。
-    years = engine.plan_years(specs, end_i, rebuild=args.rebuild)
-    span_all = sorted({y for ys in years.values() for y in ys})
-    heavy = sorted(n for n, ys in years.items() if len(ys) >= 3)
-    if heavy and not args.allow_multiyear:
-        # ★ 只把**跨 ≥3 年的那几个因子**摘出去，其余因子照常跑 ——
-        #   「某个因子缺多年历史」不该连累每日增量（那条命令必须稳、快、幂等）。
-        heavy_set = set(heavy)
-        specs = [s for s in specs if s.name not in heavy_set]
-        lo = min(min(years[n]) for n in heavy)
-        hi = max(max(years[n]) for n in heavy)
-        print(f"\n⚠ 以下 {len(heavy)} 个因子缺 {lo}..{hi} 的多段历史，已从**本次运行**中摘出：\n"
-              f"    {' '.join(heavy[:6])}{' …' if len(heavy) > 6 else ''}\n"
-              f"  理由：价格层 / 派生层缓存**只扩不缩** —— 一个因子跨 ≥3 年时，跑它的 worker\n"
-              f"  会把全历史读进内存（实测 7~8 GB/worker），并行数一上去就顶爆 cgroup 上限\n"
-              f"  （表现是 BrokenProcessPool，不是 MemoryError —— 2026-09-17 就是这么爆的）。\n"
-              f"  补这些因子的历史请按年分块跑（每块一个独立进程）：\n"
-              f"    /autodl-fs/data/miniconda3/bin/python main.py rebuild --jobs 1 "
-              f"--from-year {lo} --to-year {hi}\n"
-              f"  （确实要单进程硬跑全部年份：加 --allow-multiyear，内存自负）", flush=True)
-        if not specs:
-            print("✘ 本次要跑的因子全被摘出，没有可执行的活。")
-            return 2
-        print(f"  → 本次继续跑其余 {len(specs)} 个因子（各自缺的那几天）\n", flush=True)
-    elif len(span_all) >= 3:
-        # 单个因子都不跨多年，但合起来跨了 —— 计划整体仍可能让 worker 攒下多年窗口。
-        print(f"⚠ 本次计划的年份跨度 {min(span_all)}..{max(span_all)}（{len(span_all)} 年），"
-              f"建议停止本次运行，改用 main.py rebuild 按年运行以控制内存。")
-    t0 = time.time()
-
-    # ---- 规划 + 预建共享状态（衍生层/ST 事件），供 fork 出的 worker 写时复制继承
-    todo = engine.prebuild(specs, end_i, rebuild=args.rebuild)
-    if not todo:
-        print("所有因子都已是最新，无需重算。")
-        return 0
-
-    # ★ 任务排序用「年优先」而不是「因子优先」：相邻任务共享同一个输出年
-    #   → warmup 相同 → 面板窗口相同 → 各 worker 的派生缓存/价格缓存不必反复清空重建。
-    #   因子优先的话每个 worker 会沿着年份来回跳，缓存几乎每任务都失效。
-    #
-    # ★★ 耦合因子（`deps` 里写的是**别的因子名**，即 `ctx.load_factor` 的父因子）
-    #    必须**等父因子落盘之后**再算 —— `FactorIO.load` 读的是产物文件，
-    #    跑在父因子前面会静默拿到全 NaN（它只 warning，不报错）。
-    #    所以分两趟：第一趟 = 全部非耦合因子；第二趟 = 耦合因子。
-    def _is_coupling(sp) -> bool:
-        return any(d in REGISTRY for d in sp.deps)
-
-    todo_nc = [t for t in todo if not _is_coupling(t[0])]
-    todo_cp = [t for t in todo if _is_coupling(t[0])]
-    if todo_cp:
-        print(f"耦合因子 {len(todo_cp)} 个：等第一趟（{len(todo_nc)} 个）全部落盘后再算")
-
-    results: list[dict] = []
-    done = {"n": 0, "total": 1}
-
-    def on_done(r):
-        done["n"] += 1
-        tag = "✓" if not r.get("error") else "✘"
-        print(f"  [{done['n']:>3}/{done['total']}] {tag} "
-              f"{r.get('factor','?'):<22} {r.get('year','?')}  "
-              f"{r.get('rows',0):>9,} 行"
-              f"{r.get('seconds',0):>7.1f}s"      # ★ 逐任务耗时（增量效率靠它看）
-              + (f"   失败: {r['error'][:70]}" if r.get("error") else ""), flush=True)
-
-    for wave in (todo_nc, todo_cp):
-        if not wave:
-            continue
-        tasks = [(spec.name, int(y), plan[y])
-                 for y in sorted({y for _, _, plan in wave for y in plan})
-                 for spec, _, plan in wave if y in plan]
-        # Reuse equal panel windows together; ordering changes no formula.
-        tasks.sort(key=lambda t: (t[1], REGISTRY[t[0]].warmup_days, t[0]))
-        if not tasks:
-            continue
-        done["total"] = done["n"] + len(tasks)
-        jobs = max(1, min(safe_jobs(args.jobs), len(tasks)))
-        if jobs > 1 and len(tasks) > 1:
-            print(f"并行：{jobs} 个进程 · {len(tasks)} 个任务（因子 × 年）"
-                  f" · 共享状态已预建 {time.time() - t0:.1f}s")
+    engine.force_refresh = bool(args.refresh)
+    end = str_to_int(args.end) if args.end else engine.baseline_last_day()
+    engine.override_start = str_to_int(args.start) if args.start else None
+    # jobs 同时给派生层并行用：那段在因子 worker fork 之前，两者不重叠。
+    todo = engine.prebuild(specs, end, rebuild=args.rebuild,
+                           jobs=safe_jobs(args.jobs))
+    pending = {s.name: (s, m, plan) for s, m, plan in todo}
+    failed, total_rows = {}, 0
+    while pending:
+        wave = [item for item in pending.values()
+                if not any(d in pending for d in item[0].deps)]
+        if not wave: raise ValueError("因子依赖存在循环")
+        ready = []
+        for item in wave:
+            spec = item[0]
+            if any(d in failed for d in spec.deps):
+                failed[spec.name] = "父因子失败，未计算"
+                pending.pop(spec.name)
+            else: ready.append(item)
+        tasks = [(s.name, y, ds) for s, _, plan in ready for y, ds in sorted(plan.items())]
+        tasks.sort(key=lambda t:(t[1], REGISTRY[t[0]].warmup_days, t[0]))
+        def report(r):
+            print(f"{r['factor']} {r['year']}: " + (r.get("error") or f"{r.get('rows',0)} 行 / {r.get('seconds',0)}s"), flush=True)
+        jobs = safe_jobs(args.jobs)
+        if tasks and jobs > 1:
+            results = engine.run_parallel(tasks, jobs, on_done=report)
         else:
-            print(f"串行：{len(tasks)} 个任务")
-        print("-" * 78)
-        if jobs > 1 and len(tasks) > 1:
-            results += engine.run_parallel(tasks, jobs, on_done=on_done)
-        else:
+            results = []
             for name, year, days in tasks:
-                r = engine.run_year(REGISTRY[name], year, days)
-                results.append(r)
-                on_done(r)
-
-    # ---- 父进程统一收尾：写 manifest（worker 不碰状态文件）
-    by_factor: dict[str, list[dict]] = {}
-    for r in results:
-        by_factor.setdefault(r["factor"], []).append(r)
-
-    failed = []
-    total_rows = 0
-    # Save parent manifests before child input watermarks are captured.
-    for spec, man, plan in todo_nc + todo_cp:
-        rs = by_factor.get(spec.name, [])
-        errs = [r for r in rs if r.get("error")]
-        if errs:
-            failed.append((spec.name, errs[0]["error"]))
-            continue
-        st = engine._finalize(spec, man, plan, rs, time.time() - t0)
-        total_rows += st["rows"]
-
-    el = time.time() - t0
-    print("-" * 78)
-    print(f"完成 {len(todo) - len(failed)}/{len(todo)} 个因子 · 共写 {total_rows:,} 行 · "
-          f"用时 {el:.1f}s")
-    if failed:
-        print("\n以下因子失败（可单独重跑，会自动续传）：")
-        for n, e in failed:
-            print(f"  - {n}: {e}")
-    return 1 if failed else (2 if heavy and not args.allow_multiyear else 0)
+                try: r = engine.run_year(REGISTRY[name], year, days)
+                except Exception as exc:
+                    logging.exception("因子计算失败 %s %s", name, year)
+                    r = {"factor": name, "year": year, "error": repr(exc)}
+                results.append(r); report(r)
+        # 在子因子读取之前完成父因子的状态提交，并丢弃父因子读取缓存。
+        for spec, man, plan in ready:
+            own = [r for r in results if r["factor"] == spec.name]
+            errors = [r["error"] for r in own if r.get("error")]
+            if errors or len(own) != len(plan):
+                failed[spec.name] = errors[0] if errors else "任务未全部返回"
+            else:
+                stats = engine._finalize(spec, man, plan, own, sum(r["seconds"] for r in own))
+                total_rows += stats["rows"]
+            pending.pop(spec.name)
+        engine._factor_io = None
+        engine.factor_io()
+        engine._wm_cache.clear()
+    print(f"完成 {len(todo)-len(failed)}/{len(todo)} 项，共写 {total_rows:,} 行；失败 {failed}", flush=True)
+    return int(bool(failed))
 
 
 def default_jobs() -> int:
@@ -357,7 +289,7 @@ def cmd_list(args, cfg) -> int:
     print("-" * 108)
     print(f"共 {len(all_specs())} 个因子    起点带 * = 跟随 conf 的 default_start"
           f"（当前 {cfg.default_start}）；其余为受上游数据起点限制的显式值")
-    print("★ 约束：日频 / 只主板~3000只 / 历史值不得随未来分红变化")
+    print("约束：日频 / 固定2115只股票或市场标量 / 禁止未来信息")
     return 0
 
 
@@ -371,7 +303,7 @@ def cmd_status(args, cfg) -> int:
         if not rows:
             continue
         grand += rows
-        size = store.factor_size(cfg.factors_dir, s.name)
+        size = store.factor_size(cfg.factor_root(s), s.name)
         ds = [v.get("min_date") for v in man.partitions.values() if v.get("min_date")]
         de = [v.get("max_date") for v in man.partitions.values() if v.get("max_date")]
         print(f"{s.name:<24}{rows:>13,}{len(man.partitions):>5}"
@@ -440,69 +372,8 @@ def _report_contracts(engine) -> int:
 
 
 def cmd_check(args, cfg) -> int:
-    """基础体检：universe 合规、值域与格式；因果性另用 audit-pit 截断复算。"""
-    from fea.engine import Engine
-    engine = Engine(cfg)
-    prefix = tuple(cfg.board_prefixes)
-    problems = 0
-    baseline = int_to_str(engine.baseline_last_day())
-
-    from fea.spec import QFQ_DATASETS
-    print(BANNER)
-    print("基础体检不证明无前视；PIT 未执行，请另用 main.py audit-pit 做历史截断复算。")
-    problems += _report_contracts(engine)
-    print("-" * 96)
-    print(f"{'因子':<24}{'行数':>12}{'主板合规':>9}{'≥起点':>7}"
-          f"{'值域异常':>9}{'日均截面':>9}  复权口径")
-    print("-" * 96)
-    for s in all_specs():
-        man = Manifest.load(cfg.state_dir, s.name)
-        if not man.partition_rows():
-            if s.resolved_start(cfg) <= baseline:
-                problems += 1
-                print(f"✘ {s.name}: 尚未生成，应补齐产物")
-            else:
-                print(f"{s.name}: 尚未到有效起点，本次不要求产物")
-            continue
-        missing_years = [y for y in man.partitions if not store.year_path(cfg.factors_dir, s.name, int(y)).exists()]
-        if missing_years:
-            problems += 1
-            print(f"✘ {s.name}: 状态记录中的分区文件缺失 {missing_years}")
-        df = store.read_factor(cfg.factors_dir, s.name)
-        if df.empty:
-            problems += 1
-            print(f"✘ {s.name}: 状态记录有行数，但没有可读取的产物")
-            continue
-        codes = df["stock_code"].astype(str)
-        bad_board = int((~codes.str.startswith(prefix)).sum())
-        early = int((df["trade_date"] < s.resolved_start(cfg)).sum())
-        v = df["value"].to_numpy()
-        # ★ 2026-09-15 晚（用户拍板「NaN 还是落盘的好」）后口径变更：
-        #   NaN 现在是**合法值**（表示"这天算不出/无效"），产物里整块面板都落盘
-        #   → 这里只把 **±inf** 与量级离谱（>1e8）算异常；NaN 单独报成覆盖率。
-        bad_val = int(np.isinf(v).sum() + (np.abs(np.nan_to_num(v)) > 1e8).sum())
-        nan_ratio = float(np.isnan(v).mean()) if len(v) else 0.0
-        # 「日均截面」保持原语义 = 每天**非空**的格子数（不能再用行数 —— 行数现在是面板大小）
-        per_day = df[df["value"].notna()].groupby("trade_date").size()
-        if nan_ratio > 0.95:       # 与剔除脚本同一条红线：>95% 取不到值 = 口径太稀
-            problems += 1
-            print(f"  ⚠ {s.name}: NaN 占比 {nan_ratio*100:.1f}%（>95%，口径太稀）", flush=True)
-        qfq = [d for d in s.deps if d in QFQ_DATASETS]
-        if qfq and not s.allow_qfq:
-            problems += 1
-        if bad_board or early or bad_val:
-            problems += 1
-        print(f"{s.name:<24}{len(df):>12,}{('✔' if not bad_board else f'✘{bad_board}'):>9}"
-              f"{('✔' if not early else f'✘{early}'):>7}"
-              f"{('✔' if not bad_val else f'✘{bad_val}'):>9}"
-              f"{per_day.median():>9.0f}  "
-              f"{'✘前复权:'+','.join(qfq) if (qfq and not s.allow_qfq) else '✔无前复权输入' if not qfq else '✔已放行'}")
-    print("-" * 96)
-    print("-" * 96)
-    problems += _check_format(cfg)          # ★ 格式统一性（用户点名）
-    print("-" * 96)
-    print(f"{'基础体检通过 ✔（PIT 请另运行 audit-pit）' if not problems else f'⚠ 发现 {problems} 项问题'}")
-    return 0 if not problems else 1
+    from fea.validation import check
+    return check(cfg)
 
 
 def _check_format(cfg) -> int:
@@ -640,10 +511,37 @@ def cmd_audit_pit(args, cfg) -> int:
     print("-" * 96)
     problems = 0
     flagged_lag, flagged_future = [], []
-    for s in specs:
+    def _src_of(fn) -> str:
+        """函数源码 + 它**闭包里**被调用的族辅助函数的源码。
+
+        ★ 为什么要追闭包：`factors/market.py` / `market2.py` / `tradability.py` 这类
+          「一个族一个 dispatcher」的模块，`spec.fn` 只是 `compute(ctx)[key]` 一行，
+          真正的取数与位移都在 `compute` 指向的族函数里。只看 `spec.fn` 会把
+          已经正确位移过的因子全部误报成「依赖滞后表却没做位移」——
+          实测 2026-09-24 新增的 6 个两融因子就是这么被误报的。
+          追一层闭包即可覆盖当前所有家庭形态，且是**精确**的（拿的是真函数对象，
+          不是按名字猜）。
+        """
+        out = ""
         try:
-            src = inspect.getsource(s.fn)
+            out = inspect.getsource(fn)
         except Exception:                                    # noqa: BLE001
+            return out
+        for cell in (getattr(fn, "__closure__", None) or ()):
+            try:
+                val = cell.cell_contents
+            except ValueError:
+                continue
+            if callable(val) and getattr(val, "__code__", None) is not None:
+                try:
+                    out += "\n" + inspect.getsource(val)
+                except Exception:                            # noqa: BLE001
+                    pass
+        return out
+
+    for s in specs:
+        src = _src_of(s.fn)
+        if not src:
             continue
         # ① 负位移 / 未来索引：只有标签（is_label）允许
         future = bool(re.search(r"\.shift\([^)]*,\s*-\d", src)
@@ -689,77 +587,8 @@ def cmd_audit_pit(args, cfg) -> int:
 
 
 def cmd_docs(args, cfg) -> int:
-    from fea.documentation import update_section
-    lines = [
-        "# 因子字典（featureengineering · 模块②）",
-        "",
-        "> 本节由 `python main.py docs` 生成，请勿手工编辑本节；其他章节保持不变。",
-        "",
-        "## ★ 因子开发的三条硬约束（下游是 A 股日横断面回归排序任务）",
-        "",
-        "1. **全部因子必须日频** —— 对齐到 `(trade_date, stock_code)` 面板后落盘。",
-        "2. **固定主板股票池 2115 只** —— 使用 `conf/universe_frozen.tsv`；",
-        "   排除创业板 `300/301/302`、科创板 `688/689`、北交所 `832/833/920`。",
-        f"3. **输出起点由 `conf/config.yaml` 的 `default_start` 控制** —— 当前 "
-        f"**`{cfg.default_start}`**；实际取全局下界与因子可得起点的较晚者，历史输入保留作预热。",
-        "",
-        "## ★★ PIT 红线：历史因子值不得因未来的分红事件而变化",
-        "",
-        "前复权（qfq）把整条价格序列按**最新**的复权因子缩放，一旦发生新的分红/送转，",
-        "全部历史价格会一起被重算 —— 同一段历史今天算和昨天算结果不同，回测里就是前视偏差。",
-        "",
-        "- **禁止**把 `stock_kline_adj` / `stock_daily_adj`（前复权）直接喂给因子函数；",
-        "  `register()` 会直接拒绝，确需使用必须显式 `allow_qfq=True` 并写明理由。",
-        "- 价格**水平**类因子（市值、book-to-market）→ 用**未复权**价 × 当期已披露股本。",
-        "- 收益**比率**类因子（动量、波动）→ 用未复权价 + `stock_adj_factor` 截至**当日**的",
-        "  累计复权因子还原（等价于「截至当日的后复权」，后复权锚定序列起点，历史值稳定）。",
-        "",
-        "## 统一输出格式",
-        "",
-        "```",
-        "data/factors/<因子名>/year=YYYY/data.parquet",
-        "  trade_date  string   \"2026-09-11\"",
-        "  stock_code  string   \"600000.SH\"",
-        "  value       float32  原始因子值（可解释、可再标准化）",
-        "  rank        float32  当日截面百分位 [0,1]（先 1%/99% winsorize 再 rank）",
-        "```",
-        "",
-        "因子语义：按既定数据可得日，T 日收盘后生成，供 T+1 使用；公告到达时间仍受供应商记录限制。",
-        "未来收益标签仅供训练/评价，须等待未来行情成熟，不能作为当日可用特征。",
-        "",
-        "## 因子清单",
-        "",
-        f"共 {sum(not s.is_label for s in all_specs())} 个因子、{sum(s.is_label for s in all_specs())} 个标签。",
-        "",
-        "> ★ 所有因子的**列名 / 列序 / dtype / 目录结构 / 分区方式 / 语义完全一致**，",
-        "> **唯一允许的差异是起止日期**（下表最后两列）。",
-        "",
-        "| 因子 | 类别 | 方向 | 定义 | 公式 | 起点 | 实际起止 | warmup(天) | 依赖 |",
-        "|:--|:--|:--|:--|:--|:--|:--|--:|:--|",
-    ]
-    def esc(t: str) -> str:
-        return t.replace("|", "\\|")           # 公式里的 |x| 会破坏 markdown 表格
-
-    for s in all_specs():
-        man = Manifest.load(cfg.state_dir, s.name)
-        parts = man.partitions or {}
-        if parts:
-            lo = min(str(v.get("min_date", "9999-12-31")) for v in parts.values())
-            hi = max(str(v.get("max_date", "")) for v in parts.values())
-            rng = f"{lo} → {hi}"
-        else:
-            rng = "—（未生成）"
-        lines.append(
-            f"| `{s.name}` | {s.group} | {'高优' if s.higher_is_better else '低优'} | "
-            f"{esc(s.desc)} | `{esc(s.formula)}` | {s.resolved_start(cfg)} | {rng} | "
-            f"{s.warmup_days} | {', '.join(s.deps) or '—'} |")
-    lines += ["", "## 口径备注（实测坑）", ""]
-    for s in all_specs():
-        if s.note:
-            lines.append(f"- **`{s.name}`**：{s.note}")
-    out = update_section(ROOT, "factor-catalog", "\n".join(lines) + "\n")
-    print(f"已写入 {out}")
-    return 0
+    from fea.catalog import generate
+    return generate(cfg)
 
 
 def main() -> int:
@@ -783,6 +612,8 @@ def main() -> int:
 
     r = sub.add_parser("run", help="计算/增量更新因子")
     r.add_argument("factors", nargs="*", help="只跑指定因子")
+    r.add_argument("--slice-worker", action="store_true", help=argparse.SUPPRESS)
+    r.add_argument("--plan-file", default=None, help=argparse.SUPPRESS)
     r.add_argument("--refresh", action="store_true", help="重算请求区间，保留其它区间 coverage")
     r.add_argument("--rebuild", action="store_true", help="全量重建（忽略已覆盖区间）")
     r.add_argument("--end", default=None,
@@ -795,8 +626,7 @@ def main() -> int:
     r.add_argument("--jobs", type=int, default=0,
                    help=f"并行进程数（默认 {default_jobs()}；1 = 串行）")
     r.add_argument("--allow-multiyear", action="store_true",
-                   help="★ 明知跨度 ≥3 年仍要在**一个进程**里算完（会吃满内存，不推荐）。"
-                        "默认拒绝并指向按年分块的 main.py rebuild")
+                   help=argparse.SUPPRESS)
     _add_common(r)
 
     lp = sub.add_parser("list", help="列出因子与本地进度")
@@ -805,7 +635,7 @@ def main() -> int:
     _add_common(sp2)
     cp = sub.add_parser("check", help="基础体检：universe / 值域 / 格式；PIT 用 audit-pit")
     _add_common(cp)
-    dp = sub.add_parser("docs", help="更新 README.md 中的因子字典")
+    dp = sub.add_parser("docs", help="刷新 artifacts/catalog 的完整因子字典及 README 摘要")
     _add_common(dp)
     ep = sub.add_parser("eval", help="因子有效性评价：IC / RankIC / ICIR / 分层 / 覆盖")
     ep.add_argument("factors", nargs="*", help="只评价指定因子")
@@ -887,6 +717,7 @@ def main() -> int:
         sb = Path(sb).resolve()
         cfg.raw["paths"]["factors"] = str(sb / "factors")
         cfg.raw["paths"]["state"] = str(sb / "state")
+        cfg.raw["paths"]["market_factors"] = str(sb / "market_factors")
         (sb / "factors").mkdir(parents=True, exist_ok=True)
         (sb / "state").mkdir(parents=True, exist_ok=True)
         print(f"[sandbox] 因子产物 -> {sb / 'factors'}")

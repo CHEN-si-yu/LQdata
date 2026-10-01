@@ -1,0 +1,120 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-09-27 21:58:40",
+  "score_source": "saved_ensemble_scores",
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "score_window": [
+    "2025-07-01",
+    "2026-09-24"
+  ],
+  "model_train_read": false,
+  "weights_reloaded": false,
+  "folds_checked": 0,
+  "max_cpu_reload_error": null,
+  "audit": [],
+  "metrics_total": {
+    "quarter": "总计",
+    "days": 242,
+    "IC": 0.020175421993489078,
+    "ICIR": 0.16768380864618365,
+    "top_return": 0.20826670381368936,
+    "top_return_stability": 0.09049795236576495,
+    "total_return": 55.4127686602053,
+    "IC_1d": 0.020175421993489078,
+    "IC_5d": 0.032637957536697876,
+    "RankIC_1d": 0.038634612537883,
+    "RankIC_5d": 0.054632868053748875
+  },
+  "realizable": {
+    "topk": 5,
+    "label": "label_ret_5d",
+    "ideal_mean_pct": 0.28291126083696166,
+    "realizable_mean_pct": 0.29018153969250415,
+    "ratio": 1.0256980893373921,
+    "days": 242,
+    "days_with_position": 242,
+    "gap_pct": 0.007270278855542506,
+    "gap_t": 0.15659291208081144
+  },
+  "clean_blocks": {
+    "strategy": "top5_1d",
+    "blocks": [
+      {
+        "quarter": "2025Q3",
+        "fold": 4,
+        "start": "2023-07-21",
+        "end": "2025-04-25",
+        "days": 427,
+        "ideal_mean_pct": 1.4042787508472576,
+        "realizable_mean_pct": 0.9548570173363481,
+        "tradable_ratio": 0.6799625905898274,
+        "pooled_seed_count": 4,
+        "strategy_return_value": 1.3329120759699338,
+        "strategy_net_annual_pct": 49.53093842957762,
+        "strategy_max_drawdown": -0.4081209426967487,
+        "idle_cash_pct": 0.7382014199482009,
+        "trades": 826
+      },
+      {
+        "quarter": "2025Q4",
+        "fold": 4,
+        "start": "2023-09-28",
+        "end": "2025-08-01",
+        "days": 444,
+        "ideal_mean_pct": 1.8477925936986959,
+        "realizable_mean_pct": 1.3880699714079399,
+        "tradable_ratio": 0.7512044242094633,
+        "pooled_seed_count": 4,
+        "strategy_return_value": 2.353045407082392,
+        "strategy_net_annual_pct": 67.85354367149633,
+        "strategy_max_drawdown": -0.5048806899061251,
+        "idle_cash_pct": 0.5347365859069534,
+        "trades": 786
+      },
+      {
+        "quarter": "2026Q1",
+        "fold": 4,
+        "start": "2023-12-08",
+        "end": "2025-11-03",
+        "days": 459,
+        "ideal_mean_pct": 1.6232668357075208,
+        "realizable_mean_pct": 1.2210845387096148,
+        "tradable_ratio": 0.7522389491665984,
+        "pooled_seed_count": 4,
+        "strategy_return_value": 2.4361518710010643,
+        "strategy_net_annual_pct": 64.24106434076654,
+        "strategy_max_drawdown": -0.4385564108638208,
+        "idle_cash_pct": 0.5893821989244317,
+        "trades": 886
+      },
+      {
+        "quarter": "2026Q2",
+        "fold": 4,
+        "start": "2024-02-07",
+        "end": "2026-01-22",
+        "days": 473,
+        "ideal_mean_pct": 2.3550751703906627,
+        "realizable_mean_pct": 2.091424236139374,
+        "tradable_ratio": 0.8880498858099912,
+        "pooled_seed_count": 4,
+        "strategy_return_value": 4.8431793512626395,
+        "strategy_net_annual_pct": 83.81979343148558,
+        "strategy_max_drawdown": -0.20826971582198717,
+        "idle_cash_pct": 0.37002673036040823,
+        "trades": 768
+      }
+    ],
+    "total_days": 1803,
+    "source_runs": [
+      "V37",
+      "V42",
+      "V43",
+      "V44"
+    ],
+    "note": "每个无前视验证块均由本地保存的四个独立种子 checkpoint 逐日百分位秩等权池化；块间日期不连续且可能重叠，不拼接为一段收益。"
+  },
+  "bag_vs_argmax": null
+}

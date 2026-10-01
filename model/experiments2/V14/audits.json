@@ -1,0 +1,57 @@
+{
+  "official": {
+    "session_days_including_exit": 243,
+    "signal_window_start": "2025-07-01",
+    "signal_window_end": "2026-06-30",
+    "exit_only_day": "2026-07-01",
+    "signal_window_session_count": 242,
+    "monthly_rebalances": 12,
+    "signals_selected_same_as_equal_weight_60d_top2": true,
+    "all_target_weights_sum_to_one": true,
+    "causal_weight_asof_equals_signal_day": true,
+    "cash_nonnegative": true,
+    "cash_min": 269.17422535000514,
+    "max_exposure": 0.9974229166736229,
+    "blocked_entries": 0,
+    "blocked_exits": 0,
+    "final_exit_at_close": true,
+    "ending_positions": 0,
+    "final_liquidation_complete": true,
+    "max_abs_equity_cash_mark_residual": 1.4551915228366852e-11,
+    "strict_matched_definition": "previous session realized shares valued at prior mark; current mark return on adjusted prices; excludes fees/slippage and is only a same-holdings execution-friction reference, not selection alpha"
+  },
+  "extended": {
+    "session_days_including_exit": 905,
+    "signal_window_start": "2023-01-03",
+    "signal_window_end": "2026-09-24",
+    "exit_only_day": "2026-09-24",
+    "signal_window_session_count": 905,
+    "monthly_rebalances": 45,
+    "signals_selected_same_as_equal_weight_60d_top2": true,
+    "all_target_weights_sum_to_one": true,
+    "causal_weight_asof_equals_signal_day": true,
+    "cash_nonnegative": true,
+    "cash_min": 44.19946109793818,
+    "max_exposure": 0.999797225375153,
+    "blocked_entries": 0,
+    "blocked_exits": 0,
+    "final_exit_at_close": true,
+    "ending_positions": 0,
+    "final_liquidation_complete": true,
+    "max_abs_equity_cash_mark_residual": 5.820766091346741e-11,
+    "strict_matched_definition": "previous session realized shares valued at prior mark; current mark return on adjusted prices; excludes fees/slippage and is only a same-holdings execution-friction reference, not selection alpha"
+  },
+  "signal_period_boundaries": {
+    "official": {
+      "signal_period_start": "2025-07-01",
+      "signal_period_end": "2026-06-30",
+      "exit_only_day": "2026-07-01"
+    },
+    "extended": {
+      "signal_period_start": "2023-01-03",
+      "signal_period_end": "2026-09-23",
+      "exit_only_day": "2026-09-24"
+    }
+  },
+  "exit_only_day_return_source": "last row of each existing daily CSV; not included in quarterly or annual signal-period tables"
+}

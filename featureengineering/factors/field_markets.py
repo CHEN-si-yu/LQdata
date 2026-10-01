@@ -14,15 +14,25 @@ from .field_events import ratio
 SOURCE_FIELDS={}
 # 全历史数据质量验收的保留/起点决定；不依据收益筛选。
 REJECTED_CANDIDATES = {
-    "mfx_dc_swing",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "mfx_minute_pressure",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "mfx_minute_realized_vol",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "mfx_tdx_pressure",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "mfx_tdx_range",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "mfx_ths_pct_change",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "mfx_ths_pressure",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "mfx_ths_range",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
-    "mfx_ths_turnover_rate",   # 2026-09-22 去冗余：|ρ|≥0.95 簇的重复项，见 scripts/prune_factors.py 清单
+    "mfx_dc_amount",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_dc_pct_change",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_dc_pressure",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_dc_range",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_dc_swing",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_dc_volume",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_index_amount",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_index_gap",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_index_volume",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_minute_pressure",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_minute_realized_vol",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_tdx_amount",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_tdx_pressure",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_tdx_range",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_tdx_volume",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_ths_pct_change",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_ths_pressure",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_ths_range",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
+    "mfx_ths_turnover_rate",   # 本轮质检瘦身（工具：scripts/prune_factors.py）
 }
 LATE_STARTS = {}
 

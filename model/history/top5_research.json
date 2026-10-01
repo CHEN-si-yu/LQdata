@@ -1,0 +1,2897 @@
+{
+  "archived_at": "2026-09-24",
+  "status": "historical_reference_only; original weights, predictions and per-run outputs deleted",
+  "path_semantics": "Paths inside retained plans/results are historical provenance, not live file references.",
+  "window_warning": "Historical Q3 partial/repeated diagnostics remain historical; only 2025Q3-2026Q2 is the current baseline test window.",
+  "rounds": [
+    {
+      "round": 1,
+      "original_unit": "experiments/round_01",
+      "config/confirmation_plan.json": {
+        "stage": "three_seed_four_fold_confirmation",
+        "seeds": [
+          3253,
+          15361,
+          49117
+        ],
+        "folds": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "candidates": [
+          {
+            "model": "risk10",
+            "blend_legacy": 0.0,
+            "primary_strategy": "atr_close",
+            "diagnostic_strategy": "legacy_fixed"
+          },
+          {
+            "model": "recent5",
+            "blend_legacy": 0.5,
+            "primary_strategy": "close_sl6_tp15",
+            "diagnostic_strategy": "legacy_fixed"
+          }
+        ],
+        "baseline": {
+          "model": "legacy_A6",
+          "strategy": "legacy_fixed"
+        },
+        "selection_rules": {
+          "confirmation_gain_minimum": 0.02,
+          "confirmation_drawdown_deterioration_maximum": 0.05,
+          "discovery_ensemble_gain_required": true,
+          "paired_positive_seed_count_minimum": 2,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ],
+          "holdout_usage": "This workflow stops at four-natural-quarter confirmation; historical Q3 results remain separate evidence."
+        },
+        "rationale": "发现窗的两个不同模型方向各选择一个预先登记策略；确认阶段不再扫描策略参数。risk10采用路径标签，recent5采用504日半衰期并与旧A6固定等权。",
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "rank5": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "rankmix",
+          "time_half_life": 0
+        },
+        "risk10": {
+          "features": "core",
+          "label": "label_stop_10d",
+          "loss": "rankmix",
+          "time_half_life": 0
+        },
+        "mixed5": {
+          "features": "core",
+          "label": "label_mix_5d",
+          "loss": "rankmix",
+          "time_half_life": 0
+        },
+        "recent5": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 504
+        },
+        "broad5": {
+          "features": "all",
+          "label": "label_ret_5d",
+          "loss": "rankmix",
+          "time_half_life": 0,
+          "weight_decay": 0.05
+        }
+      },
+      "config/unit.json": {
+        "round": 1,
+        "title": "initial model and strategy confirmation",
+        "candidates": [
+          "rank5",
+          "risk10",
+          "mixed5",
+          "recent5",
+          "broad5"
+        ],
+        "phase": "screen",
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_01/runs/<run-id>/REPORT.md"
+      }
+    },
+    {
+      "round": 2,
+      "original_unit": "experiments/round_02",
+      "config/round02_plan.json": {
+        "iteration": "round02_path_stops_5d",
+        "registered_for": "new user-authorized continuation after round 1 stopped",
+        "target_definition": {
+          "entry": "signal close T to next open T+1; no same-day sale",
+          "trigger": "first close at or below stop loss, or at or above take profit",
+          "execution": "next open when sellable; otherwise keep holding and recheck later closes",
+          "time_exit": "open at T+6; portfolio strategy enforces max_hold=5",
+          "costs_in_label": "none; fees and slippage are applied only in portfolio evaluation",
+          "data_assumption": "halted or missing opens are forward-filled for terminal valuation; blocked opens cannot trigger a sale",
+          "portfolio_holding": "five-session maximum hold, rank exits disabled for the fixed 2115-stock pool, three-session cooldown after stop, take-profit, or time exit"
+        },
+        "fixed_model": {
+          "features": "core (331 old-core features)",
+          "loss": "WPCC",
+          "weight_decay": 0.02,
+          "time_half_life": 0,
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "quarterly_test_windows": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ],
+          "baseline": "local copies of legacy_A6 and same-fold V76 predictions for 2025Q3 through 2026Q2",
+          "training_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "candidates": [
+          {
+            "model": "path5_sl6_tp15",
+            "label": "label_path_sl6_tp15_5d",
+            "stop_loss": 0.06,
+            "take_profit": 0.15,
+            "primary_strategy": "five_day_close_sl6_tp15"
+          },
+          {
+            "model": "path5_sl8_tp20",
+            "label": "label_path_sl8_tp20_5d",
+            "stop_loss": 0.08,
+            "take_profit": 0.2,
+            "primary_strategy": "five_day_close_sl8_tp20"
+          }
+        ],
+        "screen": {
+          "diagnostic_discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ],
+          "slippage_bps": [
+            3,
+            6,
+            10
+          ],
+          "decision": "Freeze the pre-registered candidates and matched strategies before the four-natural-quarter comparison."
+        },
+        "decision_rules": {
+          "promotion_requires": [
+            "fourfold candidate net return exceeds the matched baseline over the confirmation period",
+            "at least three of the four fold-level confirmation returns exceed their same-fold V76 baseline",
+            "drawdown deterioration no worse than 5 percentage points",
+            "positive excess return at 10 bp slippage"
+          ],
+          "failure_policy": "Retain baseline and record candidate failure; do not tune on the comparison results."
+        },
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "path5_sl6_tp15": {
+          "features": "core",
+          "label": "label_path_sl6_tp15_5d",
+          "loss": "wpcc",
+          "time_half_life": 0,
+          "weight_decay": 0.02
+        },
+        "path5_sl8_tp20": {
+          "features": "core",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "wpcc",
+          "time_half_life": 0,
+          "weight_decay": 0.02
+        }
+      },
+      "config/unit.json": {
+        "round": 2,
+        "title": "path-outcome labels",
+        "candidates": [
+          "path5_sl6_tp15",
+          "path5_sl8_tp20"
+        ],
+        "phase": "round02/round02_train",
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_02/runs/<run-id>/REPORT.md"
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round02_path_stops_5d",
+        "official_results": {
+          "screen": "screen_v2/comparisons.csv",
+          "holdout": "holdout_v2/comparisons.csv",
+          "frozen_source": "frozen_v2.json"
+        },
+        "training": {
+          "tasks": 40,
+          "successful": 40,
+          "failures": 0,
+          "peak_memory_gb": 33.638191104,
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "holdout_window": {
+          "start": "2026-07-02",
+          "end": "2026-09-21",
+          "sessions": 58,
+          "status": "partial quarter; not an untouched external sample"
+        },
+        "candidates": {
+          "path5_sl6_tp15": {
+            "strategy": "five_day_close_sl6_tp15",
+            "discovery_3bp_vs_A6": {
+              "candidate_return": 0.3137889347430918,
+              "baseline_return": 0.1644795880263478,
+              "return_excess": 0.1493093467167439,
+              "candidate_drawdown": -0.129597034210537,
+              "baseline_drawdown": -0.1046071453517862,
+              "drawdown_excess": -0.0249898888587507,
+              "candidate_sharpe": 2.4733862160008364,
+              "candidate_trades": 254
+            },
+            "confirmation_3bp_vs_A6": {
+              "candidate_return": -0.0504241546528888,
+              "baseline_return": -0.0362795791227994,
+              "return_excess": -0.0141445755300894,
+              "candidate_drawdown": -0.1642228188405697,
+              "baseline_drawdown": -0.1485978510709551,
+              "drawdown_excess": -0.0156249677696146,
+              "candidate_sharpe": -0.4462348616995741,
+              "candidate_trades": 156
+            },
+            "confirmation_10bp_vs_A6": {
+              "candidate_return": -0.070081155240198,
+              "baseline_return": -0.0563237353497985,
+              "return_excess": -0.0137574198903995,
+              "candidate_drawdown": -0.1734566048723037,
+              "baseline_drawdown": -0.1516396681239517,
+              "drawdown_excess": -0.021816936748352,
+              "candidate_sharpe": -0.667557194505005,
+              "candidate_trades": 156
+            },
+            "same_fold_confirmation_excess": [
+              -0.0232786333104,
+              0.0695314871895798,
+              0.0341689468959601,
+              0.1209340523766501
+            ],
+            "same_fold_confirmation_positive_count": 3,
+            "holdout_3bp_vs_control": {
+              "candidate_return": -0.0490257689936296,
+              "baseline_return": -0.0454307348979097,
+              "return_excess": -0.0035950340957199,
+              "candidate_drawdown": -0.1012392773412209,
+              "baseline_drawdown": -0.0992287851445596,
+              "drawdown_excess": -0.0020104921966612,
+              "candidate_sharpe": -1.083345470180079,
+              "candidate_trades": 70
+            },
+            "holdout_10bp_vs_control": {
+              "candidate_return": -0.0579687018424992,
+              "baseline_return": -0.0723559170416988,
+              "return_excess": 0.0143872151991996,
+              "candidate_drawdown": -0.10369106808978,
+              "baseline_drawdown": -0.1140781193272765,
+              "drawdown_excess": 0.0103870512374965,
+              "candidate_sharpe": -1.2914745713172402,
+              "candidate_trades": 70
+            },
+            "same_fold_holdout_excess": [
+              -0.08988980585338,
+              0.1352900678670006,
+              -0.0617991877002801,
+              -0.0393821832365197
+            ],
+            "same_fold_holdout_positive_count": 1,
+            "promotion_gates": {
+              "confirmation_return_exceeds_A6": false,
+              "at_least_three_confirmation_folds_positive": true,
+              "drawdown_within_5pp": true,
+              "positive_confirmation_excess_at_10bp": false,
+              "positive_holdout_excess_at_3bp": false,
+              "all_gates_pass": false
+            }
+          },
+          "path5_sl8_tp20": {
+            "strategy": "five_day_close_sl8_tp20",
+            "discovery_3bp_vs_A6": {
+              "candidate_return": 0.270435196527131,
+              "baseline_return": 0.4632881208327932,
+              "return_excess": -0.1928529243056622,
+              "candidate_drawdown": -0.1063849360378009,
+              "baseline_drawdown": -0.0799207199928145,
+              "drawdown_excess": -0.0264642160449863,
+              "candidate_sharpe": 2.4429854607986443,
+              "candidate_trades": 250
+            },
+            "confirmation_3bp_vs_A6": {
+              "candidate_return": -0.0411007144440889,
+              "baseline_return": -0.1082434714103595,
+              "return_excess": 0.0671427569662705,
+              "candidate_drawdown": -0.1514527635332053,
+              "baseline_drawdown": -0.1606700307869878,
+              "drawdown_excess": 0.0092172672537824,
+              "candidate_sharpe": -0.3316890152798228,
+              "candidate_trades": 150
+            },
+            "confirmation_10bp_vs_A6": {
+              "candidate_return": -0.0619802326644983,
+              "baseline_return": -0.1250601544892984,
+              "return_excess": 0.0630799218248,
+              "candidate_drawdown": -0.1611880652558722,
+              "baseline_drawdown": -0.1720352818811161,
+              "drawdown_excess": 0.0108472166252439,
+              "candidate_sharpe": -0.5586049882638445,
+              "candidate_trades": 150
+            },
+            "same_fold_confirmation_excess": [
+              -0.0196290540005209,
+              -0.0353449902251202,
+              -0.0643503048989894,
+              -0.1368707399719497
+            ],
+            "same_fold_confirmation_positive_count": 0,
+            "holdout_3bp_vs_control": {
+              "candidate_return": -0.0141559121572995,
+              "baseline_return": -0.0234136048310598,
+              "return_excess": 0.0092576926737603,
+              "candidate_drawdown": -0.0721290789663045,
+              "baseline_drawdown": -0.0751053583105921,
+              "drawdown_excess": 0.0029762793442876,
+              "candidate_sharpe": -0.2547175605183423,
+              "candidate_trades": 70
+            },
+            "holdout_10bp_vs_control": {
+              "candidate_return": -0.0242160694157991,
+              "baseline_return": -0.0325465118097989,
+              "return_excess": 0.0083304423939998,
+              "candidate_drawdown": -0.0733138227113194,
+              "baseline_drawdown": -0.0818154343518096,
+              "drawdown_excess": 0.0085016116404901,
+              "candidate_sharpe": -0.5014230087495753,
+              "candidate_trades": 70
+            },
+            "same_fold_holdout_excess": [
+              0.0120815813683199,
+              0.0394266674829701,
+              0.0212239148694599,
+              0.0108612191093399
+            ],
+            "same_fold_holdout_positive_count": 4,
+            "promotion_gates": {
+              "confirmation_return_exceeds_A6": true,
+              "at_least_three_confirmation_folds_positive": false,
+              "drawdown_within_5pp": true,
+              "positive_confirmation_excess_at_10bp": true,
+              "positive_holdout_excess_at_3bp": true,
+              "all_gates_pass": false
+            }
+          }
+        },
+        "promoted": false,
+        "consecutive_iterations_without_promotion": 2
+      }
+    },
+    {
+      "round": 3,
+      "original_unit": "experiments/round_03",
+      "config/round03_plan.json": {
+        "iteration": "round03_top5_pairwise_5d",
+        "new_idea": "WPCC plus a pairwise logistic term ranking the realized top five stocks above the lowest-return tail on each training day",
+        "pairwise_definition": {
+          "positive_set": "five stocks with highest same-day label_ret_5d",
+          "negative_set": "256 stocks with lowest same-day label_ret_5d",
+          "loss": "WPCC + 0.10 * mean(softplus(-(score_positive-score_negative)/0.2))",
+          "label": "label_ret_5d",
+          "candidate_model": "top5pair_5d"
+        },
+        "fixed_model": {
+          "features": "core (331 old-core features)",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "training_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ],
+          "baseline": "local copies of legacy_A6 and same-fold V76 predictions for 2025Q3 through 2026Q2"
+        },
+        "portfolio_strategy": {
+          "name": "five_day_close_sl8_tp20",
+          "stop_loss": 0.08,
+          "take_profit": 0.2,
+          "max_hold_sessions": 5,
+          "cooldown_sessions": 3,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ]
+        },
+        "screen_windows": {
+          "discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "promotion_rules": [
+          "fourfold candidate return exceeds A6 on Q1-Q2 confirmation",
+          "at least three of four same-fold confirmation comparisons with V76 are positive",
+          "10bp Q1-Q2 excess return is positive",
+          "maximum drawdown deterioration is no worse than 5 percentage points"
+        ],
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "top5pair_5d": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "top5pair",
+          "time_half_life": 0,
+          "weight_decay": 0.02
+        }
+      },
+      "config/unit.json": {
+        "round": 3,
+        "title": "top-five pairwise objective",
+        "candidates": [
+          "top5pair_5d"
+        ],
+        "phase": "round03/pairwise_train",
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_03/runs/<run-id>/REPORT.md"
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round03_top5_pairwise_5d",
+        "promoted": true,
+        "consecutive_iterations_without_promotion": 0,
+        "prior_iteration_streak_reconciled": 2,
+        "research_assessment": "Pre-registered promotion gates pass, but the full 2025Q3-2026Q2 window underperforms A6 materially and the Q3 result is a repeated, non-independent check; a robust model breakthrough is not established.",
+        "method": {
+          "objective": "WPCC + 0.10 * mean(softplus(-(score_top5-score_bottom256)/0.2))",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "candidate": "top5pair_5d",
+          "strategy": "five_day_close_sl8_tp20",
+          "training_units": 20,
+          "successful_training_units": 20,
+          "failed_training_units": 0,
+          "peak_memory_gb": 31.20181248
+        },
+        "official_results": {
+          "screen": "screen/comparisons.csv",
+          "repeat_check": "holdout/comparisons.csv",
+          "frozen_source": "frozen.json"
+        },
+        "discovery_3bp_vs_A6": {
+          "candidate_return": 0.1473750487755623,
+          "baseline_return": 0.4632881208327932,
+          "return_excess": -0.3159130720572309,
+          "candidate_drawdown": -0.1340642587644742,
+          "baseline_drawdown": -0.0799207199928145,
+          "drawdown_excess": -0.0541435387716596,
+          "candidate_sharpe": 1.3180121263762032,
+          "candidate_trades": 252
+        },
+        "confirmation_3bp_vs_A6": {
+          "candidate_return": -0.0838235929160889,
+          "baseline_return": -0.1082434714103595,
+          "return_excess": 0.0244198784942705,
+          "candidate_drawdown": -0.1685396811456163,
+          "baseline_drawdown": -0.1606700307869878,
+          "drawdown_excess": -0.0078696503586285,
+          "candidate_sharpe": -0.7583702307072161,
+          "candidate_trades": 152
+        },
+        "confirmation_6bp_vs_A6": {
+          "candidate_return": -0.0926530954692596,
+          "baseline_return": -0.1153984364591197,
+          "return_excess": 0.0227453409898601,
+          "candidate_drawdown": -0.1756146745562371,
+          "baseline_drawdown": -0.1642630667674092,
+          "drawdown_excess": -0.0113516077888279,
+          "candidate_sharpe": -0.8549885199938211,
+          "candidate_trades": 152
+        },
+        "confirmation_10bp_vs_A6": {
+          "candidate_return": -0.1048713361729981,
+          "baseline_return": -0.1250601544892984,
+          "return_excess": 0.0201888183163002,
+          "candidate_drawdown": -0.1850102107236984,
+          "baseline_drawdown": -0.1720352818811161,
+          "drawdown_excess": -0.0129749288425822,
+          "candidate_sharpe": -0.9935504405647888,
+          "candidate_trades": 152
+        },
+        "confirmation_q1_3bp_vs_A6": {
+          "candidate_return": -0.0577821182088191,
+          "baseline_return": -0.0603041662777695,
+          "return_excess": 0.0025220480689504,
+          "candidate_drawdown": -0.1542324907476836,
+          "baseline_drawdown": -0.1143905343125409,
+          "drawdown_excess": -0.0398419564351426,
+          "candidate_sharpe": -0.8294876892182421,
+          "candidate_trades": 102
+        },
+        "confirmation_q2_3bp_vs_A6": {
+          "candidate_return": -0.0280493696205292,
+          "baseline_return": -0.0511901279437899,
+          "return_excess": 0.0231407583232606,
+          "candidate_drawdown": -0.0823297927788442,
+          "baseline_drawdown": -0.0982755636572318,
+          "drawdown_excess": 0.0159457708783876,
+          "candidate_sharpe": -0.758770790340135,
+          "candidate_trades": 50
+        },
+        "full_window_3bp_vs_A6": {
+          "candidate_return": 0.067651506912123,
+          "baseline_return": 0.3660831720597353,
+          "return_excess": -0.2984316651476122,
+          "candidate_drawdown": -0.1988761309310527,
+          "baseline_drawdown": -0.1734710020107908,
+          "drawdown_excess": -0.0254051289202619,
+          "candidate_sharpe": 0.4162476721053935,
+          "candidate_trades": 404
+        },
+        "full_window_10bp_vs_A6": {
+          "candidate_return": 0.0092653432927054,
+          "baseline_return": 0.2953705095337064,
+          "return_excess": -0.286105166241001,
+          "candidate_drawdown": -0.2221918746504856,
+          "baseline_drawdown": -0.1850879108611369,
+          "drawdown_excess": -0.0371039637893486,
+          "candidate_sharpe": 0.1493023610392704,
+          "candidate_trades": 404
+        },
+        "same_fold_confirmation_excess_vs_V76": [
+          0.0371527992826202,
+          -0.0182935915573995,
+          0.13376088090961,
+          0.1423549742817202
+        ],
+        "same_fold_confirmation_positive_count": 3,
+        "q3_repeat_window": {
+          "start": "2026-07-02",
+          "end": "2026-09-21",
+          "sessions": 58,
+          "status": "partial quarter; repeated direction check, not an independent holdout"
+        },
+        "q3_repeat_3bp_vs_control": {
+          "candidate_return": 0.0772365407084203,
+          "baseline_return": -0.0234136048310598,
+          "return_excess": 0.1006501455394801,
+          "candidate_drawdown": -0.1024080061048479,
+          "baseline_drawdown": -0.0751053583105921,
+          "drawdown_excess": -0.0273026477942557,
+          "candidate_sharpe": 1.593535772512714,
+          "candidate_trades": 70
+        },
+        "q3_repeat_6bp_vs_control": {
+          "candidate_return": 0.0735201280997195,
+          "baseline_return": -0.0272638082421997,
+          "return_excess": 0.1007839363419192,
+          "candidate_drawdown": -0.1025915552250612,
+          "baseline_drawdown": -0.0779180615623581,
+          "drawdown_excess": -0.0246734936627031,
+          "candidate_sharpe": 1.5273944316612311,
+          "candidate_trades": 70
+        },
+        "q3_repeat_10bp_vs_control": {
+          "candidate_return": 0.0674328616942014,
+          "baseline_return": -0.0325465118097989,
+          "return_excess": 0.0999793735040004,
+          "candidate_drawdown": -0.1037177513420882,
+          "baseline_drawdown": -0.0818154343518096,
+          "drawdown_excess": -0.0219023169902786,
+          "candidate_sharpe": 1.412952550642941,
+          "candidate_trades": 70
+        },
+        "same_fold_q3_repeat_excess_vs_control": [
+          -0.0054651740125202,
+          -0.0490266743670094,
+          0.0774726358082305,
+          -0.0138499107538589
+        ],
+        "same_fold_q3_repeat_positive_count": 1,
+        "promotion_gates": {
+          "confirmation_return_exceeds_A6_at_3bp": true,
+          "at_least_three_same_fold_confirmation_excesses_positive": true,
+          "confirmation_drawdown_within_5pp": true,
+          "confirmation_excess_positive_at_10bp": true,
+          "q3_repeat_excess_positive_at_3bp": true,
+          "q3_repeat_drawdown_within_5pp": true,
+          "all_gates_pass": true
+        },
+        "source_snapshot_manifest": "source_snapshot/manifest.json"
+      }
+    },
+    {
+      "round": 4,
+      "original_unit": "experiments/round_04",
+      "config/round04_plan.json": {
+        "iteration": "round04_path_outcome_top5_pairwise",
+        "hypothesis": "The R3 pairwise objective ranked raw five-day returns, while the portfolio executes 8% stop-loss / 20% take-profit paths. Ranking the realized executable path outcomes may better align training with the strategy.",
+        "single_change_vs_round03": "Use label_path_sl8_tp20_5d instead of label_ret_5d; keep pairwise objective, features, seed, folds and portfolio rules fixed.",
+        "candidate": {
+          "name": "path_top5pair_8_20",
+          "features": "core (331 old-core features)",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "WPCC + 0.10 * mean(softplus(-(score_top5-score_bottom256)/0.2))"
+        },
+        "fixed_model": {
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "training_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "portfolio_strategy": {
+          "name": "five_day_close_sl8_tp20",
+          "stop_loss": 0.08,
+          "take_profit": 0.2,
+          "max_hold_sessions": 5,
+          "cooldown_sessions": 3,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ]
+        },
+        "screen_windows": {
+          "discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ],
+          "full": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "promotion_rules": [
+          "Confirmation-window 3bp net return exceeds A6.",
+          "At least three of four same-fold confirmation comparisons with V76 are positive at 3bp.",
+          "Confirmation-window excess over A6 remains positive at 10bp.",
+          "Confirmation-window drawdown deterioration versus A6 is no worse than 5 percentage points.",
+          "Full 2025Q3-2026Q2 window excess over A6 is no worse than -5 percentage points at 3bp.",
+          "Full-window excess over A6 is no worse than -5 percentage points at 10bp."
+        ],
+        "research_boundary": "All available periods have been viewed in prior iterations. Passing these rules supports another research stage only; it does not establish an untouched holdout or authorize live use.",
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "path_top5pair_8_20": {
+          "features": "core",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "top5pair",
+          "time_half_life": 0,
+          "weight_decay": 0.02
+        }
+      },
+      "config/unit.json": {
+        "round": 4,
+        "title": "path-outcome pairwise objective",
+        "candidates": [
+          "path_top5pair_8_20"
+        ],
+        "phase": "round04/pathpair_train",
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_04/runs/<run-id>/REPORT.md"
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round04_path_outcome_top5_pairwise",
+        "promoted": false,
+        "consecutive_iterations_without_promotion": 1,
+        "research_assessment": "The path-aligned pairwise candidate failed at least one pre-registered promotion gate.",
+        "method": {
+          "candidate": "path_top5pair_8_20",
+          "label": "label_path_sl8_tp20_5d",
+          "objective": "WPCC + 0.10 * mean(softplus(-(score_top5-score_bottom256)/0.2))",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "strategy": "five_day_close_sl8_tp20",
+          "training_units": 20,
+          "successful_training_units": 20,
+          "failed_training_units": 0,
+          "peak_memory_gb": 32.299323392
+        },
+        "official_results": {
+          "screen": "screen/comparisons.csv",
+          "q3_repeat_diagnostic": "repeat/comparisons.csv",
+          "frozen_source": "frozen.json"
+        },
+        "discovery_3bp_vs_A6": {
+          "candidate_return": 0.2345486605154916,
+          "baseline_return": 0.4632881208327932,
+          "return_excess": -0.2287394603173016,
+          "candidate_drawdown": -0.1258244924363055,
+          "baseline_drawdown": -0.0799207199928145,
+          "drawdown_excess": -0.0459037724434909,
+          "candidate_sharpe": 1.9939354515859984,
+          "candidate_trades": 252
+        },
+        "confirmation_3bp_vs_A6": {
+          "candidate_return": -0.0075840288591795,
+          "baseline_return": -0.1082434714103595,
+          "return_excess": 0.1006594425511799,
+          "candidate_drawdown": -0.0978969189882956,
+          "baseline_drawdown": -0.1606700307869878,
+          "drawdown_excess": 0.0627731117986921,
+          "candidate_sharpe": 0.0196866903504964,
+          "candidate_trades": 150
+        },
+        "confirmation_6bp_vs_A6": {
+          "candidate_return": -0.0175264343177591,
+          "baseline_return": -0.1153984364591197,
+          "return_excess": 0.0978720021413606,
+          "candidate_drawdown": -0.105356650588463,
+          "baseline_drawdown": -0.1642630667674092,
+          "drawdown_excess": 0.0589064161789462,
+          "candidate_sharpe": -0.0863512470452649,
+          "candidate_trades": 150
+        },
+        "confirmation_10bp_vs_A6": {
+          "candidate_return": -0.028910468611399,
+          "baseline_return": -0.1250601544892984,
+          "return_excess": 0.0961496858778994,
+          "candidate_drawdown": -0.1143876537013739,
+          "baseline_drawdown": -0.1720352818811161,
+          "drawdown_excess": 0.0576476281797422,
+          "candidate_sharpe": -0.2093672144006804,
+          "candidate_trades": 150
+        },
+        "confirmation_q1_3bp_vs_A6": {
+          "candidate_return": 0.0230981447996603,
+          "baseline_return": -0.0603041662777695,
+          "return_excess": 0.0834023110774299,
+          "candidate_drawdown": -0.0784191538253934,
+          "baseline_drawdown": -0.1143905343125409,
+          "drawdown_excess": 0.0359713804871475,
+          "candidate_sharpe": 0.5376683815601306,
+          "candidate_trades": 100
+        },
+        "confirmation_q2_3bp_vs_A6": {
+          "candidate_return": -0.0296993990395391,
+          "baseline_return": -0.0511901279437899,
+          "return_excess": 0.0214907289042508,
+          "candidate_drawdown": -0.074438917358656,
+          "baseline_drawdown": -0.0982755636572318,
+          "drawdown_excess": 0.0238366462985758,
+          "candidate_sharpe": -0.732877523631707,
+          "candidate_trades": 50
+        },
+        "full_window_3bp_vs_A6": {
+          "candidate_return": 0.1364327610808731,
+          "baseline_return": 0.3660831720597353,
+          "return_excess": -0.2296504109788621,
+          "candidate_drawdown": -0.205245184695563,
+          "baseline_drawdown": -0.1734710020107908,
+          "drawdown_excess": -0.0317741826847722,
+          "candidate_sharpe": 0.7184892438423673,
+          "candidate_trades": 402
+        },
+        "full_window_10bp_vs_A6": {
+          "candidate_return": 0.0744283999011046,
+          "baseline_return": 0.2953705095337064,
+          "return_excess": -0.2209421096326018,
+          "candidate_drawdown": -0.2217450653851739,
+          "baseline_drawdown": -0.1850879108611369,
+          "drawdown_excess": -0.0366571545240369,
+          "candidate_sharpe": 0.4487326502344563,
+          "candidate_trades": 402
+        },
+        "same_fold_confirmation_excess_vs_V76": [
+          0.0080830535461501,
+          0.0971640128787801,
+          0.0332511983441501,
+          0.005722935406601
+        ],
+        "same_fold_confirmation_positive_count": 4,
+        "q3_repeat_window": {
+          "start": "2026-07-02",
+          "end": "2026-09-21",
+          "sessions": 58,
+          "status": "partial-quarter repeated diagnostic; not an independent promotion gate"
+        },
+        "q3_repeat_3bp_vs_control": {
+          "candidate_return": 0.0242436944659503,
+          "baseline_return": -0.0234136048310598,
+          "return_excess": 0.0476572992970101,
+          "candidate_drawdown": -0.1101078825858249,
+          "baseline_drawdown": -0.0751053583105921,
+          "drawdown_excess": -0.0350025242752327,
+          "candidate_sharpe": 0.5813260189708306,
+          "candidate_trades": 70
+        },
+        "q3_repeat_6bp_vs_control": {
+          "candidate_return": 0.0201308927818599,
+          "baseline_return": -0.0272638082421997,
+          "return_excess": 0.0473947010240597,
+          "candidate_drawdown": -0.1103459207201761,
+          "baseline_drawdown": -0.0779180615623581,
+          "drawdown_excess": -0.0324278591578179,
+          "candidate_sharpe": 0.5022978493947483,
+          "candidate_trades": 70
+        },
+        "q3_repeat_10bp_vs_control": {
+          "candidate_return": 0.0149435602448011,
+          "baseline_return": -0.0325465118097989,
+          "return_excess": 0.0474900720546,
+          "candidate_drawdown": -0.1109795380255693,
+          "baseline_drawdown": -0.0818154343518096,
+          "drawdown_excess": -0.0291641036737597,
+          "candidate_sharpe": 0.4008815908246217,
+          "candidate_trades": 70
+        },
+        "same_fold_q3_repeat_excess_vs_control": [
+          0.06828249745555,
+          -0.0116707417368393,
+          -0.0037325347488,
+          0.0096254630118504
+        ],
+        "same_fold_q3_repeat_positive_count": 2,
+        "promotion_gates": {
+          "confirmation_return_exceeds_A6_at_3bp": true,
+          "at_least_three_same_fold_confirmation_excesses_positive": true,
+          "confirmation_excess_positive_at_10bp": true,
+          "confirmation_drawdown_within_5pp": true,
+          "full_window_excess_no_worse_than_minus_5pp_at_3bp": false,
+          "full_window_excess_no_worse_than_minus_5pp_at_10bp": false,
+          "all_gates_pass": false
+        },
+        "source_snapshot_manifest": "source_snapshot/manifest.json"
+      }
+    },
+    {
+      "round": 5,
+      "original_unit": "experiments/round_05",
+      "config/round05_plan.json": {
+        "iteration": "round05_relative_path_win_top5pair",
+        "hypothesis": "The R4 objective ranked continuous executable path returns and improved the confirmation window, but badly lagged the full history. The next test removes payoff magnitude from the training target: prioritize whether a name beats the same-day cross-sectional mean path return. This may reduce sensitivity to extreme, noisy payoffs while retaining path-aware labels.",
+        "single_change_vs_round04": "Keep the exact R4 five-day 8% stop / 20% take path label, features, architecture, pairwise coefficient, seed, folds and portfolio fixed; change only the loss target from continuous path-return magnitude to binary above-mean versus below-mean path outcome.",
+        "candidate": {
+          "name": "pathrelative_top5pair_8_20",
+          "features": "core (331 old-core features)",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "WPCC(binary above daily mean) + 0.10 * mean(softplus(-(score_top5_relative_wins-score_bottom256_relative_losses)/0.2))",
+          "binary_target_definition": "The engine centers each daily label cross-section before calling the loss; y > 0 therefore means the executable path return exceeded that date's cross-sectional mean. The loss ignores payoff magnitude after this conversion."
+        },
+        "fixed_model": {
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "training_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "portfolio_strategy": {
+          "name": "five_day_close_sl8_tp20",
+          "stop_loss": 0.08,
+          "take_profit": 0.2,
+          "max_hold_sessions": 5,
+          "cooldown_sessions": 3,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ]
+        },
+        "screen_windows": {
+          "discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ],
+          "confirm_q1": [
+            "2026Q1"
+          ],
+          "confirm_q2": [
+            "2026Q2"
+          ],
+          "full": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "promotion_rules": [
+          "Confirmation-window 3bp net return exceeds A6.",
+          "At least three of four same-fold confirmation comparisons with V76 are positive at 3bp.",
+          "Confirmation-window excess over A6 remains positive at 10bp.",
+          "Confirmation-window drawdown deterioration versus A6 is no worse than 5 percentage points.",
+          "Full 2025Q3-2026Q2 window excess over A6 is no worse than -5 percentage points at 3bp.",
+          "Full-window excess over A6 is no worse than -5 percentage points at 10bp."
+        ],
+        "research_boundary": "The historical windows and Q3 partial data have all been viewed in prior rounds. These comparisons are iterative research screens, not an untouched holdout and not authorization for live use. The previously viewed Q3 interval is not repeated in this round.",
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "pathrelative_top5pair_8_20": {
+          "features": "core",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "path_relative_win",
+          "time_half_life": 0,
+          "weight_decay": 0.02
+        }
+      },
+      "config/unit.json": {
+        "round": 5,
+        "title": "relative path-win objective",
+        "candidates": [
+          "pathrelative_top5pair_8_20"
+        ],
+        "phase": "round05/pathrelative_train",
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_05/runs/<run-id>/REPORT.md"
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round05_relative_path_win_top5pair",
+        "promoted": false,
+        "consecutive_iterations_without_promotion": 2,
+        "robust_breakthrough_established": false,
+        "research_assessment": "The binary relative-path objective failed at least one pre-registered promotion gate.",
+        "method": {
+          "candidate": "pathrelative_top5pair_8_20",
+          "label": "label_path_sl8_tp20_5d",
+          "objective": "WPCC(binary path return above same-day cross-sectional mean) + 0.10 * top5-vs-bottom256 pairwise softplus",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "strategy": "five_day_close_sl8_tp20",
+          "training_units": 20,
+          "successful_training_units": 20,
+          "failed_training_units": 0,
+          "peak_memory_gb": 28.67888128
+        },
+        "official_results": {
+          "screen": "screen/comparisons.csv",
+          "frozen_source": "frozen.json",
+          "source_snapshot": "source_snapshot/manifest.json"
+        },
+        "discovery_3bp_vs_A6": {
+          "candidate_return": 0.0968450691951168,
+          "baseline_return": 0.4632881208327932,
+          "return_excess": -0.3664430516376764,
+          "candidate_drawdown": -0.1218247621660107,
+          "baseline_drawdown": -0.0799207199928145,
+          "drawdown_excess": -0.0419040421731962,
+          "candidate_sharpe": 1.037772663280562,
+          "candidate_trades": 250
+        },
+        "confirmation_3bp_vs_A6": {
+          "candidate_return": 0.0348784599719871,
+          "baseline_return": -0.1082434714103595,
+          "return_excess": 0.1431219313823466,
+          "candidate_drawdown": -0.1274254143560366,
+          "baseline_drawdown": -0.1606700307869878,
+          "drawdown_excess": 0.0332446164309512,
+          "candidate_sharpe": 0.5144151614544121,
+          "candidate_trades": 150
+        },
+        "confirmation_6bp_vs_A6": {
+          "candidate_return": 0.0274476107293408,
+          "baseline_return": -0.1153984364591197,
+          "return_excess": 0.1428460471884606,
+          "candidate_drawdown": -0.1288157472652319,
+          "baseline_drawdown": -0.1642630667674092,
+          "drawdown_excess": 0.0354473195021772,
+          "candidate_sharpe": 0.4238835701141394,
+          "candidate_trades": 150
+        },
+        "confirmation_10bp_vs_A6": {
+          "candidate_return": 0.010963771605263,
+          "baseline_return": -0.1250601544892984,
+          "return_excess": 0.1360239260945615,
+          "candidate_drawdown": -0.1327114251959558,
+          "baseline_drawdown": -0.1720352818811161,
+          "drawdown_excess": 0.0393238566851603,
+          "candidate_sharpe": 0.2210650422539397,
+          "candidate_trades": 150
+        },
+        "confirmation_q1_3bp_vs_A6": {
+          "candidate_return": 0.1527102075419864,
+          "baseline_return": -0.0603041662777695,
+          "return_excess": 0.2130143738197559,
+          "candidate_drawdown": -0.0292429635522519,
+          "baseline_drawdown": -0.1143905343125409,
+          "drawdown_excess": 0.085147570760289,
+          "candidate_sharpe": 3.360781177733831,
+          "candidate_trades": 100
+        },
+        "confirmation_q2_3bp_vs_A6": {
+          "candidate_return": -0.1026586280383594,
+          "baseline_return": -0.0511901279437899,
+          "return_excess": -0.0514685000945694,
+          "candidate_drawdown": -0.1192264871822388,
+          "baseline_drawdown": -0.0982755636572318,
+          "drawdown_excess": -0.0209509235250069,
+          "candidate_sharpe": -3.2281466819747835,
+          "candidate_trades": 50
+        },
+        "full_window_3bp_vs_A6": {
+          "candidate_return": 0.0797263432937183,
+          "baseline_return": 0.3660831720597353,
+          "return_excess": -0.286356828766017,
+          "candidate_drawdown": -0.1315503954001555,
+          "baseline_drawdown": -0.1734710020107908,
+          "drawdown_excess": 0.0419206066106352,
+          "candidate_sharpe": 0.527937133306992,
+          "candidate_trades": 400
+        },
+        "full_window_10bp_vs_A6": {
+          "candidate_return": 0.0182588473000049,
+          "baseline_return": 0.2953705095337064,
+          "return_excess": -0.2771116622337015,
+          "candidate_drawdown": -0.1599319089164064,
+          "baseline_drawdown": -0.1850879108611369,
+          "drawdown_excess": 0.0251560019447305,
+          "candidate_sharpe": 0.1916486181637663,
+          "candidate_trades": 400
+        },
+        "same_fold_confirmation_excess_vs_V76": [
+          0.0762061808363899,
+          0.0768093111194809,
+          0.0109707881043402,
+          -0.1490212120705123
+        ],
+        "same_fold_confirmation_positive_count": 3,
+        "promotion_gates": {
+          "confirmation_return_exceeds_A6_at_3bp": true,
+          "at_least_three_same_fold_confirmation_excesses_positive": true,
+          "confirmation_excess_positive_at_10bp": true,
+          "confirmation_drawdown_within_5pp": true,
+          "full_window_excess_no_worse_than_minus_5pp_at_3bp": false,
+          "full_window_excess_no_worse_than_minus_5pp_at_10bp": false,
+          "all_gates_pass": false
+        }
+      }
+    },
+    {
+      "round": 6,
+      "original_unit": "experiments/round_06",
+      "config/round06_plan.json": {
+        "iteration": "round06_portfolio_gate_conditioned_training",
+        "hypothesis": "The deployed five-day portfolio does not open positions while its existing 60-session market gate is off, yet prior models trained and selected epochs using every market day. Restricting both training loss and validation-based early stopping to gate-on signal dates may remove gradients for conditions the strategy will not trade and reduce the regime mismatch seen in R4-R5.",
+        "single_change_vs_round04": "Keep the continuous executable five-day 8% stop / 20% take path label, WPCC + 0.10 Top5-vs-bottom256 pairwise loss, features, architecture, seed, folds and portfolio fixed; apply the portfolio's existing 60-session market gate to training and validation signal dates.",
+        "candidate": {
+          "name": "pathriskon_top5pair_8_20",
+          "features": "core (331 old-core features)",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "WPCC + 0.10 * mean(softplus(-(score_top5-score_bottom256)/0.2))",
+          "training_day_filter": "portfolio_risk_on_60dma",
+          "filter_definition": "Use the same trailing 60-session market-index-above-moving-average boolean as five_day_close_sl8_tp20; apply only to training gradients and validation early-stop metrics. Test predictions remain available on every date, and portfolio execution is unchanged."
+        },
+        "fixed_model": {
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "training_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "portfolio_strategy": {
+          "name": "five_day_close_sl8_tp20",
+          "stop_loss": 0.08,
+          "take_profit": 0.2,
+          "max_hold_sessions": 5,
+          "cooldown_sessions": 3,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ]
+        },
+        "screen_windows": {
+          "discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ],
+          "confirm_q1": [
+            "2026Q1"
+          ],
+          "confirm_q2": [
+            "2026Q2"
+          ],
+          "full": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "promotion_rules": [
+          "Confirmation-window 3bp net return exceeds A6.",
+          "At least three of four same-fold confirmation comparisons with V76 are positive at 3bp.",
+          "Confirmation-window excess over A6 remains positive at 10bp.",
+          "Confirmation-window drawdown deterioration versus A6 is no worse than 5 percentage points.",
+          "Full 2025Q3-2026Q2 window excess over A6 is no worse than -5 percentage points at 3bp.",
+          "Full-window excess over A6 is no worse than -5 percentage points at 10bp."
+        ],
+        "research_boundary": "All historical windows and the Q3 partial interval have already been seen in prior rounds. This is an iterative research screen, not an untouched holdout or live-use authorization. The previously viewed Q3 interval is not repeated in this round.",
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "pathriskon_top5pair_8_20": {
+          "features": "core",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "top5pair",
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "day_filter": "portfolio_risk_on_60dma"
+        }
+      },
+      "config/unit.json": {
+        "round": 6,
+        "title": "risk-on training-day filter",
+        "candidates": [
+          "pathriskon_top5pair_8_20"
+        ],
+        "phase": "round06/riskon_train",
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_06/runs/<run-id>/REPORT.md"
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round06_portfolio_gate_conditioned_training",
+        "promoted": false,
+        "consecutive_iterations_without_promotion": 3,
+        "robust_breakthrough_established": false,
+        "research_assessment": "Gate-conditioned training failed at least one pre-registered promotion gate.",
+        "method": {
+          "candidate": "pathriskon_top5pair_8_20",
+          "label": "label_path_sl8_tp20_5d",
+          "objective": "WPCC + 0.10 * top5-vs-bottom256 pairwise softplus, trained and early-stopped only on portfolio gate-on signal days",
+          "training_day_filter": "portfolio_risk_on_60dma",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "strategy": "five_day_close_sl8_tp20",
+          "training_units": 20,
+          "successful_training_units": 20,
+          "failed_training_units": 0,
+          "peak_memory_gb": 29.493075968
+        },
+        "official_results": {
+          "screen": "screen/comparisons.csv",
+          "frozen_source": "frozen.json",
+          "source_snapshot": "source_snapshot/manifest.json"
+        },
+        "discovery_3bp_vs_A6": {
+          "candidate_return": 0.2355259785968415,
+          "baseline_return": 0.4632881208327932,
+          "return_excess": -0.2277621422359517,
+          "candidate_drawdown": -0.1199985066447284,
+          "baseline_drawdown": -0.0799207199928145,
+          "drawdown_excess": -0.0400777866519138,
+          "candidate_sharpe": 1.9193746642774416,
+          "candidate_trades": 254
+        },
+        "confirmation_3bp_vs_A6": {
+          "candidate_return": 0.0036105236586616,
+          "baseline_return": -0.1082434714103595,
+          "return_excess": 0.1118539950690211,
+          "candidate_drawdown": -0.1361487675074242,
+          "baseline_drawdown": -0.1606700307869878,
+          "drawdown_excess": 0.0245212632795636,
+          "candidate_sharpe": 0.1337033156269485,
+          "candidate_trades": 150
+        },
+        "confirmation_6bp_vs_A6": {
+          "candidate_return": -0.0050074107561,
+          "baseline_return": -0.1153984364591197,
+          "return_excess": 0.1103910257030197,
+          "candidate_drawdown": -0.1410093108161703,
+          "baseline_drawdown": -0.1642630667674092,
+          "drawdown_excess": 0.0232537559512389,
+          "candidate_sharpe": 0.0357272456673516,
+          "candidate_trades": 150
+        },
+        "confirmation_10bp_vs_A6": {
+          "candidate_return": -0.0166710172328978,
+          "baseline_return": -0.1250601544892984,
+          "return_excess": 0.1083891372564005,
+          "candidate_drawdown": -0.1458467985930468,
+          "baseline_drawdown": -0.1720352818811161,
+          "drawdown_excess": 0.0261884832880693,
+          "candidate_sharpe": -0.0993077849615785,
+          "candidate_trades": 150
+        },
+        "confirmation_q1_3bp_vs_A6": {
+          "candidate_return": 0.0484672957745611,
+          "baseline_return": -0.0603041662777695,
+          "return_excess": 0.1087714620523306,
+          "candidate_drawdown": -0.1030087918386108,
+          "baseline_drawdown": -0.1143905343125409,
+          "drawdown_excess": 0.01138174247393,
+          "candidate_sharpe": 1.0229785474763446,
+          "candidate_trades": 100
+        },
+        "confirmation_q2_3bp_vs_A6": {
+          "candidate_return": -0.0425121728101791,
+          "baseline_return": -0.0511901279437899,
+          "return_excess": 0.0086779551336108,
+          "candidate_drawdown": -0.0769989939887751,
+          "baseline_drawdown": -0.0982755636572318,
+          "drawdown_excess": 0.0212765696684567,
+          "candidate_sharpe": -1.2870919452010567,
+          "candidate_trades": 50
+        },
+        "full_window_3bp_vs_A6": {
+          "candidate_return": 0.1454217540506417,
+          "baseline_return": 0.3660831720597353,
+          "return_excess": -0.2206614180090935,
+          "candidate_drawdown": -0.1714619793494171,
+          "baseline_drawdown": -0.1734710020107908,
+          "drawdown_excess": 0.0020090226613737,
+          "candidate_sharpe": 0.7461842383443872,
+          "candidate_trades": 404
+        },
+        "full_window_10bp_vs_A6": {
+          "candidate_return": 0.0837417378060059,
+          "baseline_return": 0.2953705095337064,
+          "return_excess": -0.2116287717277005,
+          "candidate_drawdown": -0.1956241508217843,
+          "baseline_drawdown": -0.1850879108611369,
+          "drawdown_excess": -0.0105362399606473,
+          "candidate_sharpe": 0.4840807201497542,
+          "candidate_trades": 404
+        },
+        "same_fold_confirmation_excess_vs_V76": [
+          0.0130521457502392,
+          -0.0410346517762297,
+          0.1447108880870007,
+          0.1025002420338503
+        ],
+        "same_fold_confirmation_positive_count": 3,
+        "promotion_gates": {
+          "confirmation_return_exceeds_A6_at_3bp": true,
+          "at_least_three_same_fold_confirmation_excesses_positive": true,
+          "confirmation_excess_positive_at_10bp": true,
+          "confirmation_drawdown_within_5pp": true,
+          "full_window_excess_no_worse_than_minus_5pp_at_3bp": false,
+          "full_window_excess_no_worse_than_minus_5pp_at_10bp": false,
+          "all_gates_pass": false
+        }
+      }
+    },
+    {
+      "round": 7,
+      "original_unit": "experiments/round_07",
+      "config/round07_plan.json": {
+        "iteration": "round07_linear_path_ranker",
+        "hypothesis": "Rounds 04-06 retained similar confirmation-window gains but remained far behind A6 on the full history. A shallow model may generalize better than the existing MLP by reducing effective capacity while learning the same path-aware cross-sectional ranking target.",
+        "single_change_vs_round04": "Keep continuous executable path labels, WPCC + 0.10 Top5-vs-bottom256 pairwise loss, all signal days, features, regularization, seed, folds and portfolio fixed; replace only the MLP-4linear architecture with a single linear scoring layer.",
+        "candidate": {
+          "name": "linear_path_top5pair_8_20",
+          "features": "core (331 old-core features)",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "WPCC + 0.10 * mean(softplus(-(score_top5-score_bottom256)/0.2))",
+          "architecture": "single linear layer from 331 features to one score",
+          "weight_decay": 0.02
+        },
+        "fixed_model": {
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "time_half_life": 0,
+          "training_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "portfolio_strategy": {
+          "name": "five_day_close_sl8_tp20",
+          "stop_loss": 0.08,
+          "take_profit": 0.2,
+          "max_hold_sessions": 5,
+          "cooldown_sessions": 3,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ]
+        },
+        "screen_windows": {
+          "discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ],
+          "confirm_q1": [
+            "2026Q1"
+          ],
+          "confirm_q2": [
+            "2026Q2"
+          ],
+          "full": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "promotion_rules": [
+          "Confirmation-window 3bp net return exceeds A6.",
+          "At least three of four same-fold confirmation comparisons with V76 are positive at 3bp.",
+          "Confirmation-window excess over A6 remains positive at 10bp.",
+          "Confirmation-window drawdown deterioration versus A6 is no worse than 5 percentage points.",
+          "Full 2025Q3-2026Q2 window excess over A6 is no worse than -5 percentage points at 3bp.",
+          "Full-window excess over A6 is no worse than -5 percentage points at 10bp."
+        ],
+        "research_boundary": "All historical windows and Q3 partial data have been viewed in earlier rounds. This is an iterative screen, not an untouched holdout or live-use authorization; Q3 is not repeated here.",
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "linear_path_top5pair_8_20": {
+          "features": "core",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "top5pair",
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "architecture": "linear"
+        }
+      },
+      "config/unit.json": {
+        "round": 7,
+        "title": "linear path-outcome ranker",
+        "candidates": [
+          "linear_path_top5pair_8_20"
+        ],
+        "phase": "round07/linear_train",
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_07/runs/<run-id>/REPORT.md"
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round07_linear_path_ranker",
+        "promoted": false,
+        "consecutive_iterations_without_promotion": 4,
+        "robust_breakthrough_established": false,
+        "research_assessment": "The single-layer linear ranker failed at least one pre-registered promotion gate.",
+        "method": {
+          "candidate": "linear_path_top5pair_8_20",
+          "label": "label_path_sl8_tp20_5d",
+          "objective": "WPCC + 0.10 * top5-vs-bottom256 pairwise softplus",
+          "architecture": "single linear scoring layer",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "strategy": "five_day_close_sl8_tp20",
+          "training_units": 20,
+          "successful_training_units": 20,
+          "failed_training_units": 0,
+          "peak_memory_gb": 30.192328704
+        },
+        "official_results": {
+          "screen": "screen/comparisons.csv",
+          "frozen_source": "frozen.json",
+          "source_snapshot": "source_snapshot/manifest.json"
+        },
+        "discovery_3bp_vs_A6": {
+          "candidate_return": 0.1616426573519209,
+          "baseline_return": 0.4632881208327932,
+          "return_excess": -0.3016454634808723,
+          "candidate_drawdown": -0.1343266909779229,
+          "baseline_drawdown": -0.0799207199928145,
+          "drawdown_excess": -0.0544059709851083,
+          "candidate_sharpe": 1.391467816649158,
+          "candidate_trades": 250
+        },
+        "confirmation_3bp_vs_A6": {
+          "candidate_return": 0.0409961025105001,
+          "baseline_return": -0.1082434714103595,
+          "return_excess": 0.1492395739208596,
+          "candidate_drawdown": -0.1149397268489192,
+          "baseline_drawdown": -0.1606700307869878,
+          "drawdown_excess": 0.0457303039380685,
+          "candidate_sharpe": 0.5485984916348216,
+          "candidate_trades": 150
+        },
+        "confirmation_6bp_vs_A6": {
+          "candidate_return": 0.0335086615506003,
+          "baseline_return": -0.1153984364591197,
+          "return_excess": 0.1489070980097201,
+          "candidate_drawdown": -0.1193509636807504,
+          "baseline_drawdown": -0.1642630667674092,
+          "drawdown_excess": 0.0449121030866587,
+          "candidate_sharpe": 0.4672674850694963,
+          "candidate_trades": 150
+        },
+        "confirmation_10bp_vs_A6": {
+          "candidate_return": 0.0203925173884014,
+          "baseline_return": -0.1250601544892984,
+          "return_excess": 0.1454526718776998,
+          "candidate_drawdown": -0.1268837152665356,
+          "baseline_drawdown": -0.1720352818811161,
+          "drawdown_excess": 0.0451515666145805,
+          "candidate_sharpe": 0.3223779396270361,
+          "candidate_trades": 150
+        },
+        "confirmation_q1_3bp_vs_A6": {
+          "candidate_return": 0.0822967014202198,
+          "baseline_return": -0.0603041662777695,
+          "return_excess": 0.1426008676979894,
+          "candidate_drawdown": -0.0712723073585169,
+          "baseline_drawdown": -0.1143905343125409,
+          "drawdown_excess": 0.043118226954024,
+          "candidate_sharpe": 1.659115420617134,
+          "candidate_trades": 100
+        },
+        "confirmation_q2_3bp_vs_A6": {
+          "candidate_return": -0.0376848303829397,
+          "baseline_return": -0.0511901279437899,
+          "return_excess": 0.0135052975608501,
+          "candidate_drawdown": -0.0813723421492929,
+          "baseline_drawdown": -0.0982755636572318,
+          "drawdown_excess": 0.0169032215079389,
+          "candidate_sharpe": -1.0639210898023703,
+          "candidate_trades": 50
+        },
+        "full_window_3bp_vs_A6": {
+          "candidate_return": 0.3263338423325219,
+          "baseline_return": 0.3660831720597353,
+          "return_excess": -0.0397493297272133,
+          "candidate_drawdown": -0.1343266909779229,
+          "baseline_drawdown": -0.1734710020107908,
+          "drawdown_excess": 0.0391443110328678,
+          "candidate_sharpe": 1.4374619756977782,
+          "candidate_trades": 400
+        },
+        "full_window_10bp_vs_A6": {
+          "candidate_return": 0.253236516989721,
+          "baseline_return": 0.2953705095337064,
+          "return_excess": -0.0421339925439854,
+          "candidate_drawdown": -0.1421552474439432,
+          "baseline_drawdown": -0.1850879108611369,
+          "drawdown_excess": 0.0429326634171937,
+          "candidate_sharpe": 1.1693932589309843,
+          "candidate_trades": 400
+        },
+        "same_fold_confirmation_excess_vs_V76": [
+          -0.0445494454627198,
+          0.1835161904754793,
+          0.0459419009583496,
+          -0.0248519366775201
+        ],
+        "same_fold_confirmation_positive_count": 2,
+        "promotion_gates": {
+          "confirmation_return_exceeds_A6_at_3bp": true,
+          "at_least_three_same_fold_confirmation_excesses_positive": false,
+          "confirmation_excess_positive_at_10bp": true,
+          "confirmation_drawdown_within_5pp": true,
+          "full_window_excess_no_worse_than_minus_5pp_at_3bp": true,
+          "full_window_excess_no_worse_than_minus_5pp_at_10bp": true,
+          "all_gates_pass": false
+        }
+      }
+    },
+    {
+      "round": 8,
+      "original_unit": "experiments/round_08",
+      "config/round08_plan.json": {
+        "iteration": "round08_fold_rank_consensus",
+        "hypothesis": "The R7 linear scorer nearly met the full-window return gate, but only two of four individual folds beat the V76 comparator. Raw score averaging can let a fold dominate because its score scale is larger. Averaging within-date percentile ranks may make the four-fold consensus less sensitive to fold scale and improve sensitivity to removing any one fold.",
+        "single_change_vs_round07": "The aggregation method is applied to a locally frozen single-seed four-fold linear base model. Historical R7 inputs are reused only when compatible with the current data; otherwise this unit regenerates the same linear candidate within its own new run before evaluating aggregation.",
+        "upstream_model": {
+          "candidate": "linear_path_top5pair_8_20",
+          "phase": "round07/linear_train",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "label": "label_path_sl8_tp20_5d",
+          "architecture": "single linear scoring layer",
+          "input_path": "selected by this run upstream_selection.json; historical unit inputs/round07 or generated outputs/<run>/inputs/round07",
+          "generation_candidate": "linear_path_top5pair_8_20",
+          "generation_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ],
+          "compatibility_policy": "Reuse historical local inputs only when current data and cache axes exactly match. Otherwise train this unit own linear base model (seed 3253, four folds, four natural test quarters) and freeze new run-local inputs without altering historical evidence."
+        },
+        "rank_aggregation": "For each signal date and fold, convert finite stock scores to average percentile ranks in [0, 1], then average ranks across included folds. The aggregation has no trainable parameters; its linear base model is locally generated when historical inputs are incompatible.",
+        "portfolio_strategy": {
+          "name": "five_day_close_sl8_tp20",
+          "stop_loss": 0.08,
+          "take_profit": 0.2,
+          "max_hold_sessions": 5,
+          "cooldown_sessions": 3,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ]
+        },
+        "screen_windows": {
+          "discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ],
+          "confirm_q1": [
+            "2026Q1"
+          ],
+          "confirm_q2": [
+            "2026Q2"
+          ],
+          "full": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "promotion_rules": [
+          "Four-fold rank-consensus confirmation return at 3bp exceeds A6.",
+          "At least three of four leave-one-fold-out rank-consensus confirmation returns at 3bp exceed A6.",
+          "Four-fold confirmation excess over A6 remains positive at 10bp.",
+          "Four-fold confirmation drawdown deterioration versus A6 is no worse than 5 percentage points.",
+          "Four-fold full-window excess over A6 is no worse than -5 percentage points at both 3bp and 10bp.",
+          "At least three of four leave-one-fold-out full-window 3bp excesses are no worse than -5 percentage points."
+        ],
+        "research_boundary": "R7 training and every market window in this screen have already been examined. Rank pooling and leave-one-fold-out results are sensitivity analyses on saved predictions, not an independent holdout or live-use authorization.",
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "linear_path_top5pair_8_20": {
+          "features": "core",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "top5pair",
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "architecture": "linear"
+        }
+      },
+      "config/unit.json": {
+        "round": 8,
+        "title": "rank consensus of frozen local R7 predictions",
+        "candidates": [],
+        "phase": null,
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_08/runs/<run-id>/REPORT.md",
+        "upstream_policy": "auto-reuse-compatible-or-generate-current-run",
+        "upstream_candidate": "linear_path_top5pair_8_20",
+        "upstream_training_units": 16
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round08_fold_rank_consensus",
+        "promoted": false,
+        "consecutive_iterations_without_promotion": 5,
+        "robust_breakthrough_established": false,
+        "research_assessment": "Rank-consensus or fold-omission stability failed at least one preregistered gate.",
+        "method": {
+          "candidate": "linear_rank_consensus_8_20",
+          "upstream_candidate": "linear_path_top5pair_8_20",
+          "upstream_seed": 3253,
+          "upstream_folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "training_units_this_round": 0,
+          "upstream_training_units": 20,
+          "aggregation": "Within-date percentile ranks averaged across four frozen folds; also assessed each three-fold leave-one-out combination.",
+          "strategy": "five_day_close_sl8_tp20"
+        },
+        "official_results": {
+          "screen": "screen/comparisons.csv",
+          "frozen_source": "frozen.json",
+          "source_snapshot": "source_snapshot/manifest.json"
+        },
+        "discovery_3bp_vs_A6": {
+          "candidate_return": 0.1101461883787928,
+          "baseline_return": 0.4632881208327932,
+          "return_excess": -0.3531419324540004,
+          "candidate_drawdown": -0.1495290163605396,
+          "baseline_drawdown": -0.0799207199928145,
+          "drawdown_excess": -0.069608296367725,
+          "candidate_sharpe": 1.045795981266077,
+          "candidate_trades": 250
+        },
+        "confirmation_3bp_vs_A6": {
+          "candidate_return": 0.0198828648583007,
+          "baseline_return": -0.1082434714103595,
+          "return_excess": 0.1281263362686602,
+          "candidate_drawdown": -0.131361536223166,
+          "baseline_drawdown": -0.1606700307869878,
+          "drawdown_excess": 0.0293084945638217,
+          "candidate_sharpe": 0.3146678075063311,
+          "candidate_trades": 150
+        },
+        "confirmation_6bp_vs_A6": {
+          "candidate_return": 0.0097193440008396,
+          "baseline_return": -0.1153984364591197,
+          "return_excess": 0.1251177804599593,
+          "candidate_drawdown": -0.1369153441739699,
+          "baseline_drawdown": -0.1642630667674092,
+          "drawdown_excess": 0.0273477225934393,
+          "candidate_sharpe": 0.2026452284828244,
+          "candidate_trades": 150
+        },
+        "confirmation_10bp_vs_A6": {
+          "candidate_return": -0.0023919692398981,
+          "baseline_return": -0.1250601544892984,
+          "return_excess": 0.1226681852494002,
+          "candidate_drawdown": -0.1437302628046093,
+          "baseline_drawdown": -0.1720352818811161,
+          "drawdown_excess": 0.0283050190765068,
+          "candidate_sharpe": 0.0669062597482771,
+          "candidate_trades": 150
+        },
+        "confirmation_q1_3bp_vs_A6": {
+          "candidate_return": 0.0673603555024799,
+          "baseline_return": -0.0603041662777695,
+          "return_excess": 0.1276645217802495,
+          "candidate_drawdown": -0.0821911594557162,
+          "baseline_drawdown": -0.1143905343125409,
+          "drawdown_excess": 0.0321993748568247,
+          "candidate_sharpe": 1.360365010732082,
+          "candidate_trades": 100
+        },
+        "confirmation_q2_3bp_vs_A6": {
+          "candidate_return": -0.0443050143443298,
+          "baseline_return": -0.0511901279437899,
+          "return_excess": 0.00688511359946,
+          "candidate_drawdown": -0.0816320026438001,
+          "baseline_drawdown": -0.0982755636572318,
+          "drawdown_excess": 0.0166435610134317,
+          "candidate_sharpe": -1.2817554366109054,
+          "candidate_trades": 50
+        },
+        "confirmation_3bp_vs_V76_fourfold": {
+          "candidate_return": 0.0198828648583007,
+          "baseline_return": 0.009759965125051,
+          "return_excess": 0.0101228997332496,
+          "candidate_drawdown": -0.131361536223166,
+          "baseline_drawdown": -0.1020214607344003,
+          "drawdown_excess": -0.0293400754887657,
+          "candidate_sharpe": 0.3146678075063311,
+          "candidate_trades": 150
+        },
+        "full_window_3bp_vs_A6": {
+          "candidate_return": 0.209360734607833,
+          "baseline_return": 0.3660831720597353,
+          "return_excess": -0.1567224374519022,
+          "candidate_drawdown": -0.1495290163605396,
+          "baseline_drawdown": -0.1734710020107908,
+          "drawdown_excess": 0.0239419856502511,
+          "candidate_sharpe": 1.0397688376266505,
+          "candidate_trades": 400
+        },
+        "full_window_10bp_vs_A6": {
+          "candidate_return": 0.1429116138197204,
+          "baseline_return": 0.2953705095337064,
+          "return_excess": -0.152458895713986,
+          "candidate_drawdown": -0.1583753815312516,
+          "baseline_drawdown": -0.1850879108611369,
+          "drawdown_excess": 0.0267125293298853,
+          "candidate_sharpe": 0.7607664078719394,
+          "candidate_trades": 400
+        },
+        "leave_one_fold_out_confirmation_excess_3bp_vs_A6": [
+          0.1276500596362104,
+          0.1103128976030112,
+          0.1164284950178509,
+          0.1738193599741611
+        ],
+        "leave_one_fold_out_confirmation_positive_count": 4,
+        "leave_one_fold_out_full_excess_3bp_vs_A6": [
+          -0.170568093756201,
+          -0.2287924365832723,
+          -0.0083025529211624,
+          -0.0773899350395721
+        ],
+        "leave_one_fold_out_full_within_minus_5pp_count": 1,
+        "promotion_gates": {
+          "fourfold_confirmation_exceeds_A6_at_3bp": true,
+          "at_least_three_leave_one_fold_out_confirmations_positive": true,
+          "fourfold_confirmation_excess_positive_at_10bp": true,
+          "fourfold_confirmation_drawdown_within_5pp": true,
+          "fourfold_full_excess_no_worse_than_minus_5pp_at_3bp": false,
+          "fourfold_full_excess_no_worse_than_minus_5pp_at_10bp": false,
+          "at_least_three_leave_one_fold_out_full_excess_within_minus_5pp": false,
+          "all_gates_pass": false
+        }
+      }
+    },
+    {
+      "round": 9,
+      "original_unit": "experiments/round_09",
+      "config/round09_plan.json": {
+        "iteration": "round09_linear_top5_seat_boundary_loss",
+        "hypothesis": "The four-fold linear model gave the best full-window return, but its pairwise term contrasted the top five with the extreme bottom 256. The portfolio has only five seats, so the more consequential mistakes may be swaps between ranks 5 and 6-25. Pairing the realized top five against this near-cutoff group may teach the model a sharper, more stable selection boundary.",
+        "single_change_vs_round07": "Keep the single linear architecture, continuous executable path labels, WPCC term, 0.10 pairwise coefficient, features, regularization, all training days, seed, folds and portfolio fixed; compare the realized top five against target ranks 6-25 instead of the bottom 256.",
+        "candidate": {
+          "name": "linear_top5boundary20_8_20",
+          "features": "core (331 old-core features)",
+          "label": "label_path_sl8_tp20_5d",
+          "architecture": "single linear scoring layer",
+          "loss": "WPCC + 0.10 * mean(softplus(-(score_target_top5-score_target_ranks6to25)/0.2))",
+          "weight_decay": 0.02
+        },
+        "fixed_model": {
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "time_half_life": 0,
+          "training_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "portfolio_strategy": {
+          "name": "five_day_close_sl8_tp20",
+          "stop_loss": 0.08,
+          "take_profit": 0.2,
+          "max_hold_sessions": 5,
+          "cooldown_sessions": 3,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ]
+        },
+        "screen_windows": {
+          "discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ],
+          "confirm_q1": [
+            "2026Q1"
+          ],
+          "confirm_q2": [
+            "2026Q2"
+          ],
+          "full": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "promotion_rules": [
+          "Confirmation-window 3bp net return exceeds A6.",
+          "At least three of four same-fold confirmation comparisons with V76 are positive at 3bp.",
+          "Confirmation-window excess over A6 remains positive at 10bp.",
+          "Confirmation-window drawdown deterioration versus A6 is no worse than 5 percentage points.",
+          "Full 2025Q3-2026Q2 window excess over A6 is no worse than -5 percentage points at 3bp.",
+          "Full-window excess over A6 is no worse than -5 percentage points at 10bp."
+        ],
+        "research_boundary": "All market windows and Q3 partial data have been viewed in prior rounds. This is an iterative screen, not an untouched holdout or live-use authorization; Q3 is not repeated here.",
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "linear_top5boundary20_8_20": {
+          "features": "core",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "top5_boundary_pair",
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "architecture": "linear"
+        }
+      },
+      "config/unit.json": {
+        "round": 9,
+        "title": "top-five boundary pairwise objective",
+        "candidates": [
+          "linear_top5boundary20_8_20"
+        ],
+        "phase": "round09/boundary_train",
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_09/runs/<run-id>/REPORT.md"
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round09_linear_top5_seat_boundary_loss",
+        "promoted": false,
+        "consecutive_iterations_without_promotion": 6,
+        "robust_breakthrough_established": false,
+        "research_assessment": "The seat-boundary pairwise objective failed at least one pre-registered promotion gate.",
+        "method": {
+          "candidate": "linear_top5boundary20_8_20",
+          "label": "label_path_sl8_tp20_5d",
+          "objective": "WPCC + 0.10 * top5-vs-ranks6to25 pairwise softplus",
+          "architecture": "single linear scoring layer",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "strategy": "five_day_close_sl8_tp20",
+          "training_units": 20,
+          "successful_training_units": 20,
+          "failed_training_units": 0,
+          "peak_memory_gb": 31.438557184
+        },
+        "official_results": {
+          "screen": "screen/comparisons.csv",
+          "frozen_source": "frozen.json",
+          "source_snapshot": "source_snapshot/manifest.json"
+        },
+        "discovery_3bp_vs_A6": {
+          "candidate_return": 0.1558985491268512,
+          "baseline_return": 0.4632881208327932,
+          "return_excess": -0.307389571705942,
+          "candidate_drawdown": -0.1239002489281093,
+          "baseline_drawdown": -0.0799207199928145,
+          "drawdown_excess": -0.0439795289352947,
+          "candidate_sharpe": 1.5078211229223806,
+          "candidate_trades": 250
+        },
+        "confirmation_3bp_vs_A6": {
+          "candidate_return": 0.0705288971742601,
+          "baseline_return": -0.1082434714103595,
+          "return_excess": 0.1787723685846196,
+          "candidate_drawdown": -0.1017516437209826,
+          "baseline_drawdown": -0.1606700307869878,
+          "drawdown_excess": 0.0589183870660051,
+          "candidate_sharpe": 0.858601710841146,
+          "candidate_trades": 150
+        },
+        "confirmation_6bp_vs_A6": {
+          "candidate_return": 0.0622734935176005,
+          "baseline_return": -0.1153984364591197,
+          "return_excess": 0.1776719299767203,
+          "candidate_drawdown": -0.1048470339203692,
+          "baseline_drawdown": -0.1642630667674092,
+          "drawdown_excess": 0.05941603284704,
+          "candidate_sharpe": 0.7738051214695053,
+          "candidate_trades": 150
+        },
+        "confirmation_10bp_vs_A6": {
+          "candidate_return": 0.0494534755196018,
+          "baseline_return": -0.1250601544892984,
+          "return_excess": 0.1745136300089003,
+          "candidate_drawdown": -0.1106864644781848,
+          "baseline_drawdown": -0.1720352818811161,
+          "drawdown_excess": 0.0613488174029313,
+          "candidate_sharpe": 0.6384170111245379,
+          "candidate_trades": 150
+        },
+        "confirmation_q1_3bp_vs_A6": {
+          "candidate_return": 0.12550284878616,
+          "baseline_return": -0.0603041662777695,
+          "return_excess": 0.1858070150639296,
+          "candidate_drawdown": -0.0583458253275694,
+          "baseline_drawdown": -0.1143905343125409,
+          "drawdown_excess": 0.0560447089849714,
+          "candidate_sharpe": 2.3811093996243007,
+          "candidate_trades": 100
+        },
+        "confirmation_q2_3bp_vs_A6": {
+          "candidate_return": -0.0475635933601096,
+          "baseline_return": -0.0511901279437899,
+          "return_excess": 0.0036265345836803,
+          "candidate_drawdown": -0.0898220363506213,
+          "baseline_drawdown": -0.0982755636572318,
+          "drawdown_excess": 0.0084535273066105,
+          "candidate_sharpe": -1.4265160783859114,
+          "candidate_trades": 50
+        },
+        "full_window_3bp_vs_A6": {
+          "candidate_return": 0.2790383815600323,
+          "baseline_return": 0.3660831720597353,
+          "return_excess": -0.0870447904997029,
+          "candidate_drawdown": -0.1239002489281093,
+          "baseline_drawdown": -0.1734710020107908,
+          "drawdown_excess": 0.0495707530826814,
+          "candidate_sharpe": 1.3338614884920563,
+          "candidate_trades": 400
+        },
+        "full_window_10bp_vs_A6": {
+          "candidate_return": 0.2100971633161066,
+          "baseline_return": 0.2953705095337064,
+          "return_excess": -0.0852733462175998,
+          "candidate_drawdown": -0.1291181645971388,
+          "baseline_drawdown": -0.1850879108611369,
+          "drawdown_excess": 0.055969746263998,
+          "candidate_sharpe": 1.0544156369076485,
+          "candidate_trades": 400
+        },
+        "same_fold_confirmation_excess_vs_V76": [
+          -0.0266894759441308,
+          0.2249477719257794,
+          0.1341428700684301,
+          -0.0046645306277399
+        ],
+        "same_fold_confirmation_positive_count": 2,
+        "promotion_gates": {
+          "confirmation_return_exceeds_A6_at_3bp": true,
+          "at_least_three_same_fold_confirmation_excesses_positive": false,
+          "confirmation_excess_positive_at_10bp": true,
+          "confirmation_drawdown_within_5pp": true,
+          "full_window_excess_no_worse_than_minus_5pp_at_3bp": false,
+          "full_window_excess_no_worse_than_minus_5pp_at_10bp": false,
+          "all_gates_pass": false
+        }
+      }
+    },
+    {
+      "round": 10,
+      "original_unit": "experiments/round_10",
+      "config/round10_plan.json": {
+        "iteration": "round10_uncertainty_penalized_rank_consensus",
+        "hypothesis": "R8 percentile-rank pooling was positive and stable on the recent confirmation window, but its full-history performance worsened and changed sharply under fold omission. Penalizing each stock's cross-fold rank dispersion may keep the consensus benefit while avoiding names whose high average rank depends on disagreement between folds.",
+        "single_change_vs_round08": "Reuse the exact frozen R7 single-seed, four-fold linear models and test predictions; change only the aggregation score from mean percentile rank to mean percentile rank minus one population standard deviation across included folds. Also report the four leave-one-fold-out variants.",
+        "upstream_model": {
+          "candidate": "linear_path_top5pair_8_20",
+          "phase": "round07/linear_train",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "label": "label_path_sl8_tp20_5d",
+          "architecture": "single linear scoring layer",
+          "input_path": "selected by this run upstream_selection.json; historical unit inputs/round07 or generated outputs/<run>/inputs/round07",
+          "generation_candidate": "linear_path_top5pair_8_20",
+          "generation_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ],
+          "compatibility_policy": "Reuse historical local inputs only when current data and cache axes exactly match. Otherwise train this unit own linear base model (seed 3253, four folds, four natural test quarters) and freeze new run-local inputs without altering historical evidence."
+        },
+        "rank_aggregation": "For each date and fold, convert finite stock scores to average percentile ranks in [0,1]. Score each stock as mean(rank) - 1.0 * population_std(rank) across included folds.",
+        "portfolio_strategy": {
+          "name": "five_day_close_sl8_tp20",
+          "stop_loss": 0.08,
+          "take_profit": 0.2,
+          "max_hold_sessions": 5,
+          "cooldown_sessions": 3,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ]
+        },
+        "screen_windows": {
+          "discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ],
+          "confirm_q1": [
+            "2026Q1"
+          ],
+          "confirm_q2": [
+            "2026Q2"
+          ],
+          "full": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "promotion_rules": [
+          "Four-fold uncertainty-penalized consensus confirmation return at 3bp exceeds A6.",
+          "At least three of four leave-one-fold-out confirmation returns at 3bp exceed A6.",
+          "Four-fold confirmation excess over A6 remains positive at 10bp.",
+          "Four-fold confirmation drawdown deterioration versus A6 is no worse than 5 percentage points.",
+          "Four-fold full-window excess over A6 is no worse than -5 percentage points at both 3bp and 10bp.",
+          "At least three of four leave-one-fold-out full-window 3bp excesses are no worse than -5 percentage points."
+        ],
+        "research_boundary": "R7 training and every market window have already been examined. This is an inference sensitivity test on saved predictions, not an independent holdout or live-use authorization.",
+        "single_change_vs_round07": "The aggregation method is applied to a locally frozen single-seed four-fold linear base model. Historical R7 inputs are reused only when compatible with the current data; otherwise this unit regenerates the same linear candidate within its own new run before evaluating aggregation.",
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "linear_path_top5pair_8_20": {
+          "features": "core",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "top5pair",
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "architecture": "linear"
+        }
+      },
+      "config/unit.json": {
+        "round": 10,
+        "title": "uncertainty-penalized rank consensus",
+        "candidates": [],
+        "phase": null,
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_10/runs/<run-id>/REPORT.md",
+        "upstream_policy": "auto-reuse-compatible-or-generate-current-run",
+        "upstream_candidate": "linear_path_top5pair_8_20",
+        "upstream_training_units": 16
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round10_uncertainty_penalized_rank_consensus",
+        "promoted": false,
+        "consecutive_iterations_without_promotion": 7,
+        "robust_breakthrough_established": false,
+        "research_assessment": "Rank-consensus or fold-omission stability failed at least one preregistered gate.",
+        "method": {
+          "candidate": "linear_uncertainty_rank_consensus_8_20",
+          "upstream_candidate": "linear_path_top5pair_8_20",
+          "upstream_seed": 3253,
+          "upstream_folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "training_units_this_round": 0,
+          "upstream_training_units": 20,
+          "aggregation": "Within-date mean percentile rank minus one population standard deviation across included frozen folds; also assessed each three-fold leave-one-out combination.",
+          "strategy": "five_day_close_sl8_tp20"
+        },
+        "official_results": {
+          "screen": "screen/comparisons.csv",
+          "frozen_source": "frozen.json",
+          "source_snapshot": "source_snapshot/manifest.json"
+        },
+        "discovery_3bp_vs_A6": {
+          "candidate_return": 0.159185114651293,
+          "baseline_return": 0.4632881208327932,
+          "return_excess": -0.3041030061815002,
+          "candidate_drawdown": -0.1449519993779493,
+          "baseline_drawdown": -0.0799207199928145,
+          "drawdown_excess": -0.0650312793851347,
+          "candidate_sharpe": 1.4884071210424024,
+          "candidate_trades": 250
+        },
+        "confirmation_3bp_vs_A6": {
+          "candidate_return": 0.0330717463697805,
+          "baseline_return": -0.1082434714103595,
+          "return_excess": 0.14131521778014,
+          "candidate_drawdown": -0.1190114271234858,
+          "baseline_drawdown": -0.1606700307869878,
+          "drawdown_excess": 0.0416586036635019,
+          "candidate_sharpe": 0.4719692698569654,
+          "candidate_trades": 150
+        },
+        "confirmation_6bp_vs_A6": {
+          "candidate_return": 0.0232394702959599,
+          "baseline_return": -0.1153984364591197,
+          "return_excess": 0.1386379067550797,
+          "candidate_drawdown": -0.1249617824237152,
+          "baseline_drawdown": -0.1642630667674092,
+          "drawdown_excess": 0.0393012843436939,
+          "candidate_sharpe": 0.3597183581215024,
+          "candidate_trades": 150
+        },
+        "confirmation_10bp_vs_A6": {
+          "candidate_return": 0.0096845754818015,
+          "baseline_return": -0.1250601544892984,
+          "return_excess": 0.1347447299710999,
+          "candidate_drawdown": -0.1315147363490942,
+          "baseline_drawdown": -0.1720352818811161,
+          "drawdown_excess": 0.0405205455320218,
+          "candidate_sharpe": 0.2033083958018391,
+          "candidate_trades": 150
+        },
+        "confirmation_q1_3bp_vs_A6": {
+          "candidate_return": 0.0667989434693403,
+          "baseline_return": -0.0603041662777695,
+          "return_excess": 0.1271031097471099,
+          "candidate_drawdown": -0.0827750682387292,
+          "baseline_drawdown": -0.1143905343125409,
+          "drawdown_excess": 0.0316154660738117,
+          "candidate_sharpe": 1.377707913979198,
+          "candidate_trades": 100
+        },
+        "confirmation_q2_3bp_vs_A6": {
+          "candidate_return": -0.0319391705306597,
+          "baseline_return": -0.0511901279437899,
+          "return_excess": 0.0192509574131302,
+          "candidate_drawdown": -0.0723060242300612,
+          "baseline_drawdown": -0.0982755636572318,
+          "drawdown_excess": 0.0259695394271706,
+          "candidate_sharpe": -1.024849817150947,
+          "candidate_trades": 50
+        },
+        "confirmation_3bp_vs_V76_fourfold": {
+          "candidate_return": 0.0330717463697805,
+          "baseline_return": 0.009759965125051,
+          "return_excess": 0.0233117812447294,
+          "candidate_drawdown": -0.1190114271234858,
+          "baseline_drawdown": -0.1020214607344003,
+          "drawdown_excess": -0.0169899663890855,
+          "candidate_sharpe": 0.4719692698569654,
+          "candidate_trades": 150
+        },
+        "full_window_3bp_vs_A6": {
+          "candidate_return": 0.2304725049734541,
+          "baseline_return": 0.3660831720597353,
+          "return_excess": -0.1356106670862811,
+          "candidate_drawdown": -0.1449519993779493,
+          "baseline_drawdown": -0.1734710020107908,
+          "drawdown_excess": 0.0285190026328414,
+          "candidate_sharpe": 1.1875853897552888,
+          "candidate_trades": 400
+        },
+        "full_window_10bp_vs_A6": {
+          "candidate_return": 0.1634580761746202,
+          "baseline_return": 0.2953705095337064,
+          "return_excess": -0.1319124333590862,
+          "candidate_drawdown": -0.1519665791289035,
+          "baseline_drawdown": -0.1850879108611369,
+          "drawdown_excess": 0.0331213317322334,
+          "candidate_sharpe": 0.8909980288169826,
+          "candidate_trades": 400
+        },
+        "leave_one_fold_out_confirmation_excess_3bp_vs_A6": [
+          0.1170627126205103,
+          0.0843665155451299,
+          0.0967983647804006,
+          0.1834688596182205
+        ],
+        "leave_one_fold_out_confirmation_positive_count": 4,
+        "leave_one_fold_out_full_excess_3bp_vs_A6": [
+          -0.0436371746950801,
+          -0.2105541286913705,
+          -0.074682314906959,
+          -0.1344109757291831
+        ],
+        "leave_one_fold_out_full_within_minus_5pp_count": 1,
+        "promotion_gates": {
+          "fourfold_confirmation_exceeds_A6_at_3bp": true,
+          "at_least_three_leave_one_fold_out_confirmations_positive": true,
+          "fourfold_confirmation_excess_positive_at_10bp": true,
+          "fourfold_confirmation_drawdown_within_5pp": true,
+          "fourfold_full_excess_no_worse_than_minus_5pp_at_3bp": false,
+          "fourfold_full_excess_no_worse_than_minus_5pp_at_10bp": false,
+          "at_least_three_leave_one_fold_out_full_excess_within_minus_5pp": false,
+          "all_gates_pass": false
+        }
+      }
+    },
+    {
+      "round": 11,
+      "original_unit": "experiments/round_11",
+      "config/round11_plan.json": {
+        "iteration": "round11_linear_market_gate_interactions",
+        "hypothesis": "The R6 risk-on-only filter discarded useful risk-off observations, while R7's single linear scorer could not assign different factor weights to distinct market states. Appending each normalized factor multiplied by the existing portfolio 60-day risk-on gate gives one linear model independent factor weights when the gate is off and on, while retaining all training dates.",
+        "single_change_vs_round07": "Keep the R7 candidate, 331 core features, path stop-loss 8% / take-profit 20% 5-day label, top-five-vs-bottom-tail pairwise ranking loss, linear architecture, optimizer, epoch aggregation, and portfolio unchanged. Add only x * portfolio_risk_on_60dma for every core feature to the input.",
+        "candidate": "linear_gate_interaction_path_top5pair_8_20",
+        "fixed_model": {
+          "candidate": "linear_gate_interaction_path_top5pair_8_20",
+          "phase": "round11/market_interaction_train",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "features": "core (331)",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "top5pair",
+          "architecture": "single linear scoring layer",
+          "epoch_aggregation": "mean_all",
+          "training_quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "market_context": {
+          "source": "existing five_day_close_sl8_tp20 portfolio risk-on 60-day moving-average gate",
+          "input_expansion": "concatenate x and x multiplied by the binary per-day gate; gate is shared by every stock on a date",
+          "training_dates": "all valid training dates; do not apply the gate as a date filter"
+        },
+        "portfolio_strategy": {
+          "name": "five_day_close_sl8_tp20",
+          "stop_loss": 0.08,
+          "take_profit": 0.2,
+          "max_hold_sessions": 5,
+          "cooldown_sessions": 3,
+          "cost_stress_bps": [
+            3,
+            6,
+            10
+          ]
+        },
+        "screen_windows": {
+          "discovery": [
+            "2025Q3",
+            "2025Q4"
+          ],
+          "confirmation": [
+            "2026Q1",
+            "2026Q2"
+          ],
+          "confirm_q1": [
+            "2026Q1"
+          ],
+          "confirm_q2": [
+            "2026Q2"
+          ],
+          "full": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "promotion_rules": [
+          "Confirmation-window excess return versus A6 is positive at both 3bp and 10bp costs.",
+          "Confirmation-window drawdown deterioration versus A6 is no worse than 5 percentage points.",
+          "Full-window excess return versus A6 is no worse than -5 percentage points at both 3bp and 10bp costs.",
+          "At least 3 of 4 paired same-fold full-window 3bp excesses versus V76 are no worse than -5 percentage points.",
+          "Both confirmation quarters have non-negative excess return versus A6 at 3bp."
+        ],
+        "reporting": [
+          "Record absolute net portfolio return, excess versus A6 and V76, drawdown, and costs at 3bp, 6bp, and 10bp for discovery, each confirmation quarter, confirmation, and full windows.",
+          "Record the paired same-fold 3bp return excesses and the promotion decision."
+        ],
+        "research_boundary": "The existing confirmation and full-history windows have already been viewed in prior rounds. R11 is a research screen, not an independent holdout or live-use authorization.",
+        "current_test_window": {
+          "start": "2025-07-01",
+          "end": "2026-06-30",
+          "quarters": [
+            "2025Q3",
+            "2025Q4",
+            "2026Q1",
+            "2026Q2"
+          ]
+        },
+        "historical_context": "Original plans, reports, frozen source and Q3 repeat evidence are retained unchanged in the migrated historical documentation and outputs/legacy."
+      },
+      "config/candidates.json": {
+        "control": {
+          "features": "core",
+          "label": "label_ret_5d",
+          "loss": "wpcc",
+          "time_half_life": 0
+        },
+        "linear_gate_interaction_path_top5pair_8_20": {
+          "features": "core",
+          "label": "label_path_sl8_tp20_5d",
+          "loss": "top5pair",
+          "time_half_life": 0,
+          "weight_decay": 0.02,
+          "architecture": "linear",
+          "market_interaction": "portfolio_risk_on_60dma"
+        }
+      },
+      "config/unit.json": {
+        "round": 11,
+        "title": "linear market-gate interactions",
+        "candidates": [
+          "linear_gate_interaction_path_top5pair_8_20"
+        ],
+        "phase": "round11/market_interaction_train",
+        "test_quarters": [
+          "2025Q3",
+          "2025Q4",
+          "2026Q1",
+          "2026Q2"
+        ],
+        "test_start": "2025-07-01",
+        "test_end": "2026-06-30",
+        "baseline_units": [
+          "V76",
+          "V78",
+          "V79",
+          "V83",
+          "V84",
+          "V85"
+        ],
+        "data": "../../trainingdata",
+        "results": "outputs/<unique-run-id>",
+        "historical_results": "outputs/legacy",
+        "reports": "../../docs/experiments/rounds/round_11/runs/<run-id>/REPORT.md"
+      },
+      "outputs/legacy/summary.json": {
+        "iteration": "round11_linear_market_gate_interactions",
+        "promoted": false,
+        "consecutive_iterations_without_promotion": 8,
+        "robust_breakthrough_established": false,
+        "research_assessment": "Market-gate feature interactions failed at least one pre-registered promotion gate.",
+        "method": {
+          "candidate": "linear_gate_interaction_path_top5pair_8_20",
+          "market_interaction": "append all 331 core features multiplied by portfolio_risk_on_60dma",
+          "label": "label_path_sl8_tp20_5d",
+          "objective": "WPCC + 0.10 * top5-vs-ranks6to25 pairwise softplus",
+          "architecture": "single linear scoring layer",
+          "base_seed": 3253,
+          "folds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "strategy": "five_day_close_sl8_tp20",
+          "training_units": 20,
+          "successful_training_units": 20,
+          "failed_training_units": 0,
+          "peak_memory_gb": 32.392425472
+        },
+        "official_results": {
+          "screen": "screen/comparisons.csv",
+          "frozen_source": "frozen.json",
+          "source_snapshot": "source_snapshot/manifest.json"
+        },
+        "discovery_3bp_vs_A6": {
+          "candidate_return": 0.0364990808712508,
+          "baseline_return": 0.4632881208327932,
+          "return_excess": -0.4267890399615424,
+          "candidate_drawdown": -0.1569511270283294,
+          "baseline_drawdown": -0.0799207199928145,
+          "drawdown_excess": -0.0770304070355148,
+          "candidate_sharpe": 0.4366338235171854,
+          "candidate_trades": 250
+        },
+        "confirmation_3bp_vs_A6": {
+          "candidate_return": -0.0112868787422799,
+          "baseline_return": -0.1082434714103595,
+          "return_excess": 0.0969565926680795,
+          "candidate_drawdown": -0.1116996967794781,
+          "baseline_drawdown": -0.1606700307869878,
+          "drawdown_excess": 0.0489703340075097,
+          "candidate_sharpe": -0.0655236458313907,
+          "candidate_trades": 150
+        },
+        "confirmation_6bp_vs_A6": {
+          "candidate_return": -0.0196199120859796,
+          "baseline_return": -0.1153984364591197,
+          "return_excess": 0.09577852437314,
+          "candidate_drawdown": -0.1160933826071455,
+          "baseline_drawdown": -0.1642630667674092,
+          "drawdown_excess": 0.0481696841602636,
+          "candidate_sharpe": -0.1752167954883278,
+          "candidate_trades": 150
+        },
+        "confirmation_10bp_vs_A6": {
+          "candidate_return": -0.031398837913998,
+          "baseline_return": -0.1250601544892984,
+          "return_excess": 0.0936613165753004,
+          "candidate_drawdown": -0.1218651980800624,
+          "baseline_drawdown": -0.1720352818811161,
+          "drawdown_excess": 0.0501700838010537,
+          "candidate_sharpe": -0.3324713944301756,
+          "candidate_trades": 150
+        },
+        "confirmation_q1_3bp_vs_A6": {
+          "candidate_return": 0.0637933790624403,
+          "baseline_return": -0.0603041662777695,
+          "return_excess": 0.1240975453402098,
+          "candidate_drawdown": -0.0650333950338145,
+          "baseline_drawdown": -0.1143905343125409,
+          "drawdown_excess": 0.0493571392787264,
+          "candidate_sharpe": 1.473728980369137,
+          "candidate_trades": 100
+        },
+        "confirmation_q2_3bp_vs_A6": {
+          "candidate_return": -0.0712742084880796,
+          "baseline_return": -0.0511901279437899,
+          "return_excess": -0.0200840805442896,
+          "candidate_drawdown": -0.0835455844513514,
+          "baseline_drawdown": -0.0982755636572318,
+          "drawdown_excess": 0.0147299792058804,
+          "candidate_sharpe": -2.474477827434918,
+          "candidate_trades": 50
+        },
+        "full_window_3bp_vs_A6": {
+          "candidate_return": 0.0863259010305026,
+          "baseline_return": 0.3660831720597353,
+          "return_excess": -0.2797572710292326,
+          "candidate_drawdown": -0.1569511270283294,
+          "baseline_drawdown": -0.1734710020107908,
+          "drawdown_excess": 0.0165198749824613,
+          "candidate_sharpe": 0.5217876452168706,
+          "candidate_trades": 400
+        },
+        "full_window_6bp_vs_A6": {
+          "candidate_return": 0.059785079308759,
+          "baseline_return": 0.3340748898150441,
+          "return_excess": -0.274289810506285,
+          "candidate_drawdown": -0.1617315877937383,
+          "baseline_drawdown": -0.1783653855351078,
+          "drawdown_excess": 0.0166337977413695,
+          "candidate_sharpe": 0.395018333955545,
+          "candidate_trades": 400
+        },
+        "full_window_10bp_vs_A6": {
+          "candidate_return": 0.0276271547918738,
+          "baseline_return": 0.2953705095337064,
+          "return_excess": -0.2677433547418326,
+          "candidate_drawdown": -0.1682532785439067,
+          "baseline_drawdown": -0.1850879108611369,
+          "drawdown_excess": 0.0168346323172302,
+          "candidate_sharpe": 0.2375738901785074,
+          "candidate_trades": 400
+        },
+        "same_fold_full_excess_vs_V76": [
+          -0.1130785149457103,
+          0.0234255402357379,
+          -0.142605293357106,
+          0.3102246599484501
+        ],
+        "same_fold_full_count_within_minus_5pp": 2,
+        "promotion_gates": {
+          "confirmation_excess_positive_vs_A6_at_3bp": true,
+          "confirmation_excess_positive_vs_A6_at_10bp": true,
+          "confirmation_drawdown_within_5pp": true,
+          "full_window_excess_no_worse_than_minus_5pp_at_3bp": false,
+          "full_window_excess_no_worse_than_minus_5pp_at_10bp": false,
+          "confirm_q1_excess_nonnegative_at_3bp": true,
+          "confirm_q2_excess_nonnegative_at_3bp": false,
+          "at_least_three_same_fold_full_excesses_within_minus_5pp": false,
+          "all_gates_pass": false
+        }
+      }
+    }
+  ]
+}

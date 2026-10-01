@@ -1,0 +1,343 @@
+{
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "signal_count": 30,
+  "daily_rows_per_strategy": 601,
+  "signal_dates_match_v11_v26": true,
+  "factor_name_and_weight_protocol_frozen_before_run": true,
+  "v26_factor_membership_all_dates_has_signal_close_and_no_future_flags": true,
+  "monthly_mix_checks": {
+    "total_target_weights_equal_one_each_month": true,
+    "min_target_weight_sum": 1.0,
+    "max_target_weight_sum": 1.0,
+    "overlap_month_counts_by_number_of_shared_names": {
+      "0": 2,
+      "1": 21,
+      "2": 7
+    },
+    "max_per_name_target_weight": 0.5
+  },
+  "execution_t1_open": true,
+  "v26_baseline_reproduction": {
+    "metric_differences": {
+      "V26 mf_tier_flow_agreement_20 Top2": {
+        "absolute_metric_differences": {
+          "net_return": 0.0,
+          "gross_return_same_fills": 0.0,
+          "fees": 0.0,
+          "slippage_cost": 0.0,
+          "turnover": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "annualized_volatility": 0.0,
+          "min_cash": 0.0,
+          "max_abs_accounting_residual": 0.0
+        },
+        "checked_metrics": [
+          "net_return",
+          "gross_return_same_fills",
+          "fees",
+          "slippage_cost",
+          "turnover",
+          "trades",
+          "max_drawdown",
+          "annualized_volatility",
+          "min_cash",
+          "max_abs_accounting_residual"
+        ]
+      },
+      "V11 LambdaRank Top2": {
+        "absolute_metric_differences": {
+          "net_return": 0.0,
+          "gross_return_same_fills": 0.0,
+          "fees": 0.0,
+          "slippage_cost": 0.0,
+          "turnover": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "annualized_volatility": 0.0,
+          "min_cash": 0.0,
+          "max_abs_accounting_residual": 0.0
+        },
+        "checked_metrics": [
+          "net_return",
+          "gross_return_same_fills",
+          "fees",
+          "slippage_cost",
+          "turnover",
+          "trades",
+          "max_drawdown",
+          "annualized_volatility",
+          "min_cash",
+          "max_abs_accounting_residual"
+        ]
+      },
+      "60d momentum Top2": {
+        "absolute_metric_differences": {
+          "net_return": 0.0,
+          "gross_return_same_fills": 0.0,
+          "fees": 0.0,
+          "slippage_cost": 0.0,
+          "turnover": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "annualized_volatility": 0.0,
+          "min_cash": 0.0,
+          "max_abs_accounting_residual": 0.0
+        },
+        "checked_metrics": [
+          "net_return",
+          "gross_return_same_fills",
+          "fees",
+          "slippage_cost",
+          "turnover",
+          "trades",
+          "max_drawdown",
+          "annualized_volatility",
+          "min_cash",
+          "max_abs_accounting_residual"
+        ]
+      },
+      "equal-weight hold": {
+        "absolute_metric_differences": {
+          "net_return": 0.0,
+          "gross_return_same_fills": 0.0,
+          "fees": 0.0,
+          "slippage_cost": 0.0,
+          "turnover": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "annualized_volatility": 0.0,
+          "min_cash": 0.0,
+          "max_abs_accounting_residual": 0.0
+        },
+        "checked_metrics": [
+          "net_return",
+          "gross_return_same_fills",
+          "fees",
+          "slippage_cost",
+          "turnover",
+          "trades",
+          "max_drawdown",
+          "annualized_volatility",
+          "min_cash",
+          "max_abs_accounting_residual"
+        ]
+      }
+    },
+    "daily_path_differences": {
+      "V26 mf_tier_flow_agreement_20 Top2": {
+        "rows": 601,
+        "max_abs_daily_field_differences": {
+          "equity_net": 4.977651406079531e-05,
+          "equity_gross": 4.9741705879569054e-05,
+          "cash": 4.67093173028843e-08,
+          "fees_cumulative": 4.434191396285314e-07,
+          "slippage_cumulative": 4.14532451031846e-07,
+          "turnover_cumulative": 0.0004597173538058996,
+          "accounting_residual": 3.26629713207609e-21,
+          "daily_return_net": 4.999684694029227e-12,
+          "drawdown": 4.905198469629113e-11
+        },
+        "shares_json_exact_match": true
+      },
+      "V11 LambdaRank Top2": {
+        "rows": 601,
+        "max_abs_daily_field_differences": {
+          "equity_net": 4.9649213906377554e-05,
+          "equity_gross": 4.9906811909750104e-05,
+          "cash": 4.9985885652859e-08,
+          "fees_cumulative": 4.785097189596854e-07,
+          "slippage_cumulative": 3.9700057641312014e-07,
+          "turnover_cumulative": 0.0004646042361855507,
+          "accounting_residual": 3.26629713207609e-21,
+          "daily_return_net": 4.9977955801638885e-12,
+          "drawdown": 4.9713150263031025e-11
+        },
+        "shares_json_exact_match": true
+      },
+      "60d momentum Top2": {
+        "rows": 601,
+        "max_abs_daily_field_differences": {
+          "equity_net": 4.98676672577858e-05,
+          "equity_gross": 4.987750435248017e-05,
+          "cash": 4.3388297399360454e-08,
+          "fees_cumulative": 4.964820163877448e-07,
+          "slippage_cumulative": 3.8978271277301246e-08,
+          "turnover_cumulative": 0.00045753270387649536,
+          "accounting_residual": 3.26629713207609e-21,
+          "daily_return_net": 4.9993637701861715e-12,
+          "drawdown": 4.948530474280233e-11
+        },
+        "shares_json_exact_match": true
+      },
+      "equal-weight hold": {
+        "rows": 601,
+        "max_abs_daily_field_differences": {
+          "equity_net": 4.979799268767238e-05,
+          "equity_gross": 4.995721974410117e-05,
+          "cash": 4.801506747753592e-08,
+          "fees_cumulative": 2.000000165480742e-09,
+          "slippage_cumulative": 0.0,
+          "turnover_cumulative": 0.0,
+          "accounting_residual": 1.633148566038045e-21,
+          "daily_return_net": 4.951544382847395e-12,
+          "drawdown": 4.9866888396365994e-11
+        },
+        "shares_json_exact_match": true
+      }
+    },
+    "trade_path_differences": {
+      "V26 mf_tier_flow_agreement_20 Top2": {
+        "rows": 63,
+        "max_abs_trade_field_differences": {
+          "shares": 0.0,
+          "open": 0.0,
+          "fill": 1.7763568394002505e-15,
+          "notional": 4.5930210035294294e-06,
+          "fee": 4.2803804944924195e-09,
+          "slippage_cost": 4.727905178469882e-09
+        },
+        "trade_identity_exact_match": true,
+        "numeric_tolerance": 1e-05
+      },
+      "V11 LambdaRank Top2": {
+        "rows": 73,
+        "max_abs_trade_field_differences": {
+          "shares": 0.0,
+          "open": 0.0,
+          "fill": 1.7763568394002505e-15,
+          "notional": 4.983259714208543e-06,
+          "fee": 4.000014541816199e-09,
+          "slippage_cost": 4.288562394094697e-09
+        },
+        "trade_identity_exact_match": true,
+        "numeric_tolerance": 1e-05
+      },
+      "60d momentum Top2": {
+        "rows": 48,
+        "max_abs_trade_field_differences": {
+          "shares": 0.0,
+          "open": 0.0,
+          "fill": 8.881784197001252e-16,
+          "notional": 4.543180693872273e-06,
+          "fee": 4.6955079824329005e-09,
+          "slippage_cost": 3.864208508730371e-09
+        },
+        "trade_identity_exact_match": true,
+        "numeric_tolerance": 1e-05
+      },
+      "equal-weight hold": {
+        "rows": 4,
+        "max_abs_trade_field_differences": {
+          "shares": 0.0,
+          "open": 0.0,
+          "fill": 4.440892098500626e-16,
+          "notional": 3.637978807091713e-12,
+          "fee": 8.881784197001252e-16,
+          "slippage_cost": 8.881784197001252e-16
+        },
+        "trade_identity_exact_match": true,
+        "numeric_tolerance": 1e-05
+      }
+    },
+    "tolerance_for_daily_float_fields": 0.001
+  },
+  "same_lifecycle": [
+    {
+      "strategy": "60d momentum Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "V11 LambdaRank Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "V30 V26+60d momentum 50/50 Top2 mix",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "equal-weight hold",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    }
+  ],
+  "ledger_checks": {
+    "V30 V26+60d momentum 50/50 Top2 mix": {
+      "cash_nonnegative": true,
+      "min_cash": 56.546910147000744,
+      "blocked_trade_events": 0,
+      "fees": 1334.7191647096097,
+      "slippage_cost": 761.563148723147,
+      "trades": 76,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "ending_cash": 479.54676372405993,
+      "ending_positions": 3
+    },
+    "V26 mf_tier_flow_agreement_20 Top2": {
+      "cash_nonnegative": true,
+      "min_cash": 51.354374121292494,
+      "blocked_trade_events": 0,
+      "fees": 1910.990462057419,
+      "slippage_cost": 1103.4272825854675,
+      "trades": 63,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "ending_cash": 398.5242069155114,
+      "ending_positions": 2
+    },
+    "60d momentum Top2": {
+      "cash_nonnegative": true,
+      "min_cash": 61.0696464866453,
+      "blocked_trade_events": 0,
+      "fees": 1101.2663666494818,
+      "slippage_cost": 614.5037394388639,
+      "trades": 48,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "ending_cash": 184.0280234584418,
+      "ending_positions": 2
+    },
+    "V11 LambdaRank Top2": {
+      "cash_nonnegative": true,
+      "min_cash": 36.23176302149659,
+      "blocked_trade_events": 0,
+      "fees": 2123.4090999802106,
+      "slippage_cost": 1212.1990167094377,
+      "trades": 73,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "ending_cash": 479.7809147711232,
+      "ending_positions": 2
+    },
+    "equal-weight hold": {
+      "cash_nonnegative": true,
+      "min_cash": 328.2072699519849,
+      "blocked_trade_events": 0,
+      "fees": 25.907930048,
+      "slippage_cost": 29.8848,
+      "trades": 4,
+      "max_abs_accounting_residual": 1.4551915228366852e-11,
+      "ending_cash": 328.2072699519849,
+      "ending_positions": 4
+    }
+  },
+  "period_return_rows": {
+    "quarterly": 50,
+    "annual": 15,
+    "no_exit_only_day_appended": true
+  },
+  "protocol_hash_unchanged_since_pre_run_freeze": true
+}

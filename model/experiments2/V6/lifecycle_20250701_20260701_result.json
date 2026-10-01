@@ -1,0 +1,364 @@
+{
+  "unit": "V6 lifecycle extension; frozen official 242-row output remains unchanged",
+  "signal_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "lifecycle_window": [
+    "2025-07-01",
+    "2026-07-01"
+  ],
+  "signal_window_sessions": 242,
+  "lifecycle_sessions": 243,
+  "rule": "No parameter changes. Momentum signals/rebalances end by 2026-06-30; 2026-07-01 is exit-only liquidation at next session open.",
+  "data_snapshot_built_at": "2026-09-27 14:19:24",
+  "data_snapshot_last_day": "2026-09-24",
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "no_training": true,
+  "no_parameter_changes": true,
+  "costs": {
+    "account_money": 100000.0,
+    "lot_size": 100,
+    "max_participation": 0.01,
+    "commission_rate": 0.00025,
+    "min_commission": 5.0,
+    "transfer_rate": 1e-05,
+    "stamp_sell_rate": 0.0005,
+    "slippage_rate": 0.0003
+  },
+  "strategies": {
+    "monthly_top1": {
+      "stats_lifecycle": {
+        "days": 243,
+        "cumulative_net_return": 0.18347232732278385,
+        "annualized_return": 0.18265220343429944,
+        "max_drawdown": -0.21767239317195253,
+        "matched_benchmark_return": 0.1930596970505436,
+        "matched_cumulative_excess": -0.009587369727759754,
+        "avg_exposure": 0.9886556889911209,
+        "average_holdings": 0.9917695473251029,
+        "ending_equity": 118347.23273227838,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.3189024980905266,
+            "matched_return": 0.319639374378095,
+            "daily_matched_excess": -0.0007368762875683554
+          },
+          "2026": {
+            "strategy_net_return": -0.10268398988083982,
+            "matched_return": -0.09591990037975706,
+            "daily_matched_excess": -0.0067640895010827595
+          }
+        }
+      },
+      "signal_window_return_through_2026_06_30_open": 0.20931979554170432,
+      "signal_window_quarterly": [
+        {
+          "quarter": "2025Q3",
+          "days": 66,
+          "net_return": 0.1296007420899714,
+          "same_hold_no_fee_return": 0.1302318547025183,
+          "friction_difference": -0.0006311126125468913,
+          "fees": 25.929516521999997
+        },
+        {
+          "quarter": "2025Q4",
+          "days": 60,
+          "net_return": 0.16758288919880737,
+          "same_hold_no_fee_return": 0.16758288919880915,
+          "friction_difference": -1.7763568394002505e-15,
+          "fees": 0.0
+        },
+        {
+          "quarter": "2026Q1",
+          "days": 56,
+          "net_return": -0.04741712494948236,
+          "same_hold_no_fee_return": -0.04433500025158588,
+          "friction_difference": -0.0030821246978964822,
+          "fees": 235.7890631017352
+        },
+        {
+          "quarter": "2026Q2",
+          "days": 60,
+          "net_return": -0.03744467406672203,
+          "same_hold_no_fee_return": -0.0343344331455645,
+          "friction_difference": -0.0031102409211575255,
+          "fees": 248.996400068
+        }
+      ],
+      "final_day": {
+        "date": "2026-07-01",
+        "net_daily_return": -0.02137355918112771,
+        "same_hold_no_fee_return": -0.02034201382520223,
+        "fees": 89.43352189200002,
+        "trade_count": 1,
+        "ending_equity": 118347.23273227838,
+        "ending_cash": 118347.23273227838
+      },
+      "frozen_242d_reference": {
+        "net_return": 0.20804625693158374,
+        "max_drawdown": -0.21767239317195253
+      },
+      "audit": {
+        "checks": {
+          "243_rows": true,
+          "signal_dates_through_2026_06_30": true,
+          "2026_07_01_exit_only": true,
+          "cash_nonnegative": true,
+          "holding_cap": true,
+          "flat_after_exit": true,
+          "blocked_entries_zero": true,
+          "blocked_exits_zero": true,
+          "ledger_residual_lt_1e_8": true,
+          "signal_window_242_rows": true,
+          "final_date_2026_07_01": true
+        },
+        "pass": true,
+        "signal_count": 12,
+        "last_momentum_execution_date": "2026-06-02",
+        "exit_only_date": "2026-07-01",
+        "daily_rows": 243,
+        "cash_min": 245.16078347801522,
+        "ending_cash": 118347.23273227838,
+        "ending_positions": 0,
+        "max_holdings": 1,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 10,
+        "fees_total": 600.1485015837352,
+        "exit_day_trades": 1,
+        "exit_day_fees": 89.43352189200002,
+        "exit_day_sides": [
+          "sell"
+        ],
+        "max_abs_equity_cash_mark_residual": 2.9103830456733704e-11
+      }
+    },
+    "monthly_top2": {
+      "stats_lifecycle": {
+        "days": 243,
+        "cumulative_net_return": 0.11583617552664371,
+        "annualized_return": 0.11533299612529535,
+        "max_drawdown": -0.17361043254181552,
+        "matched_benchmark_return": 0.12086764280396056,
+        "matched_cumulative_excess": -0.005031467277316848,
+        "avg_exposure": 0.9873526601540118,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 111583.61755266436,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.13453465790659158,
+            "matched_return": 0.13736822562563544,
+            "daily_matched_excess": -0.0028335677190438613
+          },
+          "2026": {
+            "strategy_net_return": -0.01648119098842671,
+            "matched_return": -0.014507687528019675,
+            "daily_matched_excess": -0.0019735034604070334
+          }
+        }
+      },
+      "signal_window_return_through_2026_06_30_open": 0.13751878666824124,
+      "signal_window_quarterly": [
+        {
+          "quarter": "2025Q3",
+          "days": 66,
+          "net_return": 0.024883319857003983,
+          "same_hold_no_fee_return": 0.026451905912068252,
+          "friction_difference": -0.0015685860550642694,
+          "fees": 93.46192638399998
+        },
+        {
+          "quarter": "2025Q4",
+          "days": 60,
+          "net_return": 0.10698909419746161,
+          "same_hold_no_fee_return": 0.1080579801885706,
+          "friction_difference": -0.001068885991108992,
+          "fees": 76.395118024
+        },
+        {
+          "quarter": "2026Q1",
+          "days": 56,
+          "net_return": -0.016988978508989394,
+          "same_hold_no_fee_return": -0.016156086143197523,
+          "friction_difference": -0.0008328923657918708,
+          "fees": 57.44363586684368
+        },
+        {
+          "quarter": "2026Q2",
+          "days": 60,
+          "net_return": 0.019958316648902574,
+          "same_hold_no_fee_return": 0.0200587752752881,
+          "friction_difference": -0.0001004586263855245,
+          "fees": 10.508524251
+        }
+      ],
+      "final_day": {
+        "date": "2026-07-01",
+        "net_daily_return": -0.019061321356375616,
+        "same_hold_no_fee_return": -0.018021812180422828,
+        "fees": 84.77303829772714,
+        "trade_count": 2,
+        "ending_equity": 111583.61755266436,
+        "ending_cash": 111583.61755266436
+      },
+      "frozen_242d_reference": {
+        "net_return": 0.13631459996679451,
+        "max_drawdown": -0.17361043254181552
+      },
+      "audit": {
+        "checks": {
+          "243_rows": true,
+          "signal_dates_through_2026_06_30": true,
+          "2026_07_01_exit_only": true,
+          "cash_nonnegative": true,
+          "holding_cap": true,
+          "flat_after_exit": true,
+          "blocked_entries_zero": true,
+          "blocked_exits_zero": true,
+          "ledger_residual_lt_1e_8": true,
+          "signal_window_242_rows": true,
+          "final_date_2026_07_01": true
+        },
+        "pass": true,
+        "signal_count": 12,
+        "last_momentum_execution_date": "2026-06-02",
+        "exit_only_date": "2026-07-01",
+        "daily_rows": 243,
+        "cash_min": 124.91914658427686,
+        "ending_cash": 111583.61755266436,
+        "ending_positions": 0,
+        "max_holdings": 2,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 19,
+        "fees_total": 322.5822428235708,
+        "exit_day_trades": 2,
+        "exit_day_fees": 84.77303829772714,
+        "exit_day_sides": [
+          "sell",
+          "sell"
+        ],
+        "max_abs_equity_cash_mark_residual": 1.4551915228366852e-11
+      }
+    },
+    "equal_four_hold": {
+      "stats_lifecycle": {
+        "days": 243,
+        "cumulative_net_return": 0.016224063124026022,
+        "annualized_return": 0.016156760960971406,
+        "max_drawdown": -0.15119064253391168,
+        "matched_benchmark_return": 0.017845624128968174,
+        "matched_cumulative_excess": -0.0016215610049421514,
+        "avg_exposure": 0.9764779741364771,
+        "average_holdings": 3.9670781893004117,
+        "ending_equity": 101622.4063124026,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.08883113643818707,
+            "matched_return": 0.08943112526831754,
+            "daily_matched_excess": -0.0005999888301304601
+          },
+          "2026": {
+            "strategy_net_return": -0.06668350204575901,
+            "matched_return": -0.06570906547370559,
+            "daily_matched_excess": -0.0009744365720534276
+          }
+        }
+      },
+      "signal_window_return_through_2026_06_30_open": 0.03691904099978882,
+      "signal_window_quarterly": [
+        {
+          "quarter": "2025Q3",
+          "days": 66,
+          "net_return": -0.02484678574901844,
+          "same_hold_no_fee_return": -0.024309437930209787,
+          "friction_difference": -0.0005373478188086533,
+          "fees": 25.573989896
+        },
+        {
+          "quarter": "2025Q4",
+          "days": 60,
+          "net_return": 0.11657442187125722,
+          "same_hold_no_fee_return": 0.11657442187125744,
+          "friction_difference": -2.220446049250313e-16,
+          "fees": 0.0
+        },
+        {
+          "quarter": "2026Q1",
+          "days": 56,
+          "net_return": -0.0425942664663288,
+          "same_hold_no_fee_return": -0.042594266466329245,
+          "friction_difference": 4.440892098500626e-16,
+          "fees": 0.0
+        },
+        {
+          "quarter": "2026Q2",
+          "days": 60,
+          "net_return": -0.005308758244600975,
+          "same_hold_no_fee_return": -0.005308758244600531,
+          "friction_difference": -4.440892098500626e-16,
+          "fees": 0.0
+        }
+      ],
+      "final_day": {
+        "date": "2026-07-01",
+        "net_daily_return": -0.019958142398280865,
+        "same_hold_no_fee_return": -0.018934921839892066,
+        "fees": 76.06501413649067,
+        "trade_count": 4,
+        "ending_equity": 101622.4063124026,
+        "ending_cash": 101622.4063124026
+      },
+      "frozen_242d_reference": {
+        "net_return": 0.035837236576344855,
+        "max_drawdown": -0.15119064253391168
+      },
+      "audit": {
+        "checks": {
+          "243_rows": true,
+          "signal_dates_through_2026_06_30": true,
+          "2026_07_01_exit_only": true,
+          "cash_nonnegative": true,
+          "holding_cap": true,
+          "flat_after_exit": true,
+          "blocked_entries_zero": true,
+          "blocked_exits_zero": true,
+          "ledger_residual_lt_1e_8": true,
+          "signal_window_242_rows": true,
+          "final_date_2026_07_01": true
+        },
+        "pass": true,
+        "signal_count": 0,
+        "last_momentum_execution_date": null,
+        "exit_only_date": "2026-07-01",
+        "daily_rows": 243,
+        "cash_min": 1612.926410103999,
+        "ending_cash": 101622.4063124026,
+        "ending_positions": 0,
+        "max_holdings": 4,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 8,
+        "fees_total": 101.63900403249067,
+        "exit_day_trades": 4,
+        "exit_day_fees": 76.06501413649067,
+        "exit_day_sides": [
+          "sell",
+          "sell",
+          "sell",
+          "sell"
+        ],
+        "max_abs_equity_cash_mark_residual": 0.0
+      }
+    }
+  },
+  "overall_audit_pass": true,
+  "runtime_seconds": 27.87923240661621,
+  "script_sha256": "6e937cfcf949f7979b1385b5df58c272e6d1d67161e95679064cdca143504654"
+}

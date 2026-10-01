@@ -1,0 +1,553 @@
+{
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "holdout_quarters": [
+    "2024Q1",
+    "2024Q2",
+    "2024Q3",
+    "2024Q4",
+    "2025Q1",
+    "2025Q2",
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "holdout_days": 601,
+  "monthly_signal_count": 30,
+  "selected_factor_count": 20,
+  "selected_factors": [
+    "mf_tier_flow_agreement_20",
+    "rel_mom_ind_3d",
+    "rel_mom_ind_5d",
+    "gap_down_recover_freq_20d",
+    "rel_mom_ind_250d",
+    "rel_vol_ind_20d",
+    "rel_mom_ind_10d",
+    "tail_risk_pct_60",
+    "volume_dry_up",
+    "rel_mom_ind_60d",
+    "price_to_52w_high",
+    "id2_close_vs_pm_vwap_20",
+    "inside_bar_count_20",
+    "ret_kurt_20",
+    "cost_skew_ratio",
+    "overnight_sign_consistency_20d",
+    "margin_balance_volatility_20d",
+    "mfx_index_range",
+    "mf_open_close_divergence_10d",
+    "bollinger_width_20"
+  ],
+  "importance_cutoff": "2023Q4",
+  "importance_quarters_used": 16,
+  "training_importance_selection_hash_count": 16,
+  "all_v33_quarters_completed": true,
+  "quarter_boundaries": {
+    "2024Q1": {
+      "train_first": "2018-01-02",
+      "train_last": "2023-12-22",
+      "first_test": "2024-01-02",
+      "last_test": "2024-03-29",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2023-12-22",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 5808
+    },
+    "2024Q2": {
+      "train_first": "2018-01-02",
+      "train_last": "2024-03-22",
+      "first_test": "2024-04-01",
+      "last_test": "2024-06-28",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2024-03-22",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 6040
+    },
+    "2024Q3": {
+      "train_first": "2018-01-02",
+      "train_last": "2024-06-21",
+      "first_test": "2024-07-01",
+      "last_test": "2024-09-30",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2024-06-21",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 6276
+    },
+    "2024Q4": {
+      "train_first": "2018-01-02",
+      "train_last": "2024-09-23",
+      "first_test": "2024-10-08",
+      "last_test": "2024-12-31",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2024-09-23",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 6532
+    },
+    "2025Q1": {
+      "train_first": "2018-01-02",
+      "train_last": "2024-12-24",
+      "first_test": "2025-01-02",
+      "last_test": "2025-03-31",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2024-12-24",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 6776
+    },
+    "2025Q2": {
+      "train_first": "2018-01-02",
+      "train_last": "2025-03-24",
+      "first_test": "2025-04-01",
+      "last_test": "2025-06-30",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2025-03-24",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 7004
+    },
+    "2025Q3": {
+      "train_first": "2018-01-02",
+      "train_last": "2025-06-23",
+      "first_test": "2025-07-01",
+      "last_test": "2025-09-30",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2025-06-23",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 7244
+    },
+    "2025Q4": {
+      "train_first": "2018-01-02",
+      "train_last": "2025-09-23",
+      "first_test": "2025-10-09",
+      "last_test": "2025-12-31",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2025-09-23",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 7508
+    },
+    "2026Q1": {
+      "train_first": "2018-01-02",
+      "train_last": "2025-12-24",
+      "first_test": "2026-01-05",
+      "last_test": "2026-03-31",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2025-12-24",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 7748
+    },
+    "2026Q2": {
+      "train_first": "2018-01-02",
+      "train_last": "2026-03-24",
+      "first_test": "2026-04-01",
+      "last_test": "2026-06-30",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2026-03-24",
+      "train_precedes_test": true,
+      "scores_only_in_quarter": true,
+      "n_train_rows": 7972
+    }
+  },
+  "all_quarters_have_five_session_purge": true,
+  "all_labels_end_at_train_cutoff": true,
+  "v33_scores_are_quarter_local": true,
+  "signal_dates_match_v11_calendar": true,
+  "all_orders_execute_next_session": true,
+  "target_weight_sum_min": 1.0,
+  "target_weight_sum_max": 1.0,
+  "daily_rows": 4207,
+  "trade_rows": 406,
+  "negative_cash_rows": 0,
+  "negative_equity_rows": 0,
+  "max_abs_accounting_residual": 2.9103830456733704e-11,
+  "strategies": {
+    "V33 stable-20-factor LambdaRank Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 10.114403158513596,
+      "trades": 67,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V27 four-factor LambdaRank Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 36.581239869992714,
+      "trades": 70,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V24 fixed-rank Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 3.4397542918886757,
+      "trades": 81,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V26 mf_tier_flow_agreement_20 Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 51.354374121292494,
+      "trades": 63,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V11 LambdaRank Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 36.23176302149659,
+      "trades": 73,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "60d momentum Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 61.0696464866453,
+      "trades": 48,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "equal-weight hold": {
+      "blocked_trade_events": 0,
+      "max_positions": 4,
+      "min_cash": 328.2072699519849,
+      "trades": 4,
+      "max_abs_accounting_residual": 1.4551915228366852e-11
+    }
+  },
+  "common_baseline_replay_checks": {
+    "V27 four-factor LambdaRank Top2": {
+      "reference_dir": "V27",
+      "reference_strategy": "V27 four-factor LambdaRank Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.986888961866498e-05,
+        "equity_gross": 4.991519381292164e-05,
+        "cash": 4.546259901871963e-08,
+        "fees_cumulative": 4.7626940613554325e-07,
+        "slippage_cumulative": 5.035121830587741e-08,
+        "turnover_cumulative": 0.0004988294094800949,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9995077522346776e-12,
+        "drawdown": 4.9599990781246106e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 1.7763568394002505e-15,
+        "notional": 4.98488952871412e-06,
+        "fee": 4.635055006474431e-09,
+        "slippage_cost": 4.384681062674645e-09
+      },
+      "tolerance": 0.001
+    },
+    "V24 fixed-rank Top2": {
+      "reference_dir": "V24",
+      "reference_strategy": "V24 stable-factor consensus Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.9728609155863523e-05,
+        "equity_gross": 4.9911177484318614e-05,
+        "cash": 8.418169272772502e-08,
+        "fees_cumulative": 4.969260771758854e-07,
+        "slippage_cumulative": 2.539857177907834e-07,
+        "turnover_cumulative": 0.00047491397708654404,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.990601681909013e-12,
+        "drawdown": 4.983269352720754e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 1.7763568394002505e-15,
+        "notional": 4.842615453526378e-06,
+        "fee": 4.813784926227527e-09,
+        "slippage_cost": 4.558163624324152e-09
+      },
+      "tolerance": 0.001
+    },
+    "V26 mf_tier_flow_agreement_20 Top2": {
+      "reference_dir": "V26",
+      "reference_strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.977651406079531e-05,
+        "equity_gross": 4.9741705879569054e-05,
+        "cash": 4.67093173028843e-08,
+        "fees_cumulative": 4.434191396285314e-07,
+        "slippage_cumulative": 4.14532451031846e-07,
+        "turnover_cumulative": 0.0004597173538058996,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.999684694029227e-12,
+        "drawdown": 4.905198469629113e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 1.7763568394002505e-15,
+        "notional": 4.5930210035294294e-06,
+        "fee": 4.2803804944924195e-09,
+        "slippage_cost": 4.727905178469882e-09
+      },
+      "tolerance": 0.001
+    },
+    "V11 LambdaRank Top2": {
+      "reference_dir": "V26",
+      "reference_strategy": "V11 LambdaRank Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.9649213906377554e-05,
+        "equity_gross": 4.9906811909750104e-05,
+        "cash": 4.9985885652859e-08,
+        "fees_cumulative": 4.785097189596854e-07,
+        "slippage_cumulative": 3.9700057641312014e-07,
+        "turnover_cumulative": 0.0004646042361855507,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9977955801638885e-12,
+        "drawdown": 4.9713150263031025e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 1.7763568394002505e-15,
+        "notional": 4.983259714208543e-06,
+        "fee": 4.000014541816199e-09,
+        "slippage_cost": 4.288562394094697e-09
+      },
+      "tolerance": 0.001
+    },
+    "60d momentum Top2": {
+      "reference_dir": "V26",
+      "reference_strategy": "60d momentum Top2",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.98676672577858e-05,
+        "equity_gross": 4.987750435248017e-05,
+        "cash": 4.3388297399360454e-08,
+        "fees_cumulative": 4.964820163877448e-07,
+        "slippage_cumulative": 3.8978271277301246e-08,
+        "turnover_cumulative": 0.00045753270387649536,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9993637701861715e-12,
+        "drawdown": 4.948530474280233e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 8.881784197001252e-16,
+        "notional": 4.543180693872273e-06,
+        "fee": 4.6955079824329005e-09,
+        "slippage_cost": 3.864208508730371e-09
+      },
+      "tolerance": 0.001
+    },
+    "equal-weight hold": {
+      "reference_dir": "V26",
+      "reference_strategy": "equal-weight hold",
+      "metric_abs_differences": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "trade_count_equal": true,
+      "daily_rows": 601,
+      "daily_max_abs_differences": {
+        "equity_net": 4.979799268767238e-05,
+        "equity_gross": 4.995721974410117e-05,
+        "cash": 4.801506747753592e-08,
+        "fees_cumulative": 2.000000165480742e-09,
+        "slippage_cumulative": 0.0,
+        "turnover_cumulative": 0.0,
+        "accounting_residual": 1.633148566038045e-21,
+        "daily_return_net": 4.951544382847395e-12,
+        "drawdown": 4.9866888396365994e-11
+      },
+      "shares_json_exact_match": true,
+      "trade_rows_match": true,
+      "trade_max_abs_differences": {
+        "shares": 0.0,
+        "open": 0.0,
+        "fill": 4.440892098500626e-16,
+        "notional": 3.637978807091713e-12,
+        "fee": 8.881784197001252e-16,
+        "slippage_cost": 8.881784197001252e-16
+      },
+      "tolerance": 0.001
+    }
+  },
+  "scheduler_summary": {
+    "quarters_requested": [
+      "2024Q1",
+      "2024Q2",
+      "2024Q3",
+      "2024Q4",
+      "2025Q1",
+      "2025Q2",
+      "2025Q3",
+      "2025Q4",
+      "2026Q1",
+      "2026Q2"
+    ],
+    "quarter_count_complete": 10,
+    "failed_quarters": [],
+    "worker_limit": 4,
+    "max_worker_limit": 4,
+    "per_worker_numerical_threads": 1,
+    "memory_limit_gib": 180.0,
+    "soft_used_limit_gib": 145.0,
+    "host_used_gib_start": 73.71,
+    "host_used_peak_sampled_gib": 75.33,
+    "host_used_gib_end": 73.89,
+    "worker_rss_sum_peak_sampled_gib": 1.693,
+    "worker_rss_max_peak_sampled_gib": 0.448,
+    "load1_start": 11.6,
+    "load1_end": 11.21
+  },
+  "resource_samples": [
+    {
+      "ts": "2026-09-27 18:30:26",
+      "mem_total_gib": 440.28,
+      "mem_available_gib": 366.57,
+      "mem_used_gib": 73.71,
+      "load1": 11.6,
+      "cpu_cores": 48,
+      "active_jobs": 0,
+      "worker_rss_sum_gib": 0.0,
+      "worker_rss_max_gib": 0.0
+    },
+    {
+      "ts": "2026-09-27 18:30:28",
+      "mem_total_gib": 440.28,
+      "mem_available_gib": 366.37,
+      "mem_used_gib": 73.91,
+      "load1": 11.07,
+      "cpu_cores": 48,
+      "active_jobs": 4,
+      "worker_rss_sum_gib": 0.307,
+      "worker_rss_max_gib": 0.077
+    },
+    {
+      "ts": "2026-09-27 18:30:31",
+      "mem_total_gib": 440.28,
+      "mem_available_gib": 366.18,
+      "mem_used_gib": 74.1,
+      "load1": 11.07,
+      "cpu_cores": 48,
+      "active_jobs": 4,
+      "worker_rss_sum_gib": 0.614,
+      "worker_rss_max_gib": 0.156
+    },
+    {
+      "ts": "2026-09-27 18:30:33",
+      "mem_total_gib": 440.28,
+      "mem_available_gib": 365.41,
+      "mem_used_gib": 74.87,
+      "load1": 11.07,
+      "cpu_cores": 48,
+      "active_jobs": 4,
+      "worker_rss_sum_gib": 1.347,
+      "worker_rss_max_gib": 0.342
+    },
+    {
+      "ts": "2026-09-27 18:30:35",
+      "mem_total_gib": 440.28,
+      "mem_available_gib": 365.19,
+      "mem_used_gib": 75.09,
+      "load1": 11.14,
+      "cpu_cores": 48,
+      "active_jobs": 4,
+      "worker_rss_sum_gib": 1.541,
+      "worker_rss_max_gib": 0.392
+    },
+    {
+      "ts": "2026-09-27 18:30:37",
+      "mem_total_gib": 440.28,
+      "mem_available_gib": 364.97,
+      "mem_used_gib": 75.31,
+      "load1": 11.14,
+      "cpu_cores": 48,
+      "active_jobs": 4,
+      "worker_rss_sum_gib": 1.661,
+      "worker_rss_max_gib": 0.439
+    },
+    {
+      "ts": "2026-09-27 18:30:40",
+      "mem_total_gib": 440.28,
+      "mem_available_gib": 365.08,
+      "mem_used_gib": 75.2,
+      "load1": 11.21,
+      "cpu_cores": 48,
+      "active_jobs": 2,
+      "worker_rss_sum_gib": 1.578,
+      "worker_rss_max_gib": 0.448
+    }
+  ]
+}

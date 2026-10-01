@@ -198,6 +198,7 @@ def _market_ret(ctx) -> np.ndarray:
         log.warning("index_daily 为空，%s 的因子将全是 NaN", ctx.panel.dates[0])
         return np.full(T, np.nan)
     df = df[df["ts_code"] == BENCH]
+    if df.empty: return np.full(T, np.nan)
     days = ctx.date_col(df["trade_date"])
     vals = pd.to_numeric(df["pct_chg"], errors="coerce").to_numpy(dtype=np.float64) / 100.0
     order = np.argsort(days, kind="stable")
@@ -209,15 +210,15 @@ def _market_ret(ctx) -> np.ndarray:
     if n_miss:
         # 面板早于指数起点（index_daily 实测从 2010-01-04 开始）时会走到这里。
         # 补 0 = 「市场当日无变动」，比 ffill 一个陈旧收益安全（后者会重复计入涨跌）。
-        log.warning("面板有 %d 个交易日在 %s 的 index_daily 里找不到，已按 0 收益处理"
+        log.warning("面板有 %d 个交易日在 %s 的 index_daily 里找不到，保持 NaN"
                     "（首个：%s）", n_miss, BENCH, ctx.panel.dates[0])
-    return np.where(ok, vals[pos], 0.0)
+    return np.where(ok, vals[pos], np.nan)
 
 
 def _index_level(ctx) -> np.ndarray:
     """沪深300 的累计净值 `(T, 1)`：`L(t) = Π(1 + r_i)`，用于算指数的 k 日收益。"""
     m = _market_ret(ctx)
-    return np.cumprod(1.0 + np.nan_to_num(m, nan=0.0))[:, None]
+    return np.cumprod(1.0 + m)[:, None]
 
 
 def _relative_strength(ctx, k: int) -> np.ndarray:
@@ -261,7 +262,7 @@ def _make_momentum(k: int):
     return _fn
 
 
-for _k in (10, 20, 60, 120, 250):
+for _k in (20, 60, 120, 250):
     # 绑定成模块属性（= 注册函数名），方便调试时直接 from factors.momentum import momentum_20
     globals()[f"momentum_{_k}"] = _make_momentum(_k)
     register(FactorSpec(

@@ -1,0 +1,131 @@
+{
+  "holdout": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "metrics": {
+    "V36 V26+V34 50/50 Top2 mix": {
+      "strategy": "V36 V26+V34 50/50 Top2 mix",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.8935008798994324,
+      "gross_return_same_fills": 0.9205731552920404,
+      "annualized_net_return": 0.30752955627463363,
+      "annualized_volatility": 0.1848631160943863,
+      "max_drawdown": -0.14087043030595214,
+      "fees": 1721.9585474150656,
+      "slippage_cost": 985.268991845869,
+      "total_trading_cost": 2707.2275392609345,
+      "turnover": 3284229.9728195644,
+      "trades": 88,
+      "blocked_trade_events": 0,
+      "min_cash": 47.994039292555044,
+      "max_positions": 4,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V26 mf_tier_flow_agreement_20 Top2": {
+      "strategy": "V26 mf_tier_flow_agreement_20 Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.8470869232227702,
+      "gross_return_same_fills": 0.8772311006691973,
+      "annualized_net_return": 0.2939714080157383,
+      "annualized_volatility": 0.18773458996493148,
+      "max_drawdown": -0.15496193599475971,
+      "fees": 1910.990462057419,
+      "slippage_cost": 1103.4272825854675,
+      "total_trading_cost": 3014.4177446428866,
+      "turnover": 3678090.9419515585,
+      "trades": 63,
+      "blocked_trade_events": 0,
+      "min_cash": 51.354374121292494,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V34 id2_close_vs_pm_vwap_20 Top2": {
+      "strategy": "V34 id2_close_vs_pm_vwap_20 Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.9220926078219478,
+      "gross_return_same_fills": 0.9593723148371964,
+      "annualized_net_return": 0.3157858435864378,
+      "annualized_volatility": 0.18792659329339928,
+      "max_drawdown": -0.12891928479631332,
+      "fees": 2362.692232079848,
+      "slippage_cost": 1365.2784694451154,
+      "total_trading_cost": 3727.9707015249633,
+      "turnover": 4550928.231483719,
+      "trades": 72,
+      "blocked_trade_events": 0,
+      "min_cash": 77.63304206021712,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V11 LambdaRank Top2": {
+      "strategy": "V11 LambdaRank Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.7629108467516739,
+      "gross_return_same_fills": 0.7962669279185683,
+      "annualized_net_return": 0.2688688824777674,
+      "annualized_volatility": 0.19249807520726464,
+      "max_drawdown": -0.18028735543940333,
+      "fees": 2123.4090999802106,
+      "slippage_cost": 1212.1990167094377,
+      "total_trading_cost": 3335.6081166896483,
+      "turnover": 4040663.3890314605,
+      "trades": 73,
+      "blocked_trade_events": 0,
+      "min_cash": 36.23176302149659,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "equal-weight hold": {
+      "strategy": "equal-weight hold",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.704429781154281,
+      "gross_return_same_fills": 0.7049877084547611,
+      "annualized_net_return": 0.25101704757332155,
+      "annualized_volatility": 0.18358444425751408,
+      "max_drawdown": -0.15421125715560013,
+      "fees": 25.907930048,
+      "slippage_cost": 29.8848,
+      "total_trading_cost": 55.792730047999996,
+      "turnover": 99616.0,
+      "trades": 4,
+      "blocked_trade_events": 0,
+      "min_cash": 328.2072699519849,
+      "max_positions": 4,
+      "max_abs_accounting_residual": 1.4551915228366852e-11
+    }
+  },
+  "comparisons_vs_mix": {
+    "V26 mf_tier_flow_agreement_20 Top2": {
+      "net_return_difference_pp": 4.641395667666215,
+      "drawdown_difference_pp": 1.409150568880757
+    },
+    "V34 id2_close_vs_pm_vwap_20 Top2": {
+      "net_return_difference_pp": -2.859172792251541,
+      "drawdown_difference_pp": -1.1951145509638827
+    },
+    "V11 LambdaRank Top2": {
+      "net_return_difference_pp": 13.059003314775852,
+      "drawdown_difference_pp": 3.9416925133451186
+    },
+    "equal-weight hold": {
+      "net_return_difference_pp": 18.907109874515136,
+      "drawdown_difference_pp": 1.334082684964799
+    }
+  },
+  "overlap_months": {
+    "0": 5,
+    "1": 20,
+    "2": 5
+  }
+}

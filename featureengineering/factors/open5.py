@@ -77,25 +77,6 @@ def _share(ctx) -> np.ndarray:
     return np.where(bad, np.nan, sh)
 
 
-@register(FactorSpec(
-    name="open5_amt_share",
-    group="intraday",
-    desc="开盘首 5 分钟成交额 / 全日成交额（执行容量口径，非 alpha）",
-    formula="amt_open5 / amt_day",
-    deps=("stock_history_5min",),
-    start=O5_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=("★ 执行/容量口径：高 = 开盘时段流动性池厚，按开盘价成交的冲击更小、"
-          "可容纳的资金更多。**不是**收益方向的声称。"
-          "口径见 fea/open5.py：首 5 分钟 = 当日第一根 bar（厂商时间戳 09:35，区间右端）。"
-          "实测全池中位 ≈ 8.1%（2026Q1）、且随年份单调上行（2010 约 2.6% → 2025 约 8.0%）——"
-          "做时序比较请用本文件的 _pct20 版本，或只依赖逐日截面 rank。"
-          "另：项目原有执行层只用「信号日全日成交额的 1%」限容量（V63/analysis.py:272-273），"
-          "本因子是给它换成**开盘时段**口径的原料。"),
-))
-def open5_amt_share(ctx):
-    return _share(ctx)
 
 @register(FactorSpec(
     name="open5_amt_share_pct20",

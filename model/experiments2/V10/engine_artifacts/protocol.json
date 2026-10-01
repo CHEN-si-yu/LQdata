@@ -1,0 +1,60 @@
+{
+  "experiment": "cross-sectional top-k low-turnover rank portfolio",
+  "candidate_pool": [
+    "id2_close_vs_pm_vwap_20",
+    "drawdown_duration_120",
+    "sortino_ratio_60",
+    "bs_construction_capital_share",
+    "chip_peak_distance",
+    "gap_down_recover_freq_20d",
+    "price_distance_from_52w_low",
+    "bw_overnight_lag_beta_20",
+    "beta_60",
+    "cp_quality_momentum",
+    "momentum_20",
+    "momentum_60",
+    "rel_mom_ind_20d",
+    "short_term_reversal_5",
+    "reversal_2d"
+  ],
+  "candidate_pool_source": "training-only stable 5d factor shortlist plus five prespecified controls; market-wide factors excluded because they are constant cross-sectionally",
+  "snapshot": "trainingdata snapshot available on execution; train factors and rank IC use 2018-2022 only; OOS begins 2023-01-03 and ends at latest complete date",
+  "training_signal": "last trading session of each ISO week; signal at close; execute next trading open",
+  "training_target": "adjusted open-to-open return from next session open through five open intervals (open[t+6]/open[t+1]-1)",
+  "training_ic": "weekly cross-sectional Spearman rank IC, equal-weight across valid names, averaged within each of 20 train quarters",
+  "selection_rule": "direction is sign of pooled train weekly rank IC; confirmation requires positive signed mean quarterly rank IC and at least 16 of 20 positive quarterly ICs; rank eligible features by signed mean quarterly IC and select at most three",
+  "exploration_if_none": "if no feature passes confirmation, run train-ranked top three (same direction and ranking, no OOS selection), label all such results exploratory",
+  "oos_grid": {
+    "holding_ranks": [
+      2,
+      3,
+      4
+    ],
+    "rebalance": [
+      "weekly",
+      "monthly"
+    ],
+    "date_start": "2023-01-03",
+    "date_end": "latest available"
+  },
+  "signal_universe": "stocks with finite factor and positive close/open/volume at signal; rank descending after training-only direction",
+  "execution": "single account; target equal weights among selected top K; T+1 raw open; board lot 100; 1% prior signal-day traded-amount capacity; one-price limit lock; 3bp slippage",
+  "costs": {
+    "account_money": 100000.0,
+    "lot_size": 100,
+    "max_participation": 0.01,
+    "commission_rate": 0.00025,
+    "min_commission": 5.0,
+    "transfer_rate": 1e-05,
+    "stamp_sell_rate": 0.0005,
+    "slippage_rate": 0.0003
+  },
+  "return": "daily adjusted open-to-open mark-to-market; strategy net of transaction costs",
+  "strict_matched_benchmark": "previous execution-day stock weights times each stock adjusted open-to-open return, no costs in matched leg; compare compounded net strategy and matched benchmark",
+  "other_baselines": [
+    "same top-K basket bought at first OOS signal and held, account-size with same costs",
+    "four-bank project account buy-and-hold, same account and costs",
+    "initial OOS day equal-weight universe gross reference"
+  ],
+  "no_oos_tuning": true
+}

@@ -1,0 +1,45 @@
+{
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signals": 30,
+  "factor_rows_available_for_all_signals": true,
+  "signal_executes_next_session": true,
+  "all_selected_features_from_training_period_only": true,
+  "strategies": {
+    "V24 stable-factor consensus Top2": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2,
+      "trades": 81,
+      "min_cash": 3.4397542918886757
+    },
+    "V11 LambdaRank Top2": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2,
+      "trades": 73,
+      "min_cash": 36.23176302149659
+    },
+    "60d momentum Top2": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2,
+      "trades": 48,
+      "min_cash": 61.0696464866453
+    },
+    "equal-weight hold": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 1.4551915228366852e-11,
+      "max_positions": 4,
+      "trades": 4,
+      "min_cash": 328.2072699519849
+    }
+  },
+  "membership_audit_rows": 30
+}

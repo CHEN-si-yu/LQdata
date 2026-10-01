@@ -49,9 +49,6 @@ def _four(ctx, field, mode):
     return np.min(values, axis=0) if mode == "floor" else np.std(values, axis=0, ddof=0)
 
 
-@register(_spec("qf_roe_yoy_change", "单季度ROE同比改善", "(q_roe(P)-q_roe(P-4))/100"))
-def qf_roe_yoy_change(ctx):
-    return _change(ctx, "q_roe", 4)
 
 
 @register(_spec("qf_core_roe_yoy_change", "单季度扣非ROE同比改善", "(q_dt_roe(P)-q_dt_roe(P-4))/100"))

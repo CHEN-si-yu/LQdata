@@ -1,0 +1,73 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-09-30 18:05:53",
+  "score_source": "training_predictions",
+  "reads_model_train": true,
+  "loads_model_weights": true,
+  "strategies": [
+    "top5_1d",
+    "top1_1d"
+  ],
+  "strategy_rows": 2,
+  "quarterly_rows": 8,
+  "evaluation_days": 242,
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 642230,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 637828,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 633449,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 622717,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 601604,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "quarterly_returns_compound": true,
+  "date_axis_matches_price_axis": true,
+  "realized": {
+    "top5_1d": {
+      "return_value": 0.36389895900787717,
+      "max_drawdown": -0.23252671228481003,
+      "sharpe": 1.1654724091244986,
+      "trades": 372,
+      "total_fees": 4998.663816279972,
+      "gross_return_same_positions": 0.443181971762203,
+      "fee_drag": 0.04998663816279971,
+      "slippage_drag": 0.029296374591526127,
+      "avg_exposure": 0.9933433783589148,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    },
+    "top1_1d": {
+      "return_value": -0.22106537664370907,
+      "max_drawdown": -0.3695338390097628,
+      "sharpe": -0.29279995634287376,
+      "trades": 296,
+      "total_fees": 15272.631564372,
+      "gross_return_same_positions": 0.021510000000000362,
+      "fee_drag": 0.1527263156437201,
+      "slippage_drag": 0.08984906099998931,
+      "avg_exposure": 0.9927927306087165,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    }
+  }
+}

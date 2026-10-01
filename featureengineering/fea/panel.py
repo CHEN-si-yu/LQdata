@@ -190,7 +190,9 @@ def cs_rank(mat: np.ndarray, winsor=(0.01, 0.99), mask: np.ndarray | None = None
         q = df.quantile([lo, hi], axis=1).T          # (T, 2)
         lo_v = q.iloc[:, 0].to_numpy(dtype=np.float32)[:, None]
         hi_v = q.iloc[:, 1].to_numpy(dtype=np.float32)[:, None]
-        x = np.clip(x, lo_v, hi_v)
+        # 稀疏事件的两个分位点可能相等；此时缩尾会将唯一事件压成常数。
+        # 保留原值进行并列排名，避免完全丢失事件信息。
+        x = np.where(lo_v < hi_v, np.clip(x, lo_v, hi_v), x)
         df = pd.DataFrame(x)
     # ★ copy=True：DataFrame.to_numpy() 可能返回只读视图，后续就地赋值会抛
     #   "assignment destination is read-only"（实测踩过）

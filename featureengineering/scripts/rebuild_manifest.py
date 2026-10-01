@@ -65,8 +65,17 @@ def scan_partitions(fdir: Path) -> tuple[dict, list[tuple[str, str]]]:
         nn = int(df["value"].notna().sum())
         td = df["trade_date"].astype(str).str.slice(0, 10)
         mn, mx = str(td.min()), str(td.max())
+        # ★★ 2026-09-25 修：必须**连文件身份一起重建**（勘察结论 D4）。
+        #   `file_identity` = [size, mtime_ns] 是台账与磁盘字节之间**唯一**的绑定。
+        #   原来只写 rows/nonnull/min_date/max_date ⇒ 重建后
+        #   `Engine.plan()` 的 `expected = meta.get("file_identity")` 拿到空值、
+        #   直接跳过损坏检测，`backfill._year_done` 的 `if expected:` 同样跳过 ⇒
+        #   磁盘上被截断/改写/损坏的年分区**永远不会被修复**，而台账显示它完整
+        #   （账有盘坏）。取 stat 零额外成本 —— `Engine._finalize` 也是这么做的。
+        _st = f.stat()
         parts[yd.name.split("=")[1]] = {
             "rows": rows, "nonnull": nn, "min_date": mn, "max_date": mx,
+            "file_identity": [_st.st_size, _st.st_mtime_ns],
         }
         spans.append((mn, mx))
     return parts, spans

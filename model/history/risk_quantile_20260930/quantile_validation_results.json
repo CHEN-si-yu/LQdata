@@ -1,0 +1,2524 @@
+{
+  "checked_at": "2026-09-30 18:42:07",
+  "rows": [
+    {
+      "unit": "V55",
+      "seed": 4253,
+      "quarter": "2025Q3",
+      "fold": 4,
+      "days": 427,
+      "start": "2023-07-21",
+      "end": "2025-04-25",
+      "cpu_reload_max_error": 4.3213367462158203e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015248879354057483,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.22994932105382718,
+          0.49233582228874506,
+          0.7662799679274106
+        ],
+        "eligible_mature_days": 427,
+        "eligible_mature_stock_rows": 901595,
+        "mean_interquartile_width": 0.05298386141657829,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": -0.062209149445341616,
+            "max_drawdown": -0.4013023042195297,
+            "sharpe": 0.04855298635312088,
+            "gross_return_same_positions": 0.1732413665068402,
+            "fee_drag": 0.15290228154223923,
+            "slippage_drag": 0.0825482344099427,
+            "fees": 15290.228154223942,
+            "trades": 1616,
+            "avg_exposure": 0.944721885272192
+          },
+          "top5_5d": {
+            "net_return": 0.08043222412396323,
+            "max_drawdown": -0.3846290412754597,
+            "sharpe": 0.29718586576268674,
+            "gross_return_same_positions": 0.17824832747445152,
+            "fee_drag": 0.062287010852250316,
+            "slippage_drag": 0.035529092498238095,
+            "fees": 6228.70108522503,
+            "trades": 598,
+            "avg_exposure": 0.9259739632804819
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.19348436500869393,
+            "max_drawdown": -0.3738178773360743,
+            "sharpe": 0.48367451152715846,
+            "gross_return_same_positions": 0.4489725893707679,
+            "fee_drag": 0.16298780458527304,
+            "slippage_drag": 0.09250041977680079,
+            "fees": 16298.780458527292,
+            "trades": 1576,
+            "avg_exposure": 0.9655987523368955
+          },
+          "top5_5d": {
+            "net_return": 0.39063385798372274,
+            "max_drawdown": -0.31745172881612005,
+            "sharpe": 0.771068592738166,
+            "gross_return_same_positions": 0.50059329061014,
+            "fee_drag": 0.06960107063923833,
+            "slippage_drag": 0.04035836198717885,
+            "fees": 6960.10706392384,
+            "trades": 612,
+            "avg_exposure": 0.951136796285159
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.12725766387590354,
+            "max_drawdown": -0.3142098947328157,
+            "sharpe": 0.3797440733031464,
+            "gross_return_same_positions": 0.3638161659629515,
+            "fee_drag": 0.1510151112372679,
+            "slippage_drag": 0.08554339084978001,
+            "fees": 15101.511123726772,
+            "trades": 1502,
+            "avg_exposure": 0.9858164651715957
+          },
+          "top5_5d": {
+            "net_return": 0.42078757072791806,
+            "max_drawdown": -0.29558108321317433,
+            "sharpe": 0.8271623842913186,
+            "gross_return_same_positions": 0.5276331542835111,
+            "fee_drag": 0.06774486360931198,
+            "slippage_drag": 0.03910071994628117,
+            "fees": 6774.486360931199,
+            "trades": 604,
+            "avg_exposure": 0.976849662774498
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.15738340750421598,
+            "max_drawdown": -0.29372745745582174,
+            "sharpe": 0.44501928212780045,
+            "gross_return_same_positions": 0.37409391020226823,
+            "fee_drag": 0.13880171052499932,
+            "slippage_drag": 0.07790879217305278,
+            "fees": 13880.171052499933,
+            "trades": 1390,
+            "avg_exposure": 0.9906986789125241
+          },
+          "top5_5d": {
+            "net_return": 0.3619992205472258,
+            "max_drawdown": -0.2918605194524041,
+            "sharpe": 0.7792570695730359,
+            "gross_return_same_positions": 0.4613515518436775,
+            "fee_drag": 0.06326161983090285,
+            "slippage_drag": 0.03609071146554905,
+            "fees": 6326.161983090285,
+            "trades": 594,
+            "avg_exposure": 0.9950372947826269
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V51": {
+          "daily_rank_correlation": 0.4950956403413429,
+          "top5_overlap": 0.010304449648711944,
+          "comparable_days": 427
+        },
+        "V31": {
+          "daily_rank_correlation": 0.3034023468672508,
+          "top5_overlap": 0.003747072599531616,
+          "comparable_days": 427
+        },
+        "V36": {
+          "daily_rank_correlation": 0.30946634807652806,
+          "top5_overlap": 0.002810304449648712,
+          "comparable_days": 427
+        },
+        "V38": {
+          "daily_rank_correlation": 0.3256836906880776,
+          "top5_overlap": 0.004215456674473068,
+          "comparable_days": 427
+        }
+      }
+    },
+    {
+      "unit": "V54",
+      "seed": 3253,
+      "quarter": "2025Q3",
+      "fold": 4,
+      "days": 427,
+      "start": "2023-07-21",
+      "end": "2025-04-25",
+      "cpu_reload_max_error": 3.427267074584961e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015358700452475855,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.23721750269058914,
+          0.4908128734051527,
+          0.7535205383728802
+        ],
+        "eligible_mature_days": 427,
+        "eligible_mature_stock_rows": 901595,
+        "mean_interquartile_width": 0.05095326527953148,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": -0.17058407976322987,
+            "max_drawdown": -0.3944159420515564,
+            "sharpe": -0.23779648396694555,
+            "gross_return_same_positions": 0.06507091460098735,
+            "fee_drag": 0.15500655508984656,
+            "slippage_drag": 0.0806484392743708,
+            "fees": 15500.655508984657,
+            "trades": 1694,
+            "avg_exposure": 0.9768289630834205
+          },
+          "top5_5d": {
+            "net_return": 0.4691089117148446,
+            "max_drawdown": -0.312821748121878,
+            "sharpe": 0.9132824829494071,
+            "gross_return_same_positions": 0.5880983915452183,
+            "fee_drag": 0.07561522231291531,
+            "slippage_drag": 0.04337425751745815,
+            "fees": 7561.522231291527,
+            "trades": 672,
+            "avg_exposure": 0.9774298798783859
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": -0.05183751777366208,
+            "max_drawdown": -0.37334038010986526,
+            "sharpe": 0.031506035223714264,
+            "gross_return_same_positions": 0.19249022668416593,
+            "fee_drag": 0.158826403389832,
+            "slippage_drag": 0.0855013410679959,
+            "fees": 15882.640338983208,
+            "trades": 1688,
+            "avg_exposure": 0.9858437597074876
+          },
+          "top5_5d": {
+            "net_return": 0.2895042890262789,
+            "max_drawdown": -0.35180973816750793,
+            "sharpe": 0.6619540315303689,
+            "gross_return_same_positions": 0.4009594152153082,
+            "fee_drag": 0.07134139436446923,
+            "slippage_drag": 0.04011373182456011,
+            "fees": 7134.139436446928,
+            "trades": 684,
+            "avg_exposure": 0.988686778402439
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.20310377746833685,
+            "max_drawdown": -0.35059732132041876,
+            "sharpe": 0.5237387682548864,
+            "gross_return_same_positions": 0.43929799113730605,
+            "fee_drag": 0.1522326562716372,
+            "slippage_drag": 0.08396155739733192,
+            "fees": 15223.265627163739,
+            "trades": 1556,
+            "avg_exposure": 0.9924920219739983
+          },
+          "top5_5d": {
+            "net_return": 0.20577259793883917,
+            "max_drawdown": -0.3361116358786267,
+            "sharpe": 0.5334808820991731,
+            "gross_return_same_positions": 0.3051623714673255,
+            "fee_drag": 0.06406507881704995,
+            "slippage_drag": 0.03532469471143644,
+            "fees": 6406.507881704996,
+            "trades": 642,
+            "avg_exposure": 0.9932303178662514
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.26653754996567125,
+            "max_drawdown": -0.31881005071194346,
+            "sharpe": 0.6377326668723988,
+            "gross_return_same_positions": 0.487262320943741,
+            "fee_drag": 0.1410114222817964,
+            "slippage_drag": 0.0797133486962735,
+            "fees": 14101.14222817962,
+            "trades": 1360,
+            "avg_exposure": 0.9944171455692075
+          },
+          "top5_5d": {
+            "net_return": 0.15311208679123456,
+            "max_drawdown": -0.2864555180902264,
+            "sharpe": 0.4434931021701711,
+            "gross_return_same_positions": 0.24751216568557477,
+            "fee_drag": 0.060426035244638326,
+            "slippage_drag": 0.033974043649701816,
+            "fees": 6042.60352446383,
+            "trades": 596,
+            "avg_exposure": 0.9945044200285005
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V50": {
+          "daily_rank_correlation": 0.4987244781429124,
+          "top5_overlap": 0.017798594847775174,
+          "comparable_days": 427
+        },
+        "V31": {
+          "daily_rank_correlation": 0.28652670364717114,
+          "top5_overlap": 0.0028103044496487124,
+          "comparable_days": 427
+        },
+        "V36": {
+          "daily_rank_correlation": 0.29367333738077117,
+          "top5_overlap": 0.0014051522248243562,
+          "comparable_days": 427
+        },
+        "V38": {
+          "daily_rank_correlation": 0.3086190214182519,
+          "top5_overlap": 0.0014051522248243562,
+          "comparable_days": 427
+        }
+      }
+    },
+    {
+      "unit": "V56",
+      "seed": 5253,
+      "quarter": "2025Q3",
+      "fold": 4,
+      "days": 427,
+      "start": "2023-07-21",
+      "end": "2025-04-25",
+      "cpu_reload_max_error": 4.172325134277344e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015188764918744232,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.2362930791732018,
+          0.48551948696088676,
+          0.755381582454276
+        ],
+        "eligible_mature_days": 427,
+        "eligible_mature_stock_rows": 901595,
+        "mean_interquartile_width": 0.05088330805301666,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 0.6353170842349938,
+            "max_drawdown": -0.1760147247727043,
+            "sharpe": 1.1536118782447384,
+            "gross_return_same_positions": 0.9580232763041228,
+            "fee_drag": 0.20372278308625136,
+            "slippage_drag": 0.11898340898287767,
+            "fees": 20372.278308625126,
+            "trades": 1690,
+            "avg_exposure": 0.9673939821985106
+          },
+          "top5_5d": {
+            "net_return": 0.905032007554837,
+            "max_drawdown": -0.28945600878083677,
+            "sharpe": 1.3731694239995507,
+            "gross_return_same_positions": 1.0383694877513543,
+            "fee_drag": 0.08415813535019781,
+            "slippage_drag": 0.04917934484631965,
+            "fees": 8415.813535019783,
+            "trades": 644,
+            "avg_exposure": 0.9598218573749947
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.5395133523280913,
+            "max_drawdown": -0.24800973907727764,
+            "sharpe": 1.0833156140469171,
+            "gross_return_same_positions": 0.8358292499709328,
+            "fee_drag": 0.18730425286786156,
+            "slippage_drag": 0.10901164477497981,
+            "fees": 18730.425286786154,
+            "trades": 1652,
+            "avg_exposure": 0.9670506246330395
+          },
+          "top5_5d": {
+            "net_return": 0.6877371858562376,
+            "max_drawdown": -0.272030958771458,
+            "sharpe": 1.2819141995848813,
+            "gross_return_same_positions": 0.7996763309757646,
+            "fee_drag": 0.07110768222023936,
+            "slippage_drag": 0.04083146289928791,
+            "fees": 7110.768222023934,
+            "trades": 632,
+            "avg_exposure": 0.9646209134048225
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.010483908915759566,
+            "max_drawdown": -0.35956342867946256,
+            "sharpe": 0.1482316436268759,
+            "gross_return_same_positions": 0.24513445363201147,
+            "fee_drag": 0.15221279038017174,
+            "slippage_drag": 0.08243775433608029,
+            "fees": 15221.279038017186,
+            "trades": 1610,
+            "avg_exposure": 0.9716387460677577
+          },
+          "top5_5d": {
+            "net_return": 0.43989649507939665,
+            "max_drawdown": -0.2730248730591648,
+            "sharpe": 0.9373885204178263,
+            "gross_return_same_positions": 0.5424456990015614,
+            "fee_drag": 0.06508325221246854,
+            "slippage_drag": 0.037465951709696126,
+            "fees": 6508.32522124686,
+            "trades": 604,
+            "avg_exposure": 0.9707333814077338
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": -0.012362722449436148,
+            "max_drawdown": -0.3596959994739488,
+            "sharpe": 0.10153162483069864,
+            "gross_return_same_positions": 0.19758452956406902,
+            "fee_drag": 0.1357362386546445,
+            "slippage_drag": 0.07421101335886053,
+            "fees": 13573.623865464466,
+            "trades": 1420,
+            "avg_exposure": 0.9801956728621958
+          },
+          "top5_5d": {
+            "net_return": 0.36645904899383175,
+            "max_drawdown": -0.2930523118551186,
+            "sharpe": 0.8209950185194371,
+            "gross_return_same_positions": 0.4704153214401272,
+            "fee_drag": 0.06600243384986737,
+            "slippage_drag": 0.037953838596428126,
+            "fees": 6600.243384986743,
+            "trades": 612,
+            "avg_exposure": 0.9823740313308091
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V52": {
+          "daily_rank_correlation": 0.430219137696404,
+          "top5_overlap": 0.012646370023419205,
+          "comparable_days": 427
+        },
+        "V31": {
+          "daily_rank_correlation": 0.29027357467017245,
+          "top5_overlap": 0.001873536299765808,
+          "comparable_days": 427
+        },
+        "V36": {
+          "daily_rank_correlation": 0.29754802653677676,
+          "top5_overlap": 0.001873536299765808,
+          "comparable_days": 427
+        },
+        "V38": {
+          "daily_rank_correlation": 0.32234310159900087,
+          "top5_overlap": 0.00468384074941452,
+          "comparable_days": 427
+        }
+      }
+    },
+    {
+      "unit": "V57",
+      "seed": 6253,
+      "quarter": "2025Q3",
+      "fold": 4,
+      "days": 427,
+      "start": "2023-07-21",
+      "end": "2025-04-25",
+      "cpu_reload_max_error": 3.7997961044311523e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015208491497485144,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.23579103853839442,
+          0.4876628635905765,
+          0.7570559145611678
+        ],
+        "eligible_mature_days": 427,
+        "eligible_mature_stock_rows": 901595,
+        "mean_interquartile_width": 0.05133451148867607,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 0.5364633780544965,
+            "max_drawdown": -0.3199047488154477,
+            "sharpe": 0.8624248259686437,
+            "gross_return_same_positions": 0.858043330289914,
+            "fee_drag": 0.20432369723634392,
+            "slippage_drag": 0.11725625499907358,
+            "fees": 20432.36972363431,
+            "trades": 1758,
+            "avg_exposure": 0.9692794455638638
+          },
+          "top5_5d": {
+            "net_return": 0.2703830177564559,
+            "max_drawdown": -0.5001346831116034,
+            "sharpe": 0.567678764634211,
+            "gross_return_same_positions": 0.3710944545476842,
+            "fee_drag": 0.06527829445486777,
+            "slippage_drag": 0.03543314233636056,
+            "fees": 6527.829445486777,
+            "trades": 648,
+            "avg_exposure": 0.9600154505156886
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.16305449753169987,
+            "max_drawdown": -0.4319473310737033,
+            "sharpe": 0.4230150991465136,
+            "gross_return_same_positions": 0.43689295303759157,
+            "fee_drag": 0.1773463376199915,
+            "slippage_drag": 0.0964921178859005,
+            "fees": 17734.633761999172,
+            "trades": 1810,
+            "avg_exposure": 0.9727112335888864
+          },
+          "top5_5d": {
+            "net_return": -0.0290977708400032,
+            "max_drawdown": -0.4495753909562825,
+            "sharpe": 0.10765007153281818,
+            "gross_return_same_positions": 0.06894637417753202,
+            "fee_drag": 0.06417177310528525,
+            "slippage_drag": 0.03387237191224987,
+            "fees": 6417.177310528529,
+            "trades": 694,
+            "avg_exposure": 0.9669411328309216
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.1466549263974959,
+            "max_drawdown": -0.3964170752344509,
+            "sharpe": 0.40688390942692415,
+            "gross_return_same_positions": 0.40676796401814475,
+            "fee_drag": 0.16780763123145326,
+            "slippage_drag": 0.09230540638919531,
+            "fees": 16780.76312314534,
+            "trades": 1710,
+            "avg_exposure": 0.9846381920786033
+          },
+          "top5_5d": {
+            "net_return": 0.26292934800891987,
+            "max_drawdown": -0.3518690051198593,
+            "sharpe": 0.5881932724530596,
+            "gross_return_same_positions": 0.3704519986268293,
+            "fee_drag": 0.06896368301832542,
+            "slippage_drag": 0.03855896759958423,
+            "fees": 6896.368301832532,
+            "trades": 676,
+            "avg_exposure": 0.9785433675645951
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.2035471573076515,
+            "max_drawdown": -0.33567180112490713,
+            "sharpe": 0.5052282001160797,
+            "gross_return_same_positions": 0.4505869186942517,
+            "fee_drag": 0.1584793693110011,
+            "slippage_drag": 0.0885603920755991,
+            "fees": 15847.936931100141,
+            "trades": 1554,
+            "avg_exposure": 0.9920635020180203
+          },
+          "top5_5d": {
+            "net_return": 0.5183633840832109,
+            "max_drawdown": -0.28786993283029605,
+            "sharpe": 0.9334674966230564,
+            "gross_return_same_positions": 0.6306803951162876,
+            "fee_drag": 0.07135730891454672,
+            "slippage_drag": 0.04095970211853006,
+            "fees": 7135.730891454666,
+            "trades": 630,
+            "avg_exposure": 0.9941162068836983
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V53": {
+          "daily_rank_correlation": 0.5288786002602697,
+          "top5_overlap": 0.03372365339578454,
+          "comparable_days": 427
+        },
+        "V31": {
+          "daily_rank_correlation": 0.34954441691032706,
+          "top5_overlap": 0.005620608899297425,
+          "comparable_days": 427
+        },
+        "V36": {
+          "daily_rank_correlation": 0.3544275293609927,
+          "top5_overlap": 0.00936768149882904,
+          "comparable_days": 427
+        },
+        "V38": {
+          "daily_rank_correlation": 0.3768386570913522,
+          "top5_overlap": 0.006088992974238876,
+          "comparable_days": 427
+        }
+      }
+    },
+    {
+      "unit": "V55",
+      "seed": 4253,
+      "quarter": "2025Q4",
+      "fold": 4,
+      "days": 444,
+      "start": "2023-09-28",
+      "end": "2025-08-01",
+      "cpu_reload_max_error": 3.46451997756958e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015298031608851613,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.2297448163523255,
+          0.4906940530956524,
+          0.759257873474278
+        ],
+        "eligible_mature_days": 444,
+        "eligible_mature_stock_rows": 937198,
+        "mean_interquartile_width": 0.05181741714477539,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 0.3417699755081083,
+            "max_drawdown": -0.43674156388303087,
+            "sharpe": 0.6582381424765832,
+            "gross_return_same_positions": 0.5977723836164714,
+            "fee_drag": 0.16335663239328993,
+            "slippage_drag": 0.0926457757150732,
+            "fees": 16335.663239329017,
+            "trades": 1504,
+            "avg_exposure": 0.9340097845662896
+          },
+          "top5_5d": {
+            "net_return": 0.4929351469649743,
+            "max_drawdown": -0.4015291747762332,
+            "sharpe": 0.880691266161761,
+            "gross_return_same_positions": 0.5993842761763299,
+            "fee_drag": 0.06783014592850756,
+            "slippage_drag": 0.03861898328284804,
+            "fees": 6783.014592850752,
+            "trades": 602,
+            "avg_exposure": 0.9148065250961682
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.3099111732412616,
+            "max_drawdown": -0.4107621081239089,
+            "sharpe": 0.6259133188024325,
+            "gross_return_same_positions": 0.5662767435524616,
+            "fee_drag": 0.1632825492881443,
+            "slippage_drag": 0.09308302102305546,
+            "fees": 16328.254928814458,
+            "trades": 1508,
+            "avg_exposure": 0.9538486972703779
+          },
+          "top5_5d": {
+            "net_return": 0.34726237013961336,
+            "max_drawdown": -0.38260626163981604,
+            "sharpe": 0.6819602098387745,
+            "gross_return_same_positions": 0.4439973055626725,
+            "fee_drag": 0.06224233423139423,
+            "slippage_drag": 0.034492601191665,
+            "fees": 6224.233423139429,
+            "trades": 614,
+            "avg_exposure": 0.9511708662858785
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.3453151294951855,
+            "max_drawdown": -0.42474311877714,
+            "sharpe": 0.6786123135108818,
+            "gross_return_same_positions": 0.5646779262279489,
+            "fee_drag": 0.14184763335490366,
+            "slippage_drag": 0.07751516337786,
+            "fees": 14184.763335490354,
+            "trades": 1430,
+            "avg_exposure": 0.9754977964610668
+          },
+          "top5_5d": {
+            "net_return": 0.28046151467698266,
+            "max_drawdown": -0.4461407314667517,
+            "sharpe": 0.5910381876393724,
+            "gross_return_same_positions": 0.36217110343853043,
+            "fee_drag": 0.05317638143051976,
+            "slippage_drag": 0.028533207331028043,
+            "fees": 5317.63814305197,
+            "trades": 554,
+            "avg_exposure": 0.9740807840332679
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.15873168892579437,
+            "max_drawdown": -0.41167881107590976,
+            "sharpe": 0.4222585569039802,
+            "gross_return_same_positions": 0.34619657922844427,
+            "fee_drag": 0.12247295132888858,
+            "slippage_drag": 0.06499193897376122,
+            "fees": 12247.295132888863,
+            "trades": 1310,
+            "avg_exposure": 0.9877707868498536
+          },
+          "top5_5d": {
+            "net_return": 0.20163759915197943,
+            "max_drawdown": -0.4029856309148988,
+            "sharpe": 0.4906161417625921,
+            "gross_return_same_positions": 0.28228467278901626,
+            "fee_drag": 0.05239653423520344,
+            "slippage_drag": 0.02825053940183352,
+            "fees": 5239.6534235203435,
+            "trades": 548,
+            "avg_exposure": 0.9944985889293055
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V51": {
+          "daily_rank_correlation": 0.5297717090054369,
+          "top5_overlap": 0.02162162162162162,
+          "comparable_days": 444
+        },
+        "V31": {
+          "daily_rank_correlation": 0.40534295137859383,
+          "top5_overlap": 0.006756756756756757,
+          "comparable_days": 444
+        },
+        "V36": {
+          "daily_rank_correlation": 0.426319860976723,
+          "top5_overlap": 0.009909909909909911,
+          "comparable_days": 444
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4378805976761314,
+          "top5_overlap": 0.009009009009009009,
+          "comparable_days": 444
+        }
+      }
+    },
+    {
+      "unit": "V56",
+      "seed": 5253,
+      "quarter": "2025Q4",
+      "fold": 4,
+      "days": 444,
+      "start": "2023-09-28",
+      "end": "2025-08-01",
+      "cpu_reload_max_error": 5.811452865600586e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015275480207414645,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.24390990304888133,
+          0.4960139656463715,
+          0.7559818134780939
+        ],
+        "eligible_mature_days": 444,
+        "eligible_mature_stock_rows": 937198,
+        "mean_interquartile_width": 0.04993162676692009,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 0.8927965290597233,
+            "max_drawdown": -0.31923605614678274,
+            "sharpe": 1.3435991014362243,
+            "gross_return_same_positions": 1.2480499294673106,
+            "fee_drag": 0.22408163142876136,
+            "slippage_drag": 0.13117176897882557,
+            "fees": 22408.163142876125,
+            "trades": 1630,
+            "avg_exposure": 0.9716625971868433
+          },
+          "top5_5d": {
+            "net_return": 0.8503134160039527,
+            "max_drawdown": -0.4131340576481499,
+            "sharpe": 1.2597556573441235,
+            "gross_return_same_positions": 0.9742245573746768,
+            "fee_drag": 0.07847475400351699,
+            "slippage_drag": 0.04543638736720726,
+            "fees": 7847.475400351691,
+            "trades": 618,
+            "avg_exposure": 0.9490772281551181
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.5770060036024893,
+            "max_drawdown": -0.34569566675129626,
+            "sharpe": 1.0451135199675206,
+            "gross_return_same_positions": 0.8682012133245773,
+            "fee_drag": 0.18507026935810184,
+            "slippage_drag": 0.10612494036398597,
+            "fees": 18507.026935810183,
+            "trades": 1612,
+            "avg_exposure": 0.9728220391275926
+          },
+          "top5_5d": {
+            "net_return": 0.5591461775876672,
+            "max_drawdown": -0.32112544134816035,
+            "sharpe": 1.0119471276059067,
+            "gross_return_same_positions": 0.6725705602285825,
+            "fee_drag": 0.07189246347285058,
+            "slippage_drag": 0.04153191916806471,
+            "fees": 7189.246347285056,
+            "trades": 618,
+            "avg_exposure": 0.9567650273220863
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.26516851707656786,
+            "max_drawdown": -0.3028957445674003,
+            "sharpe": 0.6321735102506961,
+            "gross_return_same_positions": 0.5170670159111792,
+            "fee_drag": 0.16071194272984796,
+            "slippage_drag": 0.09118655610476338,
+            "fees": 16071.194272984829,
+            "trades": 1546,
+            "avg_exposure": 0.9780989677796997
+          },
+          "top5_5d": {
+            "net_return": 0.45844562420050283,
+            "max_drawdown": -0.29415901263754163,
+            "sharpe": 0.9121453029182252,
+            "gross_return_same_positions": 0.5602776331075601,
+            "fee_drag": 0.06479873761712815,
+            "slippage_drag": 0.03703327128992923,
+            "fees": 6479.873761712819,
+            "trades": 582,
+            "avg_exposure": 0.9648273869821203
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.19434635267430744,
+            "max_drawdown": -0.29751890678043913,
+            "sharpe": 0.5152062217328951,
+            "gross_return_same_positions": 0.43004151999154816,
+            "fee_drag": 0.15071734086125269,
+            "slippage_drag": 0.0849778264559882,
+            "fees": 15071.73408612527,
+            "trades": 1486,
+            "avg_exposure": 0.9817273731634963
+          },
+          "top5_5d": {
+            "net_return": 0.616381891355064,
+            "max_drawdown": -0.27369989868468436,
+            "sharpe": 1.170381200716693,
+            "gross_return_same_positions": 0.7239392717376911,
+            "fee_drag": 0.0683781966011099,
+            "slippage_drag": 0.03917918378151709,
+            "fees": 6837.819660110989,
+            "trades": 590,
+            "avg_exposure": 0.974939528392459
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V52": {
+          "daily_rank_correlation": 0.4985199737292974,
+          "top5_overlap": 0.005855855855855856,
+          "comparable_days": 444
+        },
+        "V31": {
+          "daily_rank_correlation": 0.37232305786772657,
+          "top5_overlap": 0.0045045045045045045,
+          "comparable_days": 444
+        },
+        "V36": {
+          "daily_rank_correlation": 0.3882428310501423,
+          "top5_overlap": 0.0045045045045045045,
+          "comparable_days": 444
+        },
+        "V38": {
+          "daily_rank_correlation": 0.3977524973201134,
+          "top5_overlap": 0.0036036036036036037,
+          "comparable_days": 444
+        }
+      }
+    },
+    {
+      "unit": "V57",
+      "seed": 6253,
+      "quarter": "2025Q4",
+      "fold": 4,
+      "days": 444,
+      "start": "2023-09-28",
+      "end": "2025-08-01",
+      "cpu_reload_max_error": 3.501772880554199e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015241314454850835,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.22777874679394694,
+          0.48430998919583423,
+          0.754181005827976
+        ],
+        "eligible_mature_days": 444,
+        "eligible_mature_stock_rows": 937198,
+        "mean_interquartile_width": 0.051371317356824875,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 0.3994752811278437,
+            "max_drawdown": -0.4074868401296139,
+            "sharpe": 0.7236415076874372,
+            "gross_return_same_positions": 0.7008639264157281,
+            "fee_drag": 0.19402000610997033,
+            "slippage_drag": 0.10736863917791398,
+            "fees": 19402.000610997024,
+            "trades": 1844,
+            "avg_exposure": 0.9617350676030971
+          },
+          "top5_5d": {
+            "net_return": 0.4846764476509744,
+            "max_drawdown": -0.3765216928199827,
+            "sharpe": 0.8289788913286055,
+            "gross_return_same_positions": 0.596254746623031,
+            "fee_drag": 0.07165821854807426,
+            "slippage_drag": 0.039920080423982415,
+            "fees": 7165.821854807421,
+            "trades": 686,
+            "avg_exposure": 0.956406287757245
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.29633927840270746,
+            "max_drawdown": -0.40523742539494056,
+            "sharpe": 0.6189520348985786,
+            "gross_return_same_positions": 0.5721007792609567,
+            "fee_drag": 0.17771647862448062,
+            "slippage_drag": 0.09804502223376847,
+            "fees": 17771.647862448077,
+            "trades": 1772,
+            "avg_exposure": 0.9761535805137227
+          },
+          "top5_5d": {
+            "net_return": 0.6287268219951698,
+            "max_drawdown": -0.34219259530169943,
+            "sharpe": 1.0283104986896314,
+            "gross_return_same_positions": 0.7408056302755683,
+            "fee_drag": 0.07183911059132027,
+            "slippage_drag": 0.040239697689078494,
+            "fees": 7183.911059132032,
+            "trades": 660,
+            "avg_exposure": 0.9769539948687962
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.4287617424017576,
+            "max_drawdown": -0.37676402128061925,
+            "sharpe": 0.8046801073999169,
+            "gross_return_same_positions": 0.6924821952814755,
+            "fee_drag": 0.16860076622114295,
+            "slippage_drag": 0.0951196866585751,
+            "fees": 16860.076622114317,
+            "trades": 1568,
+            "avg_exposure": 0.990013479193867
+          },
+          "top5_5d": {
+            "net_return": 0.5462586617560228,
+            "max_drawdown": -0.341737962401399,
+            "sharpe": 0.9598891381668685,
+            "gross_return_same_positions": 0.6514513046175237,
+            "fee_drag": 0.06729777947011989,
+            "slippage_drag": 0.03789486339138106,
+            "fees": 6729.777947011991,
+            "trades": 620,
+            "avg_exposure": 0.9891941940517321
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.4512991024238697,
+            "max_drawdown": -0.39400675260967855,
+            "sharpe": 0.8465384545914431,
+            "gross_return_same_positions": 0.6764548427776216,
+            "fee_drag": 0.14421014390092582,
+            "slippage_drag": 0.08094559645282612,
+            "fees": 14421.014390092569,
+            "trades": 1366,
+            "avg_exposure": 0.9944732973212382
+          },
+          "top5_5d": {
+            "net_return": 0.7113335604245914,
+            "max_drawdown": -0.2958006973937395,
+            "sharpe": 1.16796442668266,
+            "gross_return_same_positions": 0.8124266929009301,
+            "fee_drag": 0.06424480246847238,
+            "slippage_drag": 0.03684833000786626,
+            "fees": 6424.480246847245,
+            "trades": 550,
+            "avg_exposure": 0.9949481590572443
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V53": {
+          "daily_rank_correlation": 0.5046387069590473,
+          "top5_overlap": 0.014864864864864866,
+          "comparable_days": 444
+        },
+        "V31": {
+          "daily_rank_correlation": 0.3968795994037853,
+          "top5_overlap": 0.004054054054054053,
+          "comparable_days": 444
+        },
+        "V36": {
+          "daily_rank_correlation": 0.4093379675959932,
+          "top5_overlap": 0.004054054054054054,
+          "comparable_days": 444
+        },
+        "V38": {
+          "daily_rank_correlation": 0.42143642308764756,
+          "top5_overlap": 0.0031531531531531535,
+          "comparable_days": 444
+        }
+      }
+    },
+    {
+      "unit": "V54",
+      "seed": 3253,
+      "quarter": "2025Q4",
+      "fold": 4,
+      "days": 444,
+      "start": "2023-09-28",
+      "end": "2025-08-01",
+      "cpu_reload_max_error": 4.76837158203125e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015349702806888244,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.24514354182518538,
+          0.493745964395534,
+          0.747347678969735
+        ],
+        "eligible_mature_days": 444,
+        "eligible_mature_stock_rows": 937198,
+        "mean_interquartile_width": 0.04910494387149811,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 0.5538933471124075,
+            "max_drawdown": -0.3635556089338534,
+            "sharpe": 0.9238809193996423,
+            "gross_return_same_positions": 0.8787527590346458,
+            "fee_drag": 0.20665034809454028,
+            "slippage_drag": 0.118209063827698,
+            "fees": 20665.034809454057,
+            "trades": 1808,
+            "avg_exposure": 0.9623491813439777
+          },
+          "top5_5d": {
+            "net_return": 0.9117412924059956,
+            "max_drawdown": -0.33957655999556235,
+            "sharpe": 1.3364787604459087,
+            "gross_return_same_positions": 1.052147438433316,
+            "fee_drag": 0.0888772557957957,
+            "slippage_drag": 0.0515288902315248,
+            "fees": 8887.725579579577,
+            "trades": 694,
+            "avg_exposure": 0.9601268217743755
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.6366212355072132,
+            "max_drawdown": -0.3139968470171207,
+            "sharpe": 1.0626723399375204,
+            "gross_return_same_positions": 0.9421463997598569,
+            "fee_drag": 0.19434639233272807,
+            "slippage_drag": 0.11117877191991556,
+            "fees": 19434.639233272774,
+            "trades": 1710,
+            "avg_exposure": 0.9814753145743236
+          },
+          "top5_5d": {
+            "net_return": 0.6340565990332194,
+            "max_drawdown": -0.3442424382596482,
+            "sharpe": 1.0620856533011147,
+            "gross_return_same_positions": 0.7583287433680628,
+            "fee_drag": 0.07927222571183817,
+            "slippage_drag": 0.044999918623005196,
+            "fees": 7927.22257118382,
+            "trades": 686,
+            "avg_exposure": 0.9760215287669916
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.7221219924815785,
+            "max_drawdown": -0.3093974206025736,
+            "sharpe": 1.1766173088691845,
+            "gross_return_same_positions": 1.025285584344859,
+            "fee_drag": 0.19173737418798895,
+            "slippage_drag": 0.11142621767529132,
+            "fees": 19173.737418798886,
+            "trades": 1562,
+            "avg_exposure": 0.9888316800938347
+          },
+          "top5_5d": {
+            "net_return": 0.5565065946731684,
+            "max_drawdown": -0.309989109611399,
+            "sharpe": 0.9691791261338859,
+            "gross_return_same_positions": 0.6708310667588251,
+            "fee_drag": 0.07304889676563331,
+            "slippage_drag": 0.04127557532002333,
+            "fees": 7304.889676563332,
+            "trades": 646,
+            "avg_exposure": 0.9836218840985615
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.3684056590582607,
+            "max_drawdown": -0.3100141451335383,
+            "sharpe": 0.7731712056098771,
+            "gross_return_same_positions": 0.6212444608688417,
+            "fee_drag": 0.16072892447233006,
+            "slippage_drag": 0.09210987733825077,
+            "fees": 16072.892447233005,
+            "trades": 1488,
+            "avg_exposure": 0.9947138759364984
+          },
+          "top5_5d": {
+            "net_return": 0.3362349031902523,
+            "max_drawdown": -0.30502206743952887,
+            "sharpe": 0.7090505103127157,
+            "gross_return_same_positions": 0.44162583076545725,
+            "fee_drag": 0.06728190782598001,
+            "slippage_drag": 0.0381090197492251,
+            "fees": 6728.190782597999,
+            "trades": 628,
+            "avg_exposure": 0.9884376786689202
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V50": {
+          "daily_rank_correlation": 0.5868899728633213,
+          "top5_overlap": 0.022072072072072072,
+          "comparable_days": 444
+        },
+        "V31": {
+          "daily_rank_correlation": 0.39693542870482384,
+          "top5_overlap": 0.0036036036036036037,
+          "comparable_days": 444
+        },
+        "V36": {
+          "daily_rank_correlation": 0.41734574829171966,
+          "top5_overlap": 0.0045045045045045045,
+          "comparable_days": 444
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4285658429977909,
+          "top5_overlap": 0.004054054054054054,
+          "comparable_days": 444
+        }
+      }
+    },
+    {
+      "unit": "V55",
+      "seed": 4253,
+      "quarter": "2026Q1",
+      "fold": 4,
+      "days": 459,
+      "start": "2023-12-08",
+      "end": "2025-11-03",
+      "cpu_reload_max_error": 3.6694109439849854e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015635491984678805,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.23456770900079502,
+          0.48338485399226483,
+          0.7388456138398982
+        ],
+        "eligible_mature_days": 459,
+        "eligible_mature_stock_rows": 968892,
+        "mean_interquartile_width": 0.04961102455854416,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 0.37520773595189505,
+            "max_drawdown": -0.43261442770341374,
+            "sharpe": 0.6981576018374781,
+            "gross_return_same_positions": 0.6373221349965792,
+            "fee_drag": 0.16793720440419602,
+            "slippage_drag": 0.09417719464048838,
+            "fees": 16793.720440419587,
+            "trades": 1586,
+            "avg_exposure": 0.9480963793029521
+          },
+          "top5_5d": {
+            "net_return": 0.6239181826203057,
+            "max_drawdown": -0.4825883043458805,
+            "sharpe": 0.969906595912254,
+            "gross_return_same_positions": 0.7329445264184531,
+            "fee_drag": 0.07002261644022655,
+            "slippage_drag": 0.039003727357920764,
+            "fees": 7002.261644022648,
+            "trades": 634,
+            "avg_exposure": 0.9478194708318186
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.8647019735073243,
+            "max_drawdown": -0.3825125005682998,
+            "sharpe": 1.2585204009701225,
+            "gross_return_same_positions": 1.1602602496724215,
+            "fee_drag": 0.1880596480902071,
+            "slippage_drag": 0.10749862807488995,
+            "fees": 18805.964809020697,
+            "trades": 1532,
+            "avg_exposure": 0.9770092515046861
+          },
+          "top5_5d": {
+            "net_return": 0.37376857622213433,
+            "max_drawdown": -0.44418765246134706,
+            "sharpe": 0.6994078230997937,
+            "gross_return_same_positions": 0.4720806876227708,
+            "fee_drag": 0.06338861919435347,
+            "slippage_drag": 0.034923492206283116,
+            "fees": 6338.8619194353505,
+            "trades": 626,
+            "avg_exposure": 0.9718885960678078
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.8073147118572588,
+            "max_drawdown": -0.4069901205756574,
+            "sharpe": 1.2303993738950432,
+            "gross_return_same_positions": 1.08734293022611,
+            "fee_drag": 0.1787903974897938,
+            "slippage_drag": 0.10123782087905712,
+            "fees": 17879.039748979358,
+            "trades": 1476,
+            "avg_exposure": 0.9858452050005956
+          },
+          "top5_5d": {
+            "net_return": 0.26366541023038015,
+            "max_drawdown": -0.4051399037181398,
+            "sharpe": 0.5768772876165444,
+            "gross_return_same_positions": 0.35527716123400555,
+            "fee_drag": 0.059280115855258726,
+            "slippage_drag": 0.03233163514836662,
+            "fees": 5928.011585525869,
+            "trades": 606,
+            "avg_exposure": 0.98713302516179
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.5528381326726224,
+            "max_drawdown": -0.38706313035266726,
+            "sharpe": 0.9741261392612117,
+            "gross_return_same_positions": 0.780911803479083,
+            "fee_drag": 0.1464964192654263,
+            "slippage_drag": 0.08157725154103422,
+            "fees": 14649.641926542625,
+            "trades": 1372,
+            "avg_exposure": 0.9911040668757349
+          },
+          "top5_5d": {
+            "net_return": 0.690021917370347,
+            "max_drawdown": -0.3563805849896058,
+            "sharpe": 1.1461362087820988,
+            "gross_return_same_positions": 0.7946657414096563,
+            "fee_drag": 0.06684267031688962,
+            "slippage_drag": 0.037801153722419364,
+            "fees": 6684.267031688961,
+            "trades": 576,
+            "avg_exposure": 0.9943614564049148
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V51": {
+          "daily_rank_correlation": 0.4929364692527187,
+          "top5_overlap": 0.005228758169934641,
+          "comparable_days": 459
+        },
+        "V31": {
+          "daily_rank_correlation": 0.3967684859286733,
+          "top5_overlap": 0.010457516339869282,
+          "comparable_days": 459
+        },
+        "V36": {
+          "daily_rank_correlation": 0.4013354138666809,
+          "top5_overlap": 0.011328976034858388,
+          "comparable_days": 459
+        },
+        "V38": {
+          "daily_rank_correlation": 0.42533251926887256,
+          "top5_overlap": 0.008714596949891068,
+          "comparable_days": 459
+        }
+      }
+    },
+    {
+      "unit": "V54",
+      "seed": 3253,
+      "quarter": "2026Q1",
+      "fold": 4,
+      "days": 459,
+      "start": "2023-12-08",
+      "end": "2025-11-03",
+      "cpu_reload_max_error": 5.662441253662109e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015675433744119893,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.25279955272851623,
+          0.4987173337162056,
+          0.742613363954018
+        ],
+        "eligible_mature_days": 459,
+        "eligible_mature_stock_rows": 968892,
+        "mean_interquartile_width": 0.04850708693265915,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 1.6637427344642965,
+            "max_drawdown": -0.33445341672179896,
+            "sharpe": 1.8021407418925761,
+            "gross_return_same_positions": 2.116265427151888,
+            "fee_drag": 0.2862687150594645,
+            "slippage_drag": 0.16625397762812713,
+            "fees": 28626.871505946467,
+            "trades": 1862,
+            "avg_exposure": 0.969053925620786
+          },
+          "top5_5d": {
+            "net_return": 0.6795246138655362,
+            "max_drawdown": -0.3644992554351987,
+            "sharpe": 1.0466465164134655,
+            "gross_return_same_positions": 0.8020886293395895,
+            "fee_drag": 0.07819757688525658,
+            "slippage_drag": 0.04436643858879662,
+            "fees": 7819.757688525656,
+            "trades": 672,
+            "avg_exposure": 0.9578439659235926
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 1.229052314908246,
+            "max_drawdown": -0.2963842470259691,
+            "sharpe": 1.5853196768863962,
+            "gross_return_same_positions": 1.6137010954761255,
+            "fee_drag": 0.24320967623925174,
+            "slippage_drag": 0.14143910432862744,
+            "fees": 24320.967623925182,
+            "trades": 1724,
+            "avg_exposure": 0.9832931489181298
+          },
+          "top5_5d": {
+            "net_return": 0.649168693231837,
+            "max_drawdown": -0.3840208877062363,
+            "sharpe": 1.0497736344379167,
+            "gross_return_same_positions": 0.7761770881219616,
+            "fee_drag": 0.08115811776369337,
+            "slippage_drag": 0.04585027712643103,
+            "fees": 8115.811776369322,
+            "trades": 692,
+            "avg_exposure": 0.9775476754092062
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 1.2598078769954428,
+            "max_drawdown": -0.27996430009608175,
+            "sharpe": 1.7177847906980621,
+            "gross_return_same_positions": 1.6218548681926936,
+            "fee_drag": 0.22851362673680778,
+            "slippage_drag": 0.13353336446044348,
+            "fees": 22851.36267368079,
+            "trades": 1590,
+            "avg_exposure": 0.9931647338081909
+          },
+          "top5_5d": {
+            "net_return": 0.7282788808641085,
+            "max_drawdown": -0.31136117009897146,
+            "sharpe": 1.177716064217403,
+            "gross_return_same_positions": 0.8551151381087436,
+            "fee_drag": 0.08061168270320794,
+            "slippage_drag": 0.04622457454142726,
+            "fees": 8061.16827032079,
+            "trades": 670,
+            "avg_exposure": 0.9875850801478535
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.7831366441310901,
+            "max_drawdown": -0.3058530934421998,
+            "sharpe": 1.2809735296025615,
+            "gross_return_same_positions": 1.0531749478078631,
+            "fee_drag": 0.17116254719244164,
+            "slippage_drag": 0.0988757564843311,
+            "fees": 17116.25471924415,
+            "trades": 1402,
+            "avg_exposure": 0.992884961432387
+          },
+          "top5_5d": {
+            "net_return": 0.5259910907454419,
+            "max_drawdown": -0.3375450548205403,
+            "sharpe": 0.9491220394046366,
+            "gross_return_same_positions": 0.6407315644615974,
+            "fee_drag": 0.0730523802468218,
+            "slippage_drag": 0.04168809346933347,
+            "fees": 7305.238024682175,
+            "trades": 632,
+            "avg_exposure": 0.9863936481127269
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V50": {
+          "daily_rank_correlation": 0.5251247012776228,
+          "top5_overlap": 0.010457516339869282,
+          "comparable_days": 459
+        },
+        "V31": {
+          "daily_rank_correlation": 0.3816158636414746,
+          "top5_overlap": 0.002178649237472767,
+          "comparable_days": 459
+        },
+        "V36": {
+          "daily_rank_correlation": 0.38515324751399344,
+          "top5_overlap": 0.00261437908496732,
+          "comparable_days": 459
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4069160571616238,
+          "top5_overlap": 0.0030501089324618735,
+          "comparable_days": 459
+        }
+      }
+    },
+    {
+      "unit": "V56",
+      "seed": 5253,
+      "quarter": "2026Q1",
+      "fold": 4,
+      "days": 459,
+      "start": "2023-12-08",
+      "end": "2025-11-03",
+      "cpu_reload_max_error": 3.8743019104003906e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015602704850486756,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.24894064885264836,
+          0.49151175900589067,
+          0.7430182472227067
+        ],
+        "eligible_mature_days": 459,
+        "eligible_mature_stock_rows": 968892,
+        "mean_interquartile_width": 0.04907645285129547,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 0.3289590661555233,
+            "max_drawdown": -0.3989326576066764,
+            "sharpe": 0.6436552818662695,
+            "gross_return_same_positions": 0.5771607093001996,
+            "fee_drag": 0.16047275093189659,
+            "slippage_drag": 0.08772889221277975,
+            "fees": 16047.275093189677,
+            "trades": 1612,
+            "avg_exposure": 0.9481601853322703
+          },
+          "top5_5d": {
+            "net_return": 0.36856045796038694,
+            "max_drawdown": -0.3684298025983376,
+            "sharpe": 0.6882070365517097,
+            "gross_return_same_positions": 0.4677369917720131,
+            "fee_drag": 0.06375328471409804,
+            "slippage_drag": 0.035423249097528225,
+            "fees": 6375.328471409804,
+            "trades": 620,
+            "avg_exposure": 0.9226059839750625
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.609530695558067,
+            "max_drawdown": -0.3330329660985015,
+            "sharpe": 1.0474359013885197,
+            "gross_return_same_positions": 0.8957327461379097,
+            "fee_drag": 0.18287817075601281,
+            "slippage_drag": 0.10332387982382983,
+            "fees": 18287.81707560125,
+            "trades": 1662,
+            "avg_exposure": 0.9650393015336642
+          },
+          "top5_5d": {
+            "net_return": 0.5828798997811502,
+            "max_drawdown": -0.3571659754443609,
+            "sharpe": 0.9663387629647159,
+            "gross_return_same_positions": 0.6970362064749014,
+            "fee_drag": 0.07292740983181316,
+            "slippage_drag": 0.04122889686193821,
+            "fees": 7292.740983181312,
+            "trades": 646,
+            "avg_exposure": 0.9487828237169087
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.5720924407044381,
+            "max_drawdown": -0.3548803988413678,
+            "sharpe": 1.0588025338221867,
+            "gross_return_same_positions": 0.8512018458866863,
+            "fee_drag": 0.17880709862849334,
+            "slippage_drag": 0.10030230655375479,
+            "fees": 17880.70986284933,
+            "trades": 1638,
+            "avg_exposure": 0.9742365489331555
+          },
+          "top5_5d": {
+            "net_return": 0.41908169340111234,
+            "max_drawdown": -0.34806320717792016,
+            "sharpe": 0.7931103414567967,
+            "gross_return_same_positions": 0.5348199244889862,
+            "fee_drag": 0.07395376911053154,
+            "slippage_drag": 0.04178446197734236,
+            "fees": 7395.376911053146,
+            "trades": 670,
+            "avg_exposure": 0.9641912829694408
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.22095492470158473,
+            "max_drawdown": -0.3436982697315043,
+            "sharpe": 0.5467702026887186,
+            "gross_return_same_positions": 0.4550755978358436,
+            "fee_drag": 0.15107804045491785,
+            "slippage_drag": 0.08304263267934099,
+            "fees": 15107.804045491794,
+            "trades": 1552,
+            "avg_exposure": 0.9796094251603306
+          },
+          "top5_5d": {
+            "net_return": 0.4419999752801118,
+            "max_drawdown": -0.28808829127119584,
+            "sharpe": 0.8588843909397024,
+            "gross_return_same_positions": 0.5514249234947035,
+            "fee_drag": 0.06999172273754795,
+            "slippage_drag": 0.03943322547704391,
+            "fees": 6999.172273754789,
+            "trades": 640,
+            "avg_exposure": 0.9777278393602579
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V52": {
+          "daily_rank_correlation": 0.5190569794972725,
+          "top5_overlap": 0.0196078431372549,
+          "comparable_days": 459
+        },
+        "V31": {
+          "daily_rank_correlation": 0.40600081820563183,
+          "top5_overlap": 0.00784313725490196,
+          "comparable_days": 459
+        },
+        "V36": {
+          "daily_rank_correlation": 0.41154460402607224,
+          "top5_overlap": 0.010021786492374729,
+          "comparable_days": 459
+        },
+        "V38": {
+          "daily_rank_correlation": 0.44076487549901233,
+          "top5_overlap": 0.005228758169934641,
+          "comparable_days": 459
+        }
+      }
+    },
+    {
+      "unit": "V57",
+      "seed": 6253,
+      "quarter": "2026Q1",
+      "fold": 4,
+      "days": 459,
+      "start": "2023-12-08",
+      "end": "2025-11-03",
+      "cpu_reload_max_error": 4.76837158203125e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015579245475062477,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.24429983962149435,
+          0.5022260849340151,
+          0.7589928919128657
+        ],
+        "eligible_mature_days": 459,
+        "eligible_mature_stock_rows": 968892,
+        "mean_interquartile_width": 0.05154156684875488,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 0.5711629944902283,
+            "max_drawdown": -0.42802672063857106,
+            "sharpe": 0.9123401821971693,
+            "gross_return_same_positions": 0.8075096563753028,
+            "fee_drag": 0.1520504629881712,
+            "slippage_drag": 0.0842961988969034,
+            "fees": 15205.046298817108,
+            "trades": 1472,
+            "avg_exposure": 0.9355212891181565
+          },
+          "top5_5d": {
+            "net_return": 0.39148915734131706,
+            "max_drawdown": -0.38766619480014564,
+            "sharpe": 0.7266786560461556,
+            "gross_return_same_positions": 0.486726114261272,
+            "fee_drag": 0.061225559085680004,
+            "slippage_drag": 0.03401139783427483,
+            "fees": 6122.555908567999,
+            "trades": 596,
+            "avg_exposure": 0.9250833502128817
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 0.5996597029217752,
+            "max_drawdown": -0.4277061677428793,
+            "sharpe": 0.9607838672185355,
+            "gross_return_same_positions": 0.8406488089995159,
+            "fee_drag": 0.15592789543505026,
+            "slippage_drag": 0.0850612106426905,
+            "fees": 15592.78954350504,
+            "trades": 1496,
+            "avg_exposure": 0.9638131617212297
+          },
+          "top5_5d": {
+            "net_return": 0.31612295888210307,
+            "max_drawdown": -0.40015336608607577,
+            "sharpe": 0.6307711686460807,
+            "gross_return_same_positions": 0.4118012009070475,
+            "fee_drag": 0.061846203664676906,
+            "slippage_drag": 0.03383203836026768,
+            "fees": 6184.620366467689,
+            "trades": 626,
+            "avg_exposure": 0.9577287077340197
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 0.30819763029695224,
+            "max_drawdown": -0.4016926601766202,
+            "sharpe": 0.6276453760828756,
+            "gross_return_same_positions": 0.5209056464626032,
+            "fee_drag": 0.1371257984717202,
+            "slippage_drag": 0.07558221769393064,
+            "fees": 13712.579847172023,
+            "trades": 1364,
+            "avg_exposure": 0.9790614171890744
+          },
+          "top5_5d": {
+            "net_return": 0.6657304365469001,
+            "max_drawdown": -0.32768914403237237,
+            "sharpe": 1.0969548700367702,
+            "gross_return_same_positions": 0.7719471142938956,
+            "fee_drag": 0.06778434161271196,
+            "slippage_drag": 0.03843233613428382,
+            "fees": 6778.43416127119,
+            "trades": 594,
+            "avg_exposure": 0.9818336695947015
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 0.3865802787966852,
+            "max_drawdown": -0.38874611893237354,
+            "sharpe": 0.752739021264624,
+            "gross_return_same_positions": 0.5917010372686529,
+            "fee_drag": 0.13219600816079508,
+            "slippage_drag": 0.07292475031117256,
+            "fees": 13219.600816079512,
+            "trades": 1294,
+            "avg_exposure": 0.9895092409358728
+          },
+          "top5_5d": {
+            "net_return": 0.8538675425833682,
+            "max_drawdown": -0.30978197087462367,
+            "sharpe": 1.310033649739648,
+            "gross_return_same_positions": 0.9603963905695492,
+            "fee_drag": 0.06783786706901476,
+            "slippage_drag": 0.03869098091716627,
+            "fees": 6783.78670690148,
+            "trades": 556,
+            "avg_exposure": 0.9909864577240838
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V53": {
+          "daily_rank_correlation": 0.5230741519286144,
+          "top5_overlap": 0.021350762527233117,
+          "comparable_days": 459
+        },
+        "V31": {
+          "daily_rank_correlation": 0.3978756897598316,
+          "top5_overlap": 0.0030501089324618735,
+          "comparable_days": 459
+        },
+        "V36": {
+          "daily_rank_correlation": 0.402512566277356,
+          "top5_overlap": 0.00392156862745098,
+          "comparable_days": 459
+        },
+        "V38": {
+          "daily_rank_correlation": 0.42716672476875844,
+          "top5_overlap": 0.0034858387799564274,
+          "comparable_days": 459
+        }
+      }
+    },
+    {
+      "unit": "V55",
+      "seed": 4253,
+      "quarter": "2026Q2",
+      "fold": 4,
+      "days": 473,
+      "start": "2024-02-07",
+      "end": "2026-01-22",
+      "cpu_reload_max_error": 4.1956081986427307e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.01552274626131316,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.25336061406267424,
+          0.5045612548929747,
+          0.7504817617814336
+        ],
+        "eligible_mature_days": 473,
+        "eligible_mature_stock_rows": 998253,
+        "mean_interquartile_width": 0.04921048879623413,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 1.3355485506146874,
+            "max_drawdown": -0.18321709673260578,
+            "sharpe": 1.7355933100773435,
+            "gross_return_same_positions": 1.7949481854623208,
+            "fee_drag": 0.289438292392015,
+            "slippage_drag": 0.16996134245561823,
+            "fees": 28943.82923920151,
+            "trades": 1680,
+            "avg_exposure": 0.9379677554934417
+          },
+          "top5_5d": {
+            "net_return": 1.9472414049405766,
+            "max_drawdown": -0.17051151824330368,
+            "sharpe": 2.100317258549924,
+            "gross_return_same_positions": 2.142586516555141,
+            "fee_drag": 0.12322458765960624,
+            "slippage_drag": 0.07212052395495767,
+            "fees": 12322.458765960613,
+            "trades": 678,
+            "avg_exposure": 0.9308562616243344
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 1.151379671911509,
+            "max_drawdown": -0.18729705395452756,
+            "sharpe": 1.64580973868833,
+            "gross_return_same_positions": 1.5979489625804626,
+            "fee_drag": 0.2813598519801976,
+            "slippage_drag": 0.1652094386887558,
+            "fees": 28135.98519801977,
+            "trades": 1714,
+            "avg_exposure": 0.9605116337682599
+          },
+          "top5_5d": {
+            "net_return": 1.119730617420914,
+            "max_drawdown": -0.18929047276148214,
+            "sharpe": 1.569851476010377,
+            "gross_return_same_positions": 1.2867800108453111,
+            "fee_drag": 0.10530177342114998,
+            "slippage_drag": 0.06174762000324703,
+            "fees": 10530.177342114997,
+            "trades": 692,
+            "avg_exposure": 0.9570333166090734
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 1.2901317408501995,
+            "max_drawdown": -0.1664764152198006,
+            "sharpe": 1.7972206027479634,
+            "gross_return_same_positions": 1.761583493876651,
+            "fee_drag": 0.2970112799783097,
+            "slippage_drag": 0.17444047304814178,
+            "fees": 29701.127997830965,
+            "trades": 1640,
+            "avg_exposure": 0.9796117987813632
+          },
+          "top5_5d": {
+            "net_return": 1.3523432805626268,
+            "max_drawdown": -0.19351982952395563,
+            "sharpe": 1.8325926862175037,
+            "gross_return_same_positions": 1.5191275468370447,
+            "fee_drag": 0.1051572440103732,
+            "slippage_drag": 0.06162702226404437,
+            "fees": 10515.724401037318,
+            "trades": 656,
+            "avg_exposure": 0.9787905234505667
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 1.337252441260604,
+            "max_drawdown": -0.18384160960269436,
+            "sharpe": 1.9386278236447123,
+            "gross_return_same_positions": 1.7706339644661253,
+            "fee_drag": 0.2730257650162007,
+            "slippage_drag": 0.16035575818932113,
+            "fees": 27302.57650162004,
+            "trades": 1534,
+            "avg_exposure": 0.9916705675317694
+          },
+          "top5_5d": {
+            "net_return": 1.352109674979192,
+            "max_drawdown": -0.17456428642272048,
+            "sharpe": 1.9043768222695563,
+            "gross_return_same_positions": 1.5135640531191386,
+            "fee_drag": 0.10179151092401635,
+            "slippage_drag": 0.05966286721593005,
+            "fees": 10179.151092401644,
+            "trades": 616,
+            "avg_exposure": 0.9861782403948093
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V51": {
+          "daily_rank_correlation": 0.46085143660897937,
+          "top5_overlap": 0.012684989429175475,
+          "comparable_days": 473
+        },
+        "V31": {
+          "daily_rank_correlation": 0.39935105726037823,
+          "top5_overlap": 0.006342494714587738,
+          "comparable_days": 473
+        },
+        "V36": {
+          "daily_rank_correlation": 0.40514949092912517,
+          "top5_overlap": 0.006765327695560255,
+          "comparable_days": 473
+        },
+        "V38": {
+          "daily_rank_correlation": 0.43016348745879734,
+          "top5_overlap": 0.006765327695560254,
+          "comparable_days": 473
+        }
+      }
+    },
+    {
+      "unit": "V54",
+      "seed": 3253,
+      "quarter": "2026Q2",
+      "fold": 4,
+      "days": 473,
+      "start": "2024-02-07",
+      "end": "2026-01-22",
+      "cpu_reload_max_error": 3.03611159324646e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.01558072930926627,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.2296664108438857,
+          0.46956910575027067,
+          0.7200007836099174
+        ],
+        "eligible_mature_days": 473,
+        "eligible_mature_stock_rows": 998253,
+        "mean_interquartile_width": 0.04769416153430939,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 1.774502694001042,
+            "max_drawdown": -0.1841249065519982,
+            "sharpe": 1.8661624835903294,
+            "gross_return_same_positions": 2.302553147873901,
+            "fee_drag": 0.3326808439285165,
+            "slippage_drag": 0.19536960994434288,
+            "fees": 33268.08439285165,
+            "trades": 1588,
+            "avg_exposure": 0.9925582158380615
+          },
+          "top5_5d": {
+            "net_return": 3.2147346990887957,
+            "max_drawdown": -0.16930344270659947,
+            "sharpe": 2.473872367129908,
+            "gross_return_same_positions": 3.4939936299187018,
+            "fee_drag": 0.1761437667409404,
+            "slippage_drag": 0.10311516408896572,
+            "fees": 17614.37667409406,
+            "trades": 714,
+            "avg_exposure": 0.9935342912409753
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 2.359879499793853,
+            "max_drawdown": -0.16306468930926277,
+            "sharpe": 2.3010200575507302,
+            "gross_return_same_positions": 2.826638750762259,
+            "fee_drag": 0.29413133134319414,
+            "slippage_drag": 0.172627919625212,
+            "fees": 29413.133134319414,
+            "trades": 1406,
+            "avg_exposure": 0.9947074191837245
+          },
+          "top5_5d": {
+            "net_return": 2.5766947643509903,
+            "max_drawdown": -0.18740382916097564,
+            "sharpe": 2.3216574677595063,
+            "gross_return_same_positions": 2.792807799436456,
+            "fee_drag": 0.13632251274564341,
+            "slippage_drag": 0.07979052233982209,
+            "fees": 13632.251274564343,
+            "trades": 654,
+            "avg_exposure": 0.9917785081031238
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 1.6382322895778092,
+            "max_drawdown": -0.20098803901043705,
+            "sharpe": 2.027054117403893,
+            "gross_return_same_positions": 2.005823277912425,
+            "fee_drag": 0.2316193773512564,
+            "slippage_drag": 0.1359716109833594,
+            "fees": 23161.937735125608,
+            "trades": 1256,
+            "avg_exposure": 0.9952600298531248
+          },
+          "top5_5d": {
+            "net_return": 2.0667189362517324,
+            "max_drawdown": -0.18587651192785337,
+            "sharpe": 2.220046277705164,
+            "gross_return_same_positions": 2.256420769327027,
+            "fee_drag": 0.11964438684450311,
+            "slippage_drag": 0.07005744623079121,
+            "fees": 11964.438684450313,
+            "trades": 632,
+            "avg_exposure": 0.9958938212783442
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 1.3552333315483551,
+            "max_drawdown": -0.2133776904389797,
+            "sharpe": 1.8638425424366154,
+            "gross_return_same_positions": 1.6573065037596963,
+            "fee_drag": 0.1903375702602245,
+            "slippage_drag": 0.11173560195111669,
+            "fees": 19033.757026022453,
+            "trades": 1164,
+            "avg_exposure": 0.995981356033241
+          },
+          "top5_5d": {
+            "net_return": 1.3595108587877993,
+            "max_drawdown": -0.23477715585477466,
+            "sharpe": 1.7618027704751882,
+            "gross_return_same_positions": 1.5076163468026267,
+            "fee_drag": 0.0933864911107929,
+            "slippage_drag": 0.05471899690403432,
+            "fees": 9338.649111079292,
+            "trades": 580,
+            "avg_exposure": 0.9958925446705881
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V50": {
+          "daily_rank_correlation": 0.5780341471933479,
+          "top5_overlap": 0.0452431289640592,
+          "comparable_days": 473
+        },
+        "V31": {
+          "daily_rank_correlation": 0.43952402028767434,
+          "top5_overlap": 0.006765327695560254,
+          "comparable_days": 473
+        },
+        "V36": {
+          "daily_rank_correlation": 0.4440660973458918,
+          "top5_overlap": 0.007610993657505285,
+          "comparable_days": 473
+        },
+        "V38": {
+          "daily_rank_correlation": 0.47692296666266953,
+          "top5_overlap": 0.0038054968287526427,
+          "comparable_days": 473
+        }
+      }
+    },
+    {
+      "unit": "V56",
+      "seed": 5253,
+      "quarter": "2026Q2",
+      "fold": 4,
+      "days": 473,
+      "start": "2024-02-07",
+      "end": "2026-01-22",
+      "cpu_reload_max_error": 4.3585896492004395e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.01545293535796174,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.2477844552158387,
+          0.4948954222924547,
+          0.7461767154476908
+        ],
+        "eligible_mature_days": 473,
+        "eligible_mature_stock_rows": 998253,
+        "mean_interquartile_width": 0.049353308975696564,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 2.448345260807295,
+            "max_drawdown": -0.17324008827242632,
+            "sharpe": 2.38942771225827,
+            "gross_return_same_positions": 3.032040274570381,
+            "fee_drag": 0.3678012856807401,
+            "slippage_drag": 0.21589372808234583,
+            "fees": 36780.12856807397,
+            "trades": 1704,
+            "avg_exposure": 0.9901978300825348
+          },
+          "top5_5d": {
+            "net_return": 2.7741443873148848,
+            "max_drawdown": -0.19336747397377763,
+            "sharpe": 2.5998624656716087,
+            "gross_return_same_positions": 3.0019635590835625,
+            "fee_drag": 0.14371193870096202,
+            "slippage_drag": 0.08410723306771622,
+            "fees": 14371.193870096204,
+            "trades": 690,
+            "avg_exposure": 0.9758120637162053
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 2.0052209496860907,
+            "max_drawdown": -0.1912853915087397,
+            "sharpe": 2.3008487221675074,
+            "gross_return_same_positions": 2.4757443437132634,
+            "fee_drag": 0.2964832167240788,
+            "slippage_drag": 0.17404017730309398,
+            "fees": 29648.32167240788,
+            "trades": 1596,
+            "avg_exposure": 0.9788198273001429
+          },
+          "top5_5d": {
+            "net_return": 3.3681288545851737,
+            "max_drawdown": -0.11785529957956076,
+            "sharpe": 3.0571375689233893,
+            "gross_return_same_positions": 3.6349271258254037,
+            "fee_drag": 0.16831157510249264,
+            "slippage_drag": 0.0984866961377373,
+            "fees": 16831.157510249264,
+            "trades": 686,
+            "avg_exposure": 0.9952484157361683
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 1.6938895868916397,
+            "max_drawdown": -0.17969344525237885,
+            "sharpe": 2.2238600794819576,
+            "gross_return_same_positions": 2.103938562482362,
+            "fee_drag": 0.25835994602199464,
+            "slippage_drag": 0.1516890295687278,
+            "fees": 25835.994602199436,
+            "trades": 1502,
+            "avg_exposure": 0.9865441724453922
+          },
+          "top5_5d": {
+            "net_return": 1.734772651742699,
+            "max_drawdown": -0.10551216705049882,
+            "sharpe": 2.212286393900588,
+            "gross_return_same_positions": 1.9113792120685238,
+            "fee_drag": 0.11136787056221165,
+            "slippage_drag": 0.06523868976361286,
+            "fees": 11136.787056221174,
+            "trades": 634,
+            "avg_exposure": 0.9822453201983488
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 1.7539867870798025,
+            "max_drawdown": -0.13452019549768823,
+            "sharpe": 2.347055965357441,
+            "gross_return_same_positions": 2.132561003929045,
+            "fee_drag": 0.23854622254807709,
+            "slippage_drag": 0.14002799430116517,
+            "fees": 23854.62225480772,
+            "trades": 1384,
+            "avg_exposure": 0.9878520496176857
+          },
+          "top5_5d": {
+            "net_return": 1.4599982746475297,
+            "max_drawdown": -0.1471021430518934,
+            "sharpe": 2.066198446738674,
+            "gross_return_same_positions": 1.6150862234081083,
+            "fee_drag": 0.0977963228935616,
+            "slippage_drag": 0.05729162586701692,
+            "fees": 9779.632289356161,
+            "trades": 598,
+            "avg_exposure": 0.9890275427661257
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V52": {
+          "daily_rank_correlation": 0.5318663174992391,
+          "top5_overlap": 0.0186046511627907,
+          "comparable_days": 473
+        },
+        "V31": {
+          "daily_rank_correlation": 0.4389067501398893,
+          "top5_overlap": 0.008879492600422836,
+          "comparable_days": 473
+        },
+        "V36": {
+          "daily_rank_correlation": 0.44494677165860924,
+          "top5_overlap": 0.007610993657505285,
+          "comparable_days": 473
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4751602021985564,
+          "top5_overlap": 0.006342494714587738,
+          "comparable_days": 473
+        }
+      }
+    },
+    {
+      "unit": "V57",
+      "seed": 6253,
+      "quarter": "2026Q2",
+      "fold": 4,
+      "days": 473,
+      "start": "2024-02-07",
+      "end": "2026-01-22",
+      "cpu_reload_max_error": 3.8743019104003906e-07,
+      "calibration": {
+        "day_equal_pinball_loss": 0.015477427086072543,
+        "quantile_levels": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "day_equal_coverage": [
+          0.2345625308234918,
+          0.48537456146604385,
+          0.7442128390659564
+        ],
+        "eligible_mature_days": 473,
+        "eligible_mature_stock_rows": 998253,
+        "mean_interquartile_width": 0.049986373633146286,
+        "target": "raw snapshot 5d return minus per-date median of finite scored labels",
+        "scope": "selected-epoch validation calibration; labels never supplied as inference inputs"
+      },
+      "lambda_accounts": {
+        "0.0": {
+          "top5_1d": {
+            "net_return": 1.7930679446370288,
+            "max_drawdown": -0.1750505404727688,
+            "sharpe": 2.0181017677518005,
+            "gross_return_same_positions": 2.2713726292730794,
+            "fee_drag": 0.3013603248472878,
+            "slippage_drag": 0.17694435978876272,
+            "fees": 30136.032484728807,
+            "trades": 1632,
+            "avg_exposure": 0.9851483599827355
+          },
+          "top5_5d": {
+            "net_return": 1.6917245083074324,
+            "max_drawdown": -0.1999726290650201,
+            "sharpe": 1.8399111900056464,
+            "gross_return_same_positions": 1.8861397619669948,
+            "fee_drag": 0.12257788373097919,
+            "slippage_drag": 0.07183736992858325,
+            "fees": 12257.78837309792,
+            "trades": 692,
+            "avg_exposure": 0.9701334540540304
+          }
+        },
+        "0.25": {
+          "top5_1d": {
+            "net_return": 1.1678522322218932,
+            "max_drawdown": -0.31589824875871575,
+            "sharpe": 1.6007707248595229,
+            "gross_return_same_positions": 1.5367078704008579,
+            "fee_drag": 0.23240734981786018,
+            "slippage_drag": 0.1364482883611044,
+            "fees": 23240.73498178602,
+            "trades": 1522,
+            "avg_exposure": 0.989570881230145
+          },
+          "top5_5d": {
+            "net_return": 1.4849698576869494,
+            "max_drawdown": -0.22890012993881537,
+            "sharpe": 1.795164836970132,
+            "gross_return_same_positions": 1.6503775536089353,
+            "fee_drag": 0.10429440865591053,
+            "slippage_drag": 0.0611132872660756,
+            "fees": 10429.440865591057,
+            "trades": 642,
+            "avg_exposure": 0.9929512094336642
+          }
+        },
+        "0.5": {
+          "top5_1d": {
+            "net_return": 1.08175695988642,
+            "max_drawdown": -0.3303696430669657,
+            "sharpe": 1.544826753711099,
+            "gross_return_same_positions": 1.4346700454499905,
+            "fee_drag": 0.22242361254994927,
+            "slippage_drag": 0.13048947301362135,
+            "fees": 22242.361254994914,
+            "trades": 1478,
+            "avg_exposure": 0.9938740304702471
+          },
+          "top5_5d": {
+            "net_return": 1.4116341804951835,
+            "max_drawdown": -0.2531703160634198,
+            "sharpe": 1.7692034700512336,
+            "gross_return_same_positions": 1.5615109038948205,
+            "fee_drag": 0.09451099412847395,
+            "slippage_drag": 0.05536572927116289,
+            "fees": 9451.099412847398,
+            "trades": 596,
+            "avg_exposure": 0.9931783415960208
+          }
+        },
+        "0.75": {
+          "top5_1d": {
+            "net_return": 1.0649600854418857,
+            "max_drawdown": -0.2447667338399937,
+            "sharpe": 1.5563954271541611,
+            "gross_return_same_positions": 1.3904186698299341,
+            "fee_drag": 0.20504619278711406,
+            "slippage_drag": 0.12041239160093428,
+            "fees": 20504.619278711405,
+            "trades": 1332,
+            "avg_exposure": 0.9953052112868961
+          },
+          "top5_5d": {
+            "net_return": 1.1761815854003665,
+            "max_drawdown": -0.23539196803091644,
+            "sharpe": 1.6293047473734847,
+            "gross_return_same_positions": 1.3138562645122662,
+            "fee_drag": 0.08680235423255096,
+            "slippage_drag": 0.05087232487934871,
+            "fees": 8680.235423255102,
+            "trades": 564,
+            "avg_exposure": 0.9956875559223266
+          }
+        }
+      },
+      "correlation_vs_reference": {
+        "V53": {
+          "daily_rank_correlation": 0.5395528781526661,
+          "top5_overlap": 0.017758985200845668,
+          "comparable_days": 473
+        },
+        "V31": {
+          "daily_rank_correlation": 0.4423818784718006,
+          "top5_overlap": 0.004651162790697675,
+          "comparable_days": 473
+        },
+        "V36": {
+          "daily_rank_correlation": 0.44745357499995864,
+          "top5_overlap": 0.0025369978858350954,
+          "comparable_days": 473
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4795127175596489,
+          "top5_overlap": 0.006342494714587738,
+          "comparable_days": 473
+        }
+      }
+    }
+  ],
+  "summary": {
+    "2025Q3": {
+      "completed_seeds": 4,
+      "lambdas": {
+        "0.0": {
+          "net_return_mean_pct": 23.474680827022972,
+          "net_return_sample_std_pp": 40.986396283223726,
+          "positive_seeds": 2,
+          "max_drawdown_mean_pct": -32.29094299648096
+        },
+        "0.25": {
+          "net_return_mean_pct": 21.105367427370574,
+          "net_return_sample_std_pp": 24.46835647386481,
+          "positive_seeds": 3,
+          "max_drawdown_mean_pct": -35.677883189923016
+        },
+        "0.5": {
+          "net_return_mean_pct": 12.187506916437396,
+          "net_return_sample_std_pp": 8.093023185556243,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -35.519692999178694
+        },
+        "0.75": {
+          "net_return_mean_pct": 15.377634808202565,
+          "net_return_sample_std_pp": 11.945351081201865,
+          "positive_seeds": 3,
+          "max_drawdown_mean_pct": -32.697632719165526
+        }
+      },
+      "calibration": {
+        "mean_day_equal_pinball_loss": 0.01525120905569068,
+        "mean_day_equal_coverage": [
+          0.23481273536400313,
+          0.48908276156134023,
+          0.7580595008289337
+        ]
+      }
+    },
+    "2025Q4": {
+      "completed_seeds": 4,
+      "lambdas": {
+        "0.0": {
+          "net_return_mean_pct": 54.69837832020207,
+          "net_return_sample_std_pp": 24.73227731282054,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -38.175501727332026
+        },
+        "0.25": {
+          "net_return_mean_pct": 45.49694226884179,
+          "net_return_sample_std_pp": 17.710234949536012,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -36.89230118218166
+        },
+        "0.5": {
+          "net_return_mean_pct": 44.03418453637723,
+          "net_return_sample_std_pp": 19.937395497433894,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -35.34500763069333
+        },
+        "0.75": {
+          "net_return_mean_pct": 29.319570077055808,
+          "net_return_sample_std_pp": 13.964835306395948,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -35.33046538998914
+        }
+      },
+      "calibration": {
+        "mean_day_equal_pinball_loss": 0.015291132269501335,
+        "mean_day_equal_coverage": [
+          0.2366442520050848,
+          0.491190993083348,
+          0.7541920929375208
+        ]
+      }
+    },
+    "2026Q1": {
+      "completed_seeds": 4,
+      "lambdas": {
+        "0.0": {
+          "net_return_mean_pct": 73.47681327654857,
+          "net_return_sample_std_pp": 62.81520859821358,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -39.850680566761504
+        },
+        "0.25": {
+          "net_return_mean_pct": 82.57361717238531,
+          "net_return_sample_std_pp": 29.554335425441597,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -35.99089703589124
+        },
+        "0.5": {
+          "net_return_mean_pct": 73.6853164963523,
+          "net_return_sample_std_pp": 40.38721431698024,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -36.08818699224318
+        },
+        "0.75": {
+          "net_return_mean_pct": 48.58774950754956,
+          "net_return_sample_std_pp": 24.006293212330142,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -35.63401531146862
+        }
+      },
+      "calibration": {
+        "mean_day_equal_pinball_loss": 0.015623219013586983,
+        "mean_day_equal_coverage": [
+          0.24515193755086348,
+          0.49396000791209405,
+          0.7458675292323722
+        ]
+      }
+    },
+    "2026Q2": {
+      "completed_seeds": 4,
+      "lambdas": {
+        "0.0": {
+          "net_return_mean_pct": 183.78661125150134,
+          "net_return_sample_std_pp": 45.86318502328996,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -17.89081580074498
+        },
+        "0.25": {
+          "net_return_mean_pct": 167.10830884033365,
+          "net_return_sample_std_pp": 60.81177359726357,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -21.438634588281143
+        },
+        "0.5": {
+          "net_return_mean_pct": 142.6002644301517,
+          "net_return_sample_std_pp": 29.084407620320107,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -21.93818856373956
+        },
+        "0.75": {
+          "net_return_mean_pct": 137.7858161332662,
+          "net_return_sample_std_pp": 28.374792594127257,
+          "positive_seeds": 4,
+          "max_drawdown_mean_pct": -19.4126557344839
+        }
+      },
+      "calibration": {
+        "mean_day_equal_pinball_loss": 0.015508459503653427,
+        "mean_day_equal_coverage": [
+          0.2413435027364726,
+          0.488600086100436,
+          0.7402180249762496
+        ]
+      }
+    }
+  },
+  "note": "all four seeds and all frozen risk penalties retained; same weights and epochs within lambda comparison; no independent test consulted or candidate selected; validation blocks overlap"
+}

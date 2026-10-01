@@ -158,7 +158,7 @@ class _Mkt:
         # 「hm ≤ 1130」的最后一个即可（reduceat 做不到「条件取最后一个」，用下标）
         ai = np.flatnonzero(hm <= 1130)
         ag = np.searchsorted(st, ai, side="right") - 1
-        take = np.concatenate((ag[1:] != ag[:-1], [True]))
+        take = np.concatenate((ag[1:] != ag[:-1], [True])) if len(ag) else np.array([], dtype=bool)
         am = np.full(days.size, np.nan)
         am[ag[take]] = sh[ai[take]]
         self.sh_am = place(am)
@@ -178,7 +178,7 @@ def _lag(s: np.ndarray) -> np.ndarray:
 
 
 def _ret(ctx) -> np.ndarray:
-    return ctx.ret(1)
+    return ctx.ret_clean(1)
 
 
 def _idx_ret(ctx) -> np.ndarray:
@@ -204,8 +204,9 @@ def _idx_ret(ctx) -> np.ndarray:
 
 
 def _beta(ctx, ret, mk, n, mc) -> np.ndarray:
-    return ctx.safe_div(ctx.roll_cov(ret, mk, n, mc),
-                        ctx.roll_var(mk, n, mc), min_abs_den=1e-12)
+    paired = np.where(np.isfinite(ret) & np.isfinite(mk), mk, np.nan)
+    return ctx.safe_div(ctx.roll_cov(ret, paired, n, mc),
+                        ctx.roll_var(paired, n, mc), min_abs_den=1e-12)
 
 
 def _cond_mean(ctx, r, mask, n: int, min_days: int) -> np.ndarray:
@@ -256,31 +257,6 @@ def bw_beta_60(ctx):
     return _beta(ctx, _ret(ctx), _dsh(ctx, _M), 60, 30)
 
 
-@register(FactorSpec(
-    name="bw_resid_beta_60",
-    group="breadth",
-    deps=(*BW_DEPS, "index_daily"),
-    desc="剔掉沪深300 β 之后的宽度 β（正交的参与度暴露）",
-    formula="e = ret - beta_idx*ret_idx; resid_beta = roll_cov(e, d_sh, 60, 30)/roll_var(d_sh, 60, 30)",
-    start=ID_BW_START,
-    warmup_days=W_60,
-    higher_is_better=False,
-    note=(_NOCS + " ★ 构造：先对沪深300 回归取残差 `e = r − β_idx·r_idx`（β 同样用 60 日滚动、"
-          "只用窗口内数据），再让残差对宽度变化做 β。"
-          "**这是宽度暴露里真正与市场 β 正交的那一块** —— 如果 `bw_beta_60` 与 "
-          "已注册的 `beta_60` 高度相关，本因子就是那个还剩下信息量的版本。"
-          "经济含义：剔掉「随大盘涨跌」之后，还剩多少「随市场**扩散/收敛**」的暴露。"
-          "依赖 `index_daily`（沪深300）—— 与 `factors/volatility.py` 同一口径。"),
-))
-def bw_resid_beta_60(ctx):
-    _M = _Mkt(ctx)
-    if not _M.ok:
-        return ctx.panel.empty()
-    r = _ret(ctx)
-    idx = _idx_ret(ctx)
-    b = _beta(ctx, r, idx, 60, 30)
-    e = r - b * idx
-    return _beta(ctx, e, _dsh(ctx, _M), 60, 30)
 
 
 @register(FactorSpec(
@@ -514,7 +490,7 @@ def bw_breadthvol_response_20(ctx):
     desc="与宽度的尾部共振频率（双方 |z|>1.5 且同向的交易日占比，60 日）",
     formula="z = (x - rolling_mean)/rolling_std; freq(|z_r|>1.5 & |z_m|>1.5 & sign一致) 的 60 日均值",
     start=ID_BW_START,
-    warmup_days=W_60,
+    warmup_days=260,
     higher_is_better=False,
     note=(_NOCS + " 抄参考库 Class1 `tail_corr_60`（把市场收益换成宽度变化）。"
           "★ 用 `roll_mean(布尔, 60, 30)` 而不是自己数个数：框架的 `roll_count`"
@@ -524,7 +500,7 @@ def bw_breadthvol_response_20(ctx):
           "「不共振」计入分母，把缺失静默摊薄成低频。"
           "判定为 False 时写 0.0（确实不共振），判定为缺失时写 NaN。"
           "方向取负（参考库口径：尾部共振 = 脆弱）。"),
-))
+version=2,))
 def bw_tail_comove_60(ctx):
     _M = _Mkt(ctx)
     if not _M.ok:

@@ -23,6 +23,7 @@ manifest 里存**逐年的源指纹** `(行数, 最新时间戳)`。任一分区
 from __future__ import annotations
 
 import json
+import os
 import logging
 import time
 from pathlib import Path
@@ -45,7 +46,20 @@ class DerivedCache:
         self.up = up                      # ★ 自己持有 up：这样 panel() 能自动 ensure()
         self.cfg = cfg
         self.codes = np.asarray(codes)
-        self.root = Path(cfg.root) / "data" / "derived" / self.name
+        # ★★ 2026-09-25：派生层缓存回归**项目内** `data/derived/`。
+        #
+        #   本项目是独立单元，运行产物不放在单元之外。09-24 的审计补丁曾把这里改到
+        #   `../CodeX/featureengineering_cache`，再用 `os.link` 硬链接把旧数据链过去 ——
+        #   两处因此成为**同一 inode**（一份数据两个目录项，`du` 也算不准），
+        #   而且补丁只改了父类、漏了 `MorningLayer` 的同名覆写。现已回退并合并为一处。
+        #
+        #   ⚠️ 不要把这里改回 `cfg.root.parent`：那是「项目的父目录」，
+        #   一旦项目挪位置或换机器，缓存就落到项目外去了。
+        #
+        #   `FEA_CACHE_DIR` 保留：`--sandbox` 与审计需要隔离位置，否则它们会重建
+        #   生产的 chips/intraday 缓存（实测踩过）。
+        self.root = (Path(os.environ["FEA_CACHE_DIR"]) if os.environ.get("FEA_CACHE_DIR")
+                     else Path(cfg.root) / "data" / "derived") / self.name
         self.man_path = self.root / "_manifest.json"
         self._cache: dict[tuple, np.ndarray] = {}
         self._frame: pd.DataFrame | None = None

@@ -21,8 +21,16 @@ from .dates import year_of
 
 
 class Upstream:
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, project_root: Path | None = None):
         self.root = Path(root)
+        # ★ 2026-09-25：输入身份缓存回归项目内 `state/input_hashes/`。
+        #   原来写 `self.root.parent.parent / "CodeX" / ...` —— 那是「上游目录的祖父」，
+        #   既与项目位置隐式耦合、又指向本项目单元之外。改为显式接收项目根，
+        #   默认取本模块自己的 ROOT（测试用临时上游时不传即落到生产 state，
+        #   所以调用方应传 cfg.root）。
+        if project_root is None:
+            from .config import ROOT as project_root          # 延迟导入，避免循环
+        self.project_root = Path(project_root)
         self._cache: dict[tuple, pd.DataFrame] = {}
 
     # ---------------------------------------------------------------- 路径
@@ -129,38 +137,57 @@ class Upstream:
         if not files:
             return {"exists": False, "rows": 0, "max_pit": 0}
 
+        import hashlib, json
         col = pit_col or "trade_date"
-        rows = 0
+        rows, mx, parts = 0, 0, {}
+        cache_root = self.project_root / "state" / "input_hashes"
+        cache_root.mkdir(parents=True, exist_ok=True)
+        cache_file = cache_root / (name + ".json")
+        try: cached = json.loads(cache_file.read_text())
+        except (OSError, ValueError): cached = {}
+        changed_cache = False
+        newest_mtime = 0
         for f in files:
-            try:
-                rows += int(pq.ParquetFile(f).metadata.num_rows)
-            except Exception:
-                try:
-                    rows += len(pd.read_parquet(f, columns=[]))
-                except Exception:
-                    continue
-
-        # 从后往前找第一个非空分区，只读它的日期列
-        mx = 0
-        for f in reversed(files):
-            try:
-                s = pd.read_parquet(f, columns=[col])[col]
-            except Exception:
-                try:
-                    s = pd.read_parquet(f).iloc[:, 0]
-                except Exception:
-                    continue
-            if len(s):
-                m = str(s.max())[:10]
-                if len(m) >= 10:
-                    mx = int(m[:4]) * 10000 + int(m[5:7]) * 100 + int(m[8:10])
-                break
-        parts = {f.parent.name if f.parent.name.startswith("year=") else "snapshot": [f.stat().st_size, f.stat().st_mtime_ns] for f in files}
-        if "snapshot" in parts:
-            import hashlib
-            h = hashlib.md5()
-            with (d / "data.parquet").open("rb") as stream:
-                for chunk in iter(lambda: stream.read(8 * 1024 * 1024), b""):
-                    h.update(chunk)
-            parts["snapshot"].append(h.hexdigest())
-        return {"exists": True, "rows": int(rows), "max_pit": int(mx), "files": parts}
+            stat = f.stat()
+            newest_mtime = max(newest_mtime, stat.st_mtime_ns)
+            key = f.parent.name if f.parent.name.startswith("year=") else "snapshot"
+            identity = [stat.st_size, stat.st_mtime_ns]
+            entry = cached.get(key, {})
+            # 内容哈希只在文件身份变化时重算；相同字节的重写不使因子失效。
+            if entry.get("identity") != identity:
+                h = hashlib.md5()
+                with f.open("rb") as stream:
+                    for chunk in iter(lambda: stream.read(8*1024*1024), b""):
+                        h.update(chunk)
+                entry = {"identity": identity, "md5": h.hexdigest()}
+                cached[key] = entry
+                changed_cache = True
+            parts[key] = identity + [entry["md5"]]
+            pf = pq.ParquetFile(f)
+            rows += pf.metadata.num_rows
+            names = pf.schema_arrow.names
+            if col not in names:
+                continue  # 无日期快照水位为0，不能猜第一列是日期。
+            ci = names.index(col)
+            stats = [pf.metadata.row_group(i).column(ci).statistics for i in range(pf.num_row_groups)]
+            values = [v.max for v in stats if v is not None and v.has_min_max and v.max is not None]
+            if len(values) != len(stats) and pf.metadata.num_rows:
+                series = pd.read_parquet(f, columns=[col])[col].dropna()
+                values = [series.max()] if len(series) else []
+            for value in values:
+                text = str(value)[:10]
+                digits = text.replace("-", "")[:8]
+                if len(digits) == 8 and digits.isdigit():
+                    mx = max(mx, int(digits))
+        if changed_cache:
+            from .manifest import _atomic_json
+            _atomic_json(cached, cache_file)
+        # 直接读取上游发布的逐日台账，不 import 上游工程代码。
+        ledger = self.root.parent.parent / "everyday_tasks/state/dayhash" / (name + ".parquet")
+        date_hashes, fresh = {}, False
+        if ledger.exists():
+            frame = pd.read_parquet(ledger, columns=["date", "md5"])
+            date_hashes = dict(zip(frame["date"].astype(str), frame["md5"].astype(str)))
+            fresh = ledger.stat().st_mtime_ns >= newest_mtime
+        return {"exists": True, "rows": int(rows), "max_pit": int(mx), "files": parts,
+                "date_hashes": date_hashes, "ledger_fresh": fresh}

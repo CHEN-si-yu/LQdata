@@ -1,0 +1,83 @@
+{
+  "objective": "experiments2/V22 vol-scaled cached LambdaRank Top1",
+  "quarters": [
+    "2020Q1",
+    "2020Q2",
+    "2020Q3",
+    "2020Q4",
+    "2021Q1",
+    "2021Q2",
+    "2021Q3",
+    "2021Q4",
+    "2022Q1",
+    "2022Q2",
+    "2022Q3",
+    "2022Q4",
+    "2023Q1",
+    "2023Q2",
+    "2023Q3",
+    "2023Q4",
+    "2024Q1",
+    "2024Q2",
+    "2024Q3",
+    "2024Q4",
+    "2025Q1",
+    "2025Q2",
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "predictions_reused": true,
+  "model_retrained": false,
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "lifecycle": {
+    "start": "2020-01-02",
+    "end": "2026-06-30",
+    "days": 1571,
+    "official_exit_rule": "mark all open positions at the final OOS close; no forced liquidation, copied from final V11 ledger"
+  },
+  "rule": {
+    "selection": "monthly first-session close; cached V11 LightGBM LambdaRank daily_rank=1",
+    "risk": "20 prior adjusted close-to-close returns ending T-1; annualized sample volatility; exposure=min(1,0.12/vol)",
+    "target_annualized_volatility": 0.12,
+    "max_exposure": 1.0,
+    "leverage": false,
+    "remaining_weight": "cash",
+    "execution": "next-session open"
+  },
+  "volatility_audit": {
+    "signal_count": 78,
+    "all_20_returns_end_before_signal": true,
+    "all_windows_have_20_returns": true,
+    "maximum_exposure_not_above_one": true,
+    "minimum_exposure_nonnegative": true,
+    "target_volatility": 0.12,
+    "annualized_vol_min": 0.044631912969289846,
+    "annualized_vol_median": 0.14346044957703802,
+    "annualized_vol_max": 0.45245781551399317,
+    "exposure_min": 0.2652180952243685,
+    "exposure_mean": 0.8024138006396662,
+    "exposure_max": 1.0,
+    "cash_weight_mean": 0.19758619936033384,
+    "volatility_formula": "sample standard deviation (ddof=1) of the selected Top1's 20 adjusted close-to-close returns from T-20 through T-1, multiplied by sqrt(252); no return on T is used"
+  },
+  "cost_model": {
+    "commission": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer": 1e-05,
+    "sell_stamp": 0.0005,
+    "adverse_slippage": 0.0003,
+    "max_participation": 0.01,
+    "lot_size": 100
+  },
+  "simulator": "isolated copy of final V11 analysis.py; T+1 open, shared cash, corporate-action adjusted shares, ordinary 100-share lots; on zero-weight exits odd/fractional remainder sold only if participation cap can clear it, otherwise permitted lots sold and remainder retained",
+  "source_prediction_root": "/root/autodl-fs/model/experiments2/V11/quarters",
+  "runner_sha256": "d1189d95aa59bfa25094b7235e7afab0c27f05391b14e0fb20fb3daba5241c86",
+  "created_at": "2026-09-27 18:12:21"
+}

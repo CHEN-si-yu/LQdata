@@ -289,41 +289,10 @@ def _dv_ttm(ctx) -> np.ndarray:
 # 一、估值 × 质量（6）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="pegh5", group="value", deps=DEP_IB + DEP_PX,
-    desc="PEG 的 5 年增长版 = 未复权收盘价 / (5 年 EPS 复合增速 × EPS_TTM)",
-    formula="1. EPS_Growth_5Y = (BasicEPS_Y_t / BasicEPS_Y_{t-1260})^(1/5) - 1\n"
-            "2. PEGH5 = ClosePrice / (EPS_Growth_5Y * BasicEPS_TTM)\n"
-            "   Factor = -CrossSectionalRank(PEGH5)",
-    start=FIN_START_DEEP20, warmup_days=DEEP20_WARMUP, higher_is_better=False,
-    fin_fields=(NP, SHARE),
-    note="参考库 §9 Value #2 逐字，两处口径实现说明："
-         "① **EPS 序列自算**（白名单无 basic_eps）：EPS_TTM = 归母净利TTM / 当期股本；"
-         "5 年前的 EPS 用 `lag_ttm(NP, 20)`（20 个**报告期** = 5 年）配同一套股本口径 ——"
-         "**增速因此等于归母净利 TTM 的 5 年复合增速**（股本是同一个乘数、在比值里相消）。"
-         "这样做的理由：参考库的 `BasicEPS_Y` 序列不做复权，A 股高送转会把 EPS 名义值"
-         "砍到 1/10，伪造出 −90% 的「EPS 崩塌」；用净利口径则送转/拆股完全无影响。"
-         "**代价**：增发摊薄不体现在增速里（下游若要每股口径需另建因子）。"
-         "② **符号与定义域**：增长率两端都 > 0 才算，且要求 **g5 > 0**（负增长时 PEG 无意义，"
-         "参考库取 −rank(PEGH5) 会把「负增速 = 负 PEG」顶到「最便宜」的一端，方向完全反了）。"
-         "分母（g5 × EPS）加 1e-3 地板，防 g5→0+ 炸出 1e11 量级的假值。"
-         "③ **量纲**：按参考库字面公式，PEGH5 = PE_TTM / g5（g5 为小数），"
-         "即比常见 PEG（PE / 增速百分数）**大 100 倍**，与同族 `peg_252d` 不同量纲 ——"
-         "但两者都只出 rank，排序不受影响（见两个 note 的对照）。"
-         "④ **实测口径代价**：要求 g5 > 0 会丢掉「5 年零增长/负增长」的样本（估值上它们是"
-         "「贵」的一端，不是「便宜」的一端）——缺失与「成长性差」强相关，下游注意。"
-         "⑤ 起点 = 实测首个有效日 **2016-01-18**（见 `FIN_START_DEEP20`）："
-         "20 个报告期的回看要等到 2015Q4 的报告期才凑得齐，2012~2015 四个整年必然全空。",
-))
-def pegh5(ctx):
-    g5 = _cagr_ttm(ctx, NP, 20, 5)
-    g5 = np.where(g5 > 0, g5, np.nan)
-    return ctx.safe_div(_f64(ctx.px("close")), g5 * _eps_ttm(ctx),
-                        min_abs_den=PEG_FLOOR)
 
 
 @register(FactorSpec(
-    name="etp5", group="value", deps=DEP_I + DEP_PX,
+    name="etp5", group="value", deps=DEP_IB + DEP_PX,
     desc="五年平均净利润 / 五年平均市值（≈ 5 年平均盈利收益率）",
     formula="ETP5 = RollingMean(NetProfit_Y, 1260) / RollingMean(MarketCap, 1260)\n"
             "   Factor = CrossSectionalRank(ETP5)",
@@ -438,30 +407,6 @@ def dividend_yield_3y_avg(ctx):
 
 
 
-@register(FactorSpec(
-    name="roe_ttm_lag63d", group="quality", deps=DEP_IB,
-    desc="63 个交易日（约一季度）前的 ROE(TTM) —— 刻画「季报之间的漂移」",
-    formula="ROE = NetProfit_Parent / TotalEquity\n"
-            "   Factor = ROE_TTM(T − 63 个交易日)   # 参考库 lag 参数默认 0",
-    start=FIN_START, warmup_days=FIN_WARMUP, higher_is_better=True,
-    fin_fields=(NP, EQ),
-    note="参考库 §5 Quality #1 `roe_ttm_lag63d`（其 `lag` 参数是**交易日**数）。"
-         "★ **为什么这里可以、也必须用日频 shift**（与文件头第 4 条不矛盾）："
-         "本因子返回的是「63 个交易日前的 ROE **水平量**」，不是用日频位移去算**增长率**。"
-         "ROE(TTM) 是按 `ann_date` 前向填充的**阶梯函数**（一年只跳 4 次），"
-         "所以 `shift(63)` 取到的就是「约一个季度前那一版财报算出的 ROE」。"
-         "★ 用途（下游怎么用）：它与 `roe_ttm` 构成一对 ——"
-         "**`roe_ttm − roe_ttm_lag63d` 就是「一份新财报带来的 ROE 漂移」**，"
-         "是个事件式的边际量；直接做季度环比差分在这里是做不到的，"
-         "因为新的季度值出现的确切日期（ann_date）不定，而 shift(63) 是固定窗口。"
-         "★ **与 `roe_ttm` 高度相关**（同一条阶梯序列平移 63 个交易日，"
-         "一年里约一半时间取到的是同一个报告期的值）—— 下游建模时"
-         "**不要**把它当独立因子与 `roe_ttm` 并列，它的价值在「做差」。"
-         "★ 口径：与 `roe_ttm` 完全一致（归母净利 TTM / 期末归母权益），"
-         "多一层 100 万元净资产地板（近零净资产会把 ROE 炸到 ±1e5）。",
-))
-def roe_ttm_lag63d(ctx):
-    return ctx.shift(_roe_at(ctx, 0), 63)
 
 
 # ══════════════════════════════════════════════════════════════════════

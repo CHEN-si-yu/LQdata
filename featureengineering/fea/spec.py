@@ -40,6 +40,7 @@ class FactorSpec:
     # ★ 标签（label）：给模块③ 用的目标变量，不是因子。
     #   True 时引擎**跳过 winsor 与截面 rank**（rank 列写 NaN），
     #   但仍写出与因子完全相同的 4 列 / 同 dtype / 同分区（用户要求格式统一）。
+    is_market: bool = False          # 日频市场标量，不含股票和横截面排名
     is_label: bool = False
     # 标签需要看到未来：面板要向后延伸这么多个交易日，否则每年最后几天恒为 NaN。
     forward_days: int = 0
@@ -47,10 +48,46 @@ class FactorSpec:
     # 不写就是"全都要"，单跑一个因子时会白建 80 个字段的版本表。
     fin_fields: tuple = ()
     fn: Callable | None = None
+    # ★★ 2026-09-25 用户硬约定：**所有因子必须在时间轴上对齐到 `default_start`**。
+    #
+    #   `start` 的语义从此是「从哪天起有**真实值**」，**不再是**「从哪天起有分区」——
+    #   `start` 之前的那些年也必须有年分区（同一套 `year=YYYY` 布局、同一根 2115 只
+    #   股票轴），否则下游按因子拼矩阵时会得到参差不齐的列，无法直接喂进模型。
+    #
+    #   对齐区间（整年早于 `resolved_start` 的年份）写什么，由这里决定：
+    #     · `nan`（默认）→ 填 NaN：上游**根本没有**这段数据，保持「不知道」的语义。
+    #       典型：涨跌停族依赖的 `stock_limit_list` 上游最早只有 2020-01-02。
+    #     · `0.0` → 填 0：上游对这段区间**有明确口径**（如财报字段未披露时恒为
+    #       精确 0.0），填 0 与上游口径一致、不是凭空断言。
+    #
+    #   ⚠️ 填 0 是有代价的：它会断言一个并不存在的观测（"2018 年该股涨停 0 次"）。
+    #      **只有在上游确实以 0 表达"无"时才可以填 0**；上游缺表/缺分区一律用 NaN。
+    #
+    #   对齐区间的 **rank 列一律写 NaN**：常量列的截面百分位没有意义，
+    #   写个数字会被下游当成真实区分度。
+    align_fill: float | None = float("nan")
 
     def resolved_start(self, cfg) -> str:
-        """实际输出起点：全局下界与数据源可用起点二者取较晚日期。"""
+        """实际输出起点：全局下界与数据源可用起点二者取较晚日期。
+
+        ⚠️ 这是**真实值的起点**。分区的下界见 `align_start`（= `default_start`）。
+        """
         return max(self.start or cfg.default_start, cfg.default_start)
+
+    def align_start(self, cfg) -> str:
+        """**分区**下界：恒为全局 `default_start` —— 对齐区间也要产出分区。"""
+        return cfg.default_start
+
+    def align_start_int(self, cfg) -> int:
+        """**分区**下界的整数形式（YYYYMMDD）。"""
+        s = self.align_start(cfg)
+        return int(s[:4]) * 10000 + int(s[5:7]) * 100 + int(s[8:10])
+
+    def align_years(self, cfg) -> range:
+        """需要以填充值产出的年份（整年早于真实起点）。空 range 表示无需对齐。"""
+        y0 = int(self.align_start(cfg)[:4])
+        y1 = int(self.resolved_start(cfg)[:4])
+        return range(y0, y1)
 
     def start_int(self, cfg) -> int:
         s = self.resolved_start(cfg)
@@ -62,8 +99,10 @@ class FactorSpec:
         if self.is_label or self.forward_days:
             # 标签的 forward 窗口口径变了，历史值就会变，必须进指纹
             extra = f"|lbl={int(self.is_label)},fwd={self.forward_days}"
+        if self.is_market:
+            extra += "|market=1"
         return (f"{self.name}@v{self.version}|{self.formula}|{self.warmup_days}"
-                f"|{self.resolved_start(cfg)}{extra}")
+                f"|{self.resolved_start(cfg)}{extra}|deps={','.join(self.deps)}")
 
 
 REGISTRY: dict[str, FactorSpec] = {}

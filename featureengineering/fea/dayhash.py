@@ -49,6 +49,14 @@ N_DAYS = 7
 
 def _day_md5(sub: pd.DataFrame) -> tuple[str, int]:
     """一个横截面的 MD5（规范化后再哈希，见模块说明）。"""
+    if "stock_code" not in sub.columns:
+        if len(sub) != 1:
+            raise ValueError("市场因子每个交易日必须恰有一行")
+        h = hashlib.md5()
+        h.update(b"market-v1\0")
+        h.update(sub["trade_date"].iloc[0].encode("utf-8"))
+        h.update(sub["value"].to_numpy(dtype="<f4").tobytes())
+        return h.hexdigest(), 1
     sub = sub.sort_values("stock_code", kind="stable")
     codes = sub["stock_code"].to_numpy(dtype="U16", na_value="")
     vals = np.asarray(sub["value"].to_numpy(dtype="float32", na_value=np.nan),
@@ -106,8 +114,11 @@ def cmd_dayhash(args, cfg) -> int:
     specs = [s for s in all_specs() if s.enabled]
     if args.factors:
         want = set(args.factors)
+        unknown=want-{s.name for s in specs}
+        if unknown:raise ValueError(f"未知或未启用因子：{sorted(unknown)}")
         specs = [s for s in specs if s.name in want]
-    out_dir = Path(args.out) if args.out else Path("artifacts") / "dayhash" / int_to_str(end_i)
+    # 逐日 MD5 台账是运行产物：放项目内 artifacts/dayhash/（原来在 ../CodeX/featureengineering_dayhash）。
+    out_dir = Path(args.out) if args.out else Path(cfg.root) / "artifacts" / "dayhash" / int_to_str(end_i)
     out_dir = out_dir if out_dir.is_absolute() else (Path(cfg.root) / out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     tsv = out_dir / "dayhash.tsv"
@@ -124,7 +135,7 @@ def cmd_dayhash(args, cfg) -> int:
     #   天然可并行（只读、无共享状态）。实测 264 个因子在 8 进程下从 ~35s 降到 ~6s。
     #   结果按 (因子, 日期) 排序后再写盘 —— 并行完成顺序不确定，排序保证台账可比对。
     days_t = tuple(int_to_str(d) for d in days)
-    tasks = [(str(cfg.factors_dir), s.name, days_t) for s in specs]
+    tasks = [(str(cfg.factor_root(s)), s.name, days_t) for s in specs]
     from .resources import safe_jobs
     jobs = safe_jobs(getattr(args, "jobs", 0))
     jobs = max(1, min(jobs, len(tasks)))
@@ -145,7 +156,7 @@ def cmd_dayhash(args, cfg) -> int:
     #   `label_ret_20d` 在最后 21 个交易日无定义（T+21 的未来行情还没发生）。
     #   列出来才能让 `264 × 7` 每一格都有交代，而不是"莫名少了几条"。
     have = {(r[0], r[1]) for r in rows}
-    empty_pairs = [[s.name, d] for s in specs for d in days_t if (s.name, d) not in have]
+    empty_pairs = [[s.name, d] for s in specs for d in days_t if d >= s.resolved_start(cfg) and (s.name, d) not in have]
     stamp = time.strftime("%Y-%m-%d %H:%M:%S")
     header = (f"# 逐截面 MD5 台账（factor / trade_date / md5 / rows）\n"
               f"# computed_at={stamp}  cutoff={int_to_str(end_i)}  days={','.join(int_to_str(d) for d in days)}\n"
@@ -168,7 +179,7 @@ def cmd_dayhash(args, cfg) -> int:
         by = {}
         for f, d in empty_pairs:
             by.setdefault(f, []).append(d)
-        print(f"· {len(empty_pairs)}/{len(specs)*len(days)} 个 (因子,日期) 格子**无定义**"
+        print(f"· {len(empty_pairs)}/{len(specs)*len(days)} 个 (因子,日期) 格子缺少输出行（NaN值也应保留行）"
               f"（已写进 meta.json 的 empty_pairs）：")
         for f, ds in list(by.items())[:6]:
             print(f"    {f:<18} {','.join(ds)}")
@@ -176,8 +187,9 @@ def cmd_dayhash(args, cfg) -> int:
             print(f"    …另有 {len(by)-6} 个因子")
 
     if args.verify:
-        return _verify(tsv, rows)
-    return 0
+        result=_verify(tsv, rows)
+        return result or int(bool(empty_pairs))
+    return int(bool(empty_pairs))
 
 
 def _verify(tsv: Path, rows: list[tuple[str, str, str, int]]) -> int:

@@ -60,6 +60,7 @@ class DS:
     variants: list | None = None
     array_of: str = ""
     range_params: bool = False
+    start_exclusive: bool = False
     entity_from: tuple | None = None
     entity_range: bool = True
     entity_codes: list | None = None
@@ -108,6 +109,13 @@ class DS:
     # 公告日当天发出的记录，厂商可能**几小时后**才挂到接口上（与 `stock_margin_detail`
     # 的 delay=1 同类："数据到达晚"）。滞后 N 天再比对，避免每天报一次假红。
     ledger_lag_days: int = 0
+
+    def query_start(self, day: str) -> str:
+        """Translate our inclusive interval to the supplier's date boundary."""
+        if not self.start_exclusive:
+            return day
+        from datetime import date, timedelta
+        return (date.fromisoformat(day[:10]) - timedelta(days=1)).isoformat()
 
     def window(self, global_redundancy: int) -> int:
         return self.redundancy_days if self.redundancy_days is not None else global_redundancy
@@ -293,7 +301,7 @@ _reg(DS(name='stock_adj_factor_changes', path='/stock/adj_factor/changes', mode=
 _reg(DS(name='stock_market_distribution_history', path='/stock/market_distribution_history', mode='per_date', keys=('trade_time',), date_field='trade_time', date_param='date', paginated=False, expect_rows=False, tier='slow', freq='minute'))
 _reg(DS(name='stock_history_5min', path='/stock/history', mode='per_entity', keys=('stock_code', 'trade_time'), date_field='trade_time', expect_rows=False, tier='large', chunk_days=3660, params={'level': '5min'}, entity_from=('stock_list', 'stock_code'), freq='minute'))
 _reg(DS(name='stock_suspension', path='/stock/suspension', mode='per_date', method='GET', keys=('stock_code', 'suspend_date'), date_field='suspend_date', paginated=False, expect_rows=False, tier='small', freq='daily_sparse'))
-_reg(DS(name='stock_st_info', path='/stock/st_info', mode='range', keys=('stock_code', 'trade_date'), date_field='trade_date', start='2016-08-01', tier='small', chunk_days=60, freq='daily_sparse', delay_days=1))
+_reg(DS(name='stock_st_info', path='/stock/st_info', mode='range', start_exclusive=True, keys=('stock_code', 'trade_date'), date_field='trade_date', start='2016-08-01', tier='small', chunk_days=60, freq='daily_sparse', delay_days=1))
 _reg(DS(name='stock_limit_up', path='/stock/limit_up', mode='range', keys=('trade_date', 'stock_code'), date_field='trade_date', start='2015-01-01', freq='daily_sparse'))
 _reg(DS(name='stock_limit_list', path='/stock/limit_list', mode='range', keys=('trade_date', 'stock_code'), date_field='trade_date', start='2020-01-01', freq='daily_sparse'))
 _reg(DS(name='stock_main_fund_flow', path='/stock/main_fund_flow', mode='range', keys=('stock_code', 'trade_date'), date_field='trade_date', tier='large', chunk_days=15, freq='daily_full'))
@@ -324,7 +332,7 @@ _reg(DS(name='stock_cyq_chips', path='/stock/cyq_chips', mode='per_entity', keys
 #   （公告当天厂商可能几小时后才挂出，与 stock_margin_detail 的 delay=1 同类）。
 #   改前实测：`end_date=2026-09-10` 每跑必长（449→628），每次都报"上游改了历史"。
 _reg(DS(name='stock_holder_number', path='/stock/holder_number', mode='range', keys=('stock_code', 'end_date', 'ann_date'), date_field='end_date', ledger_field='ann_date', ledger_calendar_days=True, ledger_lag_days=1, start='2016-01-01', freq='irregular'))
-_reg(DS(name='stock_pledge_stat', path='/stock/pledge_stat', mode='range', keys=('stock_code', 'end_date'), date_field='end_date', start='2014-12-01', expect_rows=False, tier='small', freq='quarterly'))
+_reg(DS(name='stock_pledge_stat', path='/stock/pledge_stat', mode='range', keys=('stock_code', 'end_date'), date_field='end_date', start='2014-12-01', expect_rows=False, tier='small', freq='weekly'))
 _reg(DS(name='stock_margin_detail', path='/stock/margin_detail', mode='range', keys=('stock_code', 'trade_date'), date_field='trade_date', start='2011-01-01', tier='large', chunk_days=20, freq='daily_full', delay_days=1))
 # ★★ 2026-09-15 晚（实战第 1 天）主键修正：4 列 → **7 列**（用户拍板"完全按你说的做"）。
 #   旧主键（trade_date, stock_code, org_name, direction）把**同名的多个机构席位合并成一条**
@@ -407,7 +415,7 @@ _REDUNDANCY = {
     #   成本说明：per_entity 的请求数 = 实体批次数（3484/100=35），**与窗口宽度无关**；
     #   加宽窗口只让每个请求多回几天数据（100 只 × 4 天 × ~99 行 ≈ 4 万行，仍远低于
     #   服务端单请求 10 万行上限）。用同样的 35 个请求换 2 倍的自愈纵深，划算。
-    "stock_cyq_chips": 3,
+    "stock_cyq_chips": 5,
 }
 
 # ---- 2) range/per_date 的历史回刷窗口（日历天）

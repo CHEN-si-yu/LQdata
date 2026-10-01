@@ -1,0 +1,111 @@
+{
+  "monthly_signals": 30,
+  "quarter_count": 10,
+  "factor_rows_present_for_all_signals": true,
+  "each_importance_cutoff_strictly_before_signal_quarter": true,
+  "all_executions_next_session": true,
+  "selection_updates": {
+    "2024Q1": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "2024Q2": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "2024Q3": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "2024Q4": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "2025Q1": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "2025Q2": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "2025Q3": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "2025Q4": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "2026Q1": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "2026Q2": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "rel_mom_ind_250d"
+    ]
+  },
+  "strategies": {
+    "V29 quarterly-updated factor consensus Top2": {
+      "min_cash": 3.4397542918886757,
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "trades": 81,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2
+    },
+    "V24 frozen four-factor consensus Top2": {
+      "min_cash": 3.4397542918886757,
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "trades": 81,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2
+    },
+    "V11 LambdaRank Top2": {
+      "min_cash": 36.23176302149659,
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "trades": 73,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2
+    },
+    "60d momentum Top2": {
+      "min_cash": 61.0696464866453,
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "trades": 48,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2
+    },
+    "equal-weight hold": {
+      "min_cash": 328.2072699519849,
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "trades": 4,
+      "max_abs_accounting_residual": 1.4551915228366852e-11,
+      "max_positions": 4
+    }
+  }
+}

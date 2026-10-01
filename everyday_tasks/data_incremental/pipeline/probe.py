@@ -264,7 +264,7 @@ def probe_payload(ds: R.DS, date: str, cal: list[str],
         #   （见 strategies.py 的 REPORT_PERIOD_TABLES 分支）。参数名错了就永远 0 行。
         return {**ds.params, "end_date": date}
     # range / per_stock（其余）
-    p = {**ds.params, ds.start_param: date, ds.end_param: date}
+    p = {**ds.params, ds.start_param: ds.query_start(date), ds.end_param: date}
     if ds.variants:
         p.update(ds.variants[0])     # ★ 缺了这行会让 stock_kline 探不动
     return p
@@ -449,6 +449,13 @@ def _watch_candidates(ds: R.DS, cal: list[str], T: str, n: int = 3) -> list[str]
       否则月频表会被误报（把候选的 07-31 当成服务端水位，而服务端其实只到 07-01）。
     """
     past = [d for d in cal if d <= T]
+    if ds.freq == "weekly":
+        from datetime import date
+        ends = {}
+        for d in cal:
+            week = date.fromisoformat(d).isocalendar()[:2]
+            ends[week] = max(d, ends.get(week, d))
+        return sorted((d for d in ends.values() if d <= T), reverse=True)[:n]
     if ds.freq == "quarterly":
         # 报告期表：要问的是季末，不是交易日（交易日永远不在报告期里 → 必然"无数据"）
         y = int(T[:4])

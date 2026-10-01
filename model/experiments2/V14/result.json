@@ -1,0 +1,1678 @@
+{
+  "unit": "experiments2/V14 momentum-rank 60/40 allocation",
+  "built_at": "2026-09-27 17:51:01",
+  "data_built_at": "2026-09-27 14:19:24",
+  "snapshot_last_day": "2026-09-24",
+  "price_only_amount_column": "amount",
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "rule": {
+    "signal": "first observed session of each calendar month at T close",
+    "selection": "fixed 60-session adjusted-close return Top2 ranking as V4",
+    "allocation": "momentum rank 1 receives 60% and rank 2 receives 40%; fixed weights, no volatility scaling",
+    "execution": "T+1 open; final lifecycle exit at closing price; audited cash-only ledger; 100-share lots, 1% prior signal-day amount capacity, one-price limit locks, 3bp slippage, commission/transfer/sell stamp fees",
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "cash_constraints": {
+      "account_money": 100000.0,
+      "lot_size": 100,
+      "max_participation": 0.01,
+      "commission_rate": 0.00025,
+      "min_commission": 5.0,
+      "transfer_rate": 1e-05,
+      "stamp_sell_rate": 0.0005,
+      "slippage_rate": 0.0003
+    },
+    "interpretation": "strict matched friction is same-holdings gross reference minus trading costs/slippage; not selection alpha"
+  },
+  "official_lifecycle_242_signal_days_plus_20260701_close_exit": {
+    "window": "242 signal sessions plus 2026-07-01 close exit",
+    "strategy": {
+      "days": 243,
+      "cumulative_net_return": 0.1295338660960692,
+      "annualized_return": 0.12896782312847943,
+      "max_drawdown": -0.18123774048157337,
+      "strict_matched_gross_return": 0.13537561238486728,
+      "strict_matched_friction_net_minus_matched": -0.0058417462887980776,
+      "avg_exposure": 0.9843864893071358,
+      "max_exposure": 0.9974229166736229,
+      "average_holdings": 1.9835390946502058,
+      "ending_equity": 112953.38660960691,
+      "fees": 369.88153319953295,
+      "trades": 24,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "minimum_cash": 269.17422535000514,
+      "maximum_cash": 112953.38660960691
+    },
+    "equal_weight_60d_top2": {
+      "days": 243,
+      "cumulative_net_return": 0.11386046046101028,
+      "annualized_return": 0.11336629167498535,
+      "max_drawdown": -0.17361043254181552,
+      "strict_matched_gross_return": 0.11888301659771017,
+      "strict_matched_friction_net_minus_matched": -0.005022556136699885,
+      "avg_exposure": 0.9873526601540118,
+      "max_exposure": 0.9989900170100886,
+      "average_holdings": 1.9835390946502058,
+      "ending_equity": 111386.04604610102,
+      "fees": 322.43197427448536,
+      "trades": 19,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "minimum_cash": 124.91914658427686,
+      "maximum_cash": 111386.04604610102
+    },
+    "four_bank_equal_weight_hold": {
+      "days": 243,
+      "cumulative_net_return": 0.015234495821617955,
+      "annualized_return": 0.01517132924394815,
+      "max_drawdown": -0.15119064253391168,
+      "strict_matched_gross_return": 0.016854461129216514,
+      "strict_matched_friction_net_minus_matched": -0.0016199653075985587,
+      "avg_exposure": 0.9764779741364771,
+      "max_exposure": 0.9859379664297506,
+      "average_holdings": 3.9670781893004117,
+      "ending_equity": 101523.44958216179,
+      "fees": 101.5637397166276,
+      "trades": 8,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "minimum_cash": 1612.926410103999,
+      "maximum_cash": 101523.44958216179
+    },
+    "audit": {
+      "session_days_including_exit": 243,
+      "signal_window_start": "2025-07-01",
+      "signal_window_end": "2026-06-30",
+      "exit_only_day": "2026-07-01",
+      "signal_window_session_count": 242,
+      "monthly_rebalances": 12,
+      "signals_selected_same_as_equal_weight_60d_top2": true,
+      "all_target_weights_sum_to_one": true,
+      "causal_weight_asof_equals_signal_day": true,
+      "cash_nonnegative": true,
+      "cash_min": 269.17422535000514,
+      "max_exposure": 0.9974229166736229,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "final_exit_at_close": true,
+      "ending_positions": 0,
+      "final_liquidation_complete": true,
+      "max_abs_equity_cash_mark_residual": 1.4551915228366852e-11,
+      "strict_matched_definition": "previous session realized shares valued at prior mark; current mark return on adjusted prices; excludes fees/slippage and is only a same-holdings execution-friction reference, not selection alpha"
+    },
+    "quarterly": [
+      {
+        "quarter": "2025Q3",
+        "days": 66,
+        "net_return": 0.045346582255054946,
+        "matched_return": 0.04678770536685728,
+        "matched_friction": -0.0014411231118023338
+      },
+      {
+        "quarter": "2025Q4",
+        "days": 60,
+        "net_return": 0.11895562460407216,
+        "matched_return": 0.11992797334847638,
+        "matched_friction": -0.0009723487444042167
+      },
+      {
+        "quarter": "2026Q1",
+        "days": 56,
+        "net_return": -0.02224431636918711,
+        "matched_return": -0.02102242869342308,
+        "matched_friction": -0.001221887675764033
+      },
+      {
+        "quarter": "2026Q2",
+        "days": 60,
+        "net_return": 0.00866533452445184,
+        "matched_return": 0.009279101607671203,
+        "matched_friction": -0.0006137670832193631
+      }
+    ],
+    "annual": [
+      {
+        "year": "2025",
+        "days": 126,
+        "net_return": 0.1696964378749386,
+        "matched_return": 0.17232683339760646,
+        "matched_friction": -0.002630395522667861
+      },
+      {
+        "year": "2026",
+        "days": 116,
+        "net_return": -0.013771736287342295,
+        "matched_return": -0.011938396337639046,
+        "matched_friction": -0.0018333399497032499
+      }
+    ],
+    "net_gain_pp_vs_equal_weight_top2": 1.5673405635058923,
+    "net_gain_pp_vs_four_bank_hold": 11.429937027445124,
+    "signals": [
+      {
+        "signal_date": "2025-07-01",
+        "execution_date": "2025-07-02",
+        "selected": [
+          "601288.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.16179337231968827,
+          "601939.SH": 0.14581917444456782
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-07-01"
+      },
+      {
+        "signal_date": "2025-08-01",
+        "execution_date": "2025-08-04",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.18814176285600004,
+          "601398.SH": 0.09357833854000996
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-08-01"
+      },
+      {
+        "signal_date": "2025-09-01",
+        "execution_date": "2025-09-02",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.28777728478843456,
+          "601398.SH": 0.06362278615974337
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-09-01"
+      },
+      {
+        "signal_date": "2025-10-09",
+        "execution_date": "2025-10-10",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.10343451492064148,
+          "601398.SH": -0.049806076447960757
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-10-09"
+      },
+      {
+        "signal_date": "2025-11-03",
+        "execution_date": "2025-11-04",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.2654028436018956,
+          "601398.SH": 0.036745406824147064
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-11-03"
+      },
+      {
+        "signal_date": "2025-12-01",
+        "execution_date": "2025-12-02",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.13817663817663828,
+          "601988.SH": 0.0996376811594204
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-12-01"
+      },
+      {
+        "signal_date": "2026-01-05",
+        "execution_date": "2026-01-06",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.14771015613539706,
+          "601988.SH": 0.10525998950811388
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-01-05"
+      },
+      {
+        "signal_date": "2026-02-02",
+        "execution_date": "2026-02-03",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": -0.023739013885283544,
+          "601939.SH": -0.04920993298526333
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-02-02"
+      },
+      {
+        "signal_date": "2026-03-02",
+        "execution_date": "2026-03-03",
+        "selected": [
+          "601939.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": -0.08500305240578643,
+          "601988.SH": -0.11975719457344514
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-03-02"
+      },
+      {
+        "signal_date": "2026-04-01",
+        "execution_date": "2026-04-02",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.04634581105169344,
+          "601939.SH": 0.03960396039603964
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-04-01"
+      },
+      {
+        "signal_date": "2026-05-06",
+        "execution_date": "2026-05-07",
+        "selected": [
+          "601939.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.12514351320321482,
+          "601988.SH": 0.06928838951310867
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-05-06"
+      },
+      {
+        "signal_date": "2026-06-01",
+        "execution_date": "2026-06-02",
+        "selected": [
+          "601939.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.13258426966292136,
+          "601988.SH": 0.09409594095940954
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-06-01"
+      }
+    ],
+    "signal_period_start": "2025-07-01",
+    "signal_period_end": "2026-06-30",
+    "exit_day_returns": {
+      "60/40 momentum rank": {
+        "exit_date": "2026-07-01",
+        "net_return": -0.020851315570849,
+        "matched_return": -0.0198177516114146,
+        "matched_friction": -0.0010335639594343977
+      },
+      "50/50 equal Top2": {
+        "exit_date": "2026-07-01",
+        "net_return": -0.0207981850361573,
+        "matched_return": -0.0197605184924703,
+        "matched_friction": -0.0010376665436870013
+      },
+      "four-bank equal hold": {
+        "exit_date": "2026-07-01",
+        "net_return": -0.020912476597269,
+        "matched_return": -0.0198902684885087,
+        "matched_friction": -0.0010222081087602995
+      }
+    }
+  },
+  "extended_20230103_to_latest": {
+    "strategy": {
+      "days": 905,
+      "cumulative_net_return": 1.7041105052809096,
+      "annualized_return": 0.30474237095211776,
+      "max_drawdown": -0.18255129820375338,
+      "strict_matched_gross_return": 1.7640386529835093,
+      "strict_matched_friction_net_minus_matched": -0.05992814770259969,
+      "avg_exposure": 0.9948980020215202,
+      "max_exposure": 0.999797225375153,
+      "average_holdings": 1.9955801104972375,
+      "ending_equity": 270411.050528091,
+      "fees": 2502.404895699081,
+      "trades": 92,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "minimum_cash": 44.19946109793818,
+      "maximum_cash": 270411.050528091
+    },
+    "equal_weight_60d_top2": {
+      "days": 905,
+      "cumulative_net_return": 1.6969810693668212,
+      "annualized_return": 0.30382162006768043,
+      "max_drawdown": -0.17352887856613208,
+      "strict_matched_gross_return": 1.7492700950395137,
+      "strict_matched_friction_net_minus_matched": -0.052289025672692446,
+      "avg_exposure": 0.994697561689338,
+      "max_exposure": 0.9999678266694981,
+      "average_holdings": 1.9955801104972375,
+      "ending_equity": 269698.10693668213,
+      "fees": 2263.1007587375193,
+      "trades": 87,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "minimum_cash": 5.972270102225593,
+      "maximum_cash": 269698.10693668213
+    },
+    "four_bank_equal_weight_hold": {
+      "days": 905,
+      "cumulative_net_return": 1.5127511596071086,
+      "annualized_return": 0.279385127836133,
+      "max_drawdown": -0.15494783399395506,
+      "strict_matched_gross_return": 1.5168098343366694,
+      "strict_matched_friction_net_minus_matched": -0.004058674729560785,
+      "avg_exposure": 0.9937940783610498,
+      "max_exposure": 0.9974767903582162,
+      "average_holdings": 3.991160220994475,
+      "ending_equity": 251275.11596071086,
+      "fees": 216.44997591183323,
+      "trades": 8,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "minimum_cash": 644.3842546000087,
+      "maximum_cash": 251275.11596071086
+    },
+    "audit": {
+      "session_days_including_exit": 905,
+      "signal_window_start": "2023-01-03",
+      "signal_window_end": "2026-09-24",
+      "exit_only_day": "2026-09-24",
+      "signal_window_session_count": 905,
+      "monthly_rebalances": 45,
+      "signals_selected_same_as_equal_weight_60d_top2": true,
+      "all_target_weights_sum_to_one": true,
+      "causal_weight_asof_equals_signal_day": true,
+      "cash_nonnegative": true,
+      "cash_min": 44.19946109793818,
+      "max_exposure": 0.999797225375153,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "final_exit_at_close": true,
+      "ending_positions": 0,
+      "final_liquidation_complete": true,
+      "max_abs_equity_cash_mark_residual": 5.820766091346741e-11,
+      "strict_matched_definition": "previous session realized shares valued at prior mark; current mark return on adjusted prices; excludes fees/slippage and is only a same-holdings execution-friction reference, not selection alpha"
+    },
+    "quarterly": [
+      {
+        "quarter": "2023Q1",
+        "days": 59,
+        "net_return": 0.06622505487894159,
+        "matched_return": 0.06820094585944525,
+        "matched_friction": -0.0019758909805036584
+      },
+      {
+        "quarter": "2023Q2",
+        "days": 59,
+        "net_return": 0.12401238472812248,
+        "matched_return": 0.1247210452790466,
+        "matched_friction": -0.0007086605509241117
+      },
+      {
+        "quarter": "2023Q3",
+        "days": 64,
+        "net_return": 0.058193153353116145,
+        "matched_return": 0.05862085659824223,
+        "matched_friction": -0.0004277032451260876
+      },
+      {
+        "quarter": "2023Q4",
+        "days": 60,
+        "net_return": 0.019051810667040092,
+        "matched_return": 0.02173281827427731,
+        "matched_friction": -0.002681007607237218
+      },
+      {
+        "quarter": "2024Q1",
+        "days": 58,
+        "net_return": 0.08457370318931323,
+        "matched_return": 0.08580822852279013,
+        "matched_friction": -0.001234525333476899
+      },
+      {
+        "quarter": "2024Q2",
+        "days": 59,
+        "net_return": 0.09092401235354153,
+        "matched_return": 0.0916654759572646,
+        "matched_friction": -0.0007414636037230693
+      },
+      {
+        "quarter": "2024Q3",
+        "days": 64,
+        "net_return": 0.08439416411196232,
+        "matched_return": 0.08652411553031536,
+        "matched_friction": -0.0021299514183530377
+      },
+      {
+        "quarter": "2024Q4",
+        "days": 61,
+        "net_return": 0.11138479628671338,
+        "matched_return": 0.11497491253728476,
+        "matched_friction": -0.0035901162505713735
+      },
+      {
+        "quarter": "2025Q1",
+        "days": 57,
+        "net_return": 0.007826659223193921,
+        "matched_return": 0.008867776463184818,
+        "matched_friction": -0.0010411172399908963
+      },
+      {
+        "quarter": "2025Q2",
+        "days": 60,
+        "net_return": 0.08538748379072247,
+        "matched_return": 0.08749992771893367,
+        "matched_friction": -0.002112443928211194
+      },
+      {
+        "quarter": "2025Q3",
+        "days": 66,
+        "net_return": 0.08252999766143865,
+        "matched_return": 0.08368472567573515,
+        "matched_friction": -0.0011547280142965022
+      },
+      {
+        "quarter": "2025Q4",
+        "days": 60,
+        "net_return": 0.11966900049246587,
+        "matched_return": 0.12055348390085885,
+        "matched_friction": -0.0008844834083929776
+      },
+      {
+        "quarter": "2026Q1",
+        "days": 56,
+        "net_return": -0.023176420253026464,
+        "matched_return": -0.02191913390703748,
+        "matched_friction": -0.0012572863459889838
+      },
+      {
+        "quarter": "2026Q2",
+        "days": 60,
+        "net_return": 0.008591399591140192,
+        "matched_return": 0.009212247137850627,
+        "matched_friction": -0.0006208475467104346
+      },
+      {
+        "quarter": "2026Q3",
+        "days": 61,
+        "net_return": 0.12081618954814966,
+        "matched_return": 0.12262154289678717,
+        "matched_friction": -0.0018053533486375173
+      }
+    ],
+    "annual": [
+      {
+        "year": "2023",
+        "days": 242,
+        "net_return": 0.2923531102404566,
+        "matched_return": 0.29949786115394694,
+        "matched_friction": -0.0071447509134903164
+      },
+      {
+        "year": "2024",
+        "days": 242,
+        "net_return": 0.42595294467776346,
+        "matched_return": 0.4359759624250248,
+        "matched_friction": -0.010023017747261331
+      },
+      {
+        "year": "2025",
+        "days": 243,
+        "net_return": 0.32586786740319806,
+        "matched_return": 0.3322908027805116,
+        "matched_friction": -0.006422935377313532
+      },
+      {
+        "year": "2026",
+        "days": 177,
+        "net_return": 0.10424588771349153,
+        "matched_return": 0.10812983329683368,
+        "matched_friction": -0.003883945583342152
+      }
+    ],
+    "net_gain_pp_vs_equal_weight_top2": 0.7129435914088322,
+    "net_gain_pp_vs_four_bank_hold": 19.135934567380097,
+    "signals": [
+      {
+        "signal_date": "2023-01-03",
+        "execution_date": "2023-01-04",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.02931596091205213,
+          "601939.SH": 0.019927536231884035
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-01-03"
+      },
+      {
+        "signal_date": "2023-02-01",
+        "execution_date": "2023-02-02",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.0695970695970698,
+          "601988.SH": 0.06622516556291402
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-02-01"
+      },
+      {
+        "signal_date": "2023-03-01",
+        "execution_date": "2023-03-02",
+        "selected": [
+          "601988.SH",
+          "601288.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.031847133757961776,
+          "601288.SH": 0.017361111111111382
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601288.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601288.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-03-01"
+      },
+      {
+        "signal_date": "2023-04-03",
+        "execution_date": "2023-04-04",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.06529209621993126,
+          "601988.SH": 0.06329113924050622
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-04-03"
+      },
+      {
+        "signal_date": "2023-05-04",
+        "execution_date": "2023-05-05",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.23024054982817854,
+          "601988.SH": 0.22741433021806845
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-05-04"
+      },
+      {
+        "signal_date": "2023-06-01",
+        "execution_date": "2023-06-02",
+        "selected": [
+          "601988.SH",
+          "601288.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.18121454847934415,
+          "601288.SH": 0.164983164983165
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601288.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601288.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-06-01"
+      },
+      {
+        "signal_date": "2023-07-03",
+        "execution_date": "2023-07-04",
+        "selected": [
+          "601988.SH",
+          "601288.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.17746063187678285,
+          "601288.SH": 0.16398713826366573
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601288.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601288.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-07-03"
+      },
+      {
+        "signal_date": "2023-08-01",
+        "execution_date": "2023-08-02",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.06723334174881557,
+          "601988.SH": 0.022116656791045353
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-08-01"
+      },
+      {
+        "signal_date": "2023-09-01",
+        "execution_date": "2023-09-04",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.011372643420364925,
+          "601988.SH": -0.025502791769517197
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-09-01"
+      },
+      {
+        "signal_date": "2023-10-09",
+        "execution_date": "2023-10-10",
+        "selected": [
+          "601288.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.0884817891991112,
+          "601939.SH": 0.08226638379041185
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-10-09"
+      },
+      {
+        "signal_date": "2023-11-01",
+        "execution_date": "2023-11-02",
+        "selected": [
+          "601939.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.017828200972447306,
+          "601398.SH": -0.0020920502092051096
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-11-01"
+      },
+      {
+        "signal_date": "2023-12-01",
+        "execution_date": "2023-12-04",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.07733333333333348,
+          "601939.SH": 0.06333333333333346
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2023-12-01"
+      },
+      {
+        "signal_date": "2024-01-02",
+        "execution_date": "2024-01-03",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.0664893617021276,
+          "601939.SH": 0.04133545310015907
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-01-02"
+      },
+      {
+        "signal_date": "2024-02-01",
+        "execution_date": "2024-02-02",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.10051546391752564,
+          "601939.SH": 0.09265175718849838
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-02-01"
+      },
+      {
+        "signal_date": "2024-03-01",
+        "execution_date": "2024-03-04",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.16804407713498626,
+          "601988.SH": 0.1256281407035178
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-03-01"
+      },
+      {
+        "signal_date": "2024-04-01",
+        "execution_date": "2024-04-02",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.16528925619834722,
+          "601988.SH": 0.11779448621553867
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-04-01"
+      },
+      {
+        "signal_date": "2024-05-06",
+        "execution_date": "2024-05-07",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.12694300518134694,
+          "601398.SH": 0.05500982318271119
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-05-06"
+      },
+      {
+        "signal_date": "2024-06-03",
+        "execution_date": "2024-06-04",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.04009433962264142,
+          "601398.SH": 0.022556390977443774
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-06-03"
+      },
+      {
+        "signal_date": "2024-07-01",
+        "execution_date": "2024-07-02",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.10728942047921008,
+          "601398.SH": 0.10227272727272729
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-07-01"
+      },
+      {
+        "signal_date": "2024-08-01",
+        "execution_date": "2024-08-02",
+        "selected": [
+          "601398.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601398.SH": 0.14408783839639705,
+          "601939.SH": 0.105119586296057
+        },
+        "momentum_rank": {
+          "601398.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601398.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-08-01"
+      },
+      {
+        "signal_date": "2024-09-02",
+        "execution_date": "2024-09-03",
+        "selected": [
+          "601988.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.13761361668250283,
+          "601398.SH": 0.1327307108967879
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-09-02"
+      },
+      {
+        "signal_date": "2024-10-08",
+        "execution_date": "2024-10-09",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.12894374431839983,
+          "601939.SH": 0.11767776341305747
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-10-08"
+      },
+      {
+        "signal_date": "2024-11-01",
+        "execution_date": "2024-11-04",
+        "selected": [
+          "601939.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.08333333333333326,
+          "601398.SH": 0.051282051282051544
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-11-01"
+      },
+      {
+        "signal_date": "2024-12-02",
+        "execution_date": "2024-12-03",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.023354564755838636,
+          "601988.SH": 0.020366598778003953
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2024-12-02"
+      },
+      {
+        "signal_date": "2025-01-02",
+        "execution_date": "2025-01-03",
+        "selected": [
+          "601398.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601398.SH": 0.1258278145695364,
+          "601988.SH": 0.11642411642411643
+        },
+        "momentum_rank": {
+          "601398.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601398.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-01-02"
+      },
+      {
+        "signal_date": "2025-02-05",
+        "execution_date": "2025-02-06",
+        "selected": [
+          "601398.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601398.SH": 0.11449142480261387,
+          "601988.SH": 0.1130893758217193
+        },
+        "momentum_rank": {
+          "601398.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601398.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-02-05"
+      },
+      {
+        "signal_date": "2025-03-03",
+        "execution_date": "2025-03-04",
+        "selected": [
+          "601398.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601398.SH": 0.13008473991693403,
+          "601988.SH": 0.10244914718096254
+        },
+        "momentum_rank": {
+          "601398.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601398.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-03-03"
+      },
+      {
+        "signal_date": "2025-04-01",
+        "execution_date": "2025-04-02",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.030589666582531816,
+          "601939.SH": 0.011708443828302384
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-04-01"
+      },
+      {
+        "signal_date": "2025-05-06",
+        "execution_date": "2025-05-07",
+        "selected": [
+          "601939.SH",
+          "601288.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.07995226730310256,
+          "601288.SH": 0.0653465346534654
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601288.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601288.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-05-06"
+      },
+      {
+        "signal_date": "2025-06-03",
+        "execution_date": "2025-06-04",
+        "selected": [
+          "601939.SH",
+          "601288.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.09695153921054622,
+          "601288.SH": 0.09645669291338588
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601288.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601288.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-06-03"
+      },
+      {
+        "signal_date": "2025-07-01",
+        "execution_date": "2025-07-02",
+        "selected": [
+          "601288.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.16179337231968827,
+          "601939.SH": 0.14581917444456782
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-07-01"
+      },
+      {
+        "signal_date": "2025-08-01",
+        "execution_date": "2025-08-04",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.18814176285600004,
+          "601398.SH": 0.09357833854000996
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-08-01"
+      },
+      {
+        "signal_date": "2025-09-01",
+        "execution_date": "2025-09-02",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.28777728478843456,
+          "601398.SH": 0.06362278615974337
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-09-01"
+      },
+      {
+        "signal_date": "2025-10-09",
+        "execution_date": "2025-10-10",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.10343451492064148,
+          "601398.SH": -0.049806076447960757
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-10-09"
+      },
+      {
+        "signal_date": "2025-11-03",
+        "execution_date": "2025-11-04",
+        "selected": [
+          "601288.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.2654028436018956,
+          "601398.SH": 0.036745406824147064
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-11-03"
+      },
+      {
+        "signal_date": "2025-12-01",
+        "execution_date": "2025-12-02",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.13817663817663828,
+          "601988.SH": 0.0996376811594204
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2025-12-01"
+      },
+      {
+        "signal_date": "2026-01-05",
+        "execution_date": "2026-01-06",
+        "selected": [
+          "601288.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601288.SH": 0.14771015613539706,
+          "601988.SH": 0.10525998950811388
+        },
+        "momentum_rank": {
+          "601288.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601288.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-01-05"
+      },
+      {
+        "signal_date": "2026-02-02",
+        "execution_date": "2026-02-03",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": -0.023739013885283544,
+          "601939.SH": -0.04920993298526333
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-02-02"
+      },
+      {
+        "signal_date": "2026-03-02",
+        "execution_date": "2026-03-03",
+        "selected": [
+          "601939.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": -0.08500305240578643,
+          "601988.SH": -0.11975719457344514
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-03-02"
+      },
+      {
+        "signal_date": "2026-04-01",
+        "execution_date": "2026-04-02",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.04634581105169344,
+          "601939.SH": 0.03960396039603964
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-04-01"
+      },
+      {
+        "signal_date": "2026-05-06",
+        "execution_date": "2026-05-07",
+        "selected": [
+          "601939.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.12514351320321482,
+          "601988.SH": 0.06928838951310867
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-05-06"
+      },
+      {
+        "signal_date": "2026-06-01",
+        "execution_date": "2026-06-02",
+        "selected": [
+          "601939.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.13258426966292136,
+          "601988.SH": 0.09409594095940954
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-06-01"
+      },
+      {
+        "signal_date": "2026-07-01",
+        "execution_date": "2026-07-02",
+        "selected": [
+          "601939.SH",
+          "601988.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.012698412698412653,
+          "601988.SH": -0.03747870528109032
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601988.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601988.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-07-01"
+      },
+      {
+        "signal_date": "2026-08-03",
+        "execution_date": "2026-08-04",
+        "selected": [
+          "601939.SH",
+          "601398.SH"
+        ],
+        "momentum_60d": {
+          "601939.SH": 0.10036865010809315,
+          "601398.SH": 0.09185653480556422
+        },
+        "momentum_rank": {
+          "601939.SH": 1,
+          "601398.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601939.SH": 0.6,
+          "601398.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-08-03"
+      },
+      {
+        "signal_date": "2026-09-01",
+        "execution_date": "2026-09-02",
+        "selected": [
+          "601988.SH",
+          "601939.SH"
+        ],
+        "momentum_60d": {
+          "601988.SH": 0.10914705630237687,
+          "601939.SH": 0.09541055146464217
+        },
+        "momentum_rank": {
+          "601988.SH": 1,
+          "601939.SH": 2
+        },
+        "momentum_rank_weights": {
+          "601988.SH": 0.6,
+          "601939.SH": 0.4
+        },
+        "weights_sum": 1.0,
+        "weight_asof_date": "2026-09-01"
+      }
+    ],
+    "signal_period_start": "2023-01-03",
+    "signal_period_end": "2026-09-23",
+    "exit_day_returns": {
+      "60/40 momentum rank": {
+        "exit_date": "2026-09-24",
+        "net_return": 0.0022406479837586,
+        "matched_return": 0.0033020413635095,
+        "matched_friction": -0.0010613933797509003
+      },
+      "50/50 equal Top2": {
+        "exit_date": "2026-09-24",
+        "net_return": 0.0030379630262105,
+        "matched_return": 0.0041003915034067,
+        "matched_friction": -0.0010624284771962
+      },
+      "four-bank equal hold": {
+        "exit_date": "2026-09-24",
+        "net_return": 0.0019824513772173,
+        "matched_return": 0.0030427248441962,
+        "matched_friction": -0.0010602734669789
+      }
+    }
+  },
+  "runtime_seconds": 1.7622144222259521,
+  "script_sha256": "635410fbd3f2cb9017249de1d176e0de4a27cd679eb10422020cabffc101325f"
+}

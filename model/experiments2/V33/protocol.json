@@ -1,0 +1,369 @@
+{
+  "version": "V33",
+  "status": "frozen_before_any_V33_training",
+  "factor_selection": {
+    "cutoff_quarter": "2023Q4",
+    "importance_quarters": [
+      "2020Q1",
+      "2020Q2",
+      "2020Q3",
+      "2020Q4",
+      "2021Q1",
+      "2021Q2",
+      "2021Q3",
+      "2021Q4",
+      "2022Q1",
+      "2022Q2",
+      "2022Q3",
+      "2022Q4",
+      "2023Q1",
+      "2023Q2",
+      "2023Q3",
+      "2023Q4"
+    ],
+    "rule": "Sort V11 training-fold features by descending top-20 quarter count, descending mean gain normalized within each fold's top-20 list when present, then ascending feature name; freeze first 20.",
+    "selected_features": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d",
+      "rel_mom_ind_250d",
+      "rel_vol_ind_20d",
+      "rel_mom_ind_10d",
+      "tail_risk_pct_60",
+      "volume_dry_up",
+      "rel_mom_ind_60d",
+      "price_to_52w_high",
+      "id2_close_vs_pm_vwap_20",
+      "inside_bar_count_20",
+      "ret_kurt_20",
+      "cost_skew_ratio",
+      "overnight_sign_consistency_20d",
+      "margin_balance_volatility_20d",
+      "mfx_index_range",
+      "mf_open_close_divergence_10d",
+      "bollinger_width_20"
+    ],
+    "selected_statistics": [
+      {
+        "rank": 1,
+        "feature": "mf_tier_flow_agreement_20",
+        "top20_quarter_count": 16,
+        "mean_normalized_gain_when_top20": 0.07313518998683682,
+        "selected_v33": true
+      },
+      {
+        "rank": 2,
+        "feature": "rel_mom_ind_3d",
+        "top20_quarter_count": 16,
+        "mean_normalized_gain_when_top20": 0.06728722680654979,
+        "selected_v33": true
+      },
+      {
+        "rank": 3,
+        "feature": "rel_mom_ind_5d",
+        "top20_quarter_count": 16,
+        "mean_normalized_gain_when_top20": 0.06289147292479422,
+        "selected_v33": true
+      },
+      {
+        "rank": 4,
+        "feature": "gap_down_recover_freq_20d",
+        "top20_quarter_count": 15,
+        "mean_normalized_gain_when_top20": 0.07330035921476682,
+        "selected_v33": true
+      },
+      {
+        "rank": 5,
+        "feature": "rel_mom_ind_250d",
+        "top20_quarter_count": 13,
+        "mean_normalized_gain_when_top20": 0.06855035931458645,
+        "selected_v33": true
+      },
+      {
+        "rank": 6,
+        "feature": "rel_vol_ind_20d",
+        "top20_quarter_count": 12,
+        "mean_normalized_gain_when_top20": 0.0597568910963752,
+        "selected_v33": true
+      },
+      {
+        "rank": 7,
+        "feature": "rel_mom_ind_10d",
+        "top20_quarter_count": 12,
+        "mean_normalized_gain_when_top20": 0.04270051547816694,
+        "selected_v33": true
+      },
+      {
+        "rank": 8,
+        "feature": "tail_risk_pct_60",
+        "top20_quarter_count": 11,
+        "mean_normalized_gain_when_top20": 0.05012530267433634,
+        "selected_v33": true
+      },
+      {
+        "rank": 9,
+        "feature": "volume_dry_up",
+        "top20_quarter_count": 10,
+        "mean_normalized_gain_when_top20": 0.046521863719063965,
+        "selected_v33": true
+      },
+      {
+        "rank": 10,
+        "feature": "rel_mom_ind_60d",
+        "top20_quarter_count": 10,
+        "mean_normalized_gain_when_top20": 0.045854531501927205,
+        "selected_v33": true
+      },
+      {
+        "rank": 11,
+        "feature": "price_to_52w_high",
+        "top20_quarter_count": 10,
+        "mean_normalized_gain_when_top20": 0.04505847522791099,
+        "selected_v33": true
+      },
+      {
+        "rank": 12,
+        "feature": "id2_close_vs_pm_vwap_20",
+        "top20_quarter_count": 10,
+        "mean_normalized_gain_when_top20": 0.044881460832808806,
+        "selected_v33": true
+      },
+      {
+        "rank": 13,
+        "feature": "inside_bar_count_20",
+        "top20_quarter_count": 8,
+        "mean_normalized_gain_when_top20": 0.05734555387757261,
+        "selected_v33": true
+      },
+      {
+        "rank": 14,
+        "feature": "ret_kurt_20",
+        "top20_quarter_count": 8,
+        "mean_normalized_gain_when_top20": 0.04865818901180609,
+        "selected_v33": true
+      },
+      {
+        "rank": 15,
+        "feature": "cost_skew_ratio",
+        "top20_quarter_count": 7,
+        "mean_normalized_gain_when_top20": 0.04632770564141977,
+        "selected_v33": true
+      },
+      {
+        "rank": 16,
+        "feature": "overnight_sign_consistency_20d",
+        "top20_quarter_count": 7,
+        "mean_normalized_gain_when_top20": 0.041902380710256946,
+        "selected_v33": true
+      },
+      {
+        "rank": 17,
+        "feature": "margin_balance_volatility_20d",
+        "top20_quarter_count": 6,
+        "mean_normalized_gain_when_top20": 0.05499657217942263,
+        "selected_v33": true
+      },
+      {
+        "rank": 18,
+        "feature": "mfx_index_range",
+        "top20_quarter_count": 6,
+        "mean_normalized_gain_when_top20": 0.03981923009032128,
+        "selected_v33": true
+      },
+      {
+        "rank": 19,
+        "feature": "mf_open_close_divergence_10d",
+        "top20_quarter_count": 5,
+        "mean_normalized_gain_when_top20": 0.05004244799142107,
+        "selected_v33": true
+      },
+      {
+        "rank": 20,
+        "feature": "bollinger_width_20",
+        "top20_quarter_count": 5,
+        "mean_normalized_gain_when_top20": 0.04861964457209078,
+        "selected_v33": true
+      }
+    ],
+    "selection_source_sha256": [
+      {
+        "quarter": "2020Q1",
+        "sha256": "dcfb492e719cbe4c883c928655e86c81e238fa33b02e668ac3f1a4935f200052"
+      },
+      {
+        "quarter": "2020Q2",
+        "sha256": "bd018bc4163e3eb51077715f338ce684a265856a0e723a832c9abacaa53e9710"
+      },
+      {
+        "quarter": "2020Q3",
+        "sha256": "e9b8f86813e3e60e1b9edf8e17a388b6c02138393672f1d35e7b4fa34bb63c56"
+      },
+      {
+        "quarter": "2020Q4",
+        "sha256": "d6e5ddce83274da4bdb689d6c05471fb5fea680513981df95edbadb3e9dfd9af"
+      },
+      {
+        "quarter": "2021Q1",
+        "sha256": "b56ac9ff83f5766b29bf40ba9385b3281472a020704f48fba0df635f412e9f76"
+      },
+      {
+        "quarter": "2021Q2",
+        "sha256": "1609d3e37ecc8f9f6071f45065a77c91638f8460b650868aa81c4678865bc8b3"
+      },
+      {
+        "quarter": "2021Q3",
+        "sha256": "0a53b813a68793f75d043ff1c3f30b79c8d8aaa85d264d92033c53980e275809"
+      },
+      {
+        "quarter": "2021Q4",
+        "sha256": "4cdd85f0ccb85a967d85186035f70ba6169655c9c21390521579f362267dcbb0"
+      },
+      {
+        "quarter": "2022Q1",
+        "sha256": "376c157e935b78e552b0b857d5e82f9e18871e519b87d9e9cffcef12dbea2668"
+      },
+      {
+        "quarter": "2022Q2",
+        "sha256": "91930a1e695a17435ec62ecfaf30d4d76a0400b61244d4e62086c1f6c0f75466"
+      },
+      {
+        "quarter": "2022Q3",
+        "sha256": "9377d2cb5a8cb59bde9048bbe75c0956412e5590908bbac36e471c27d5479da1"
+      },
+      {
+        "quarter": "2022Q4",
+        "sha256": "5e004c0b6339aa5f0d1d0b2251304279b94f63120982ed980b3770b1b917a9a8"
+      },
+      {
+        "quarter": "2023Q1",
+        "sha256": "d40dfbacd747725a5cb4a6cddaea76002c21dfe59d83a6ffb16ffe24ddc3eef2"
+      },
+      {
+        "quarter": "2023Q2",
+        "sha256": "58a22f4ef88071dfb2ed66358ae9e0e5dd8d98ed9cba927ddfc3988b350764c6"
+      },
+      {
+        "quarter": "2023Q3",
+        "sha256": "943d771a437cdd30b429d118295a5f951f284e3dad3d88b06f751444e1c61873"
+      },
+      {
+        "quarter": "2023Q4",
+        "sha256": "471f4ffa3fd1ebbf03c1271f5cd2c938b2da71fd15945516590c671e8565406f"
+      }
+    ]
+  },
+  "protocol_cutoff": "2023Q4",
+  "holdout_quarters": [
+    "2024Q1",
+    "2024Q2",
+    "2024Q3",
+    "2024Q4",
+    "2025Q1",
+    "2025Q2",
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "holdout_dates": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "walk_forward": {
+    "one_new_model_per_quarter": true,
+    "each_model_scores_its_test_quarter_only": true,
+    "training_label": "label_ret_5d",
+    "purge_rule": "train_day_index + 5 < first_test_day_index",
+    "purged_trading_sessions": 5,
+    "max_label_date_must_equal_train_last": true,
+    "future_quarter_feature_rows_excluded": true,
+    "no_2020_2023_prediction_models": true
+  },
+  "model_recipe": {
+    "implementation": "V11 LGBMRanker recipe, as used by V27",
+    "objective": "lambdarank",
+    "metric": "ndcg@2",
+    "label": "ascending within-date rank of forward label_ret_5d; ties share rank; integer relevance 0..3",
+    "factor_features": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d",
+      "rel_mom_ind_250d",
+      "rel_vol_ind_20d",
+      "rel_mom_ind_10d",
+      "tail_risk_pct_60",
+      "volume_dry_up",
+      "rel_mom_ind_60d",
+      "price_to_52w_high",
+      "id2_close_vs_pm_vwap_20",
+      "inside_bar_count_20",
+      "ret_kurt_20",
+      "cost_skew_ratio",
+      "overnight_sign_consistency_20d",
+      "margin_balance_volatility_20d",
+      "mfx_index_range",
+      "mf_open_close_divergence_10d",
+      "bollinger_width_20"
+    ],
+    "asset_one_hot_features": [
+      "asset_0",
+      "asset_1",
+      "asset_2",
+      "asset_3"
+    ],
+    "n_estimators": 180,
+    "learning_rate": 0.03,
+    "num_leaves": 7,
+    "max_depth": 3,
+    "min_child_samples": 80,
+    "feature_fraction": 0.8,
+    "bagging_fraction": 0.8,
+    "bagging_freq": 1,
+    "reg_alpha": 2.0,
+    "reg_lambda": 20.0,
+    "label_gain": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "seed": 17,
+    "threads_per_worker": 1,
+    "early_stopping": false,
+    "sample_weight": null,
+    "deterministic": true,
+    "force_col_wise": true
+  },
+  "portfolio_rule": "At each shared V11 first-session monthly signal close, rank banks using the quarter-local V33 LambdaRank score; equal-weight the top two; execute next-session open.",
+  "ledger": {
+    "source": "V11 final corrected account-level ledger",
+    "initial_equity": 100000.0,
+    "execution": "T+1 open",
+    "participation_limit": 0.01,
+    "lot_size": 100,
+    "final_holdout_exit": "Mark to 2026-06-30 close; do not force liquidate, matching V24/V26/V27."
+  },
+  "comparisons": [
+    "V27 four-factor LambdaRank Top2",
+    "V24 fixed-rank Top2",
+    "V26 mf_tier_flow_agreement_20 Top2",
+    "V11 LambdaRank Top2",
+    "60d momentum Top2",
+    "equal-weight hold"
+  ],
+  "resources": {
+    "max_cpu_workers": 4,
+    "threads_per_worker": 1,
+    "gpu": false,
+    "memory_hard_limit_gib": 180,
+    "scheduler_soft_used_limit_gib": 145
+  },
+  "no_parameter_sweep": true,
+  "no_holdout_based_selection_or_tuning": true,
+  "no_early_stopping": true,
+  "v11_model_source_sha256": "1773fe1d86bf0dd18570465452f560e9f7b0224ae5f910b6f2e66099e30309c1",
+  "protocol_frozen_at": "2026-09-27 18:28:00",
+  "freeze_script_sha256": "ac61a10d7602f3e9fddf166a095a414b05d0f6c71960dd35f721e88f837b78b4"
+}

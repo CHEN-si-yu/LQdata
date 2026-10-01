@@ -1,0 +1,63 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-09-26 22:27:29",
+  "score_source": "training_predictions",
+  "reads_model_train": true,
+  "loads_model_weights": true,
+  "strategies": [
+    "top5_1d",
+    "top1_1d"
+  ],
+  "strategy_rows": 2,
+  "quarterly_rows": 8,
+  "evaluation_days": 242,
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 638008,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 633606,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 629228,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 618501,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 597385,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "quarterly_returns_compound": true,
+  "date_axis_matches_price_axis": true,
+  "realized": {
+    "top5_1d": {
+      "return_value": 0.1699383782096806,
+      "max_drawdown": -0.29526704180015595,
+      "sharpe": 0.6807895751221936,
+      "trades": 732,
+      "total_fees": 9097.932193324863
+    },
+    "top1_1d": {
+      "return_value": 0.18461300935813085,
+      "max_drawdown": -0.43251180141504175,
+      "sharpe": 0.5802915115864792,
+      "trades": 370,
+      "total_fees": 22681.616964188
+    }
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "ok": true,
+  "checked_at": "2026-09-30 15:41:53",
+  "results": {
+    "V62": {
+      "features": 44,
+      "market_features": 61,
+      "basis_width": 194,
+      "fixed_files": 159,
+      "deterministic_solver": true,
+      "causal_future_invariance": true,
+      "daily_weighted_loss_exact": true,
+      "negative_proper_mse_criterion": true,
+      "normal_equation_max_relative_residual": 5.195904085878544e-16,
+      "cpu_gpu_max_error": 2.60770320892334e-08,
+      "subset_inference_exact": true,
+      "report_compatibility": true,
+      "clean_blocks": [
+        [
+          "2025Q3",
+          4
+        ],
+        [
+          "2025Q4",
+          4
+        ],
+        [
+          "2026Q1",
+          4
+        ],
+        [
+          "2026Q2",
+          4
+        ]
+      ],
+      "no_trained_artifacts_created": true
+    },
+    "V63": {
+      "features": 44,
+      "market_features": 61,
+      "basis_width": 194,
+      "fixed_files": 159,
+      "deterministic_solver": true,
+      "causal_future_invariance": true,
+      "daily_weighted_loss_exact": true,
+      "negative_proper_mse_criterion": true,
+      "normal_equation_max_relative_residual": 6.003171370832432e-16,
+      "cpu_gpu_max_error": 1.4901161193847656e-08,
+      "subset_inference_exact": true,
+      "report_compatibility": true,
+      "clean_blocks": [
+        [
+          "2025Q3",
+          4
+        ],
+        [
+          "2025Q4",
+          4
+        ],
+        [
+          "2026Q1",
+          4
+        ],
+        [
+          "2026Q2",
+          4
+        ]
+      ],
+      "no_trained_artifacts_created": true
+    },
+    "V64": {
+      "features": 44,
+      "market_features": 61,
+      "basis_width": 194,
+      "fixed_files": 159,
+      "deterministic_solver": true,
+      "causal_future_invariance": true,
+      "daily_weighted_loss_exact": true,
+      "negative_proper_mse_criterion": true,
+      "normal_equation_max_relative_residual": 4.462117913458636e-16,
+      "cpu_gpu_max_error": 1.1175870895385742e-08,
+      "subset_inference_exact": true,
+      "report_compatibility": true,
+      "clean_blocks": [
+        [
+          "2025Q3",
+          4
+        ],
+        [
+          "2025Q4",
+          4
+        ],
+        [
+          "2026Q1",
+          4
+        ],
+        [
+          "2026Q2",
+          4
+        ]
+      ],
+      "no_trained_artifacts_created": true
+    },
+    "V65": {
+      "features": 44,
+      "market_features": 61,
+      "basis_width": 194,
+      "fixed_files": 159,
+      "deterministic_solver": true,
+      "causal_future_invariance": true,
+      "daily_weighted_loss_exact": true,
+      "negative_proper_mse_criterion": true,
+      "normal_equation_max_relative_residual": 4.599001882415004e-16,
+      "cpu_gpu_max_error": 1.30385160446167e-08,
+      "subset_inference_exact": true,
+      "report_compatibility": true,
+      "clean_blocks": [
+        [
+          "2025Q3",
+          4
+        ],
+        [
+          "2025Q4",
+          4
+        ],
+        [
+          "2026Q1",
+          4
+        ],
+        [
+          "2026Q2",
+          4
+        ]
+      ],
+      "no_trained_artifacts_created": true
+    }
+  },
+  "real_snapshot_label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 511238,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 511092,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 510964,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 510807,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 510814,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "ensemble_sum_scaling_cost_gate_exact": true,
+  "zero_cost_gate_reproduces_parent": true,
+  "top1_baseline_exact": true,
+  "gross_fee_slippage_identity": true,
+  "scope": "synthetic algebra and execution fixtures plus real label/price consistency; no strategy-performance conclusion"
+}

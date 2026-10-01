@@ -1,0 +1,210 @@
+{
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "quarter_count": 10,
+  "monthly_signal_count": 30,
+  "v27_oos_prediction_rows": 2404,
+  "duplicate_prediction_rows": 0,
+  "features_frozen_before_holdout": [
+    "mf_tier_flow_agreement_20",
+    "rel_mom_ind_3d",
+    "rel_mom_ind_5d",
+    "gap_down_recover_freq_20d"
+  ],
+  "v24_feature_cutoff": "2023Q4",
+  "model_inputs_per_worker": 8,
+  "input_features_exactly_four_factors_plus_four_asset_onehots": true,
+  "quarter_boundaries": {
+    "2024Q1": {
+      "train_last": "2023-12-22",
+      "first_test": "2024-01-02",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2023-12-22",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    },
+    "2024Q2": {
+      "train_last": "2024-03-22",
+      "first_test": "2024-04-01",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2024-03-22",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    },
+    "2024Q3": {
+      "train_last": "2024-06-21",
+      "first_test": "2024-07-01",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2024-06-21",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    },
+    "2024Q4": {
+      "train_last": "2024-09-23",
+      "first_test": "2024-10-08",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2024-09-23",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    },
+    "2025Q1": {
+      "train_last": "2024-12-24",
+      "first_test": "2025-01-02",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2024-12-24",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    },
+    "2025Q2": {
+      "train_last": "2025-03-24",
+      "first_test": "2025-04-01",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2025-03-24",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    },
+    "2025Q3": {
+      "train_last": "2025-06-23",
+      "first_test": "2025-07-01",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2025-06-23",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    },
+    "2025Q4": {
+      "train_last": "2025-09-23",
+      "first_test": "2025-10-09",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2025-09-23",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    },
+    "2026Q1": {
+      "train_last": "2025-12-24",
+      "first_test": "2026-01-05",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2025-12-24",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    },
+    "2026Q2": {
+      "train_last": "2026-03-24",
+      "first_test": "2026-04-01",
+      "purged_trading_sessions": 5,
+      "max_label_date_used": "2026-03-24",
+      "train_precedes_test": true,
+      "predictions_are_quarter_local": true
+    }
+  },
+  "all_quarters_have_five_session_purge": true,
+  "all_labels_end_at_train_cutoff": true,
+  "signal_dates_match_v24_v11": true,
+  "all_signals_execute_next_session": true,
+  "target_weight_sum_min": 1.0,
+  "target_weight_sum_max": 1.0,
+  "daily_rows": 3005,
+  "trade_rows": 276,
+  "negative_cash_rows": 0,
+  "negative_equity_rows": 0,
+  "max_abs_accounting_residual": 2.9103830456733704e-11,
+  "strategies": {
+    "V27 four-factor LambdaRank Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 36.581239869992714,
+      "trades": 70,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V24 fixed-rank Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 3.4397542918886757,
+      "trades": 81,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V11 LambdaRank Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 36.23176302149659,
+      "trades": 73,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V11 60d momentum Top2": {
+      "blocked_trade_events": 0,
+      "max_positions": 2,
+      "min_cash": 61.0696464866453,
+      "trades": 48,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "equal-weight hold": {
+      "blocked_trade_events": 0,
+      "max_positions": 4,
+      "min_cash": 328.2072699519849,
+      "trades": 4,
+      "max_abs_accounting_residual": 1.4551915228366852e-11
+    }
+  },
+  "published_v24_ledger_reference_checks": {
+    "V24 fixed-rank Top2": {
+      "reference_strategy": "V24 stable-factor consensus Top2",
+      "net_return_abs_difference": 0.0,
+      "max_drawdown_abs_difference": 0.0,
+      "reference_net_return": 0.7136226997483901,
+      "recomputed_net_return": 0.7136226997483901
+    },
+    "V11 LambdaRank Top2": {
+      "reference_strategy": "V11 LambdaRank Top2",
+      "net_return_abs_difference": 0.0,
+      "max_drawdown_abs_difference": 0.0,
+      "reference_net_return": 0.7629108467516739,
+      "recomputed_net_return": 0.7629108467516739
+    },
+    "V11 60d momentum Top2": {
+      "reference_strategy": "60d momentum Top2",
+      "net_return_abs_difference": 0.0,
+      "max_drawdown_abs_difference": 0.0,
+      "reference_net_return": 0.8168833087203415,
+      "recomputed_net_return": 0.8168833087203415
+    },
+    "equal-weight hold": {
+      "reference_strategy": "equal-weight hold",
+      "net_return_abs_difference": 0.0,
+      "max_drawdown_abs_difference": 0.0,
+      "reference_net_return": 0.704429781154281,
+      "recomputed_net_return": 0.704429781154281
+    }
+  },
+  "scheduler_resource_summary": {
+    "quarters_requested": [
+      "2024Q1",
+      "2024Q2",
+      "2024Q3",
+      "2024Q4",
+      "2025Q1",
+      "2025Q2",
+      "2025Q3",
+      "2025Q4",
+      "2026Q1",
+      "2026Q2"
+    ],
+    "quarter_count_complete": 10,
+    "failed_quarters": [],
+    "worker_limit": 4,
+    "max_worker_limit": 4,
+    "per_worker_numerical_threads": 1,
+    "memory_limit_gib": 180.0,
+    "soft_used_limit_gib": 145.0,
+    "host_used_gib_start": 114.07,
+    "host_used_peak_sampled_gib": 114.95,
+    "host_used_gib_end": 114.1,
+    "worker_rss_sum_peak_sampled_gib": null,
+    "worker_rss_max_peak_sampled_gib": null,
+    "load1_start": 12.67,
+    "load1_end": 13.03,
+    "worker_rss_sample_note": "Worker RSS sampler formatting was corrected after the run; sampled worker fields in resource_log.csv are blank. Per-quarter process RSS values below are from worker status results.",
+    "worker_rss_per_process_max_from_quarter_results_gib": 0.294,
+    "conservative_four_worker_rss_bound_gib": 1.176
+  }
+}

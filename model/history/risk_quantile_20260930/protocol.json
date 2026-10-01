@@ -1,0 +1,38 @@
+{
+  "created_at": "2026-09-30 13:28:35",
+  "units": [
+    "V54",
+    "V55",
+    "V56",
+    "V57"
+  ],
+  "seeds": [
+    3253,
+    4253,
+    5253,
+    6253
+  ],
+  "parent_scripts_only": "V50; no copied checkpoints",
+  "snapshot": "/root/autodl-fs/model/history/diversification_20260930/trainingdata_frozen",
+  "hypothesis": "point-ranking ignores return scale and lower-tail risk; conditional ordered quantiles seek better downside control and calibrated uncertainty",
+  "architecture": "same105 flow-view features,8 causal sessions; GRU24->32, current61 market_z252 ->16,forecast32->3 ordered quantiles",
+  "target": "raw5d return minus same-date finite-label median, computed only from training targets; snapshot labels unchanged; no future labels in inputs",
+  "criterion": "negative day-equal pinball loss on validation; RankIC/tradable return retained as diagnostics, not selection",
+  "primary_score": "q50-0.5*(q50-q25)",
+  "quantiles": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "risk_lambda_grid": [
+    0,
+    0.25,
+    0.5,
+    0.75
+  ],
+  "primary_strategy": "top5_1d,band40,100000cash; top1_1d baseline; no position or execution changes",
+  "validation": "4quarters x4folds x4seeds; exact original21day purge; all train-before-validation blocks; existing242-day test only display after freezing",
+  "reference": "paired V50-V53 same seeds plus V31/V36/V38 on current frozen snapshot",
+  "promotion": "none; no release edits; low drawdown at the expense of all alpha does not qualify",
+  "queue_policy": "numeric preflight first; actual training serialized after existing batch succeeds to preserve GPU capacity"
+}

@@ -321,26 +321,6 @@ def id2_pm_ret(ctx):
     return _pm_ret(ctx)
 
 
-@register(FactorSpec(
-    name="id2_am_pm_ret_gap",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="上午段收益 − 下午段收益（会话动量的时间差）",
-    formula="am_ret - pm_ret",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + " ★ **故意偏离参考库**：参考库 Class3 是 `am_pm_return_ratio`"
-          "（比值），但它因分母 `pm_ret → 0` 时会爆出 ±1e3 量级的假值，"
-          "已于 2026-09-17 以 `idt_am_pm_return_ratio` 之名被删（去糟粕）。"
-          "本因子用**差**：有界、不会被小分母放大，而且在截面上"
-          "「am−pm」与「am/pm」**不是**单调同序关系（比值对小分母敏感、"
-          "差值不敏感），所以它不是一个改头换面的同义因子。"
-          "经济含义：>0 ⇒ 上午强、下午回吐（隔夜信息驱动）；"
-          "<0 ⇒ 下午拉升（日内资金持续流入）。"),
-))
-def id2_am_pm_ret_gap(ctx):
-    return _am_ret(ctx) - _pm_ret(ctx)
 
 
 @register(FactorSpec(
@@ -445,25 +425,6 @@ def id2_session_range_overlap(ctx):
 # 4. 会话 VWAP 与收盘定价（3 个）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="id2_am_pm_vwap_gap",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="上午 VWAP / 下午 VWAP − 1（会话成交均价的时间位移）",
-    formula="return cross_sectional_rank(_metric(context, 'vwap_am_pm_gap'))",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + " 抄参考库 Class3 `vwap_am_pm_gap`。"
-          "★ 会话 VWAP 是层里**新出现**的对象（`am_amt/am_vol`、`pm_amt/pm_vol`），"
-          "已注册的 `vwap_daily_deviation` 只覆盖**全天** VWAP 与收盘的偏离，"
-          "不区分会话。同日比值、同单位约掉，未复权无妨。"
-          "与 `id2_am_pm_ret_gap` 的区别：那个比较两个会话的**端点价差**"
-          "（首尾两点），本因子比较两个会话的**成交均价**（整段重心）。"
-          "均价位移 > 端点位移 ⇒ 该段成交集中在高位（放量拉抬）。"),
-))
-def id2_am_pm_vwap_gap(ctx):
-    return ctx.safe_div(_am_vwap(ctx), _pm_vwap(ctx), 1e-8) - 1.0
 
 
 @register(FactorSpec(
@@ -717,27 +678,3 @@ def id2_session_sign_agreement_20(ctx):
     return ctx.roll_mean(agree, 20, 10)
 
 
-@register(FactorSpec(
-    name="id2_amihud_intraday_20",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="日内 Amihud 非流动性（20 日）：|日内收益| / 成交额",
-    formula="amihud_intraday = abs(ret_sum) / amt; 20 日均值",
-    start=ID2_START,
-    warmup_days=W_20,
-    higher_is_better=False,
-    note=(_DEG5 + " 源自参考库 Class3 `amihud_5min`。"
-          "★ **与已注册的两个 Amihud 因子的唯一区别是「哪条腿」**："
-          "`amihud_daily_5` 用 close-to-close（含隔夜跳空），"
-          "`amihud_asymmetry_20` 是涨跌日的不对称，本因子用**日内腿**"
-          "（`ret_sum` = 48 根棒收益之和，剔除了隔夜跳空）。"
-          "日内腿的 Amihud 衡量的是「**盘中**每元成交额推动的价格变化」。"
-          "⚠ **本文件置信度最低的一行**：`amihud_daily_20` 曾在 2026-09-17 "
-          "的去糟粕清单里（虽未注册），与已注册的两个 Amihud 家族的相关性"
-          "未实测。**`dedup` 阶段与 `amihud_daily_5` / `amihud_asymmetry_20` "
-          "逐一比 |ρ|，超过 0.95 就地删除。**"
-          "分子是单位无关的收益、分母是元 —— 同日截面内一致，可跨日比。"),
-))
-def id2_amihud_intraday_20(ctx):
-    x = ctx.safe_div(np.abs(_f(ctx, "ret_sum")), _f(ctx, "amt"), 1e-6)
-    return _roll(ctx, x, 20, 10)

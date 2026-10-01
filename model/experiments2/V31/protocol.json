@@ -1,0 +1,92 @@
+{
+  "version": "V31",
+  "hypothesis": "A single V11 factor frozen before the holdout may perform differently when its highest-ranked bank receives the entire unlevered equity allocation instead of equal weighting the top two.",
+  "factor_selection": {
+    "cutoff_quarter": "2023Q4",
+    "importance_quarters": [
+      "2020Q1",
+      "2020Q2",
+      "2020Q3",
+      "2020Q4",
+      "2021Q1",
+      "2021Q2",
+      "2021Q3",
+      "2021Q4",
+      "2022Q1",
+      "2022Q2",
+      "2022Q3",
+      "2022Q4",
+      "2023Q1",
+      "2023Q2",
+      "2023Q3",
+      "2023Q4"
+    ],
+    "rule": "Use only mf_tier_flow_agreement_20, fixed because it appeared in V11 top-20 gain features in all 16 quarters from 2020Q1 through 2023Q4; do not inspect holdout returns to select or change it.",
+    "selected_features": [
+      "mf_tier_flow_agreement_20"
+    ],
+    "selection_statistics": {
+      "mf_tier_flow_agreement_20": {
+        "top20_quarters": 16,
+        "total_importance_quarters": 16,
+        "mean_normalized_gain_when_top20": 0.07313518998683682
+      }
+    },
+    "direction": "Higher harmonized zscore_win1_99_v1 factor value ranks higher."
+  },
+  "portfolio_rule": "At each shared V11 first-session monthly signal close, rank the four banks by mf_tier_flow_agreement_20 descending, break ties by stock code, and hold only the highest-ranked bank at 100% of account equity. No leverage. Execute at the next trading session open.",
+  "holdout_dates": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signal_dates": [
+    "2024-01-02",
+    "2024-02-01",
+    "2024-03-01",
+    "2024-04-01",
+    "2024-05-06",
+    "2024-06-03",
+    "2024-07-01",
+    "2024-08-01",
+    "2024-09-02",
+    "2024-10-08",
+    "2024-11-01",
+    "2024-12-02",
+    "2025-01-02",
+    "2025-02-05",
+    "2025-03-03",
+    "2025-04-01",
+    "2025-05-06",
+    "2025-06-03",
+    "2025-07-01",
+    "2025-08-01",
+    "2025-09-01",
+    "2025-10-09",
+    "2025-11-03",
+    "2025-12-01",
+    "2026-01-05",
+    "2026-02-02",
+    "2026-03-02",
+    "2026-04-01",
+    "2026-05-06",
+    "2026-06-01"
+  ],
+  "execution": "Exact V11 final corrected shared-cash ledger: T+1 open, 1% participation cap, ordinary 100-share lots, fees, adverse slippage, limit-price blocks, corporate-action adjusted shares, and full-exit odd-lot handling. Mark positions to final holdout close without forced liquidation, matching V26.",
+  "comparisons": [
+    "V26 mf_tier_flow_agreement_20 Top2",
+    "60d momentum Top2",
+    "V11 LambdaRank Top2",
+    "equal-weight hold"
+  ],
+  "no_retraining": true,
+  "no_parameter_sweep": true,
+  "no_holdout_based_rule_changes": true,
+  "no_leverage": true,
+  "factor_semantics": "zscore_win1_99_v1",
+  "initial_equity": 100000.0,
+  "monthly_signals": 30,
+  "source_script_sha256": "5cde6de227e48b485ea191357600ba3683adc6c8bd50121ef205288e15dfe6c7",
+  "v26_protocol_sha256": "4e56d889b92c9566cb92f7ed4c63cc576638240d8399b5defba6481fdb19f36d",
+  "v26_runner_sha256": "a6e6eb64f8ddeb0aac28dd494f4a916a3a6125b9fb54a86968e9426ca22be6eb",
+  "v11_ledger_source_sha256": "64a89fdae173b057d7ef5277bde247f2c10bed96a7bdd2d2c0ce6f760df5bd38"
+}

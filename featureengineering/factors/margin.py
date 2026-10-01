@@ -9,11 +9,11 @@
     ① `FactorSpec(lagged_ok=("stock_margin_detail",))` —— 不写，`register()` 直接抛错
        （守卫本身也写在 `fea/spec.py` 的 LAGGED_DATASETS 里）；
     ② **在原始网格上把因子算完，最后一步整体下移一个交易日**：
-       `return ctx.lag_grid(grid, 1)`，等价于「value(T) 只用到 trade_date <= T-1 的记录」。
+       `return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))`，等价于「value(T) 只用到 trade_date <= T-1 的记录」。
 
     ⚠️ 位移必须是**最后一步**。在中间步骤位移（比如先位移 rzye 再算 20 日变化率）
        会把「T-1 相对于 T-21 的变化」错写成「T-1 相对于 T-20」，语义错位一格，
-       而且看起来完全正常。本文件的模式统一是：算完 → `ctx.lag_grid(grid, 1)`。
+       而且看起来完全正常。本文件的模式统一是：算完 → `ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))`。
 
     为什么这条重要：不做位移时，同一个 T 的因子值「今天跑」用 T-1 的数据、
     「明天跑」用 T 的数据 —— **静默改变，且没有任何报错**（当天算出来还完全正确）。
@@ -118,7 +118,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from fea.spec import FactorSpec, register
+from fea.spec import FactorSpec, register, LAGGED_DATASETS
 
 MARGIN = "stock_margin_detail"
 DAILY = "stock_daily"
@@ -234,7 +234,7 @@ def _empty(ctx) -> np.ndarray:
             '【本实现：clip/rank 交给引擎；结果整体下移 1 个交易日】',
     start=MAR_START, warmup_days=W20, higher_is_better=True,
     lagged_ok=(MARGIN,),
-    note="★ 滞后表：`lagged_ok` 声明 + `ctx.lag_grid(grid, 1)` 是**最后一步**。"
+    note="★ 滞后表：`lagged_ok` 声明 + `ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))` 是**最后一步**。"
          "分子分母都是同一列、间隔 20 个交易日，分母用 |rzye(T-20)| 并设 1 元地板"
          "（余额被清零的股票直接给 NaN，而不是 ±1e6 的假变化率）。"
          "上游实测 2026-09-10 截面 p1/p50/p99 = -0.45 / -0.026 / +1.20 —— "
@@ -247,7 +247,7 @@ def margin_balance_20d(ctx):
     if df is None:
         return _empty(ctx)
     grid = ctx.pct_change(_state(ctx, df, day, "rzye"), 20, min_abs_den=DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 @register(FactorSpec(
@@ -269,7 +269,7 @@ def margin_balance_5d(ctx):
     if df is None:
         return _empty(ctx)
     grid = ctx.pct_change(_state(ctx, df, day, "rzye"), 5, min_abs_den=DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 
@@ -278,42 +278,6 @@ def margin_balance_5d(ctx):
 
 
 
-@register(FactorSpec(
-    name="margin_chg_rel_5d", group="margin", deps=(MARGIN,),
-    desc="融资余额变化率之加速度 = 5 日变化率 − 20 日变化率",
-    formula='chg5 = m["rzye"].groupby(level="Code").transform('
-            'lambda s: s.pct_change(5, fill_method=None)); '
-            'chg20 = m["rzye"].groupby(level="Code").transform('
-            'lambda s: s.pct_change(20, fill_method=None)); '
-            'return cross_sectional_rank(chg5 - chg20)   '
-            '★ 参考库原条目为 margin_chg_rel_ind_5d（融资余额5日变化率**行业相对**）'
-            '【本实现：行业表在本框架不可得（见 note），改为「相对自身中期趋势」；'
-            '结果整体下移 1 个交易日】',
-    start=MAR_START, warmup_days=W20, higher_is_better=True,
-    lagged_ok=(MARGIN,),
-    note="★★ 偏离参考库（口径级，必须看）：factors.md 对应条目是 `margin_chg_rel_ind_5d`"
-         " —— 「融资余额5日变化率**减去行业等权均值**」。本框架**没有行业表**"
-         "（`ctx` 无行业字段，`fea/**` 也不提供），硬做只能去读 `stock_list.industry`，"
-         "而那是**当前时点快照**、用在 2012 年的因子上属于前视（本族的全部意义就是"
-         " PIT 正确，不为此破例）。同时，「减去**全市场**当日等权均值」是**每日常数平移**，"
-         "不改变截面排名 —— 那样写出来会和 `margin_balance_5d` 的 rank 完全重复。"
-         "故改为**相对自身中期趋势**：chg5 − chg20，即「短期杠杆资金流入相对中期趋势的"
-         "加速度」。它既保留了「剥离整体杠杆环境」的原意（短期 vs 中期用的是同一只股票），"
-         "又不是另两个变化率因子的复制品 —— 沙箱实测（2012~2015）日内 rank 相关中位数："
-         "与 `margin_balance_5d` **−0.149**、与 `margin_balance_20d` **−0.886**。"
-         "★ 与 20 日变化率的强负相关是「加速度」定义的固有性质（chg5 − chg20 里 chg20 是"
-         "主导项，符号相反），不是错误；但它意味着下游若已经在用 `margin_balance_20d`，"
-         "本因子主要提供的是「反向 + 5 日增量」，建议与 20 日变化率二选一或做正交化。"
-         "若后续框架补上**时点化**的行业表，本因子应改写为行业相对口径（version +1）。",
-))
-def margin_chg_rel_5d(ctx):
-    df, day = _load(ctx)
-    if df is None:
-        return _empty(ctx)
-    rzye = _state(ctx, df, day, "rzye")
-    grid = (ctx.pct_change(rzye, 5, min_abs_den=DEN)
-            - ctx.pct_change(rzye, 20, min_abs_den=DEN))
-    return ctx.lag_grid(grid, 1)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -352,7 +316,7 @@ def margin_leverage_change_20d(ctx):
     if df is None:
         return _empty(ctx)
     lev = ctx.safe_div(_state(ctx, df, day, "rzye"), _mv(ctx), min_abs_den=DEN)
-    return ctx.lag_grid(ctx.diff(lev, 20), 1)
+    return ctx.lag_grid(ctx.diff(lev, 20), LAGGED_DATASETS.get(MARGIN, 1))
 
 
 
@@ -381,7 +345,7 @@ def total_leverage_ratio(ctx):
     if df is None:
         return _empty(ctx)
     grid = ctx.safe_div(_state(ctx, df, day, "rzrqye"), _mv(ctx), min_abs_den=DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -412,7 +376,7 @@ def margin_repay_deceleration(ctx):
     if df is None:
         return _empty(ctx)
     grid = ctx.pct_change(_flow(ctx, df, day, "rzche"), 5, min_abs_den=DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 @register(FactorSpec(
@@ -438,7 +402,7 @@ def margin_repay_shock(ctx):
         return _empty(ctx)
     rzche = _flow(ctx, df, day, "rzche")
     grid = ctx.safe_div(rzche, ctx.roll_mean(rzche, 20, 10), min_abs_den=DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 @register(FactorSpec(
@@ -468,7 +432,7 @@ def margin_flow_asymmetry_10d(ctx):
     rzche = _flow(ctx, df, day, "rzche")
     net = _roll_sum(ctx, rzmre - rzche, 10, 5)
     tot = _roll_sum(ctx, rzmre + rzche, 10, 5)
-    return ctx.lag_grid(ctx.safe_div(net, tot, min_abs_den=DEN), 1)
+    return ctx.lag_grid(ctx.safe_div(net, tot, min_abs_den=DEN), LAGGED_DATASETS.get(MARGIN, 1))
 
 
 @register(FactorSpec(
@@ -496,7 +460,7 @@ def margin_velocity(ctx):
         return _empty(ctx)
     tot = _flow(ctx, df, day, "rzmre") + _flow(ctx, df, day, "rzche")
     grid = ctx.safe_div(tot, _state(ctx, df, day, "rzye"), min_abs_den=DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 @register(FactorSpec(
@@ -525,7 +489,7 @@ def margin_balance_volatility_20d(ctx):
     if df is None:
         return _empty(ctx)
     grid = _cv(ctx, _state(ctx, df, day, "rzye"), 20, 10, DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 @register(FactorSpec(
@@ -563,7 +527,7 @@ def margin_buyer_avg_cost_premium(ctx):
     px = ctx.hfq("close")                       # 后复权（状态量，停牌日沿用最后价）
     cost = ctx.safe_div(_roll_sum(ctx, rzmre * px, 20, 10),
                         _roll_sum(ctx, rzmre, 20, 10), min_abs_den=DEN)
-    return ctx.lag_grid(ctx.safe_div(px, cost, min_abs_den=DEN) - 1.0, 1)
+    return ctx.lag_grid(ctx.safe_div(px, cost, min_abs_den=DEN) - 1.0, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -593,7 +557,7 @@ def short_sell_volume_ratio(ctx):
     if df is None:
         return _empty(ctx)
     grid = ctx.safe_div(_flow(ctx, df, day, "rqmcl"), ctx.px("vol"), min_abs_den=DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 @register(FactorSpec(
@@ -624,7 +588,7 @@ def short_balance_ratio_change_20d(ctx):
     if df is None:
         return _empty(ctx)
     ratio = ctx.safe_div(_state(ctx, df, day, "rqye"), _mv(ctx), min_abs_den=DEN)
-    return ctx.lag_grid(ctx.diff(ratio, 20), 1)
+    return ctx.lag_grid(ctx.diff(ratio, 20), LAGGED_DATASETS.get(MARGIN, 1))
 
 
 @register(FactorSpec(
@@ -651,7 +615,7 @@ def short_squeeze_risk(ctx):
         return _empty(ctx)
     grid = ctx.safe_div(_state(ctx, df, day, "rqyl"), _state(ctx, df, day, "rzye"),
                         min_abs_den=DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))
 
 
 @register(FactorSpec(
@@ -679,4 +643,4 @@ def short_interest_volatility_20d(ctx):
     if df is None:
         return _empty(ctx)
     grid = _cv(ctx, _state(ctx, df, day, "rqyl"), 20, 10, DEN)
-    return ctx.lag_grid(grid, 1)
+    return ctx.lag_grid(grid, LAGGED_DATASETS.get(MARGIN, 1))

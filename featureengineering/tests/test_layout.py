@@ -32,7 +32,7 @@ class LayoutTests(unittest.TestCase):
 
     def test_dayhash_date_dirs_and_explicit_override(self):
         with tempfile.TemporaryDirectory() as td:
-            root=Path(td)
+            root=Path(td)/'project';root.mkdir()
             cfg=SimpleNamespace(root=root, factors_dir=root/'data/factors')
             for date,out,expected in [
                 ('2026-09-18',None,'artifacts/dayhash/2026-09-18'),
@@ -49,7 +49,7 @@ class LayoutTests(unittest.TestCase):
 
     def test_verify_does_not_borrow_old_date_baseline(self):
         with tempfile.TemporaryDirectory() as td:
-            root=Path(td)
+            root=Path(td)/'project';root.mkdir()
             old=root/'artifacts/dayhash/log0918'
             old.mkdir(parents=True)
             (old/'dayhash.prev.tsv').write_text('old evidence')

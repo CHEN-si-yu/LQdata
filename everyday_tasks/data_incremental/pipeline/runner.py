@@ -122,6 +122,7 @@ def run(cfg: dict, runner: P.Runner, client: Client, *,
             rep = report_mod.build([], None, phases, gate_info=gate_info)
             rep["verdict"] = "✖ 闸门 strict 超时：未做任何更新"
             rep["alerts"] = [f"✖ 闸门 strict 超时：仍有 {len(gres.blocking)} 张日频表未到齐，未做任何更新"]
+            rep["alerts_actionable"] = list(rep["alerts"])
             if persist_report:
                 report_mod.save(rep)
             return rep
@@ -140,6 +141,7 @@ def run(cfg: dict, runner: P.Runner, client: Client, *,
         #   旧实现只有一个 verdict 字符串，alerts 仍是 [] → **一行数据都没更新的
         #   一轮，退出码却是 0**，watchdog / `&&` 链会当成成功。
         rep["alerts"] = ["✖ 拿不到上游最新交易日（T），本轮未做任何更新"]
+        rep["alerts_actionable"] = list(rep["alerts"])
         if persist_report:
             report_mod.save(rep)
         return rep
@@ -199,6 +201,7 @@ def run(cfg: dict, runner: P.Runner, client: Client, *,
         #   ledger_lag_days。多数表仍走原来的「交易日窗口、滞后 0」，行为逐格不变；
         #   只有声明了的表（如 stock_holder_number）用日历日并让比对滞后 N 天。
         def _days_for(ds) -> list[str]:
+            lo, hi = ctx.data_window(ds, ds.window(ctx.redundancy))
             if ds.ledger_calendar_days:
                 d = cal_mod.calendar_days_between(lo, hi)   # 含周末（公告日有周末）
             else:
@@ -222,13 +225,27 @@ def run(cfg: dict, runner: P.Runner, client: Client, *,
             if only and ds.name not in only:
                 continue
             days = _days_for(ds)
+            man = state.Manifest.load(ds.name)
+            pending = man._extra.get("pending_ledger_dates", [])
+            from datetime import date, timedelta
+            cutoff = (date.today() - timedelta(days=ds.ledger_lag_days)).isoformat()
+            days = sorted(set(days) | {d for d in pending if d <= cutoff})
             extra = dayhash_mod.sample_old_days(ds, sample_n, exclude=set(days))
             if extra:
                 days = days + extra
                 n_sample += len(extra)
-            st = status_of.get(ds.name, "✔")
+            st = status_of.get(ds.name, "⊘")
             try:
-                ch, n = dayhash_mod.update_and_compare(ds.name, ds, days, write=(st == "✔"))
+                ch, n = [], 0
+                batch_size = 16 if man.partition_rows() > 2_000_000 else max(16, len(days))
+                for offset in range(0, len(days), batch_size):
+                    batch = days[offset:offset + batch_size]
+                    changes, checked = dayhash_mod.update_and_compare(ds.name, ds, batch, write=(st == "✔"))
+                    ch.extend(changes)
+                    n += checked
+                    if st == "✔":
+                        man._extra["pending_ledger_dates"] = [d for d in man._extra.get("pending_ledger_dates", []) if d not in batch]
+                        man.save()
             except Exception as exc:  # noqa: BLE001
                 runner.note(f"   ⚠️ {ds.name} 台账更新失败（**不影响已抓到的数据**）："
                             f"{str(exc)[:90]}")

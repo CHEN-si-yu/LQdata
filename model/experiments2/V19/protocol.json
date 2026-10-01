@@ -1,0 +1,49 @@
+{
+  "objective": "experiments2/V19 monthly Top1 rebalance only when selected bank changes",
+  "signal_windows": {
+    "official": [
+      "2025-07-01",
+      "2026-06-30"
+    ],
+    "official_exit": "2026-07-01",
+    "extended": [
+      "2023-01-03",
+      "2026-09-23"
+    ],
+    "extended_exit": "2026-09-24"
+  },
+  "prices_and_amount_only": true,
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "rule": {
+    "signal": "first trading day of month close; V15's fixed Top1 by adjusted 20d or 60d return",
+    "holding": "reweight to current equity only when Top1 name changes; if unchanged preserve shares",
+    "execution": "next session open; audited shared-cash account engine",
+    "lookbacks_under_test": [
+      20,
+      60
+    ],
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "forced_exit": "official 2026-07-01 open; extended latest 2026-09-24 open",
+    "comparison": "same-ledger V15 monthly Top1 reweighting at identical lookback"
+  },
+  "cost_model": {
+    "account_money": 100000.0,
+    "lot_size": 100,
+    "max_participation": 0.01,
+    "commission_rate": 0.00025,
+    "min_commission": 5.0,
+    "transfer_rate": 1e-05,
+    "stamp_sell_rate": 0.0005,
+    "slippage_rate": 0.0003
+  },
+  "account_engine_source": "isolated V19 copy of V15/V4 audited engine; V15/V9 untouched",
+  "runner_sha256": "0ab5dae8e50e38e0fd033134769d7e94ccc2cce34bd261a2eb4b0ea11b7321e5",
+  "account_engine_sha256": "825c7a9cee48479ecd75eb1e9787afdbd25e6e7d4cf06826564c6ec34737e20a",
+  "created_at": "2026-09-27 18:04:02"
+}

@@ -49,8 +49,6 @@ def _width(ctx,lo='cost_5pct',hi='cost_95pct'):
 @register(_spec('cyqp_winner_fraction','供应商获利盘占比','winner_rate / 100',high=False))
 def cyqp_winner_fraction(ctx):return _field(ctx,'winner_rate')
 
-@register(_spec('cyqp_winner_change_20','获利盘占比 20 日变化','winner_fraction(T) - winner_fraction(T-20)'))
-def cyqp_winner_change_20(ctx):return ctx.diff(_field(ctx,'winner_rate'),20)
 
 @register(_spec('cyqp_winner_acceleration_5','获利盘占比 5 日二阶差分','diff(diff(winner_fraction,5),5)',high=False))
 def cyqp_winner_acceleration_5(ctx):return ctx.diff(ctx.diff(_field(ctx,'winner_rate'),5),5)
@@ -58,19 +56,11 @@ def cyqp_winner_acceleration_5(ctx):return ctx.diff(ctx.diff(_field(ctx,'winner_
 @register(_spec('cyqp_winner_volatility_20','获利盘占比 20 日波动','std(winner_fraction,20)',high=False))
 def cyqp_winner_volatility_20(ctx):return ctx.roll_std(_field(ctx,'winner_rate'),20)
 
-@register(_spec('cyqp_cost_width_90','90% 筹码成本相对宽度','(cost_95pct-cost_5pct)/cost_50pct',high=False))
-def cyqp_cost_width_90(ctx):return _width(ctx)
 
-@register(_spec('cyqp_cost_width_70','70% 筹码成本相对宽度','(cost_85pct-cost_15pct)/cost_50pct',high=False))
-def cyqp_cost_width_70(ctx):return _width(ctx,'cost_15pct','cost_85pct')
 
 @register(_spec('cyqp_cost_width_change_20','90% 成本宽度 20 日变化','diff((cost_95pct-cost_5pct)/cost_50pct,20)',high=False))
 def cyqp_cost_width_change_20(ctx):return ctx.diff(_width(ctx),20)
 
-@register(_spec('cyqp_cost_tail_asymmetry','上下成本尾部不对称（扩展）','(cost_95pct+cost_5pct-2*cost_50pct)/(cost_95pct-cost_5pct)',high=False))
-def cyqp_cost_tail_asymmetry(ctx):
-    lo,mid,hi=(_field(ctx,k) for k in ('cost_5pct','cost_50pct','cost_95pct'))
-    return ctx.safe_div(hi+lo-2*mid,hi-lo,1e-8)
 
 @register(_spec('cyqp_tail_width_share','两端尾部占 90% 区间的宽度比例（扩展）','((cost_95pct-cost_85pct)+(cost_15pct-cost_5pct))/(cost_95pct-cost_5pct)',high=False))
 def cyqp_tail_width_share(ctx):

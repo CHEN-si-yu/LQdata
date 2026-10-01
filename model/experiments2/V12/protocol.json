@@ -1,0 +1,36 @@
+{
+  "objective": "fixed four-bank monthly 60-session momentum Top2, portfolio allocation by causal inverse 20-session volatility",
+  "official_signal_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "official_exit_only_day": "2026-07-01",
+  "official_signal_sessions": 242,
+  "extended_window": [
+    "2023-01-03",
+    "2026-09-24"
+  ],
+  "signal_rule": {
+    "signal": "first observed session of each calendar month at T close",
+    "selection": "same fixed 60-session adjusted-close return Top2 ranking as V4",
+    "allocation": "selected two banks weighted proportional to inverse sample std of 20 adjusted-close daily simple returns through the signal day, weights sum to 1",
+    "execution": "T+1 open; final lifecycle exit at closing price; audited cash-only ledger; 100-share lots, 1% prior signal-day amount capacity, one-price limit locks, 3bp slippage, commission/transfer/sell stamp fees",
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "cash_constraints": {
+      "account_money": 100000.0,
+      "lot_size": 100,
+      "max_participation": 0.01,
+      "commission_rate": 0.00025,
+      "min_commission": 5.0,
+      "transfer_rate": 1e-05,
+      "stamp_sell_rate": 0.0005,
+      "slippage_rate": 0.0003
+    },
+    "interpretation": "relative benchmark gains are sample-window strategy comparisons; strict matched friction is same-holdings gross reference minus trading costs/slippage and is not selection alpha"
+  },
+  "source_snapshot": "/root/autodl-fs/model/trainingdata/meta.json",
+  "amount_column": "amount",
+  "script_sha256": "3c0a1b11c6c28df421a381f056d6b843f0340a7549233016dd2080517949d873",
+  "price_loader": "parquet filters only four bank codes and reads price plus amount; no model/features loaded"
+}

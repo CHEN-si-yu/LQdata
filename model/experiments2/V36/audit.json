@@ -1,0 +1,51 @@
+{
+  "holdout": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "signal_count": 30,
+  "same_signal_dates_as_v11": true,
+  "v26_membership_sha256": "b9ef1fc3292ab54080f657286cfcd62fb0fd4125bd288443c7d835db49ef76e9",
+  "v34_membership_sha256": "0cebacd1171d9dcbd1175d9e6bdd7a7a2563fcff4a43d866f5d0f8932414122f",
+  "v26_and_v34_signal_date_values_and_next_open_execution_verified": true,
+  "no_lookahead_flags_passed_for_both_components": true,
+  "monthly_weights_sum_to_one": true,
+  "overlap_months_by_count": {
+    "0": 5,
+    "1": 20,
+    "2": 5
+  },
+  "ledger_checks": {
+    "V36 V26+V34 50/50 Top2 mix": {
+      "min_cash": 47.994039292555044,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 88
+    },
+    "V26 mf_tier_flow_agreement_20 Top2": {
+      "min_cash": 51.354374121292494,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 63
+    },
+    "V34 id2_close_vs_pm_vwap_20 Top2": {
+      "min_cash": 77.63304206021712,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 72
+    },
+    "V11 LambdaRank Top2": {
+      "min_cash": 36.23176302149659,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 73
+    },
+    "equal-weight hold": {
+      "min_cash": 328.2072699519849,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 1.4551915228366852e-11,
+      "trades": 4
+    }
+  },
+  "protocol_unchanged_since_freeze": true
+}

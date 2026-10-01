@@ -1,0 +1,64 @@
+{
+  "passed": true,
+  "checks": {
+    "official_lifecycle_has_243_rows": true,
+    "official_signal_window_has_242_rows": true,
+    "legacy_official_alias_is_signal_window": true,
+    "extended_has_905_rows": true,
+    "last_lifecycle_date_is_2026_07_01": true,
+    "no_july1_signal": true,
+    "all_signal_dates_at_or_before_2026_06_30": true,
+    "t_plus_1_signals_causal": true,
+    "gate_logic_strict_positive": true,
+    "signal_count_12": true,
+    "quarter_rows_sum_242": true,
+    "july1_is_distinct_exit_day": true,
+    "official_closeout_and_cash_audit": true,
+    "official_no_blocked_orders": true,
+    "official_max_holdings_2": true,
+    "official_ledger_residual": true,
+    "extended_closeout_and_cash_audit": true,
+    "extended_liquidation_date_explicit": true,
+    "runner_hash": true,
+    "engine_hash": true,
+    "loader_hash": true,
+    "loader_copied_from_V1": true,
+    "report_separates_exit_from_quarters": true,
+    "report_labels_extended_liquidation": true
+  },
+  "summary": {
+    "official_lifecycle_days": 243,
+    "official_lifecycle_net": -0.09553442828240133,
+    "official_lifecycle_matched": -0.08942888760845269,
+    "official_lifecycle_mdd": -0.18030976085220052,
+    "official_vs_ungated_net_pp": -21.137060380904504,
+    "signal_window_days": 242,
+    "quarterly_signal_days": 242,
+    "july1_exit_day": {
+      "date": "2026-07-01",
+      "new_signal_generated": false,
+      "gated": {
+        "net_return": -0.019042245372465794,
+        "matched_no_fee_return": -0.018003890071673634,
+        "matched_excess": -0.0010383553007921598,
+        "fees": 68.63704270800001,
+        "trade_count": 2,
+        "cash_after_exit": 90446.55717175987,
+        "ending_holdings": 0
+      },
+      "ungated_top2": {
+        "net_return": -0.019061321356375616,
+        "matched_no_fee_return": -0.018021812180422828,
+        "matched_excess": -0.001039509175952788,
+        "fees": 84.77303829772714,
+        "trade_count": 2,
+        "cash_after_exit": 111583.61755266436,
+        "ending_holdings": 0
+      }
+    },
+    "extended_days": 905,
+    "extended_net": 0.932345797399903,
+    "extended_vs_ungated_net_pp": -74.01659244742606,
+    "extended_mdd": -0.21367316990287955
+  }
+}

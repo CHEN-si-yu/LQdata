@@ -1,0 +1,54 @@
+{
+  "version": "V30",
+  "rule_frozen_before_backtest": true,
+  "holdout_dates": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signal_schedule": "Use the same first-session monthly signal dates as V11/V26 in the strict holdout.",
+  "sleeves": [
+    {
+      "name": "V26 mf_tier_flow_agreement_20 Top2",
+      "factor": "mf_tier_flow_agreement_20",
+      "equity_allocation": 0.5,
+      "top2_each_weight": 0.25,
+      "membership_source": "Frozen V26 membership_audit.json; selected using signal-date factor values only."
+    },
+    {
+      "name": "60d adjusted-price momentum Top2",
+      "factor": "60-session adjusted-close cumulative return",
+      "equity_allocation": 0.5,
+      "top2_each_weight": 0.25,
+      "membership_source": "V11 shared monthly schedule; rank four banks by adjusted close at signal close vs 60 sessions prior."
+    }
+  ],
+  "portfolio_rule": "At each monthly signal, assign 25% of total account equity to each of the two V26 factor names and 25% to each of the two 60d momentum names. If a name overlaps, add its sleeve weights (50% for one-name overlap; 50% each when both pairs match). The four target weights sum to 100% before rounding at execution.",
+  "execution": "Target weights from signal close execute at next trading-session open via V11 final shared-cash ledger; sell excess first, then buy using available cash.",
+  "costs_and_constraints": {
+    "initial_cash": 100000.0,
+    "commission_rate": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer_fee_rate": 1e-05,
+    "sell_stamp_duty_rate": 0.0005,
+    "adverse_slippage_rate": 0.0003,
+    "participation_cap": 0.01,
+    "ordinary_lot_size": 100,
+    "one_price_limit_blocks": true,
+    "corporate_action_share_adjustment": true,
+    "zero_target_odd_lot_exit_rule": "V11 final engine; sell residual odd lots only on full exits when participation cap covers entire remaining position."
+  },
+  "comparisons": [
+    "V26 mf_tier_flow_agreement_20 Top2",
+    "60d momentum Top2",
+    "V11 LambdaRank Top2",
+    "equal-weight hold"
+  ],
+  "comparison_window": "All strategies start at 2024-01-02 and mark through 2026-06-30; no forced end liquidation or appended exit-only day.",
+  "controls": {
+    "retraining": false,
+    "parameter_sweep": false,
+    "holdout_based_weight_change": false,
+    "gpu": false
+  },
+  "rule_source": "V30 user-specified fixed 50/50 sleeve mix; V26 frozen memberships; no held-out result is used to set factor, sleeves, or weights."
+}

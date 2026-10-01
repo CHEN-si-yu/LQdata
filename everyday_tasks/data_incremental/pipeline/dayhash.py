@@ -54,8 +54,8 @@ def load_ledger(dataset: str) -> pd.DataFrame:
     p = _ledger_path(dataset)
     if not p.exists():
         return pd.DataFrame(columns=["date", "md5", "rows", "cols_md5", "updated_at"])
-    # 台账是只读参考，读坏了当空即可（不要让台账问题阻断增量主流程）
-    return store.read_parquet(p, on_error="empty")
+    # 已存在的台账损坏必须显式失败，不能当作首次建立而覆盖历史基线。
+    return store.read_parquet(p)
 
 
 def _candidate_files(dataset: str, ds: R.DS, years: set[int] | None = None):
@@ -94,6 +94,16 @@ def _candidate_files(dataset: str, ds: R.DS, years: set[int] | None = None):
     return [f for f in files if f.exists()]
 
 
+def _row_groups(pf, col, days):
+    idx = pf.schema_arrow.names.index(col)
+    groups = []
+    for i in range(pf.num_row_groups):
+        stats = pf.metadata.row_group(i).column(idx).statistics
+        if not stats or not stats.has_min_max or any(str(stats.min)[:10] <= d <= str(stats.max)[:10] for d in days):
+            groups.append(i)
+    return groups
+
+
 def _read_day(dataset: str, ds: R.DS, date: str) -> pd.DataFrame:
     """读出某一天的**全部行**。
 
@@ -114,14 +124,14 @@ def _read_day(dataset: str, ds: R.DS, date: str) -> pd.DataFrame:
             pf = pq.ParquetFile(f)
             if col not in pf.schema_arrow.names:
                 continue
-            for batch in pf.iter_batches(batch_size=2_000_000):
+            for batch in pf.iter_batches(batch_size=250_000, row_groups=_row_groups(pf, col, {want})): 
                 d = batch.to_pandas()
                 s = d[col].astype(str).str[:10]
                 sub = d[s == want]
                 if len(sub):
                     parts.append(sub)
         except (OSError, ValueError):
-            continue
+            raise
     return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
 
 
@@ -157,7 +167,7 @@ def _read_days(dataset: str, ds: R.DS, dates: list[str]) -> dict[str, pd.DataFra
                 pf = pq.ParquetFile(f)
                 if col not in pf.schema_arrow.names:
                     continue
-                for batch in pf.iter_batches(batch_size=2_000_000):
+                for batch in pf.iter_batches(batch_size=250_000, row_groups=_row_groups(pf, col, days)): 
                     d = batch.to_pandas()
                     s = d[col].astype(str).str[:10]
                     hit = s.isin(days)
@@ -167,7 +177,7 @@ def _read_days(dataset: str, ds: R.DS, dates: list[str]) -> dict[str, pd.DataFra
                     for day, grp in sub.groupby(s[hit], sort=False):
                         out.setdefault(str(day)[:10], []).append(grp)
             except (OSError, ValueError):
-                continue
+                raise
     return {d: (pd.concat(v, ignore_index=True) if v else pd.DataFrame())
             for d, v in out.items()}
 

@@ -172,7 +172,16 @@ class PriceLayer:
         raise KeyError(f"价格层不认识字段 {field!r}。可用字段：{known}")
 
     # ---------------------------------------------------------------- 对外
+    def raw_panel(self, panel, field: str) -> np.ndarray:
+        """严格当日原始字段；缺行保持 NaN，适用于上午行情的昨收参考价。"""
+        self.trim_cache(panel)
+        y0=int(panel.dates[0])//10000
+        y1=int(panel.dates[-1])//10000
+        self._ensure_loaded(max(y0-1,2005),y1)
+        return self._field_raw(panel,field)
+
     def panel(self, panel, field: str) -> np.ndarray:
+        self.trim_cache(panel)
         key = (int(panel.dates[0]), int(panel.dates[-1]), panel.C, field)
         hit = self._cache.get(key)
         if hit is not None:
@@ -188,7 +197,8 @@ class PriceLayer:
             out = mx.nan_fill_ffill(raw) * mx.nan_fill_ffill(af)
             src_level = True
         elif field == "traded":
-            out = np.isfinite(self._field_raw(panel, "vol"))
+            vol = self._field_raw(panel, "vol")
+            out = np.isfinite(vol) & (vol > 0)
             self._cache[key] = out
             return out
         elif field == "ret1":
@@ -262,7 +272,7 @@ class PriceLayer:
             out[~np.isfinite(out)] = np.nan
         # 窗口内至少要有若干成交日，否则整窗无成交 -> NaN
         traded = self.panel(panel, "traded")
-        n_tr = mx.roll_count(traded.astype(np.float64), k)
+        n_tr = mx.roll_sum(traded.astype(np.float64), k)
         out = np.where(n_tr >= 1.0, out, np.nan)
         return out
 

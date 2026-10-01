@@ -1,0 +1,37 @@
+{
+  "objective": "experiments2/V23 60d risk-adjusted momentum Top2",
+  "official_window": [
+    "2020-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signals": 78,
+  "source_predictions": "copied 26 completed V11 quarterly OOS score files; used only for V11 comparator, no training or new inference",
+  "signal_rule": {
+    "signal": "same first trading session of each month as V11, at close",
+    "factor": "60-session adjusted-close cumulative return / sample std of 60 trailing adjusted-close daily returns through signal close",
+    "ranking": "descending cross-sectional factor score, fixed Top2, equal target weights",
+    "execution": "T+1 open",
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "comparators": [
+      "monthly 60d raw momentum Top2",
+      "monthly V11 LambdaRank Top2",
+      "equal-weight four-bank hold"
+    ]
+  },
+  "risk_window": "60 daily adjusted-close returns from close(T-60) through close(T), inclusive of T close; sample standard deviation ddof=1",
+  "selection_rule": "risk-adjusted momentum = 60d cumulative adjusted return / 60d realized daily volatility; highest two scores; equal target weights",
+  "execution_and_accounting": "T+1 open; final V11 account engine; 2020-01-02 through 2026-06-30; no forced terminal liquidation",
+  "cost_model": {
+    "commission": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer": 1e-05,
+    "sell_stamp": 0.0005,
+    "adverse_slippage": 0.0003,
+    "max_participation": 0.01,
+    "lot_size": 100
+  },
+  "cache_manifest_sha256": "e414d640f30954003144a597c221d4469adc55043fd8e81f7d2c666f536b2999",
+  "runner_sha256": "2a2c5851b665c2bc5119543d95051e99bbf1f7c9e00d11410ae30213bc69b682",
+  "cash_engine_sha256": "b8015d3b2336a0c0262ce8738fabd45262847f5421c37262f911e8fe4a4b181c"
+}

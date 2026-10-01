@@ -1,0 +1,252 @@
+{
+  "cutoff_quarter": "2023Q4",
+  "importance_quarters": [
+    "2020Q1",
+    "2020Q2",
+    "2020Q3",
+    "2020Q4",
+    "2021Q1",
+    "2021Q2",
+    "2021Q3",
+    "2021Q4",
+    "2022Q1",
+    "2022Q2",
+    "2022Q3",
+    "2022Q4",
+    "2023Q1",
+    "2023Q2",
+    "2023Q3",
+    "2023Q4"
+  ],
+  "rule": "Sort V11 training-fold features by descending top-20 quarter count, descending mean gain normalized within each fold's top-20 list when present, then ascending feature name; freeze first 20.",
+  "selected_features": [
+    "mf_tier_flow_agreement_20",
+    "rel_mom_ind_3d",
+    "rel_mom_ind_5d",
+    "gap_down_recover_freq_20d",
+    "rel_mom_ind_250d",
+    "rel_vol_ind_20d",
+    "rel_mom_ind_10d",
+    "tail_risk_pct_60",
+    "volume_dry_up",
+    "rel_mom_ind_60d",
+    "price_to_52w_high",
+    "id2_close_vs_pm_vwap_20",
+    "inside_bar_count_20",
+    "ret_kurt_20",
+    "cost_skew_ratio",
+    "overnight_sign_consistency_20d",
+    "margin_balance_volatility_20d",
+    "mfx_index_range",
+    "mf_open_close_divergence_10d",
+    "bollinger_width_20"
+  ],
+  "selected_statistics": [
+    {
+      "rank": 1,
+      "feature": "mf_tier_flow_agreement_20",
+      "top20_quarter_count": 16,
+      "mean_normalized_gain_when_top20": 0.07313518998683682,
+      "selected_v33": true
+    },
+    {
+      "rank": 2,
+      "feature": "rel_mom_ind_3d",
+      "top20_quarter_count": 16,
+      "mean_normalized_gain_when_top20": 0.06728722680654979,
+      "selected_v33": true
+    },
+    {
+      "rank": 3,
+      "feature": "rel_mom_ind_5d",
+      "top20_quarter_count": 16,
+      "mean_normalized_gain_when_top20": 0.06289147292479422,
+      "selected_v33": true
+    },
+    {
+      "rank": 4,
+      "feature": "gap_down_recover_freq_20d",
+      "top20_quarter_count": 15,
+      "mean_normalized_gain_when_top20": 0.07330035921476682,
+      "selected_v33": true
+    },
+    {
+      "rank": 5,
+      "feature": "rel_mom_ind_250d",
+      "top20_quarter_count": 13,
+      "mean_normalized_gain_when_top20": 0.06855035931458645,
+      "selected_v33": true
+    },
+    {
+      "rank": 6,
+      "feature": "rel_vol_ind_20d",
+      "top20_quarter_count": 12,
+      "mean_normalized_gain_when_top20": 0.0597568910963752,
+      "selected_v33": true
+    },
+    {
+      "rank": 7,
+      "feature": "rel_mom_ind_10d",
+      "top20_quarter_count": 12,
+      "mean_normalized_gain_when_top20": 0.04270051547816694,
+      "selected_v33": true
+    },
+    {
+      "rank": 8,
+      "feature": "tail_risk_pct_60",
+      "top20_quarter_count": 11,
+      "mean_normalized_gain_when_top20": 0.05012530267433634,
+      "selected_v33": true
+    },
+    {
+      "rank": 9,
+      "feature": "volume_dry_up",
+      "top20_quarter_count": 10,
+      "mean_normalized_gain_when_top20": 0.046521863719063965,
+      "selected_v33": true
+    },
+    {
+      "rank": 10,
+      "feature": "rel_mom_ind_60d",
+      "top20_quarter_count": 10,
+      "mean_normalized_gain_when_top20": 0.045854531501927205,
+      "selected_v33": true
+    },
+    {
+      "rank": 11,
+      "feature": "price_to_52w_high",
+      "top20_quarter_count": 10,
+      "mean_normalized_gain_when_top20": 0.04505847522791099,
+      "selected_v33": true
+    },
+    {
+      "rank": 12,
+      "feature": "id2_close_vs_pm_vwap_20",
+      "top20_quarter_count": 10,
+      "mean_normalized_gain_when_top20": 0.044881460832808806,
+      "selected_v33": true
+    },
+    {
+      "rank": 13,
+      "feature": "inside_bar_count_20",
+      "top20_quarter_count": 8,
+      "mean_normalized_gain_when_top20": 0.05734555387757261,
+      "selected_v33": true
+    },
+    {
+      "rank": 14,
+      "feature": "ret_kurt_20",
+      "top20_quarter_count": 8,
+      "mean_normalized_gain_when_top20": 0.04865818901180609,
+      "selected_v33": true
+    },
+    {
+      "rank": 15,
+      "feature": "cost_skew_ratio",
+      "top20_quarter_count": 7,
+      "mean_normalized_gain_when_top20": 0.04632770564141977,
+      "selected_v33": true
+    },
+    {
+      "rank": 16,
+      "feature": "overnight_sign_consistency_20d",
+      "top20_quarter_count": 7,
+      "mean_normalized_gain_when_top20": 0.041902380710256946,
+      "selected_v33": true
+    },
+    {
+      "rank": 17,
+      "feature": "margin_balance_volatility_20d",
+      "top20_quarter_count": 6,
+      "mean_normalized_gain_when_top20": 0.05499657217942263,
+      "selected_v33": true
+    },
+    {
+      "rank": 18,
+      "feature": "mfx_index_range",
+      "top20_quarter_count": 6,
+      "mean_normalized_gain_when_top20": 0.03981923009032128,
+      "selected_v33": true
+    },
+    {
+      "rank": 19,
+      "feature": "mf_open_close_divergence_10d",
+      "top20_quarter_count": 5,
+      "mean_normalized_gain_when_top20": 0.05004244799142107,
+      "selected_v33": true
+    },
+    {
+      "rank": 20,
+      "feature": "bollinger_width_20",
+      "top20_quarter_count": 5,
+      "mean_normalized_gain_when_top20": 0.04861964457209078,
+      "selected_v33": true
+    }
+  ],
+  "selection_source_sha256": [
+    {
+      "quarter": "2020Q1",
+      "sha256": "dcfb492e719cbe4c883c928655e86c81e238fa33b02e668ac3f1a4935f200052"
+    },
+    {
+      "quarter": "2020Q2",
+      "sha256": "bd018bc4163e3eb51077715f338ce684a265856a0e723a832c9abacaa53e9710"
+    },
+    {
+      "quarter": "2020Q3",
+      "sha256": "e9b8f86813e3e60e1b9edf8e17a388b6c02138393672f1d35e7b4fa34bb63c56"
+    },
+    {
+      "quarter": "2020Q4",
+      "sha256": "d6e5ddce83274da4bdb689d6c05471fb5fea680513981df95edbadb3e9dfd9af"
+    },
+    {
+      "quarter": "2021Q1",
+      "sha256": "b56ac9ff83f5766b29bf40ba9385b3281472a020704f48fba0df635f412e9f76"
+    },
+    {
+      "quarter": "2021Q2",
+      "sha256": "1609d3e37ecc8f9f6071f45065a77c91638f8460b650868aa81c4678865bc8b3"
+    },
+    {
+      "quarter": "2021Q3",
+      "sha256": "0a53b813a68793f75d043ff1c3f30b79c8d8aaa85d264d92033c53980e275809"
+    },
+    {
+      "quarter": "2021Q4",
+      "sha256": "4cdd85f0ccb85a967d85186035f70ba6169655c9c21390521579f362267dcbb0"
+    },
+    {
+      "quarter": "2022Q1",
+      "sha256": "376c157e935b78e552b0b857d5e82f9e18871e519b87d9e9cffcef12dbea2668"
+    },
+    {
+      "quarter": "2022Q2",
+      "sha256": "91930a1e695a17435ec62ecfaf30d4d76a0400b61244d4e62086c1f6c0f75466"
+    },
+    {
+      "quarter": "2022Q3",
+      "sha256": "9377d2cb5a8cb59bde9048bbe75c0956412e5590908bbac36e471c27d5479da1"
+    },
+    {
+      "quarter": "2022Q4",
+      "sha256": "5e004c0b6339aa5f0d1d0b2251304279b94f63120982ed980b3770b1b917a9a8"
+    },
+    {
+      "quarter": "2023Q1",
+      "sha256": "d40dfbacd747725a5cb4a6cddaea76002c21dfe59d83a6ffb16ffe24ddc3eef2"
+    },
+    {
+      "quarter": "2023Q2",
+      "sha256": "58a22f4ef88071dfb2ed66358ae9e0e5dd8d98ed9cba927ddfc3988b350764c6"
+    },
+    {
+      "quarter": "2023Q3",
+      "sha256": "943d771a437cdd30b429d118295a5f951f284e3dad3d88b06f751444e1c61873"
+    },
+    {
+      "quarter": "2023Q4",
+      "sha256": "471f4ffa3fd1ebbf03c1271f5cd2c938b2da71fd15945516590c671e8565406f"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "metrics": {
+    "V24 stable-factor consensus Top2": {
+      "strategy": "V24 stable-factor consensus Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.7136226997483901,
+      "gross_return_same_fills": 0.754464335675076,
+      "annualized_net_return": 0.2538465425066201,
+      "annualized_volatility": 0.1864474647744364,
+      "max_drawdown": -0.13423169892363862,
+      "fees": 2580.9905889227243,
+      "slippage_cost": 1503.1730037460143,
+      "total_trading_cost": 4084.1635926687386,
+      "turnover": 5010576.679153383,
+      "trades": 81,
+      "blocked_trade_events": 0,
+      "min_cash": 3.4397542918886757,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "V11 LambdaRank Top2": {
+      "strategy": "V11 LambdaRank Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.7629108467516739,
+      "gross_return_same_fills": 0.7962669279185683,
+      "annualized_net_return": 0.2688688824777674,
+      "annualized_volatility": 0.19249807520726464,
+      "max_drawdown": -0.18028735543940333,
+      "fees": 2123.4090999802106,
+      "slippage_cost": 1212.1990167094377,
+      "total_trading_cost": 3335.6081166896483,
+      "turnover": 4040663.3890314605,
+      "trades": 73,
+      "blocked_trade_events": 0,
+      "min_cash": 36.23176302149659,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "60d momentum Top2": {
+      "strategy": "60d momentum Top2",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.8168833087203415,
+      "gross_return_same_fills": 0.8340410097812239,
+      "annualized_net_return": 0.28504209616172616,
+      "annualized_volatility": 0.19031334449173273,
+      "max_drawdown": -0.17408692642961987,
+      "fees": 1101.2663666494818,
+      "slippage_cost": 614.5037394388639,
+      "total_trading_cost": 1715.7701060883458,
+      "turnover": 2048345.7981295465,
+      "trades": 48,
+      "blocked_trade_events": 0,
+      "min_cash": 61.0696464866453,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "equal-weight hold": {
+      "strategy": "equal-weight hold",
+      "start": "2024-01-02",
+      "end": "2026-06-30",
+      "days": 601,
+      "net_return": 0.704429781154281,
+      "gross_return_same_fills": 0.7049877084547611,
+      "annualized_net_return": 0.25101704757332155,
+      "annualized_volatility": 0.18358444425751408,
+      "max_drawdown": -0.15421125715560013,
+      "fees": 25.907930048,
+      "slippage_cost": 29.8848,
+      "total_trading_cost": 55.792730047999996,
+      "turnover": 99616.0,
+      "trades": 4,
+      "blocked_trade_events": 0,
+      "min_cash": 328.2072699519849,
+      "max_positions": 4,
+      "max_abs_accounting_residual": 1.4551915228366852e-11
+    }
+  },
+  "feature_importance": {
+    "mf_tier_flow_agreement_20": {
+      "top20_quarters": 16,
+      "mean_normalized_gain_when_top20": 0.07313518998683682
+    },
+    "rel_mom_ind_3d": {
+      "top20_quarters": 16,
+      "mean_normalized_gain_when_top20": 0.0672872268065498
+    },
+    "rel_mom_ind_5d": {
+      "top20_quarters": 16,
+      "mean_normalized_gain_when_top20": 0.06289147292479422
+    },
+    "gap_down_recover_freq_20d": {
+      "top20_quarters": 15,
+      "mean_normalized_gain_when_top20": 0.07330035921476682
+    }
+  },
+  "selected_features": [
+    "mf_tier_flow_agreement_20",
+    "rel_mom_ind_3d",
+    "rel_mom_ind_5d",
+    "gap_down_recover_freq_20d"
+  ]
+}

@@ -27,7 +27,8 @@ from .panel import Panel
 class FactorContext:
     def __init__(self, panel: Panel, deriv: Derivative, up, cfg, universe: np.ndarray,
                  prices=None, intraday=None, chips=None, cal=None, factor_io=None,
-                 open5=None):
+                 open5=None, closing30=None, chipwall=None):
+        self.accessed = set()
         self.panel = panel
         self.deriv = deriv
         self.up = up
@@ -39,6 +40,8 @@ class FactorContext:
         self.intraday = intraday      # IntradayLayer：5min 派生的日频宽表
         self.chips = chips            # ChipLayer：筹码峰派生的日频摘要
         self.open5 = open5            # Open5Layer：5min 派生的一开盘首段流动性（S-07）
+        self.closing30 = closing30    # Closing30Layer：收盘前 30 分钟量价摘要
+        self.chipwall = chipwall      # ChipWallLayer：现价附近的筹码供给
         self.cal = cal                # Calendar：交易日历（日期位移法要用）
         self.factor_io = factor_io    # FactorIO：读已落盘的其它因子（耦合因子用）
 
@@ -57,7 +60,17 @@ class FactorContext:
            `close` 这类**水平量**会自动前向填充（返回时复权比值才对）；
            `vol`/`amount` 这类**流量**保持 NaN，避免把停牌当成 0 成交。
         """
+        self.__dict__.setdefault("accessed", set()).add("stock_finance" if field.endswith("_share") else "stock_daily")
+        if field == "turnover": self.__dict__.setdefault("accessed", set()).add("stock_finance")
+        if field == "adj_factor": self.__dict__.setdefault("accessed", set()).add("stock_adj_factor")
         return self._need_prices().panel(self.panel, field)
+
+    def px_raw(self, field: str) -> np.ndarray:
+        """当日原始值，不沿用前一日；缺失即缺失。"""
+        source=("stock_adj_factor" if field=="adj_factor" else
+                "stock_finance" if field.endswith("_share") else "stock_daily")
+        self.__dict__.setdefault("accessed",set()).add(source)
+        return self._need_prices().raw_panel(self.panel,field)
 
     def hfq(self, field: str = "close") -> np.ndarray:
         """**后复权**价 = 未复权价 × 截至当日的累计复权因子。
@@ -66,6 +79,7 @@ class FactorContext:
         `hfq(t)` 只用到 `<= t` 的 `adj_factor`，新分红只影响 `t >= 除权日` 的值，
         所以历史值永远不变 —— 这就是 PIT 安全。
         """
+        self.accessed.update(("stock_daily", "stock_adj_factor"))
         return self._need_prices().panel(self.panel, f"hfq_{field}")
 
     def ret(self, k: int = 1) -> np.ndarray:
@@ -80,6 +94,7 @@ class FactorContext:
         需要「停牌日 = 缺失」的口径时，用 `ctx.ret_clean(k)`（= `ret` 再按
         `ctx.traded()` 掩码）。**不要**假设 `ret()` 已经挡掉停牌 —— 那是错的。
         """
+        self.accessed.update(("stock_daily", "stock_adj_factor"))
         return self._need_prices().ret(self.panel, k)
 
     def ret_clean(self, k: int = 1) -> np.ndarray:
@@ -88,16 +103,18 @@ class FactorContext:
         k=1 时返回逐日收益并按 `traded` 掩码；k>1 时返回累计收益，
         但窗口内**只要有一天没成交就整窗 NaN**（与 `ret` 的「贡献 0」不同）。
         """
+        getattr(self, "accessed", set()).update(("stock_daily", "stock_adj_factor"))
         pl = self._need_prices()
         r = pl.ret(self.panel, k)
         tr = pl.panel(self.panel, "traded")
         if k <= 1:
             return np.where(tr, r, np.nan)
-        n_tr = self.roll_count(tr.astype(np.float64), k)
+        n_tr = self.roll_sum(tr.astype(np.float64), k)
         return np.where(n_tr >= k, r, np.nan)
 
     def traded(self) -> np.ndarray:
         """(T,C) bool：当日真有成交（停牌 / 未上市 / 已退市为 False）。"""
+        self.__dict__.setdefault("accessed", set()).add("stock_daily")
         return self._need_prices().mask(self.panel, "traded")
 
     # ---------------------------------------------------------------- 5min 派生
@@ -105,6 +122,7 @@ class FactorContext:
         """读 5min 预聚合出来的日频字段（见 fea/intraday.py 的字段表）。"""
         if self.intraday is None:
             raise RuntimeError("该因子用到了日内层，但引擎没有预建 IntradayLayer。")
+        self.__dict__.setdefault("accessed", set()).add("stock_history_5min")
         return self.intraday.panel(self.panel, field)
 
     # ---------------------------------------------------------------- 开盘首段
@@ -112,13 +130,29 @@ class FactorContext:
         """读开盘首段（首 5 分钟）预聚合出来的日频字段（见 fea/open5.py 的字段表）。"""
         if self.open5 is None:
             raise RuntimeError("该因子用到了开盘首段层，但引擎没有预建 Open5Layer。")
+        self.__dict__.setdefault("accessed", set()).add("stock_history_5min")
         return self.open5.panel(self.panel, field)
+
+    def closing30_field(self, field: str) -> np.ndarray:
+        """读取截至 T 日收盘可见的尾盘 30 分钟摘要。"""
+        if self.closing30 is None:
+            raise RuntimeError("该因子用到了尾盘层，但引擎没有预建 Closing30Layer。")
+        self.__dict__.setdefault("accessed", set()).add("stock_history_5min")
+        return self.closing30.panel(self.panel, field)
+
+    def chipwall_field(self, field: str) -> np.ndarray:
+        """读取当日筹码档位相对未复权收盘价的局部供给。"""
+        if self.chipwall is None:
+            raise RuntimeError("该因子用到了局部筹码层，但引擎没有预建 ChipWallLayer。")
+        self.__dict__.setdefault("accessed", set()).update(("stock_cyq_chips", "stock_daily"))
+        return self.chipwall.panel(self.panel, field)
 
     # ---------------------------------------------------------------- 筹码
     def chip(self, field: str) -> np.ndarray:
         """读筹码峰预聚合出来的日频摘要字段（见 fea/chips.py 的字段表）。"""
         if self.chips is None:
             raise RuntimeError("该因子用到了筹码层，但引擎没有预建 ChipLayer。")
+        self.__dict__.setdefault("accessed", set()).add("stock_cyq_chips")
         return self.chips.panel(self.panel, field)
 
     # ---------------------------------------------------------------- 耦合
@@ -126,6 +160,7 @@ class FactorContext:
         """读另一个已落盘因子的 `value`，切到当前面板的 (T,C)。"""
         if self.factor_io is None:
             raise RuntimeError("该因子用到了因子耦合，但引擎没有预建 FactorIO。")
+        self.__dict__.setdefault("accessed", set()).add(name)
         return self.factor_io.load(name, self.panel)
 
     # ---------------------------------------------------------------- 滞后表
@@ -179,6 +214,8 @@ class FactorContext:
                 f"而且**不报错**。\n"
                 f"  允许的字段（{len(IND_SAFE)} 个）：{list(IND_SAFE)}{hint}")
         self._trim()
+        from .deriv import FIELD_SOURCE
+        self.__dict__.setdefault("accessed", set()).add(FIELD_SOURCE[field])
         return self.deriv.to_panel(self.panel, field, mode="ind", lag=lag)
 
     # ---------------------------------------------------------------- 数学
@@ -195,6 +232,7 @@ class FactorContext:
         if not isinstance(lag_years, int) or lag_years < 0:
             raise ValueError("年度因子只允许非负整数历史滞后")
         self._trim()
+        self.__dict__.setdefault("accessed", set()).add(dataset)
         return self.deriv.to_panel(self.panel, alias, mode="annual", lag=4 * lag_years)
 
     # ---------------------------------------------------------------- 数学
@@ -263,14 +301,20 @@ class FactorContext:
 
     def ttm(self, field: str) -> np.ndarray:
         self._trim()
+        from .deriv import FIELD_SOURCE
+        self.__dict__.setdefault("accessed", set()).add(FIELD_SOURCE[field])
         return self.deriv.to_panel(self.panel, field, mode="ttm", lag=0)
 
     def lag_ttm(self, field: str, k: int = 4) -> np.ndarray:
         self._trim()
+        from .deriv import FIELD_SOURCE
+        self.__dict__.setdefault("accessed", set()).add(FIELD_SOURCE[field])
         return self.deriv.to_panel(self.panel, field, mode="ttm", lag=k)
 
     def point(self, field: str, lag: int = 0) -> np.ndarray:
         self._trim()
+        from .deriv import FIELD_SOURCE
+        self.__dict__.setdefault("accessed", set()).add(FIELD_SOURCE[field])
         return self.deriv.to_panel(self.panel, field, mode="point", lag=lag)
 
     # ---------------------------------------------------------------- 通用
@@ -314,6 +358,7 @@ class FactorContext:
 
     def dataset(self, name: str, columns: list[str] | None = None,
                 years: tuple[int, int] | None = None) -> pd.DataFrame:
+        self.__dict__.setdefault("accessed", set()).add(name)
         return self.up.read(name, columns=columns, years=years)
 
     def date_col(self, s: pd.Series) -> np.ndarray:
@@ -331,9 +376,26 @@ class FactorContext:
 
         财报因子里这个保护是必需的——净利润、经营现金流都可能为负或近零，
         直接相除会产生 ±1e6 量级的假因子值，把截面排名整个带偏。
+
+        ★★ 2026-09-25：**返回值必须是 float64，不能再 `.astype(np.float32)`**。
+
+        这里以前返回 float32，后果不是"少一位精度"而是**落盘值不可复现**：
+        只要调用方紧接着做一次超越函数（`factors/annual_field_expansion.py` 就是
+        `arcsinh(ctx.safe_div(...))`），那个超越函数就会走 **numpy 的 float32 SIMD 核**。
+        实测（本机 numpy 2.5.3，20 万随机输入）：
+
+            arcsinh(float32) 与「双精度算完再舍入」不一致 **24.76%**，最多差 2 ULP；
+            同一个函数在 float64 下与 libm **逐位相同（0.000%）**。
+
+        也就是说 float32 核**不是正确舍入**的，且它随 numpy 版本/构建不同而不同
+        —— 换一个解释器跑同一条入口，87 个对象的落盘值就会在末位静默变化，而
+        `main.py` 会把它报成"无法解释的历史变化"并返回非零。实测漂移率 25.4%
+        （`afx_bs_cap_rese` 2115 格中 538 格）与上面的 24.76% 完全吻合。
+        去掉这次 cast 后整条链路都在 float64 上算，末位就与 libm 一致、跨环境稳定。
+        （除法本身是 IEEE 精确的，改动只在"后续超越函数的精度"这一点上生效。）
         """
         d = np.asarray(den, dtype=np.float64)
         ok = np.isfinite(d) & (np.abs(d) > min_abs_den)
         out = np.full(np.broadcast(num, d).shape, np.nan, dtype=np.float64)
         np.divide(num, d, out=out, where=ok)
-        return out.astype(np.float32)
+        return out

@@ -1,0 +1,34 @@
+{
+  "objective": "experiments2/V20 V11 cached LambdaRank Top2 with member-change-only reallocation",
+  "data_source": "26 completed V11 quarterly OOS prediction caches; local copies stored in V20/quarters; no training or model inference",
+  "quarter_range": [
+    "2020Q1",
+    "2026Q2"
+  ],
+  "signal_dates": [
+    "2020-01-02",
+    "2026-06-30"
+  ],
+  "signal_count": 78,
+  "V20_rule": "monthly predicted Top2 equal weight; create a rebalance order only when the unordered Top2 membership set changes; otherwise preserve existing share counts subject only to corporate-action adjustment",
+  "baselines": [
+    "monthly rebalanced V11 LambdaRank Top2",
+    "monthly rebalanced 60-session adjusted-close momentum Top2",
+    "equal-weight four-bank hold from first executable open"
+  ],
+  "zero_target_exit": "enqueue every deselected held name and retry at each subsequent open until fully flat; sell final odd-lot residual only if the same 1% amount participation cap can carry the entire position; otherwise sell whole lots and retry",
+  "periods": "2020-01-02 through 2026-06-30 inclusive; daily close mark-to-market; no forced final liquidation to match V11 OOS ledger",
+  "costs": {
+    "commission": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer": 1e-05,
+    "sell_stamp": 0.0005,
+    "adverse_slippage": 0.0003,
+    "max_participation": 0.01,
+    "lot_size": 100
+  },
+  "V11_analysis_sha256": "64a89fdae173b057d7ef5277bde247f2c10bed96a7bdd2d2c0ce6f760df5bd38",
+  "cash_engine_sha256": "b8015d3b2336a0c0262ce8738fabd45262847f5421c37262f911e8fe4a4b181c",
+  "runner_sha256": "4944d94327c232dd929020a7b3dfb23ca68a7626b5a7a48e6272b7272eef926c",
+  "cache_manifest_sha256": "0ddbd9049cc6144b79a6df4a44ec886a7721c366cfa137e717f9f71346ac0e98"
+}

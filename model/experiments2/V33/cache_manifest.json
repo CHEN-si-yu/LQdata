@@ -1,0 +1,948 @@
+{
+  "algorithm": "SHA-256",
+  "scope": "Training feature/label/market cache parquet files, the exact V11 training-importance artifacts, all V11/V27 reference prediction/model artifacts, V24/V26/V27 frozen baseline ledgers, V33 protocol and all V33 per-quarter models/predictions/results.",
+  "records": [
+    {
+      "role": "training-data metadata and factor semantics",
+      "path": "/root/autodl-fs/model/trainingdata/meta.json",
+      "bytes": 432591,
+      "sha256": "0647bf2409c456cda47876c1ac580917152010548fb04ea2acf0f33c89db6d50"
+    },
+    {
+      "role": "V11 final corrected ledger engine",
+      "path": "/root/autodl-fs/model/experiments2/V11/analysis.py",
+      "bytes": 16287,
+      "sha256": "64a89fdae173b057d7ef5277bde247f2c10bed96a7bdd2d2c0ce6f760df5bd38"
+    },
+    {
+      "role": "V11 reference model recipe source",
+      "path": "/root/autodl-fs/model/experiments2/V11/model.py",
+      "bytes": 9397,
+      "sha256": "1773fe1d86bf0dd18570465452f560e9f7b0224ae5f910b6f2e66099e30309c1"
+    },
+    {
+      "role": "V33 pretraining feature-selection protocol generator",
+      "path": "/root/autodl-fs/model/experiments2/V33/freeze_protocol.py",
+      "bytes": 7768,
+      "sha256": "ac61a10d7602f3e9fddf166a095a414b05d0f6c71960dd35f721e88f837b78b4"
+    },
+    {
+      "role": "V33 frozen protocol",
+      "path": "/root/autodl-fs/model/experiments2/V33/protocol.json",
+      "bytes": 10807,
+      "sha256": "0e822e23d194d2885518ba52dc5b8385cbd9b0767baa4764f94421b5e21d503e"
+    },
+    {
+      "role": "V33 pretraining top-20 factor list",
+      "path": "/root/autodl-fs/model/experiments2/V33/selected_feature_list.json",
+      "bytes": 6927,
+      "sha256": "5e92e787da59cc842cdd5990c663d7d6506d7971bcf443ce6fa41f555be99e1a"
+    },
+    {
+      "role": "V33 full ranked pretraining feature importance table",
+      "path": "/root/autodl-fs/model/experiments2/V33/training_importance_ranking.csv",
+      "bytes": 3959,
+      "sha256": "b4879b9dc9c8172b5f20c16ae5c8f402016e7c920747efd29f8dbf67d302b8b8"
+    },
+    {
+      "role": "V33 hashes of 16 pre-holdout V11 importance artifacts",
+      "path": "/root/autodl-fs/model/experiments2/V33/importance_hashes.json",
+      "bytes": 14201,
+      "sha256": "91a24b88988124f2697a4124d3fd01744f6ec95b0f4826ab19693936f09a0215"
+    },
+    {
+      "role": "V33 V11-recipe ranker implementation",
+      "path": "/root/autodl-fs/model/experiments2/V33/model.py",
+      "bytes": 10329,
+      "sha256": "e0de014aa41aa51572189f15699813c5d5568679a9e9490df74ce480dcc53b8a"
+    },
+    {
+      "role": "V33 four-worker CPU/resource scheduler",
+      "path": "/root/autodl-fs/model/experiments2/V33/scheduler.py",
+      "bytes": 6495,
+      "sha256": "cbbc3d640f87c9a55e75ea165d30da7d72c15b7479cba6b48a7068130845007f"
+    },
+    {
+      "role": "V33 run entry point",
+      "path": "/root/autodl-fs/model/experiments2/V33/run.py",
+      "bytes": 626,
+      "sha256": "7884c3b0c63d5748b1426b5e8949790f9fe32d3d1fb010a6906cf3b057e0471a"
+    },
+    {
+      "role": "factor cache year 2018",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2018/data.parquet",
+      "bytes": 758011273,
+      "sha256": "f14f10c35aa543a887ba47febb433a264775d0379e114b646aa7d0399a22b34c"
+    },
+    {
+      "role": "five-day label cache year 2018",
+      "path": "/root/autodl-fs/model/trainingdata/target/year=2018/data.parquet",
+      "bytes": 9452291,
+      "sha256": "1f26250458a931eea0d55d33f43099d5ef40b7d5043fb4f74c1d3cad68834188"
+    },
+    {
+      "role": "market price cache year 2018",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2018/data.parquet",
+      "bytes": 8064177,
+      "sha256": "dde7fc1c032d6f5001fda011242f70de3892fe4a2d045a9479fa2e64aa2ef695"
+    },
+    {
+      "role": "trading amount cache year 2018",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2018/data.parquet",
+      "bytes": 2539773,
+      "sha256": "a26217734560e1fe6bc070fefe6de93dea7bca6ff0f7dc63e41749fe5cbef056"
+    },
+    {
+      "role": "factor cache year 2019",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2019/data.parquet",
+      "bytes": 780411574,
+      "sha256": "50df1acb33cc39dbcea92716cd0dd11ff28c399693312c303f4da44d480405b0"
+    },
+    {
+      "role": "five-day label cache year 2019",
+      "path": "/root/autodl-fs/model/trainingdata/target/year=2019/data.parquet",
+      "bytes": 9273395,
+      "sha256": "6e89a66258c2a502af74a79b882cde9a9e9e4e0cf57ef3fb65bae48816993c47"
+    },
+    {
+      "role": "market price cache year 2019",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2019/data.parquet",
+      "bytes": 8011747,
+      "sha256": "b94dd2282eeedfc68d31580591b033d704fd8f85604db28df32281f628a52502"
+    },
+    {
+      "role": "trading amount cache year 2019",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2019/data.parquet",
+      "bytes": 2560263,
+      "sha256": "43bd41fde51d9835e377fd97919259764d4cf7404e67c5996312d4615e04124e"
+    },
+    {
+      "role": "factor cache year 2020",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2020/data.parquet",
+      "bytes": 808220447,
+      "sha256": "42883b7ef352b767ee0f5cfe373ba80d9ffe00519e9efc07f7ee86d5ce96d780"
+    },
+    {
+      "role": "five-day label cache year 2020",
+      "path": "/root/autodl-fs/model/trainingdata/target/year=2020/data.parquet",
+      "bytes": 9516084,
+      "sha256": "11b3a489b10bb204f9a80c956021eda83643a97a9a5ab2e262958ba25710c7d7"
+    },
+    {
+      "role": "market price cache year 2020",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2020/data.parquet",
+      "bytes": 7981420,
+      "sha256": "12c900b56e59f4ceb42e85fbef00902c3ddc23c1b34088843ee5830b51ad2e0f"
+    },
+    {
+      "role": "trading amount cache year 2020",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2020/data.parquet",
+      "bytes": 2551218,
+      "sha256": "44cc8ca04284ca151f15728e318e70e669ed66e656257b231dbe63229352d44f"
+    },
+    {
+      "role": "factor cache year 2021",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2021/data.parquet",
+      "bytes": 805369888,
+      "sha256": "ec287630546a80fe2813373fead65a58c38f7c30a5b7ae9d52821a2a2e960214"
+    },
+    {
+      "role": "five-day label cache year 2021",
+      "path": "/root/autodl-fs/model/trainingdata/target/year=2021/data.parquet",
+      "bytes": 9510111,
+      "sha256": "aa6017106786daf6eb035fbb0db6add919aa94eb5559036d805f4c1814788310"
+    },
+    {
+      "role": "market price cache year 2021",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2021/data.parquet",
+      "bytes": 8415454,
+      "sha256": "57ba0e3c86b3960121c91b4fb99afe6c34a41a35d392bafea78c7b0b39b39ec2"
+    },
+    {
+      "role": "trading amount cache year 2021",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2021/data.parquet",
+      "bytes": 2546720,
+      "sha256": "ea525f4a7c2c1728ce9e505c7546a1e0ef1033d3a84d97b616070cc534b40065"
+    },
+    {
+      "role": "factor cache year 2022",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2022/data.parquet",
+      "bytes": 809771733,
+      "sha256": "05ff3830dfd5b79bfebb7b9a5596bc4c0835c25c5bb59e03f6a357d70bf6beb1"
+    },
+    {
+      "role": "five-day label cache year 2022",
+      "path": "/root/autodl-fs/model/trainingdata/target/year=2022/data.parquet",
+      "bytes": 9425889,
+      "sha256": "56df26fb2c586dd2a2b7a00426a1b22ab9475987f29d2ceb00afe8912805045d"
+    },
+    {
+      "role": "market price cache year 2022",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2022/data.parquet",
+      "bytes": 8169088,
+      "sha256": "f17d73b3197c0cf4c814571d59d866376ea9b454f7e44aa9ba35085f7191aa0a"
+    },
+    {
+      "role": "trading amount cache year 2022",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2022/data.parquet",
+      "bytes": 2545226,
+      "sha256": "3c784d546cdc5274a3dece37386c903af0332a9dd2c4ce532f9d7ec41054c27f"
+    },
+    {
+      "role": "factor cache year 2023",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2023/data.parquet",
+      "bytes": 787280217,
+      "sha256": "5a8860e60130f472aca14e3f0b192736af29f0f72d50f359343d61fa52de055b"
+    },
+    {
+      "role": "five-day label cache year 2023",
+      "path": "/root/autodl-fs/model/trainingdata/target/year=2023/data.parquet",
+      "bytes": 9143454,
+      "sha256": "b3c26b49eb2009ba67a41d8209ee1409b4b6ec2665333212db74eb01136bd2ec"
+    },
+    {
+      "role": "market price cache year 2023",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2023/data.parquet",
+      "bytes": 8258545,
+      "sha256": "7f61bd91337b949c769fb4bfa872399734379cbfd96e307d0e5b1e0fda8a0d87"
+    },
+    {
+      "role": "trading amount cache year 2023",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2023/data.parquet",
+      "bytes": 2547252,
+      "sha256": "1babce59e8a99e6427e59141dc54ecfc240b2559451c3996f44a07b57168af7f"
+    },
+    {
+      "role": "factor cache year 2024",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2024/data.parquet",
+      "bytes": 785042714,
+      "sha256": "6335193c5bf72a67385dec9d4225fae90ac4c27ae523619541f22fcd63ef828c"
+    },
+    {
+      "role": "five-day label cache year 2024",
+      "path": "/root/autodl-fs/model/trainingdata/target/year=2024/data.parquet",
+      "bytes": 9370371,
+      "sha256": "db81b985b0e125377fb6a33ca760ad0c7636519afa457593b2cb500543f7098f"
+    },
+    {
+      "role": "market price cache year 2024",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2024/data.parquet",
+      "bytes": 8344932,
+      "sha256": "aa24f86c3fc5aa01448929b944cf68b267cbf8c055eae6f85fd70eedea4f96fc"
+    },
+    {
+      "role": "trading amount cache year 2024",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2024/data.parquet",
+      "bytes": 2548763,
+      "sha256": "3931dc7e589ce902f6e814185ff7d97cb00078fd0f96f25589ff0533e869b668"
+    },
+    {
+      "role": "factor cache year 2025",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2025/data.parquet",
+      "bytes": 792807629,
+      "sha256": "0a2d8dc28194a7219b434cb9348a3de20b6e1cc2e9515ca5302914b8eaecc714"
+    },
+    {
+      "role": "five-day label cache year 2025",
+      "path": "/root/autodl-fs/model/trainingdata/target/year=2025/data.parquet",
+      "bytes": 9369254,
+      "sha256": "419709021d4d1934b1525585edc8499639c09852b42957d3657fbf077e0a274e"
+    },
+    {
+      "role": "market price cache year 2025",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2025/data.parquet",
+      "bytes": 7974021,
+      "sha256": "0e40a42dd28f65d363ce525619dcb6aed4c13bef9d09861772d4d333a31f2949"
+    },
+    {
+      "role": "trading amount cache year 2025",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2025/data.parquet",
+      "bytes": 2558716,
+      "sha256": "1c8987b6a8ba3afa2ab59e7736eb075532cbf02628bd8a6937bc860ea8f86623"
+    },
+    {
+      "role": "factor cache year 2026",
+      "path": "/root/autodl-fs/model/trainingdata/factors/year=2026/data.parquet",
+      "bytes": 619037854,
+      "sha256": "e505a635ffef3b20cfe9e4ac4e9fe328463cb356ab0dfb8c99701229d3af9050"
+    },
+    {
+      "role": "five-day label cache year 2026",
+      "path": "/root/autodl-fs/model/trainingdata/target/year=2026/data.parquet",
+      "bytes": 7071391,
+      "sha256": "51684ebb70c324af8cfb9ae3bfe9032b0e27d12e4825f0dcd1fdd0c24141d504"
+    },
+    {
+      "role": "market price cache year 2026",
+      "path": "/root/autodl-fs/model/trainingdata/prices/year=2026/data.parquet",
+      "bytes": 6011522,
+      "sha256": "79a76c2c190791ecd617d22e321b851ecd7f980e1391c678725df8c0ee0d20ed"
+    },
+    {
+      "role": "trading amount cache year 2026",
+      "path": "/root/autodl-fs/model/trainingdata/amount/year=2026/data.parquet",
+      "bytes": 1951840,
+      "sha256": "cf5c0e5c2af538af5dcb46836978192e985764cd57387f6cc57c2f1c4c18af7d"
+    },
+    {
+      "role": "pre-holdout training importance 2020Q1",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2020Q1/result.json",
+      "bytes": 3133,
+      "sha256": "dcfb492e719cbe4c883c928655e86c81e238fa33b02e668ac3f1a4935f200052"
+    },
+    {
+      "role": "pre-holdout training importance 2020Q2",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2020Q2/result.json",
+      "bytes": 3159,
+      "sha256": "bd018bc4163e3eb51077715f338ce684a265856a0e723a832c9abacaa53e9710"
+    },
+    {
+      "role": "pre-holdout training importance 2020Q3",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2020Q3/result.json",
+      "bytes": 3172,
+      "sha256": "e9b8f86813e3e60e1b9edf8e17a388b6c02138393672f1d35e7b4fa34bb63c56"
+    },
+    {
+      "role": "pre-holdout training importance 2020Q4",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2020Q4/result.json",
+      "bytes": 3146,
+      "sha256": "d6e5ddce83274da4bdb689d6c05471fb5fea680513981df95edbadb3e9dfd9af"
+    },
+    {
+      "role": "pre-holdout training importance 2021Q1",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2021Q1/result.json",
+      "bytes": 3166,
+      "sha256": "b56ac9ff83f5766b29bf40ba9385b3281472a020704f48fba0df635f412e9f76"
+    },
+    {
+      "role": "pre-holdout training importance 2021Q2",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2021Q2/result.json",
+      "bytes": 3152,
+      "sha256": "1609d3e37ecc8f9f6071f45065a77c91638f8460b650868aa81c4678865bc8b3"
+    },
+    {
+      "role": "pre-holdout training importance 2021Q3",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2021Q3/result.json",
+      "bytes": 3170,
+      "sha256": "0a53b813a68793f75d043ff1c3f30b79c8d8aaa85d264d92033c53980e275809"
+    },
+    {
+      "role": "pre-holdout training importance 2021Q4",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2021Q4/result.json",
+      "bytes": 3141,
+      "sha256": "4cdd85f0ccb85a967d85186035f70ba6169655c9c21390521579f362267dcbb0"
+    },
+    {
+      "role": "pre-holdout training importance 2022Q1",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2022Q1/result.json",
+      "bytes": 3141,
+      "sha256": "376c157e935b78e552b0b857d5e82f9e18871e519b87d9e9cffcef12dbea2668"
+    },
+    {
+      "role": "pre-holdout training importance 2022Q2",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2022Q2/result.json",
+      "bytes": 3112,
+      "sha256": "91930a1e695a17435ec62ecfaf30d4d76a0400b61244d4e62086c1f6c0f75466"
+    },
+    {
+      "role": "pre-holdout training importance 2022Q3",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2022Q3/result.json",
+      "bytes": 3155,
+      "sha256": "9377d2cb5a8cb59bde9048bbe75c0956412e5590908bbac36e471c27d5479da1"
+    },
+    {
+      "role": "pre-holdout training importance 2022Q4",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2022Q4/result.json",
+      "bytes": 3186,
+      "sha256": "5e004c0b6339aa5f0d1d0b2251304279b94f63120982ed980b3770b1b917a9a8"
+    },
+    {
+      "role": "pre-holdout training importance 2023Q1",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2023Q1/result.json",
+      "bytes": 3129,
+      "sha256": "d40dfbacd747725a5cb4a6cddaea76002c21dfe59d83a6ffb16ffe24ddc3eef2"
+    },
+    {
+      "role": "pre-holdout training importance 2023Q2",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2023Q2/result.json",
+      "bytes": 3140,
+      "sha256": "58a22f4ef88071dfb2ed66358ae9e0e5dd8d98ed9cba927ddfc3988b350764c6"
+    },
+    {
+      "role": "pre-holdout training importance 2023Q3",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2023Q3/result.json",
+      "bytes": 3182,
+      "sha256": "943d771a437cdd30b429d118295a5f951f284e3dad3d88b06f751444e1c61873"
+    },
+    {
+      "role": "pre-holdout training importance 2023Q4",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2023Q4/result.json",
+      "bytes": 3175,
+      "sha256": "471f4ffa3fd1ebbf03c1271f5cd2c938b2da71fd15945516590c671e8565406f"
+    },
+    {
+      "role": "V11 holdout predictions 2024Q1",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2024Q1/predictions.csv",
+      "bytes": 13067,
+      "sha256": "22cb9d9c8618587fa918fa33c6c39b04251a31e3809033350e84d21406926a2b"
+    },
+    {
+      "role": "V33 quarter model 2024Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q1/ranker.txt",
+      "bytes": 160529,
+      "sha256": "e7c7f75a5d86b7f33bcb066b9e0f4f116b9149549b1bf6a12968c94049edab27"
+    },
+    {
+      "role": "V33 quarter scores 2024Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q1/predictions.csv",
+      "bytes": 13022,
+      "sha256": "c914203df4375a8aa8ca93f829541884781eb228661245b6bb7656f78b6ce0e0"
+    },
+    {
+      "role": "V33 quarter training audit 2024Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q1/result.json",
+      "bytes": 5341,
+      "sha256": "410d4c844083e71cc7d6d0750b5628c6d11c89bd2574f8fc99b501a5da65b1fe"
+    },
+    {
+      "role": "V33 quarter status 2024Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q1/status.json",
+      "bytes": 5381,
+      "sha256": "6269310d4f687b8933866787e85237f79e20a02f3532d7635cae0df286c2a366"
+    },
+    {
+      "role": "V27 comparator quarter model 2024Q1",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q1/ranker.txt",
+      "bytes": 158338,
+      "sha256": "5facddee1abea7cad41284ecb81d4e74f002ca09fea2990406b722b111a9142f"
+    },
+    {
+      "role": "V27 comparator quarter scores 2024Q1",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q1/predictions.csv",
+      "bytes": 12996,
+      "sha256": "aefb60e1bcaae02a17eee899197f1d05e8d48e6b0b0829df8497d91abb270d00"
+    },
+    {
+      "role": "V27 comparator training audit 2024Q1",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q1/result.json",
+      "bytes": 2838,
+      "sha256": "2ec14da18154e6e2a10cd5475312f049c40e4187ec87a0eabee60a6dab4a2f32"
+    },
+    {
+      "role": "V11 holdout predictions 2024Q2",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2024Q2/predictions.csv",
+      "bytes": 13269,
+      "sha256": "2179c74b5b2736042d5f63ecc2fc15e903a8a72c1a2bd8ebb128bef8036c53f0"
+    },
+    {
+      "role": "V33 quarter model 2024Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q2/ranker.txt",
+      "bytes": 159435,
+      "sha256": "a6ed9657dda72010257a657e8fdcff2cf2bd98e42b2de54c89212b758339429f"
+    },
+    {
+      "role": "V33 quarter scores 2024Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q2/predictions.csv",
+      "bytes": 13239,
+      "sha256": "cebb3f5293066258996b85f6b5ddb6f57fc778931f91eda3b2cb9efeb6c3c639"
+    },
+    {
+      "role": "V33 quarter training audit 2024Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q2/result.json",
+      "bytes": 5347,
+      "sha256": "3fa1e6fc3d6a17dcd00ea55a9f2be693211c1324e4e190d04d203b6bbaebb695"
+    },
+    {
+      "role": "V33 quarter status 2024Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q2/status.json",
+      "bytes": 5387,
+      "sha256": "c4a52d26cbb9c276acd7da4cb8ea5fde497098ce1740af25838913b5de6ebe7c"
+    },
+    {
+      "role": "V27 comparator quarter model 2024Q2",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q2/ranker.txt",
+      "bytes": 158837,
+      "sha256": "181be130119f27f2c8dfc424e050b855f62a0c44ff7246c1ff850a0d4be35487"
+    },
+    {
+      "role": "V27 comparator quarter scores 2024Q2",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q2/predictions.csv",
+      "bytes": 13252,
+      "sha256": "7734a2b4b2e0b27264a93bf0a43dd7f062c8b51db41f3b3a27539a8f1df4fdff"
+    },
+    {
+      "role": "V27 comparator training audit 2024Q2",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q2/result.json",
+      "bytes": 2841,
+      "sha256": "bf01096bd0eeb6955393296062002247989637572f19eeef44e876bee043cabe"
+    },
+    {
+      "role": "V11 holdout predictions 2024Q3",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2024Q3/predictions.csv",
+      "bytes": 14416,
+      "sha256": "efda0b576320b9688e2996ddecdddaafe377ca673ea711537bb52c3c1a9df0ac"
+    },
+    {
+      "role": "V33 quarter model 2024Q3",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q3/ranker.txt",
+      "bytes": 159190,
+      "sha256": "efc7462f4a30a32a0e4777e9569d8d2257a6ec9fb8f82445dbed1c806313767e"
+    },
+    {
+      "role": "V33 quarter scores 2024Q3",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q3/predictions.csv",
+      "bytes": 14383,
+      "sha256": "dceb00ce6a1fb79e3d02a105462d2aa97103e790b308f0bcdb8e4d178377fff1"
+    },
+    {
+      "role": "V33 quarter training audit 2024Q3",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q3/result.json",
+      "bytes": 5354,
+      "sha256": "0125753651ec7b81928510170a4ee473408025d11390ed0557e4f4bce835b165"
+    },
+    {
+      "role": "V33 quarter status 2024Q3",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q3/status.json",
+      "bytes": 5394,
+      "sha256": "06aa5bec06bcba404afeac74d148ef8cc007a8267311ff1e1d874382e670795f"
+    },
+    {
+      "role": "V27 comparator quarter model 2024Q3",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q3/ranker.txt",
+      "bytes": 157866,
+      "sha256": "312c18afdfd0efab15200707f818a865e2f4eca14e69209f4c7bfec5500a48ba"
+    },
+    {
+      "role": "V27 comparator quarter scores 2024Q3",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q3/predictions.csv",
+      "bytes": 14313,
+      "sha256": "11b4600bc68e2d12205e215b97caa8964515536b2966454041ecb0cf42867441"
+    },
+    {
+      "role": "V27 comparator training audit 2024Q3",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q3/result.json",
+      "bytes": 2840,
+      "sha256": "c62363e7b997d1238d87311ef8e59651a4d73865a4da58b0a097f69fd340d260"
+    },
+    {
+      "role": "V11 holdout predictions 2024Q4",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2024Q4/predictions.csv",
+      "bytes": 13712,
+      "sha256": "ed48b4a4199035ace2fe15485b994db3e9e6bded74fd5d7807449166a15ac114"
+    },
+    {
+      "role": "V33 quarter model 2024Q4",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q4/ranker.txt",
+      "bytes": 160437,
+      "sha256": "503cf3af0d3631fcc3df151c63e370711a4ce4af9ec706f5423c9a3999841c95"
+    },
+    {
+      "role": "V33 quarter scores 2024Q4",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q4/predictions.csv",
+      "bytes": 13749,
+      "sha256": "5564ad75cd7541239ecaee8844781e01139257e5520057fd9b51162c6f6a7858"
+    },
+    {
+      "role": "V33 quarter training audit 2024Q4",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q4/result.json",
+      "bytes": 5355,
+      "sha256": "c1f22851d68216da653b1e8b02c1baba00466152d1504b3c899adc12a98188c5"
+    },
+    {
+      "role": "V33 quarter status 2024Q4",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2024Q4/status.json",
+      "bytes": 5395,
+      "sha256": "5653fcefffad32f68e752e45b0cf359082d2156910791b052527320e0f81923e"
+    },
+    {
+      "role": "V27 comparator quarter model 2024Q4",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q4/ranker.txt",
+      "bytes": 157983,
+      "sha256": "874b99e17cc620101b17d453afafcd170a6de574c489a6b6bae0ec85816871f9"
+    },
+    {
+      "role": "V27 comparator quarter scores 2024Q4",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q4/predictions.csv",
+      "bytes": 13672,
+      "sha256": "3204f80a5b2af6779f4ef1e637087e7b942ca6742f0129a46e728d2cce0b3564"
+    },
+    {
+      "role": "V27 comparator training audit 2024Q4",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2024Q4/result.json",
+      "bytes": 2842,
+      "sha256": "9d82810c4125718622564dfb88316650fa801585e8198682cd76190ffe0c1ce3"
+    },
+    {
+      "role": "V11 holdout predictions 2025Q1",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2025Q1/predictions.csv",
+      "bytes": 12831,
+      "sha256": "87fc6ec689e5e26ddad462b9637bc650bd9e272a6c1b137e2d414383bc9c40af"
+    },
+    {
+      "role": "V33 quarter model 2025Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q1/ranker.txt",
+      "bytes": 158559,
+      "sha256": "8aa3859cc0642ceb67a316ecdc3d4f0309840a0becaef2bdbc4690b7e3cdeab7"
+    },
+    {
+      "role": "V33 quarter scores 2025Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q1/predictions.csv",
+      "bytes": 12832,
+      "sha256": "19153ee71a4d223045503693e90ac69864b059b3aadbbdb014c1e786835c5440"
+    },
+    {
+      "role": "V33 quarter training audit 2025Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q1/result.json",
+      "bytes": 5343,
+      "sha256": "8a9c63cdc89e80b073c5a02228b22deaa8380ee10e699ac7dc15ff68907aae73"
+    },
+    {
+      "role": "V33 quarter status 2025Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q1/status.json",
+      "bytes": 5383,
+      "sha256": "d2bd69a03c78a82724e2dc3083ab5383fad84ff3146d56dddbefa773ba3abdb8"
+    },
+    {
+      "role": "V27 comparator quarter model 2025Q1",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q1/ranker.txt",
+      "bytes": 160251,
+      "sha256": "3dd602344feaddd57b0820f23cfc54fe2637581c8e06732fcd14617748126f93"
+    },
+    {
+      "role": "V27 comparator quarter scores 2025Q1",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q1/predictions.csv",
+      "bytes": 12778,
+      "sha256": "1af1978ec9bfdc212d0b3cb8f7e2cc12d50b92720a4d204b3bb8dafa1c0ad53d"
+    },
+    {
+      "role": "V27 comparator training audit 2025Q1",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q1/result.json",
+      "bytes": 2840,
+      "sha256": "2b851bf6d5356edeaccfb21fc07119d3df4d0bc5e09d5c64b6f1ebf801ca385d"
+    },
+    {
+      "role": "V11 holdout predictions 2025Q2",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2025Q2/predictions.csv",
+      "bytes": 13529,
+      "sha256": "d6c7158182b683f06db4a1106e3cc0ec8324b7be1df2c88828cbf25f9656ff22"
+    },
+    {
+      "role": "V33 quarter model 2025Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q2/ranker.txt",
+      "bytes": 159575,
+      "sha256": "42ea0c0c31814f2c6d62a49d6dd5cfd8013568771b7e98d06e24df18babfbd18"
+    },
+    {
+      "role": "V33 quarter scores 2025Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q2/predictions.csv",
+      "bytes": 13546,
+      "sha256": "5f5b516ec212bf36c590c1d5ad737a59278410af78ecab57a796949a13fe9ea4"
+    },
+    {
+      "role": "V33 quarter training audit 2025Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q2/result.json",
+      "bytes": 5327,
+      "sha256": "d17326d0672a9346b409f69d6fb1e4fead6891a269263544585acfcf2c4d47b0"
+    },
+    {
+      "role": "V33 quarter status 2025Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q2/status.json",
+      "bytes": 5367,
+      "sha256": "b2de00e8ae6b10d7de1b39f911482fee9146a0d9d0cb0d863fba1072d91985e4"
+    },
+    {
+      "role": "V27 comparator quarter model 2025Q2",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q2/ranker.txt",
+      "bytes": 159233,
+      "sha256": "e52276d5015f6d950237e59324e28e5bcc463d4933a0722d079f18a79edfb16f"
+    },
+    {
+      "role": "V27 comparator quarter scores 2025Q2",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q2/predictions.csv",
+      "bytes": 13443,
+      "sha256": "4d0a6523d1e5badad35dfd7ee893674455d9edda89c865fc840c019f74fd50e1"
+    },
+    {
+      "role": "V27 comparator training audit 2025Q2",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q2/result.json",
+      "bytes": 2840,
+      "sha256": "6a69d8a0baef25484ab2d8337f445e03a349474b984c632fb3559781c1e86ba9"
+    },
+    {
+      "role": "V11 holdout predictions 2025Q3",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2025Q3/predictions.csv",
+      "bytes": 14854,
+      "sha256": "ce2cf50fbc1cfa212b373553376b5ca5ca7c4d6b9bb42d25157c88b71c9b7384"
+    },
+    {
+      "role": "V33 quarter model 2025Q3",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q3/ranker.txt",
+      "bytes": 159722,
+      "sha256": "f6b02280bf547025a641dbffa28e9af8b61f4c32f574ae271c73f4a2cb8b1deb"
+    },
+    {
+      "role": "V33 quarter scores 2025Q3",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q3/predictions.csv",
+      "bytes": 14786,
+      "sha256": "a7bb6a88ffc7efbf7c46ebd3fce1052594bac65e2968df4ab464a025707f724c"
+    },
+    {
+      "role": "V33 quarter training audit 2025Q3",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q3/result.json",
+      "bytes": 5345,
+      "sha256": "8f4447d040f3fca0a3ccc91722418db44c53acfd34f4d2d10e399da9cde61951"
+    },
+    {
+      "role": "V33 quarter status 2025Q3",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q3/status.json",
+      "bytes": 5385,
+      "sha256": "dc6cf29f84c0c778aa24fac193dfaf1a9abf05c9b64ec338e6bd9b13c51cb8f6"
+    },
+    {
+      "role": "V27 comparator quarter model 2025Q3",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q3/ranker.txt",
+      "bytes": 159019,
+      "sha256": "8182f5ebd532af5db6d0e3c53783871b4790d61ffa1521e0644f621cf5bc2a34"
+    },
+    {
+      "role": "V27 comparator quarter scores 2025Q3",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q3/predictions.csv",
+      "bytes": 14831,
+      "sha256": "8bfb133edf45d2110d05fafb9cb1aa012712f61a3a4c92003be776b0f06825ba"
+    },
+    {
+      "role": "V27 comparator training audit 2025Q3",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q3/result.json",
+      "bytes": 2840,
+      "sha256": "7d619ce7fc1bc717b06635e3ff1ea26c26037fed3986db59bd5c4410064c5388"
+    },
+    {
+      "role": "V11 holdout predictions 2025Q4",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2025Q4/predictions.csv",
+      "bytes": 13512,
+      "sha256": "8a17f8ec7e346b6944e1f6d10f6e60770fa44a48241b778b8221651b1af5f3c8"
+    },
+    {
+      "role": "V33 quarter model 2025Q4",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q4/ranker.txt",
+      "bytes": 159516,
+      "sha256": "2c262c0a567e2cfc4cfaf5dff1c743202ebd4c3ec7d5f5a40ae5af2f4245b7e5"
+    },
+    {
+      "role": "V33 quarter scores 2025Q4",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q4/predictions.csv",
+      "bytes": 13468,
+      "sha256": "b382ae6644a148a1705e97bd0b2ff3e3ec17f4b958b578fb35a9e0d54419852d"
+    },
+    {
+      "role": "V33 quarter training audit 2025Q4",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q4/result.json",
+      "bytes": 5332,
+      "sha256": "09e3af074914d51d2e70a55fd5df615fed0f16163c654ed212cb1c33896ada38"
+    },
+    {
+      "role": "V33 quarter status 2025Q4",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2025Q4/status.json",
+      "bytes": 5372,
+      "sha256": "805bdb5e8d3cd06bef10abe566f43bb0c41c81706bf2550efd8226ef9bb294e0"
+    },
+    {
+      "role": "V27 comparator quarter model 2025Q4",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q4/ranker.txt",
+      "bytes": 156760,
+      "sha256": "9d0e3cfbace1773e65534b7e891d003c9a99cc6436211442790e74a5d4cbae80"
+    },
+    {
+      "role": "V27 comparator quarter scores 2025Q4",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q4/predictions.csv",
+      "bytes": 13504,
+      "sha256": "86135cc82e336584b38d08c8a83b26f01d9a2ff91f34e6fcdc0e8c693c36bb6e"
+    },
+    {
+      "role": "V27 comparator training audit 2025Q4",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2025Q4/result.json",
+      "bytes": 2837,
+      "sha256": "043ed1bc8427e4f611630d4da7c512a895c30448efb11314c75b0cd26264bf61"
+    },
+    {
+      "role": "V11 holdout predictions 2026Q1",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2026Q1/predictions.csv",
+      "bytes": 12549,
+      "sha256": "ef4fdd720e09a44bf5d6e92bc71ec358c4250e084db608699f4fb3be75721024"
+    },
+    {
+      "role": "V33 quarter model 2026Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2026Q1/ranker.txt",
+      "bytes": 159697,
+      "sha256": "c4b946d4b06033bc00df4d470d951f8ccc040e8bd7f3031f96aa490aa3a33cd2"
+    },
+    {
+      "role": "V33 quarter scores 2026Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2026Q1/predictions.csv",
+      "bytes": 12548,
+      "sha256": "f93dff3ed37fee359655d00315ce4bd488380f2c8b61e494184605ef91d6c75f"
+    },
+    {
+      "role": "V33 quarter training audit 2026Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2026Q1/result.json",
+      "bytes": 5343,
+      "sha256": "d3ff6ce136bbb598c32abb546250deb1cec3c103feaf62f3dd4e6cabbcdce911"
+    },
+    {
+      "role": "V33 quarter status 2026Q1",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2026Q1/status.json",
+      "bytes": 5383,
+      "sha256": "7de42ff915f423f1314eb2c4aa563d4c08f029a3e775d3dda98bf4ddf67b7204"
+    },
+    {
+      "role": "V27 comparator quarter model 2026Q1",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2026Q1/ranker.txt",
+      "bytes": 156680,
+      "sha256": "812ef2f5c63eced215e8aba46f33bef7ed97069409160b708656f2d40d311fb0"
+    },
+    {
+      "role": "V27 comparator quarter scores 2026Q1",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2026Q1/predictions.csv",
+      "bytes": 12484,
+      "sha256": "d09c71ccfae71598165ae5e52de884062cc8c7b8b12fdec1d0bf2020e2fda2be"
+    },
+    {
+      "role": "V27 comparator training audit 2026Q1",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2026Q1/result.json",
+      "bytes": 2838,
+      "sha256": "baf6f4f70da4e1ff1b5ffba5268dcc49cbe4e1543232cb475cc24a167d832a52"
+    },
+    {
+      "role": "V11 holdout predictions 2026Q2",
+      "path": "/root/autodl-fs/model/experiments2/V11/quarters/2026Q2/predictions.csv",
+      "bytes": 13524,
+      "sha256": "d57c2b12cfe56e2d879b29379c6f601e8f1828198cb015350e02b08700e498e9"
+    },
+    {
+      "role": "V33 quarter model 2026Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2026Q2/ranker.txt",
+      "bytes": 158273,
+      "sha256": "ba0650ef54fdc2f68be43c03b649e8aebca32c44f0aab78076e6298ee1e559f3"
+    },
+    {
+      "role": "V33 quarter scores 2026Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2026Q2/predictions.csv",
+      "bytes": 13527,
+      "sha256": "7ede457673669ffe61a080b3b2e4bffd059b53d7e61093e8743b34f9d6096966"
+    },
+    {
+      "role": "V33 quarter training audit 2026Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2026Q2/result.json",
+      "bytes": 5344,
+      "sha256": "1a9dd18fbcc050c6803ae369290a0ab08407463bbb08a19acff8c238bf78b79f"
+    },
+    {
+      "role": "V33 quarter status 2026Q2",
+      "path": "/root/autodl-fs/model/experiments2/V33/quarters/2026Q2/status.json",
+      "bytes": 5384,
+      "sha256": "1bd31ecc27683f1842bea182794c9b799bd8f69b40eac2fab83480f9330248ff"
+    },
+    {
+      "role": "V27 comparator quarter model 2026Q2",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2026Q2/ranker.txt",
+      "bytes": 155640,
+      "sha256": "09ce1bc6263dc20475a464f5ce6684add77f5e46405351f51371faeaf1708a61"
+    },
+    {
+      "role": "V27 comparator quarter scores 2026Q2",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2026Q2/predictions.csv",
+      "bytes": 13503,
+      "sha256": "15076f95cb099362447a4d7ed9a73ca209d8fa050e53438687facba097a8157d"
+    },
+    {
+      "role": "V27 comparator training audit 2026Q2",
+      "path": "/root/autodl-fs/model/experiments2/V27/quarters/2026Q2/result.json",
+      "bytes": 2839,
+      "sha256": "b9d3cb53c22020b3fba05484503692cff08e6aa1c49025ab4c8c70bd45464c92"
+    },
+    {
+      "role": "V24 comparator protocol.json",
+      "path": "/root/autodl-fs/model/experiments2/V24/protocol.json",
+      "bytes": 3018,
+      "sha256": "de76124f3156b2352e533d600477586fde07e4586b63fd5511f1e57d194be288"
+    },
+    {
+      "role": "V24 comparator membership_audit.json",
+      "path": "/root/autodl-fs/model/experiments2/V24/membership_audit.json",
+      "bytes": 26665,
+      "sha256": "6c7081fa2b5215be2f8accbba513c5c901c5c463587a21a53cb82a3009010c95"
+    },
+    {
+      "role": "V24 comparator metrics.json",
+      "path": "/root/autodl-fs/model/experiments2/V24/metrics.json",
+      "bytes": 3602,
+      "sha256": "672466996b6392ceeffd671fa9f937e7e6704fd9a539135a09e307da434801e8"
+    },
+    {
+      "role": "V24 comparator daily_equity.csv",
+      "path": "/root/autodl-fs/model/experiments2/V24/daily_equity.csv",
+      "bytes": 510223,
+      "sha256": "86bf061d78112b4496b461152e9775cf26aba9fbdcfb63fd74577ba310783714"
+    },
+    {
+      "role": "V24 comparator trades.csv",
+      "path": "/root/autodl-fs/model/experiments2/V24/trades.csv",
+      "bytes": 24401,
+      "sha256": "67659291ba916b0e626a9e37b112919042297758e50c7eb724614e71e00be7af"
+    },
+    {
+      "role": "V26 comparator protocol.json",
+      "path": "/root/autodl-fs/model/experiments2/V26/protocol.json",
+      "bytes": 2916,
+      "sha256": "4e56d889b92c9566cb92f7ed4c63cc576638240d8399b5defba6481fdb19f36d"
+    },
+    {
+      "role": "V26 comparator membership_audit.json",
+      "path": "/root/autodl-fs/model/experiments2/V26/membership_audit.json",
+      "bytes": 25919,
+      "sha256": "b9ef1fc3292ab54080f657286cfcd62fb0fd4125bd288443c7d835db49ef76e9"
+    },
+    {
+      "role": "V26 comparator metrics.json",
+      "path": "/root/autodl-fs/model/experiments2/V26/metrics.json",
+      "bytes": 5964,
+      "sha256": "59591911dedc00b748dd2ba0a9e7a1ef1229f2df387c23e25c48c4c2957bbcf1"
+    },
+    {
+      "role": "V26 comparator daily_equity.csv",
+      "path": "/root/autodl-fs/model/experiments2/V26/daily_equity.csv",
+      "bytes": 511403,
+      "sha256": "742b8be98a7166a81de2285a5837be0cca6fb66ab76248c9ac4a1eaa5c4505ff"
+    },
+    {
+      "role": "V26 comparator trades.csv",
+      "path": "/root/autodl-fs/model/experiments2/V26/trades.csv",
+      "bytes": 22264,
+      "sha256": "345dbf812af875a8cfd764db3917dbe6b001ca8a3d518a40dfc826c1f752d8f3"
+    },
+    {
+      "role": "V27 comparator PROTOCOL.md",
+      "path": "/root/autodl-fs/model/experiments2/V27/PROTOCOL.md",
+      "bytes": 2547,
+      "sha256": "40411b0229808be1cc9eb3bcbb1fb88fdd18cc39cd2e9c5cad6502e537c405ce"
+    },
+    {
+      "role": "V27 comparator metrics.json",
+      "path": "/root/autodl-fs/model/experiments2/V27/metrics.json",
+      "bytes": 59371,
+      "sha256": "bd58fddb96d004723a8f0bf2e02dfd63277acb13c7c3e83d5ddac4511c66216a"
+    },
+    {
+      "role": "V27 comparator daily_equity.csv",
+      "path": "/root/autodl-fs/model/experiments2/V27/daily_equity.csv",
+      "bytes": 587275,
+      "sha256": "5594dcc9d9624903f616690eb48675784b6ad062ec104c2a884ab2b956fb4083"
+    },
+    {
+      "role": "V27 comparator trades.csv",
+      "path": "/root/autodl-fs/model/experiments2/V27/trades.csv",
+      "bytes": 32345,
+      "sha256": "9673888a50ba31cfe4d359773bb5ef63fa61970ba381dc9ecf089fd68c1f6119"
+    }
+  ]
+}

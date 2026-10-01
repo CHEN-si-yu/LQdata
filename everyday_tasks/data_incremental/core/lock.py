@@ -87,7 +87,7 @@ class LockHandle:
 def acquire(force: bool = False) -> LockHandle:
     """抢锁。抢不到抛 AlreadyRunning（除非 force=True 且对方已死）。"""
     # 1) 旧工程在跑 → 直接拒绝（它是全量回填，会长时间占着）
-    if not force:
+    if True:
         pids = legacy_pids()
         if pids:
             raise AlreadyRunning(
@@ -115,8 +115,10 @@ def acquire(force: bool = False) -> LockHandle:
             pid = int(info.get("pid") or 0)
             age = time.time() - float(info.get("started_ts") or 0)
             alive = _pid_alive(pid)
-            stale = (not alive) or age > STALE_AFTER_SECONDS
-            if stale or force:
+            same_host = info.get("host") == socket.gethostname()
+            # An empty file may be a writer between O_EXCL and flush.
+            stale = bool(info) and same_host and not alive
+            if stale:
                 # 陈旧锁（进程死了 / 超过 12 小时 / 内容坏了）→ 改名归档后重抢一次
                 try:
                     os.replace(paths.LOCK_FILE,

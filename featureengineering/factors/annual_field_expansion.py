@@ -31,7 +31,10 @@ def _build(entry):
 
     @register(FactorSpec(name=entry['name'], group=entry['group'], desc=entry['desc'],
         formula=formula, deps=tuple(entry['source_fields']), fin_fields=fields,
-        warmup_days=1100, start=entry.get('start'), note=NOTE+entry['note']))
+        warmup_days=1100, start=entry.get('start'), note=NOTE+entry['note'],
+        # ★ 对齐区间的填充值（见 FactorSpec.align_fill）。默认 NaN；
+        #   条目里写 "align_fill": 0.0 表示"上游对该区间以 0 表示未披露"。
+        align_fill=entry.get('align_fill', float("nan"))))
     def compute(ctx):
         value = np.asarray(ctx.annual(ds, field), dtype=np.float64)
         if mode == 'ratio':

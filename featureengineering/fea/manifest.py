@@ -26,11 +26,30 @@ def _now() -> str:
 
 
 def _atomic_json(obj, path: Path) -> None:
+    """原子写 JSON。
+
+    ★★ 2026-09-25 修**并发写竞态**：临时文件名必须**只属于本进程**。
+      原来写 `path + ".tmp"`（确定性名字），而 `Upstream.watermark()` 是**写**操作、
+      会被**每个因子 worker** 调用（`state/input_hashes/<数据集>.json`）。
+      可达路径：`main.py` 每波结束都 `clear()` 水位缓存 ⇒ 第 2 波（耦合因子必然
+      产生 ≥2 波）的 worker 全部 cache miss ⇒ 若此时文件身份变了（**上游更新后的
+      第一次 run** 就是典型触发点）⇒ N 个进程以 `"w"` 截断**同一个** tmp 文件。
+      后果二选一：后写入者 `os.replace` 时文件已被别人搬走 → `FileNotFoundError`
+      （该任务失败、整轮非零），或者留下被截断的 JSON（下次 `json.loads` 失败 →
+      静默退化成每次重算 md5）。**并行度越高越容易撞上。**
+      加 PID 后每个进程写自己的 tmp，`os.replace` 本身是原子的，不再互相踩。
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(obj, f, ensure_ascii=False, indent=1)
-    os.replace(tmp, path)
+    tmp = path.with_suffix(f"{path.suffix}.{os.getpid()}.tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(obj, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, path)
+    except BaseException:
+        # 失败时别把 tmp 留在生产目录里（`os.replace` 成功后 tmp 已不存在）。
+        try: tmp.unlink()
+        except OSError: pass
+        raise
 
 
 def _next_day(d: str) -> str:

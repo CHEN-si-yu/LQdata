@@ -1,0 +1,4403 @@
+{
+  "unit": "experiments2/V9 monthly 20-session momentum Top2",
+  "built_at": "2026-09-27 17:39:48",
+  "snapshot_built_at": "2026-09-27 14:19:24",
+  "snapshot_last_day": "2026-09-24",
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "rule": {
+    "signal": "first observed trading session of each calendar month at close",
+    "factor": "adjusted close(T) / adjusted close(T-lookback) - 1",
+    "ranking": "descending cross-sectional total return; equal-weight fixed Top2",
+    "execution": "next trading session open",
+    "lookback_intervals_under_test": 20,
+    "same_ledger_comparator_lookback_intervals": 60,
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "final_liquidation": "last day of each ledger window, forced at open by audited account engine"
+  },
+  "cost_model": {
+    "account_money": 100000.0,
+    "lot_size": 100,
+    "max_participation": 0.01,
+    "commission_rate": 0.00025,
+    "min_commission": 5.0,
+    "transfer_rate": 1e-05,
+    "stamp_sell_rate": 0.0005,
+    "slippage_rate": 0.0003
+  },
+  "official_242d": {
+    "window": {
+      "start": "2025-07-01",
+      "signal_end": "2026-06-30",
+      "final_liquidation_day": "2026-07-01",
+      "signal_sessions": 242,
+      "ledger_sessions_including_liquidation": 243
+    },
+    "scenarios": {
+      "monthly_top2_20d": {
+        "statistics": {
+          "days": 243,
+          "cumulative_net_return": -0.018756569569023163,
+          "annualized_return": -0.018680107516421796,
+          "max_drawdown": -0.13212689742171235,
+          "matched_benchmark_return": -0.006520890295454773,
+          "matched_cumulative_excess": -0.01223567927356839,
+          "avg_exposure": 0.9851678613582259,
+          "average_holdings": 1.9835390946502058,
+          "ending_equity": 98124.34304309769,
+          "yearly": {
+            "2025": {
+              "strategy_net_return": 0.04063412859802584,
+              "matched_return": 0.0472325833560181,
+              "daily_matched_excess": -0.006598454757992256
+            },
+            "2026": {
+              "strategy_net_return": -0.05707164173739199,
+              "matched_return": -0.05132906911586965,
+              "daily_matched_excess": -0.005742572621522335
+            }
+          }
+        },
+        "audit": {
+          "ledger_first_day": "2025-07-01",
+          "signal_window_last_day": "2026-06-30",
+          "final_liquidation_day": "2026-07-01",
+          "signal_window_sessions": 242,
+          "ledger_sessions_including_liquidation": 243,
+          "monthly_signal_count": 12,
+          "rebalance_execution_dates": [
+            "2025-07-02",
+            "2025-08-04",
+            "2025-09-02",
+            "2025-10-10",
+            "2025-11-04",
+            "2025-12-02",
+            "2026-01-06",
+            "2026-02-03",
+            "2026-03-03",
+            "2026-04-02",
+            "2026-05-07",
+            "2026-06-02"
+          ],
+          "cash_min": 216.89487628026836,
+          "ending_cash": 98124.34304309769,
+          "ending_positions": 0,
+          "maximum_simultaneous_holdings": 2,
+          "blocked_entries": 0,
+          "blocked_exits": 0,
+          "trade_count": 37,
+          "fees": 806.8235573913717,
+          "buy_notional": 759902.9025,
+          "sell_notional": 758834.0691004891,
+          "cash_nonnegative": true,
+          "final_liquidation_complete": true,
+          "causal_signal_and_t_plus_1_check_pass": true,
+          "max_abs_equity_cash_plus_mark_residual": 1.4551915228366852e-11,
+          "ledger_rule": "same V4 account_engine.py; cash account, 100-share lots, signal-day amount capacity, one-price limit locks, 3bp slippage, commissions/transfer/sell stamp fees"
+        },
+        "quarterly_returns": [
+          {
+            "quarter": "2025Q3",
+            "ledger_sessions": 66,
+            "net_return": -0.03745127488614364,
+            "same_hold_no_fee_return": -0.03527569912747963,
+            "cost_execution_friction_gap": -0.0021755757586640057
+          },
+          {
+            "quarter": "2025Q4",
+            "ledger_sessions": 60,
+            "net_return": 0.08112358517220408,
+            "same_hold_no_fee_return": 0.0855252453046691,
+            "cost_execution_friction_gap": -0.004401660132465013
+          },
+          {
+            "quarter": "2026Q1",
+            "ledger_sessions": 56,
+            "net_return": 0.00711414438257707,
+            "same_hold_no_fee_return": 0.008836604800585901,
+            "cost_execution_friction_gap": -0.001722460418008831
+          },
+          {
+            "quarter": "2026Q2",
+            "ledger_sessions": 60,
+            "net_return": -0.0456280595943509,
+            "same_hold_no_fee_return": -0.04246421293734148,
+            "cost_execution_friction_gap": -0.003163846657009417
+          },
+          {
+            "quarter": "2026Q3",
+            "ledger_sessions": 1,
+            "net_return": -0.01896988414295353,
+            "same_hold_no_fee_return": -0.017936099985653264,
+            "cost_execution_friction_gap": -0.001033784157300266
+          }
+        ],
+        "annual_returns": [
+          {
+            "year": "2025",
+            "ledger_sessions": 126,
+            "net_return": 0.04063412859802584,
+            "same_hold_no_fee_return": 0.0472325833560181,
+            "cost_execution_friction_gap": -0.006598454757992256
+          },
+          {
+            "year": "2026",
+            "ledger_sessions": 117,
+            "net_return": -0.05707164173739199,
+            "same_hold_no_fee_return": -0.05132906911586965,
+            "cost_execution_friction_gap": -0.005742572621522335
+          }
+        ],
+        "signals": [
+          {
+            "signal_date": "2025-07-01",
+            "execution_date": "2025-07-02",
+            "signal_index": 1816,
+            "execution_index": 1817,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": 0.07735583684950775
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.07174392935982343
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.07001795332136451
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.023550724637681153
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-08-01",
+            "execution_date": "2025-08-04",
+            "signal_index": 1839,
+            "execution_index": 1840,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.07188908622498191
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.0032699338089638985
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.026315789473684292
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.038775510204081765
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-09-01",
+            "execution_date": "2025-09-02",
+            "signal_index": 1860,
+            "execution_index": 1861,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.10328638497652576
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.010752688172043112
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.03906249999999989
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.05340314136125679
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-10-09",
+            "execution_date": "2025-10-10",
+            "signal_index": 1882,
+            "execution_index": 1883,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": -0.0174731182795701
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.05038335158817098
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.057657657657657624
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.06293706293706303
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-11-03",
+            "execution_date": "2025-11-04",
+            "signal_index": 1899,
+            "execution_index": 1900,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.2099697885196372
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.08396946564885477
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.07852193995381063
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.06612685560053988
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-12-01",
+            "execution_date": "2025-12-02",
+            "signal_index": 1919,
+            "execution_index": 1920,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.06866197183098599
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.03319057815845827
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.02405063291139231
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.0024968789013730674
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-01-05",
+            "execution_date": "2026-01-06",
+            "signal_index": 1942,
+            "execution_index": 1943,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.005874725147862803
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.011183467107792167
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.01692011137288507
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.026625563783903572
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-02-02",
+            "execution_date": "2026-02-03",
+            "signal_index": 1962,
+            "execution_index": 1963,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": -0.04409171075837737
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.04972972972972989
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.0639386189258313
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.10435931307793922
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-03-02",
+            "execution_date": "2026-03-03",
+            "signal_index": 1976,
+            "execution_index": 1977,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.007590132827324458
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.006936416184970984
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.03467406380027738
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.040000000000000036
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-04-01",
+            "execution_date": "2026-04-02",
+            "signal_index": 1998,
+            "execution_index": 1999,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.09719626168224327
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.07062146892655363
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.061797752808988804
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.0014970059880241582
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-05-06",
+            "execution_date": "2026-05-07",
+            "signal_index": 2019,
+            "execution_index": 2020,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.022964509394572064
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.00867052023121384
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.035386631716906924
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.03872053872053882
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-06-01",
+            "execution_date": "2026-06-02",
+            "signal_index": 2037,
+            "execution_index": 2038,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.02752293577981635
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.024179620034542104
+              },
+              {
+                "code": "601398.SH",
+                "return": -1.4746213641614325e-05
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.046578638579091836
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          }
+        ]
+      },
+      "monthly_top2_60d": {
+        "statistics": {
+          "days": 243,
+          "cumulative_net_return": 0.11583617552664371,
+          "annualized_return": 0.11533299612529535,
+          "max_drawdown": -0.17361043254181552,
+          "matched_benchmark_return": 0.12086764280396056,
+          "matched_cumulative_excess": -0.005031467277316848,
+          "avg_exposure": 0.9873526601540118,
+          "average_holdings": 1.9835390946502058,
+          "ending_equity": 111583.61755266436,
+          "yearly": {
+            "2025": {
+              "strategy_net_return": 0.13453465790659158,
+              "matched_return": 0.13736822562563544,
+              "daily_matched_excess": -0.0028335677190438613
+            },
+            "2026": {
+              "strategy_net_return": -0.01648119098842671,
+              "matched_return": -0.014507687528019675,
+              "daily_matched_excess": -0.0019735034604070334
+            }
+          }
+        },
+        "audit": {
+          "ledger_first_day": "2025-07-01",
+          "signal_window_last_day": "2026-06-30",
+          "final_liquidation_day": "2026-07-01",
+          "signal_window_sessions": 242,
+          "ledger_sessions_including_liquidation": 243,
+          "monthly_signal_count": 12,
+          "rebalance_execution_dates": [
+            "2025-07-02",
+            "2025-08-04",
+            "2025-09-02",
+            "2025-10-10",
+            "2025-11-04",
+            "2025-12-02",
+            "2026-01-06",
+            "2026-02-03",
+            "2026-03-03",
+            "2026-04-02",
+            "2026-05-07",
+            "2026-06-02"
+          ],
+          "cash_min": 124.91914658427686,
+          "ending_cash": 111583.61755266436,
+          "ending_positions": 0,
+          "maximum_simultaneous_holdings": 2,
+          "blocked_entries": 0,
+          "blocked_exits": 0,
+          "trade_count": 19,
+          "fees": 322.5822428235708,
+          "buy_notional": 267589.25269999995,
+          "sell_notional": 279495.45249548793,
+          "cash_nonnegative": true,
+          "final_liquidation_complete": true,
+          "causal_signal_and_t_plus_1_check_pass": true,
+          "max_abs_equity_cash_plus_mark_residual": 1.4551915228366852e-11,
+          "ledger_rule": "same V4 account_engine.py; cash account, 100-share lots, signal-day amount capacity, one-price limit locks, 3bp slippage, commissions/transfer/sell stamp fees"
+        },
+        "quarterly_returns": [
+          {
+            "quarter": "2025Q3",
+            "ledger_sessions": 66,
+            "net_return": 0.024883319857003983,
+            "same_hold_no_fee_return": 0.026451905912068252,
+            "cost_execution_friction_gap": -0.0015685860550642694
+          },
+          {
+            "quarter": "2025Q4",
+            "ledger_sessions": 60,
+            "net_return": 0.10698909419746161,
+            "same_hold_no_fee_return": 0.1080579801885706,
+            "cost_execution_friction_gap": -0.001068885991108992
+          },
+          {
+            "quarter": "2026Q1",
+            "ledger_sessions": 56,
+            "net_return": -0.016988978508989394,
+            "same_hold_no_fee_return": -0.016156086143197523,
+            "cost_execution_friction_gap": -0.0008328923657918708
+          },
+          {
+            "quarter": "2026Q2",
+            "ledger_sessions": 60,
+            "net_return": 0.019958316648902574,
+            "same_hold_no_fee_return": 0.0200587752752881,
+            "cost_execution_friction_gap": -0.0001004586263855245
+          },
+          {
+            "quarter": "2026Q3",
+            "ledger_sessions": 1,
+            "net_return": -0.019061321356375616,
+            "same_hold_no_fee_return": -0.01802181218042287,
+            "cost_execution_friction_gap": -0.0010395091759527464
+          }
+        ],
+        "annual_returns": [
+          {
+            "year": "2025",
+            "ledger_sessions": 126,
+            "net_return": 0.13453465790659158,
+            "same_hold_no_fee_return": 0.13736822562563544,
+            "cost_execution_friction_gap": -0.0028335677190438613
+          },
+          {
+            "year": "2026",
+            "ledger_sessions": 117,
+            "net_return": -0.01648119098842671,
+            "same_hold_no_fee_return": -0.014507687528019675,
+            "cost_execution_friction_gap": -0.0019735034604070334
+          }
+        ],
+        "signals": [
+          {
+            "signal_date": "2025-07-01",
+            "execution_date": "2025-07-02",
+            "signal_index": 1816,
+            "execution_index": 1817,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.16179337231968827
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.14581917444456782
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.1264705882352941
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.045073987538940985
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-08-01",
+            "execution_date": "2025-08-04",
+            "signal_index": 1839,
+            "execution_index": 1840,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.18814176285600004
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.09357833854000996
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.035183104042275204
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.008928571428571286
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-09-01",
+            "execution_date": "2025-09-02",
+            "signal_index": 1860,
+            "execution_index": 1861,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.28777728478843456
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.06362278615974337
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.016574585635359185
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.008928571428571175
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-10-09",
+            "execution_date": "2025-10-10",
+            "signal_index": 1882,
+            "execution_index": 1883,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.10343451492064148
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.049806076447960757
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.09515570934256057
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.11710794297352334
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-11-03",
+            "execution_date": "2025-11-04",
+            "signal_index": 1899,
+            "execution_index": 1900,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.2654028436018956
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.036745406824147064
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.023423423423423406
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.00849256900212314
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-12-01",
+            "execution_date": "2025-12-02",
+            "signal_index": 1919,
+            "execution_index": 1920,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.13817663817663828
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.0996376811594204
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.088829071332436
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.07222222222222241
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-01-05",
+            "execution_date": "2026-01-06",
+            "signal_index": 1942,
+            "execution_index": 1943,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.14771015613539706
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.10525998950811388
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.08940757429509016
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.08891560735735626
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-02-02",
+            "execution_date": "2026-02-03",
+            "signal_index": 1962,
+            "execution_index": 1963,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": -0.023739013885283544
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.04920993298526333
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.07898351004514059
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.15598399330745472
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-03-02",
+            "execution_date": "2026-03-03",
+            "signal_index": 1976,
+            "execution_index": 1977,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": -0.08500305240578643
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.11975719457344514
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.13179171203668616
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.17097877178617715
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-04-01",
+            "execution_date": "2026-04-02",
+            "signal_index": 1998,
+            "execution_index": 1999,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.04634581105169344
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.03960396039603964
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.02944942381562099
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.10918774966711053
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-05-06",
+            "execution_date": "2026-05-07",
+            "signal_index": 2019,
+            "execution_index": 2020,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.12514351320321482
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.06928838951310867
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.022222222222222143
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.008823529411764675
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-06-01",
+            "execution_date": "2026-06-02",
+            "signal_index": 2037,
+            "execution_index": 2038,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.13258426966292136
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.09409594095940954
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.04914183227304725
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.016828492086017444
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          }
+        ]
+      },
+      "four_bank_equal_weight_hold": {
+        "statistics": {
+          "days": 243,
+          "cumulative_net_return": 0.016224063124026022,
+          "annualized_return": 0.016156760960971406,
+          "max_drawdown": -0.15119064253391168,
+          "matched_benchmark_return": 0.017845624128968174,
+          "matched_cumulative_excess": -0.0016215610049421514,
+          "avg_exposure": 0.9764779741364771,
+          "average_holdings": 3.9670781893004117,
+          "ending_equity": 101622.4063124026,
+          "yearly": {
+            "2025": {
+              "strategy_net_return": 0.08883113643818707,
+              "matched_return": 0.08943112526831754,
+              "daily_matched_excess": -0.0005999888301304601
+            },
+            "2026": {
+              "strategy_net_return": -0.06668350204575901,
+              "matched_return": -0.06570906547370559,
+              "daily_matched_excess": -0.0009744365720534276
+            }
+          }
+        },
+        "audit": {
+          "ledger_first_day": "2025-07-01",
+          "signal_window_last_day": "2026-06-30",
+          "final_liquidation_day": "2026-07-01",
+          "signal_window_sessions": 242,
+          "ledger_sessions_including_liquidation": 243,
+          "monthly_signal_count": 0,
+          "rebalance_execution_dates": [
+            "2025-07-02"
+          ],
+          "cash_min": 1612.926410103999,
+          "ending_cash": 101622.4063124026,
+          "ending_positions": 0,
+          "maximum_simultaneous_holdings": 4,
+          "blocked_entries": 0,
+          "blocked_exits": 0,
+          "trade_count": 8,
+          "fees": 101.63900403249067,
+          "buy_notional": 98361.4996,
+          "sell_notional": 100085.5449164351,
+          "cash_nonnegative": true,
+          "final_liquidation_complete": true,
+          "causal_signal_and_t_plus_1_check_pass": true,
+          "max_abs_equity_cash_plus_mark_residual": 0.0,
+          "ledger_rule": "same V4 account_engine.py; cash account, 100-share lots, signal-day amount capacity, one-price limit locks, 3bp slippage, commissions/transfer/sell stamp fees"
+        },
+        "quarterly_returns": [
+          {
+            "quarter": "2025Q3",
+            "ledger_sessions": 66,
+            "net_return": -0.02484678574901844,
+            "same_hold_no_fee_return": -0.024309437930209787,
+            "cost_execution_friction_gap": -0.0005373478188086533
+          },
+          {
+            "quarter": "2025Q4",
+            "ledger_sessions": 60,
+            "net_return": 0.11657442187125722,
+            "same_hold_no_fee_return": 0.11657442187125744,
+            "cost_execution_friction_gap": -2.220446049250313e-16
+          },
+          {
+            "quarter": "2026Q1",
+            "ledger_sessions": 56,
+            "net_return": -0.0425942664663288,
+            "same_hold_no_fee_return": -0.042594266466329245,
+            "cost_execution_friction_gap": 4.440892098500626e-16
+          },
+          {
+            "quarter": "2026Q2",
+            "ledger_sessions": 60,
+            "net_return": -0.005308758244600975,
+            "same_hold_no_fee_return": -0.005308758244600531,
+            "cost_execution_friction_gap": -4.440892098500626e-16
+          },
+          {
+            "quarter": "2026Q3",
+            "ledger_sessions": 1,
+            "net_return": -0.019958142398280865,
+            "same_hold_no_fee_return": -0.018934921839892094,
+            "cost_execution_friction_gap": -0.001023220558388771
+          }
+        ],
+        "annual_returns": [
+          {
+            "year": "2025",
+            "ledger_sessions": 126,
+            "net_return": 0.08883113643818707,
+            "same_hold_no_fee_return": 0.08943112526831754,
+            "cost_execution_friction_gap": -0.0005999888301304601
+          },
+          {
+            "year": "2026",
+            "ledger_sessions": 117,
+            "net_return": -0.06668350204575901,
+            "same_hold_no_fee_return": -0.06570906547370559,
+            "cost_execution_friction_gap": -0.0009744365720534276
+          }
+        ],
+        "signals": [
+          {
+            "signal_date": "2025-07-01",
+            "execution_date": "2025-07-02",
+            "rule": "initial equal-weight four-bank hold; no rebalance until final liquidation"
+          }
+        ]
+      }
+    }
+  },
+  "extended": {
+    "window": {
+      "start": "2023-01-03",
+      "signal_end": "2026-09-23",
+      "final_liquidation_day": "2026-09-24",
+      "signal_sessions": 904,
+      "ledger_sessions_including_liquidation": 905
+    },
+    "scenarios": {
+      "monthly_top2_20d": {
+        "statistics": {
+          "days": 905,
+          "cumulative_net_return": 1.2881874797021595,
+          "annualized_return": 0.24775479314099802,
+          "max_drawdown": -0.16195110184070516,
+          "matched_benchmark_return": 1.3772040003798955,
+          "matched_cumulative_excess": -0.08901652067773602,
+          "avg_exposure": 0.9950227267451871,
+          "average_holdings": 1.9955801104972375,
+          "ending_equity": 228818.74797021595,
+          "yearly": {
+            "2023": {
+              "strategy_net_return": 0.2514289079869212,
+              "matched_return": 0.26079893567870305,
+              "daily_matched_excess": -0.009370027691781857
+            },
+            "2024": {
+              "strategy_net_return": 0.47743268618834667,
+              "matched_return": 0.4945731090287122,
+              "daily_matched_excess": -0.017140422840365543
+            },
+            "2025": {
+              "strategy_net_return": 0.17392463777082479,
+              "matched_return": 0.1855363460153423,
+              "daily_matched_excess": -0.011611708244517516
+            },
+            "2026": {
+              "strategy_net_return": 0.05423517257373622,
+              "matched_return": 0.06411504091598208,
+              "daily_matched_excess": -0.009879868342245857
+            }
+          }
+        },
+        "audit": {
+          "ledger_first_day": "2023-01-03",
+          "signal_window_last_day": "2026-09-23",
+          "final_liquidation_day": "2026-09-24",
+          "signal_window_sessions": 904,
+          "ledger_sessions_including_liquidation": 905,
+          "monthly_signal_count": 45,
+          "rebalance_execution_dates": [
+            "2023-01-04",
+            "2023-02-02",
+            "2023-03-02",
+            "2023-04-04",
+            "2023-05-05",
+            "2023-06-02",
+            "2023-07-04",
+            "2023-08-02",
+            "2023-09-04",
+            "2023-10-10",
+            "2023-11-02",
+            "2023-12-04",
+            "2024-01-03",
+            "2024-02-02",
+            "2024-03-04",
+            "2024-04-02",
+            "2024-05-07",
+            "2024-06-04",
+            "2024-07-02",
+            "2024-08-02",
+            "2024-09-03",
+            "2024-10-09",
+            "2024-11-04",
+            "2024-12-03",
+            "2025-01-03",
+            "2025-02-06",
+            "2025-03-04",
+            "2025-04-02",
+            "2025-05-07",
+            "2025-06-04",
+            "2025-07-02",
+            "2025-08-04",
+            "2025-09-02",
+            "2025-10-10",
+            "2025-11-04",
+            "2025-12-02",
+            "2026-01-06",
+            "2026-02-03",
+            "2026-03-03",
+            "2026-04-02",
+            "2026-05-07",
+            "2026-06-02",
+            "2026-07-02",
+            "2026-08-04",
+            "2026-09-02"
+          ],
+          "cash_min": 21.47814909594308,
+          "ending_cash": 228818.74797021595,
+          "ending_positions": 0,
+          "maximum_simultaneous_holdings": 2,
+          "blocked_entries": 0,
+          "blocked_exits": 0,
+          "trade_count": 124,
+          "fees": 4237.769495164689,
+          "buy_notional": 3908108.0807999996,
+          "sell_notional": 4041164.5982653806,
+          "cash_nonnegative": true,
+          "final_liquidation_complete": true,
+          "causal_signal_and_t_plus_1_check_pass": true,
+          "max_abs_equity_cash_plus_mark_residual": 2.9103830456733704e-11,
+          "ledger_rule": "same V4 account_engine.py; cash account, 100-share lots, signal-day amount capacity, one-price limit locks, 3bp slippage, commissions/transfer/sell stamp fees"
+        },
+        "quarterly_returns": [
+          {
+            "quarter": "2023Q1",
+            "ledger_sessions": 59,
+            "net_return": 0.07115388117769927,
+            "same_hold_no_fee_return": 0.07278399705926542,
+            "cost_execution_friction_gap": -0.001630115881566141
+          },
+          {
+            "quarter": "2023Q2",
+            "ledger_sessions": 59,
+            "net_return": 0.08494624392676031,
+            "same_hold_no_fee_return": 0.08771142627446804,
+            "cost_execution_friction_gap": -0.0027651823477077286
+          },
+          {
+            "quarter": "2023Q3",
+            "ledger_sessions": 64,
+            "net_return": 0.05851236253619074,
+            "same_hold_no_fee_return": 0.060304775267188804,
+            "cost_execution_friction_gap": -0.0017924127309980609
+          },
+          {
+            "quarter": "2023Q4",
+            "ledger_sessions": 60,
+            "net_return": 0.0173026176654294,
+            "same_hold_no_fee_return": 0.019035090015687928,
+            "cost_execution_friction_gap": -0.0017324723502585293
+          },
+          {
+            "quarter": "2024Q1",
+            "ledger_sessions": 58,
+            "net_return": 0.09690656060590874,
+            "same_hold_no_fee_return": 0.10053282629266524,
+            "cost_execution_friction_gap": -0.0036262656867565024
+          },
+          {
+            "quarter": "2024Q2",
+            "ledger_sessions": 59,
+            "net_return": 0.0877585339863789,
+            "same_hold_no_fee_return": 0.09047139821853278,
+            "cost_execution_friction_gap": -0.0027128642321538887
+          },
+          {
+            "quarter": "2024Q3",
+            "ledger_sessions": 64,
+            "net_return": 0.10045646232367367,
+            "same_hold_no_fee_return": 0.10315131969591373,
+            "cost_execution_friction_gap": -0.002694857372240067
+          },
+          {
+            "quarter": "2024Q4",
+            "ledger_sessions": 61,
+            "net_return": 0.12520772373286815,
+            "same_hold_no_fee_return": 0.12892423172163658,
+            "cost_execution_friction_gap": -0.003716507988768436
+          },
+          {
+            "quarter": "2025Q1",
+            "ledger_sessions": 57,
+            "net_return": 0.0002999693412417681,
+            "same_hold_no_fee_return": 0.001942305461333227,
+            "cost_execution_friction_gap": -0.0016423361200914588
+          },
+          {
+            "quarter": "2025Q2",
+            "ledger_sessions": 60,
+            "net_return": 0.09285371761418859,
+            "same_hold_no_fee_return": 0.09470600869936607,
+            "cost_execution_friction_gap": -0.001852291085177482
+          },
+          {
+            "quarter": "2025Q3",
+            "ledger_sessions": 66,
+            "net_return": -0.0068663730535526435,
+            "same_hold_no_fee_return": -0.004426164353499962,
+            "cost_execution_friction_gap": -0.0024402087000526818
+          },
+          {
+            "quarter": "2025Q4",
+            "ledger_sessions": 60,
+            "net_return": 0.08128515580986084,
+            "same_hold_no_fee_return": 0.08567836198123735,
+            "cost_execution_friction_gap": -0.004393206171376507
+          },
+          {
+            "quarter": "2026Q1",
+            "ledger_sessions": 56,
+            "net_return": 0.0068131119733398915,
+            "same_hold_no_fee_return": 0.00854002246234975,
+            "cost_execution_friction_gap": -0.0017269104890098586
+          },
+          {
+            "quarter": "2026Q2",
+            "ledger_sessions": 60,
+            "net_return": -0.045541286463999464,
+            "same_hold_no_fee_return": -0.04240585541832265,
+            "cost_execution_friction_gap": -0.0031354310456768175
+          },
+          {
+            "quarter": "2026Q3",
+            "ledger_sessions": 62,
+            "net_return": 0.09706280670541334,
+            "same_hold_no_fee_return": 0.10182840130425674,
+            "cost_execution_friction_gap": -0.004765594598843403
+          }
+        ],
+        "annual_returns": [
+          {
+            "year": "2023",
+            "ledger_sessions": 242,
+            "net_return": 0.2514289079869212,
+            "same_hold_no_fee_return": 0.26079893567870305,
+            "cost_execution_friction_gap": -0.009370027691781857
+          },
+          {
+            "year": "2024",
+            "ledger_sessions": 242,
+            "net_return": 0.47743268618834667,
+            "same_hold_no_fee_return": 0.4945731090287122,
+            "cost_execution_friction_gap": -0.017140422840365543
+          },
+          {
+            "year": "2025",
+            "ledger_sessions": 243,
+            "net_return": 0.17392463777082479,
+            "same_hold_no_fee_return": 0.1855363460153423,
+            "cost_execution_friction_gap": -0.011611708244517516
+          },
+          {
+            "year": "2026",
+            "ledger_sessions": 178,
+            "net_return": 0.05423517257373622,
+            "same_hold_no_fee_return": 0.06411504091598208,
+            "cost_execution_friction_gap": -0.009879868342245857
+          }
+        ],
+        "signals": [
+          {
+            "signal_date": "2023-01-03",
+            "execution_date": "2023-01-04",
+            "signal_index": 1215,
+            "execution_index": 1216,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.0034602076124565784
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.0031746031746031633
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.0023255813953486637
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.00177935943060481
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-02-01",
+            "execution_date": "2023-02-02",
+            "signal_index": 1231,
+            "execution_index": 1232,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.022222222222222365
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.01038062283737018
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.007168458781362075
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.0023255813953486637
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-03-01",
+            "execution_date": "2023-03-02",
+            "signal_index": 1251,
+            "execution_index": 1252,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.006211180124223503
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.003558718861209842
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.0034246575342467
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.002320185614848924
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-04-03",
+            "execution_date": "2023-04-04",
+            "signal_index": 1274,
+            "execution_index": 1275,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.04729729729729737
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.024096385542168974
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.02298850574712663
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.015105740181268867
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-05-04",
+            "execution_date": "2023-05-05",
+            "signal_index": 1293,
+            "execution_index": 1294,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.16568047337278102
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.1511254019292605
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.10986547085201792
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.1026936026936025
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-06-01",
+            "execution_date": "2023-06-02",
+            "signal_index": 1313,
+            "execution_index": 1314,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": -0.007659859018621873
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.018181818181818188
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.02576639440473394
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.03351955307262566
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-07-03",
+            "execution_date": "2023-07-04",
+            "signal_index": 1333,
+            "execution_index": 1334,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.046242774566473965
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.01790281329923271
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.00411522633744843
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.006269592476489061
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-08-01",
+            "execution_date": "2023-08-02",
+            "signal_index": 1354,
+            "execution_index": 1355,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.08522042054233481
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.06388463849201154
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.054744042931550885
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.046404727189010675
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-09-01",
+            "execution_date": "2023-09-04",
+            "signal_index": 1377,
+            "execution_index": 1378,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": -0.008264462809917328
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.030985915492957705
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.03586497890295359
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.046272493573264795
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-10-09",
+            "execution_date": "2023-10-10",
+            "signal_index": 1397,
+            "execution_index": 1398,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.04833333333333334
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.04651162790697683
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.02188183807439814
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.013477088948786964
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-11-01",
+            "execution_date": "2023-11-02",
+            "signal_index": 1414,
+            "execution_index": 1415,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.0370370370370372
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.014893617021276562
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.0
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.004754358161648042
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-12-01",
+            "execution_date": "2023-12-04",
+            "signal_index": 1436,
+            "execution_index": 1437,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.03856041131105403
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.014767932489451407
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.012698412698412653
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.008287292817679592
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-01-02",
+            "execution_date": "2024-01-03",
+            "signal_index": 1457,
+            "execution_index": 1458,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.02024922118380057
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.005494505494505475
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.002083333333333437
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.004962779156327701
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-02-01",
+            "execution_date": "2024-02-02",
+            "signal_index": 1479,
+            "execution_index": 1480,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": 0.05112474437627812
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.03183023872679036
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.0314009661835748
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.025487256371814038
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-03-01",
+            "execution_date": "2024-03-04",
+            "signal_index": 1494,
+            "execution_index": 1495,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.11578947368421066
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.07951807228915686
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.06586826347305386
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.0492537313432837
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-04-01",
+            "execution_date": "2024-04-02",
+            "signal_index": 1515,
+            "execution_index": 1516,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": -0.002358490566037541
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.005639097744360999
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.011086474501108556
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.01285714285714279
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-05-06",
+            "execution_date": "2024-05-07",
+            "signal_index": 1535,
+            "execution_index": 1536,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.02836879432624073
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.02315484804630974
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.01512287334593565
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.004484304932735439
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-06-03",
+            "execution_date": "2024-06-04",
+            "signal_index": 1555,
+            "execution_index": 1556,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.013793103448276112
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.013035381750465813
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.0014144271570015743
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.008928571428571508
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-07-01",
+            "execution_date": "2024-07-02",
+            "signal_index": 1574,
+            "execution_index": 1575,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.07528409090909083
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.07182320441988965
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.06693263066675637
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.05180180180180183
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-08-01",
+            "execution_date": "2024-08-02",
+            "signal_index": 1597,
+            "execution_index": 1598,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.0406181699798267
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.038509262705454406
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.026079823947184222
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.02207505518763786
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-09-02",
+            "execution_date": "2024-09-03",
+            "signal_index": 1619,
+            "execution_index": 1620,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.04925053533190593
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.012958963282937663
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.011925042589437718
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.005319148936170248
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-10-08",
+            "execution_date": "2024-10-09",
+            "signal_index": 1638,
+            "execution_index": 1639,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.06374501992031845
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.053097345132743445
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.03757828810020869
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.02341137123745818
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-11-01",
+            "execution_date": "2024-11-04",
+            "signal_index": 1656,
+            "execution_index": 1657,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.053594771241829875
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.02329450915141451
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.017021276595744483
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.002053388090349051
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-12-02",
+            "execution_date": "2024-12-03",
+            "signal_index": 1677,
+            "execution_index": 1678,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.024539877300613355
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.008368200836820217
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.0
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.01732673267326723
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-01-02",
+            "execution_date": "2025-01-03",
+            "signal_index": 1699,
+            "execution_index": 1700,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": 0.08626198083067105
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.05906313645621175
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.05088062622309186
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.04884004884004889
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-02-05",
+            "execution_date": "2025-02-06",
+            "signal_index": 1717,
+            "execution_index": 1718,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": -0.015731094436128856
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.01700252747625597
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.02546550305525974
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.03764890749029903
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-03-03",
+            "execution_date": "2025-03-04",
+            "signal_index": 1735,
+            "execution_index": 1736,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": 0.026986506746626615
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.020715630885122405
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.013888888888889062
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.010701545778834864
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-04-01",
+            "execution_date": "2025-04-02",
+            "signal_index": 1756,
+            "execution_index": 1757,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.026035502958579926
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.026022304832713505
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.009842519685039353
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.002949852507374784
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-05-06",
+            "execution_date": "2025-05-07",
+            "signal_index": 1777,
+            "execution_index": 1778,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.04061895551257266
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.03192702394526803
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.018978102189781243
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.0027627773226557295
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-06-03",
+            "execution_date": "2025-06-04",
+            "signal_index": 1796,
+            "execution_index": 1797,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.027675276752767708
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.02309497862352261
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.014265335235378096
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.001808318264014508
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-07-01",
+            "execution_date": "2025-07-02",
+            "signal_index": 1816,
+            "execution_index": 1817,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": 0.07735583684950775
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.07174392935982343
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.07001795332136451
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.023550724637681153
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-08-01",
+            "execution_date": "2025-08-04",
+            "signal_index": 1839,
+            "execution_index": 1840,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.07188908622498191
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.0032699338089638985
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.026315789473684292
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.038775510204081765
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-09-01",
+            "execution_date": "2025-09-02",
+            "signal_index": 1860,
+            "execution_index": 1861,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.10328638497652576
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.010752688172043112
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.03906249999999989
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.05340314136125679
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-10-09",
+            "execution_date": "2025-10-10",
+            "signal_index": 1882,
+            "execution_index": 1883,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": -0.0174731182795701
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.05038335158817098
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.057657657657657624
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.06293706293706303
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-11-03",
+            "execution_date": "2025-11-04",
+            "signal_index": 1899,
+            "execution_index": 1900,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.2099697885196372
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.08396946564885477
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.07852193995381063
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.06612685560053988
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-12-01",
+            "execution_date": "2025-12-02",
+            "signal_index": 1919,
+            "execution_index": 1920,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.06866197183098599
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.03319057815845827
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.02405063291139231
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.0024968789013730674
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-01-05",
+            "execution_date": "2026-01-06",
+            "signal_index": 1942,
+            "execution_index": 1943,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.005874725147862803
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.011183467107792167
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.01692011137288507
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.026625563783903572
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-02-02",
+            "execution_date": "2026-02-03",
+            "signal_index": 1962,
+            "execution_index": 1963,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": -0.04409171075837737
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.04972972972972989
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.0639386189258313
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.10435931307793922
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-03-02",
+            "execution_date": "2026-03-03",
+            "signal_index": 1976,
+            "execution_index": 1977,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.007590132827324458
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.006936416184970984
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.03467406380027738
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.040000000000000036
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-04-01",
+            "execution_date": "2026-04-02",
+            "signal_index": 1998,
+            "execution_index": 1999,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.09719626168224327
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.07062146892655363
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.061797752808988804
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.0014970059880241582
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-05-06",
+            "execution_date": "2026-05-07",
+            "signal_index": 2019,
+            "execution_index": 2020,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.022964509394572064
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.00867052023121384
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.035386631716906924
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.03872053872053882
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-06-01",
+            "execution_date": "2026-06-02",
+            "signal_index": 2037,
+            "execution_index": 2038,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.02752293577981635
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.024179620034542104
+              },
+              {
+                "code": "601398.SH",
+                "return": -1.4746213641614325e-05
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.046578638579091836
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-07-01",
+            "execution_date": "2026-07-02",
+            "signal_index": 2058,
+            "execution_index": 2059,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": -0.038147138964577665
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.05360134003350081
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.05992141453831046
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.0620155038759691
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-08-03",
+            "execution_date": "2026-08-04",
+            "signal_index": 2081,
+            "execution_index": 2082,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.15410385259631498
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.1179775280898876
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.10264449012899934
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.09161595909360387
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-09-01",
+            "execution_date": "2026-09-02",
+            "signal_index": 2102,
+            "execution_index": 2103,
+            "lookback_intervals": 20,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.14604810996563566
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.0980198019801981
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.06656580937972767
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.06396866840731086
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          }
+        ]
+      },
+      "monthly_top2_60d": {
+        "statistics": {
+          "days": 905,
+          "cumulative_net_return": 1.6725117218741636,
+          "annualized_return": 0.30064783165012465,
+          "max_drawdown": -0.17352887856613208,
+          "matched_benchmark_return": 1.7243262942279753,
+          "matched_cumulative_excess": -0.051814572353811705,
+          "avg_exposure": 0.994697561689338,
+          "average_holdings": 1.9955801104972375,
+          "ending_equity": 267251.17218741635,
+          "yearly": {
+            "2023": {
+              "strategy_net_return": 0.30170521543753437,
+              "matched_return": 0.3073785435445018,
+              "daily_matched_excess": -0.005673328106967412
+            },
+            "2024": {
+              "strategy_net_return": 0.42603694038137796,
+              "matched_return": 0.43578189258365496,
+              "daily_matched_excess": -0.009744952202277002
+            },
+            "2025": {
+              "strategy_net_return": 0.2967431371122804,
+              "matched_return": 0.30241318132847184,
+              "daily_matched_excess": -0.005670044216191439
+            },
+            "2026": {
+              "strategy_net_return": 0.11025372744342099,
+              "matched_return": 0.11434716906029174,
+              "daily_matched_excess": -0.004093441616870752
+            }
+          }
+        },
+        "audit": {
+          "ledger_first_day": "2023-01-03",
+          "signal_window_last_day": "2026-09-23",
+          "final_liquidation_day": "2026-09-24",
+          "signal_window_sessions": 904,
+          "ledger_sessions_including_liquidation": 905,
+          "monthly_signal_count": 45,
+          "rebalance_execution_dates": [
+            "2023-01-04",
+            "2023-02-02",
+            "2023-03-02",
+            "2023-04-04",
+            "2023-05-05",
+            "2023-06-02",
+            "2023-07-04",
+            "2023-08-02",
+            "2023-09-04",
+            "2023-10-10",
+            "2023-11-02",
+            "2023-12-04",
+            "2024-01-03",
+            "2024-02-02",
+            "2024-03-04",
+            "2024-04-02",
+            "2024-05-07",
+            "2024-06-04",
+            "2024-07-02",
+            "2024-08-02",
+            "2024-09-03",
+            "2024-10-09",
+            "2024-11-04",
+            "2024-12-03",
+            "2025-01-03",
+            "2025-02-06",
+            "2025-03-04",
+            "2025-04-02",
+            "2025-05-07",
+            "2025-06-04",
+            "2025-07-02",
+            "2025-08-04",
+            "2025-09-02",
+            "2025-10-10",
+            "2025-11-04",
+            "2025-12-02",
+            "2026-01-06",
+            "2026-02-03",
+            "2026-03-03",
+            "2026-04-02",
+            "2026-05-07",
+            "2026-06-02",
+            "2026-07-02",
+            "2026-08-04",
+            "2026-09-02"
+          ],
+          "cash_min": 5.972270102225593,
+          "ending_cash": 267251.17218741635,
+          "ending_positions": 0,
+          "maximum_simultaneous_holdings": 2,
+          "blocked_entries": 0,
+          "blocked_exits": 0,
+          "trade_count": 87,
+          "fees": 2261.2396739036035,
+          "buy_notional": 1897187.9857000003,
+          "sell_notional": 2066700.3975613196,
+          "cash_nonnegative": true,
+          "final_liquidation_complete": true,
+          "causal_signal_and_t_plus_1_check_pass": true,
+          "max_abs_equity_cash_plus_mark_residual": 2.9103830456733704e-11,
+          "ledger_rule": "same V4 account_engine.py; cash account, 100-share lots, signal-day amount capacity, one-price limit locks, 3bp slippage, commissions/transfer/sell stamp fees"
+        },
+        "quarterly_returns": [
+          {
+            "quarter": "2023Q1",
+            "ledger_sessions": 59,
+            "net_return": 0.06638224938212045,
+            "same_hold_no_fee_return": 0.06788840800828089,
+            "cost_execution_friction_gap": -0.0015061586261604365
+          },
+          {
+            "quarter": "2023Q2",
+            "ledger_sessions": 59,
+            "net_return": 0.13149148130729693,
+            "same_hold_no_fee_return": 0.13174936369666068,
+            "cost_execution_friction_gap": -0.0002578823893637505
+          },
+          {
+            "quarter": "2023Q3",
+            "ledger_sessions": 64,
+            "net_return": 0.05814640465738452,
+            "same_hold_no_fee_return": 0.058364732440724154,
+            "cost_execution_friction_gap": -0.00021832778333963354
+          },
+          {
+            "quarter": "2023Q4",
+            "ledger_sessions": 60,
+            "net_return": 0.019536288484727216,
+            "same_hold_no_fee_return": 0.02209170178667952,
+            "cost_execution_friction_gap": -0.002555413301952303
+          },
+          {
+            "quarter": "2024Q1",
+            "ledger_sessions": 58,
+            "net_return": 0.080676215551446,
+            "same_hold_no_fee_return": 0.08175873851910254,
+            "cost_execution_friction_gap": -0.0010825229676565407
+          },
+          {
+            "quarter": "2024Q2",
+            "ledger_sessions": 59,
+            "net_return": 0.08981788315341177,
+            "same_hold_no_fee_return": 0.090735706806089,
+            "cost_execution_friction_gap": -0.0009178236526772299
+          },
+          {
+            "quarter": "2024Q3",
+            "ledger_sessions": 64,
+            "net_return": 0.0869675922057962,
+            "same_hold_no_fee_return": 0.08882839962685907,
+            "cost_execution_friction_gap": -0.0018608074210628711
+          },
+          {
+            "quarter": "2024Q4",
+            "ledger_sessions": 61,
+            "net_return": 0.11394732911156602,
+            "same_hold_no_fee_return": 0.11758120453525223,
+            "cost_execution_friction_gap": -0.003633875423686206
+          },
+          {
+            "quarter": "2025Q1",
+            "ledger_sessions": 57,
+            "net_return": 0.011013833824053076,
+            "same_hold_no_fee_return": 0.011834868268319365,
+            "cost_execution_friction_gap": -0.0008210344442662887
+          },
+          {
+            "quarter": "2025Q2",
+            "ledger_sessions": 60,
+            "net_return": 0.09298239830300137,
+            "same_hold_no_fee_return": 0.09483955631569452,
+            "cost_execution_friction_gap": -0.0018571580126931497
+          },
+          {
+            "quarter": "2025Q3",
+            "ledger_sessions": 66,
+            "net_return": 0.059272080374581204,
+            "same_hold_no_fee_return": 0.06022779826872515,
+            "cost_execution_friction_gap": -0.0009557178941439481
+          },
+          {
+            "quarter": "2025Q4",
+            "ledger_sessions": 60,
+            "net_return": 0.10783776704191417,
+            "same_hold_no_fee_return": 0.1088925731127719,
+            "cost_execution_friction_gap": -0.0010548060708577278
+          },
+          {
+            "quarter": "2026Q1",
+            "ledger_sessions": 56,
+            "net_return": -0.01707477599220797,
+            "same_hold_no_fee_return": -0.0161942339890907,
+            "cost_execution_friction_gap": -0.0008805420031172684
+          },
+          {
+            "quarter": "2026Q2",
+            "ledger_sessions": 60,
+            "net_return": 0.020110222190260707,
+            "same_hold_no_fee_return": 0.020212396822903544,
+            "cost_execution_friction_gap": -0.00010217463264283744
+          },
+          {
+            "quarter": "2026Q3",
+            "ledger_sessions": 62,
+            "net_return": 0.10727287284547216,
+            "same_hold_no_fee_return": 0.11024941770909291,
+            "cost_execution_friction_gap": -0.002976544863620756
+          }
+        ],
+        "annual_returns": [
+          {
+            "year": "2023",
+            "ledger_sessions": 242,
+            "net_return": 0.30170521543753437,
+            "same_hold_no_fee_return": 0.3073785435445018,
+            "cost_execution_friction_gap": -0.005673328106967412
+          },
+          {
+            "year": "2024",
+            "ledger_sessions": 242,
+            "net_return": 0.42603694038137796,
+            "same_hold_no_fee_return": 0.43578189258365496,
+            "cost_execution_friction_gap": -0.009744952202277002
+          },
+          {
+            "year": "2025",
+            "ledger_sessions": 243,
+            "net_return": 0.2967431371122804,
+            "same_hold_no_fee_return": 0.30241318132847184,
+            "cost_execution_friction_gap": -0.005670044216191439
+          },
+          {
+            "year": "2026",
+            "ledger_sessions": 178,
+            "net_return": 0.11025372744342099,
+            "same_hold_no_fee_return": 0.11434716906029174,
+            "cost_execution_friction_gap": -0.004093441616870752
+          }
+        ],
+        "signals": [
+          {
+            "signal_date": "2023-01-03",
+            "execution_date": "2023-01-04",
+            "signal_index": 1215,
+            "execution_index": 1216,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.02931596091205213
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.019927536231884035
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.010452961672473782
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.0114678899082572
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-02-01",
+            "execution_date": "2023-02-02",
+            "signal_index": 1231,
+            "execution_index": 1232,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.0695970695970698
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.06622516556291402
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.06238185255198481
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.05637254901960764
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-03-01",
+            "execution_date": "2023-03-02",
+            "signal_index": 1251,
+            "execution_index": 1252,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.031847133757961776
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.017361111111111382
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.0071428571428571175
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.004629629629629539
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-04-03",
+            "execution_date": "2023-04-04",
+            "signal_index": 1274,
+            "execution_index": 1275,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.06529209621993126
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.06329113924050622
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.05683836589698066
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.025345622119815836
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-05-04",
+            "execution_date": "2023-05-05",
+            "signal_index": 1293,
+            "execution_index": 1294,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.23024054982817854
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.22741433021806845
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.1696428571428572
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.15116279069767447
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-06-01",
+            "execution_date": "2023-06-02",
+            "signal_index": 1313,
+            "execution_index": 1314,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.18121454847934415
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.164983164983165
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.11467889908256867
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.09455062035145656
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-07-03",
+            "execution_date": "2023-07-04",
+            "signal_index": 1333,
+            "execution_index": 1334,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.17746063187678285
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.16398713826366573
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.094170403587444
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.06754585931294677
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-08-01",
+            "execution_date": "2023-08-02",
+            "signal_index": 1354,
+            "execution_index": 1355,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.06723334174881557
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.022116656791045353
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.020924594661200224
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.016064564210054755
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-09-01",
+            "execution_date": "2023-09-04",
+            "signal_index": 1377,
+            "execution_index": 1378,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.011372643420364925
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.025502791769517197
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.02782423713107607
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.028820448969128942
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-10-09",
+            "execution_date": "2023-10-10",
+            "signal_index": 1397,
+            "execution_index": 1398,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.0884817891991112
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.08226638379041185
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.045625685927373816
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.02835762858145463
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-11-01",
+            "execution_date": "2023-11-02",
+            "signal_index": 1414,
+            "execution_index": 1415,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.017828200972447306
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.0020920502092051096
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.0025445292620865922
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.0027548209366391463
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2023-12-01",
+            "execution_date": "2023-12-04",
+            "signal_index": 1436,
+            "execution_index": 1437,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.07733333333333348
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.06333333333333346
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.054913294797687806
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.04112554112554112
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-01-02",
+            "execution_date": "2024-01-03",
+            "signal_index": 1457,
+            "execution_index": 1458,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.0664893617021276
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.04133545310015907
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.025695931477516032
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.016666666666666607
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-02-01",
+            "execution_date": "2024-02-02",
+            "signal_index": 1479,
+            "execution_index": 1480,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.10051546391752564
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.09265175718849838
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.09129511677282376
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.08055555555555549
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-03-01",
+            "execution_date": "2024-03-04",
+            "signal_index": 1494,
+            "execution_index": 1495,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.16804407713498626
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.1256281407035178
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.11949685534591215
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.10883280757097791
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-04-01",
+            "execution_date": "2024-04-02",
+            "signal_index": 1515,
+            "execution_index": 1516,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.16528925619834722
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.11779448621553867
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.10901467505241103
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.06635802469135799
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-05-06",
+            "execution_date": "2024-05-07",
+            "signal_index": 1535,
+            "execution_index": 1536,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.12694300518134694
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.05500982318271119
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.04672897196261694
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.033625730994152114
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-06-03",
+            "execution_date": "2024-06-04",
+            "signal_index": 1555,
+            "execution_index": 1556,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.04009433962264142
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.022556390977443774
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.008571428571428674
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.015521064301551979
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-07-01",
+            "execution_date": "2024-07-02",
+            "signal_index": 1574,
+            "execution_index": 1575,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.10728942047921008
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.10227272727272729
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.10189228529839878
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.06136363636363629
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-08-01",
+            "execution_date": "2024-08-02",
+            "signal_index": 1597,
+            "execution_index": 1598,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": 0.14408783839639705
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.105119586296057
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.10254370137795554
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.0936873892914365
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-09-02",
+            "execution_date": "2024-09-03",
+            "signal_index": 1619,
+            "execution_index": 1620,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.13761361668250283
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.1327307108967879
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.10109529869772627
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.09591025641025652
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-10-08",
+            "execution_date": "2024-10-09",
+            "signal_index": 1638,
+            "execution_index": 1639,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.12894374431839983
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.11767776341305747
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.10499973918139793
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.06726457399103136
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-11-01",
+            "execution_date": "2024-11-04",
+            "signal_index": 1656,
+            "execution_index": 1657,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.08333333333333326
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.051282051282051544
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.047210300429184615
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.04139433551198257
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2024-12-02",
+            "execution_date": "2024-12-03",
+            "signal_index": 1677,
+            "execution_index": 1678,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.023354564755838636
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.020366598778003953
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.0037926675094817064
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.014469453376205865
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-01-02",
+            "execution_date": "2025-01-03",
+            "signal_index": 1699,
+            "execution_index": 1700,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": 0.1258278145695364
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.11642411642411643
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.1134903640256959
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.09566326530612246
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-02-05",
+            "execution_date": "2025-02-06",
+            "signal_index": 1717,
+            "execution_index": 1718,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": 0.11449142480261387
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.1130893758217193
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.08113501397010348
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.06137420459328147
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-03-03",
+            "execution_date": "2025-03-04",
+            "signal_index": 1735,
+            "execution_index": 1736,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601398.SH",
+                "return": 0.13008473991693403
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.10244914718096254
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.08192896453690035
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.07819077775771999
+              }
+            ],
+            "selected": [
+              "601398.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-04-01",
+            "execution_date": "2025-04-02",
+            "signal_index": 1756,
+            "execution_index": 1757,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.030589666582531816
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.011708443828302384
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.0034919807726172536
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.011357456263485943
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-05-06",
+            "execution_date": "2025-05-07",
+            "signal_index": 1777,
+            "execution_index": 1778,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.07995226730310256
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.0653465346534654
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.05365487316421902
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.0433482810164425
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-06-03",
+            "execution_date": "2025-06-04",
+            "signal_index": 1796,
+            "execution_index": 1797,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.09695153921054622
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.09645669291338588
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.04867256637168138
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.047597540214709966
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601288.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-07-01",
+            "execution_date": "2025-07-02",
+            "signal_index": 1816,
+            "execution_index": 1817,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.16179337231968827
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.14581917444456782
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.1264705882352941
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.045073987538940985
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-08-01",
+            "execution_date": "2025-08-04",
+            "signal_index": 1839,
+            "execution_index": 1840,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.18814176285600004
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.09357833854000996
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.035183104042275204
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.008928571428571286
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-09-01",
+            "execution_date": "2025-09-02",
+            "signal_index": 1860,
+            "execution_index": 1861,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.28777728478843456
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.06362278615974337
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.016574585635359185
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.008928571428571175
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-10-09",
+            "execution_date": "2025-10-10",
+            "signal_index": 1882,
+            "execution_index": 1883,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.10343451492064148
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.049806076447960757
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.09515570934256057
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.11710794297352334
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-11-03",
+            "execution_date": "2025-11-04",
+            "signal_index": 1899,
+            "execution_index": 1900,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.2654028436018956
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.036745406824147064
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.023423423423423406
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.00849256900212314
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2025-12-01",
+            "execution_date": "2025-12-02",
+            "signal_index": 1919,
+            "execution_index": 1920,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.13817663817663828
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.0996376811594204
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.088829071332436
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.07222222222222241
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-01-05",
+            "execution_date": "2026-01-06",
+            "signal_index": 1942,
+            "execution_index": 1943,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601288.SH",
+                "return": 0.14771015613539706
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.10525998950811388
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.08940757429509016
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.08891560735735626
+              }
+            ],
+            "selected": [
+              "601288.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-02-02",
+            "execution_date": "2026-02-03",
+            "signal_index": 1962,
+            "execution_index": 1963,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": -0.023739013885283544
+              },
+              {
+                "code": "601939.SH",
+                "return": -0.04920993298526333
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.07898351004514059
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.15598399330745472
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-03-02",
+            "execution_date": "2026-03-03",
+            "signal_index": 1976,
+            "execution_index": 1977,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": -0.08500305240578643
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.11975719457344514
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.13179171203668616
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.17097877178617715
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-04-01",
+            "execution_date": "2026-04-02",
+            "signal_index": 1998,
+            "execution_index": 1999,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.04634581105169344
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.03960396039603964
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.02944942381562099
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.10918774966711053
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-05-06",
+            "execution_date": "2026-05-07",
+            "signal_index": 2019,
+            "execution_index": 2020,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.12514351320321482
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.06928838951310867
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.022222222222222143
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.008823529411764675
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-06-01",
+            "execution_date": "2026-06-02",
+            "signal_index": 2037,
+            "execution_index": 2038,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.13258426966292136
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.09409594095940954
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.04914183227304725
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.016828492086017444
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-07-01",
+            "execution_date": "2026-07-02",
+            "signal_index": 2058,
+            "execution_index": 2059,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.012698412698412653
+              },
+              {
+                "code": "601988.SH",
+                "return": -0.03747870528109032
+              },
+              {
+                "code": "601398.SH",
+                "return": -0.046925537441072196
+              },
+              {
+                "code": "601288.SH",
+                "return": -0.07800427236614071
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601988.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-08-03",
+            "execution_date": "2026-08-04",
+            "signal_index": 2081,
+            "execution_index": 2082,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601939.SH",
+                "return": 0.10036865010809315
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.09185653480556422
+              },
+              {
+                "code": "601988.SH",
+                "return": 0.08392852276195883
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.01805158148587549
+              }
+            ],
+            "selected": [
+              "601939.SH",
+              "601398.SH"
+            ]
+          },
+          {
+            "signal_date": "2026-09-01",
+            "execution_date": "2026-09-02",
+            "signal_index": 2102,
+            "execution_index": 2103,
+            "lookback_intervals": 60,
+            "ranked": [
+              {
+                "code": "601988.SH",
+                "return": 0.10914705630237687
+              },
+              {
+                "code": "601939.SH",
+                "return": 0.09541055146464217
+              },
+              {
+                "code": "601398.SH",
+                "return": 0.08666666666666689
+              },
+              {
+                "code": "601288.SH",
+                "return": 0.0730593607305936
+              }
+            ],
+            "selected": [
+              "601988.SH",
+              "601939.SH"
+            ]
+          }
+        ]
+      },
+      "four_bank_equal_weight_hold": {
+        "statistics": {
+          "days": 905,
+          "cumulative_net_return": 1.4955412317854537,
+          "annualized_return": 0.27703608919713263,
+          "max_drawdown": -0.15494783399395506,
+          "matched_benchmark_return": 1.4995720616503552,
+          "matched_cumulative_excess": -0.004030829864901442,
+          "avg_exposure": 0.9937940783610498,
+          "average_holdings": 3.991160220994475,
+          "ending_equity": 249554.1231785454,
+          "yearly": {
+            "2023": {
+              "strategy_net_return": 0.266345992275842,
+              "matched_return": 0.26705067195164545,
+              "daily_matched_excess": -0.0007046796758034546
+            },
+            "2024": {
+              "strategy_net_return": 0.49289150302528895,
+              "matched_return": 0.4928915030252905,
+              "daily_matched_excess": -1.5543122344752192e-15
+            },
+            "2025": {
+              "strategy_net_return": 0.2352447691243551,
+              "matched_return": 0.235244769124354,
+              "daily_matched_excess": 1.1102230246251565e-15
+            },
+            "2026": {
+              "strategy_net_return": 0.06863919712469269,
+              "matched_return": 0.0697699850893021,
+              "daily_matched_excess": -0.0011307879646094143
+            }
+          }
+        },
+        "audit": {
+          "ledger_first_day": "2023-01-03",
+          "signal_window_last_day": "2026-09-23",
+          "final_liquidation_day": "2026-09-24",
+          "signal_window_sessions": 904,
+          "ledger_sessions_including_liquidation": 905,
+          "monthly_signal_count": 0,
+          "rebalance_execution_dates": [
+            "2023-01-04"
+          ],
+          "cash_min": 644.3842546000087,
+          "ending_cash": 249554.1231785454,
+          "ending_positions": 0,
+          "maximum_simultaneous_holdings": 4,
+          "blocked_entries": 0,
+          "blocked_exits": 0,
+          "trade_count": 8,
+          "fees": 215.1410265959074,
+          "buy_notional": 99329.79,
+          "sell_notional": 249099.0542051413,
+          "cash_nonnegative": true,
+          "final_liquidation_complete": true,
+          "causal_signal_and_t_plus_1_check_pass": true,
+          "max_abs_equity_cash_plus_mark_residual": 0.0,
+          "ledger_rule": "same V4 account_engine.py; cash account, 100-share lots, signal-day amount capacity, one-price limit locks, 3bp slippage, commissions/transfer/sell stamp fees"
+        },
+        "quarterly_returns": [
+          {
+            "quarter": "2023Q1",
+            "ledger_sessions": 59,
+            "net_return": 0.06247384254599875,
+            "same_hold_no_fee_return": 0.06306507411105233,
+            "cost_execution_friction_gap": -0.0005912315650535849
+          },
+          {
+            "quarter": "2023Q2",
+            "ledger_sessions": 59,
+            "net_return": 0.09132346260397695,
+            "same_hold_no_fee_return": 0.09132346260397761,
+            "cost_execution_friction_gap": -6.661338147750939e-16
+          },
+          {
+            "quarter": "2023Q3",
+            "ledger_sessions": 64,
+            "net_return": 0.054255385851859295,
+            "same_hold_no_fee_return": 0.054255385851860405,
+            "cost_execution_friction_gap": -1.1102230246251565e-15
+          },
+          {
+            "quarter": "2023Q4",
+            "ledger_sessions": 60,
+            "net_return": 0.03594050166426066,
+            "same_hold_no_fee_return": 0.03594050166426088,
+            "cost_execution_friction_gap": -2.220446049250313e-16
+          },
+          {
+            "quarter": "2024Q1",
+            "ledger_sessions": 58,
+            "net_return": 0.10079731085502219,
+            "same_hold_no_fee_return": 0.10079731085502153,
+            "cost_execution_friction_gap": 6.661338147750939e-16
+          },
+          {
+            "quarter": "2024Q2",
+            "ledger_sessions": 59,
+            "net_return": 0.07855617545263849,
+            "same_hold_no_fee_return": 0.07855617545263782,
+            "cost_execution_friction_gap": 6.661338147750939e-16
+          },
+          {
+            "quarter": "2024Q3",
+            "ledger_sessions": 64,
+            "net_return": 0.09766722042276776,
+            "same_hold_no_fee_return": 0.09766722042276887,
+            "cost_execution_friction_gap": -1.1102230246251565e-15
+          },
+          {
+            "quarter": "2024Q4",
+            "ledger_sessions": 61,
+            "net_return": 0.1455325165265715,
+            "same_hold_no_fee_return": 0.1455325165265724,
+            "cost_execution_friction_gap": -8.881784197001252e-16
+          },
+          {
+            "quarter": "2025Q1",
+            "ledger_sessions": 57,
+            "net_return": 0.0034257289887618114,
+            "same_hold_no_fee_return": 0.0034257289887618114,
+            "cost_execution_friction_gap": 0.0
+          },
+          {
+            "quarter": "2025Q2",
+            "ledger_sessions": 60,
+            "net_return": 0.09161038565024304,
+            "same_hold_no_fee_return": 0.09161038565024371,
+            "cost_execution_friction_gap": -6.661338147750939e-16
+          },
+          {
+            "quarter": "2025Q3",
+            "ledger_sessions": 66,
+            "net_return": 0.0064636755272204915,
+            "same_hold_no_fee_return": 0.006463675527219381,
+            "cost_execution_friction_gap": 1.1102230246251565e-15
+          },
+          {
+            "quarter": "2025Q4",
+            "ledger_sessions": 60,
+            "net_return": 0.12047462739608239,
+            "same_hold_no_fee_return": 0.12047462739608217,
+            "cost_execution_friction_gap": 2.220446049250313e-16
+          },
+          {
+            "quarter": "2026Q1",
+            "ledger_sessions": 56,
+            "net_return": -0.0477428011194444,
+            "same_hold_no_fee_return": -0.04774280111944318,
+            "cost_execution_friction_gap": -1.2212453270876722e-15
+          },
+          {
+            "quarter": "2026Q2",
+            "ledger_sessions": 60,
+            "net_return": -0.006238088500315486,
+            "same_hold_no_fee_return": -0.006238088500315264,
+            "cost_execution_friction_gap": -2.220446049250313e-16
+          },
+          {
+            "quarter": "2026Q3",
+            "ledger_sessions": 62,
+            "net_return": 0.12926141180108064,
+            "same_hold_no_fee_return": 0.130456347581833,
+            "cost_execution_friction_gap": -0.0011949357807523597
+          }
+        ],
+        "annual_returns": [
+          {
+            "year": "2023",
+            "ledger_sessions": 242,
+            "net_return": 0.266345992275842,
+            "same_hold_no_fee_return": 0.26705067195164545,
+            "cost_execution_friction_gap": -0.0007046796758034546
+          },
+          {
+            "year": "2024",
+            "ledger_sessions": 242,
+            "net_return": 0.49289150302528895,
+            "same_hold_no_fee_return": 0.4928915030252905,
+            "cost_execution_friction_gap": -1.5543122344752192e-15
+          },
+          {
+            "year": "2025",
+            "ledger_sessions": 243,
+            "net_return": 0.2352447691243551,
+            "same_hold_no_fee_return": 0.235244769124354,
+            "cost_execution_friction_gap": 1.1102230246251565e-15
+          },
+          {
+            "year": "2026",
+            "ledger_sessions": 178,
+            "net_return": 0.06863919712469269,
+            "same_hold_no_fee_return": 0.0697699850893021,
+            "cost_execution_friction_gap": -0.0011307879646094143
+          }
+        ],
+        "signals": [
+          {
+            "signal_date": "2023-01-03",
+            "execution_date": "2023-01-04",
+            "rule": "initial equal-weight four-bank hold; no rebalance until final liquidation"
+          }
+        ]
+      }
+    }
+  },
+  "runtime_seconds": 2.8274312019348145,
+  "process_max_rss_gib": 0.23656845092773438,
+  "runner_sha256": "949082473288ec811ab81128e6e6d5babbe573b6c0d1c560ef139de6f7ffeab2",
+  "account_engine_sha256": "825c7a9cee48479ecd75eb1e9787afdbd25e6e7d4cf06826564c6ec34737e20a"
+}

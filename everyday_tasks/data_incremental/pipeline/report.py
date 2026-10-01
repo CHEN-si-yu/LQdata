@@ -31,7 +31,7 @@ def build(results: list[Result], ctx, phases: dict | None = None,
     for r in results:
         f = freq_of.get(r.name, "other")
         g = ("日频" if f in ("daily_full", "daily_sparse") else
-             "分钟/周月" if f in ("minute", "weekly_monthly", "monthly") else
+             "分钟/周月" if f in ("minute", "weekly", "weekly_monthly", "monthly") else
              "季频/不定期/快照")
         groups.setdefault(g, []).append({
             "name": r.name, "rows": r.rows, "requests": r.requests,
@@ -138,7 +138,9 @@ def _vanished_notes(r: Result) -> list[str]:
     lo, hi = min(counts), max(counts)
     out: list[str] = []
     for d, n in zip(days, rows):
-        if not (lo <= d <= hi) or n <= 0:
+        checked = getattr(r, "checked_ranges", [])
+        requested = any(a <= d <= b for a, b in checked) if checked else d in counts
+        if not requested or n <= 0:
             continue
         if int(counts.get(d, 0)) == 0:
             hole = d in (getattr(ds, "known_holes", ()) or ())
@@ -229,7 +231,7 @@ def _judge(results: list[Result], revisions: list[dict],
         out.extend(_vanished_notes(r))
     for rev in revisions:
         out.append(f"🔴 {rev['dataset']} {rev['date']} 的单日 MD5 与台账不符 —— "
-                   f"上游修改了历史数据（变化列: {', '.join(rev.get('changed_cols') or []) or '整行'}）")
+                   f"数据内容发生变化，需核对来源（变化列: {', '.join(rev.get('changed_cols') or []) or '整行'}）")
     return out
 
 
@@ -241,7 +243,7 @@ def save(report: dict, append_log: bool = True) -> None:
         #   而 `load_last()` 只能返回空（等于这次运行的结论全丢）。
         state._atomic_json(paths.LAST_REPORT, report)
     except OSError:
-        pass
+        raise
     if append_log:
         try:
             slim = {k: report[k] for k in
@@ -255,7 +257,7 @@ def save(report: dict, append_log: bool = True) -> None:
             with open(paths.RUN_LOG, "a", encoding="utf-8") as f:
                 f.write(json.dumps(slim, ensure_ascii=False) + "\n")
         except OSError:
-            pass
+            raise
 
 
 def load_last() -> dict:

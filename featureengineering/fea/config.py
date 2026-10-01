@@ -33,12 +33,21 @@ class Config:
         return self.root / self.raw["paths"]["factors"]
 
     @property
+    def market_factors_dir(self) -> Path:
+        return self.root / self.raw["paths"].get("market_factors", "data/market_factors")
+
+    def factor_root(self, spec) -> Path:
+        return self.market_factors_dir if spec.is_market else self.factors_dir
+
+    @property
     def state_dir(self) -> Path:
         return self.root / self.raw["paths"]["state"]
 
     @property
     def logs_dir(self) -> Path:
-        return self.root / self.raw["paths"]["logs"]
+        # ★ 2026-09-25：运行日志回归项目内。本项目自成一体，
+        #   不读不写项目外的任何位置（详见 README「单元边界与目录职责」）。
+        return self.root / "logs"
 
     # ---- 计算参数 ----
     @property
@@ -114,9 +123,11 @@ def load(path: Path | None = None) -> Config:
 
 
 def setup_logging(verbose: bool = False) -> None:
-    (ROOT / "logs").mkdir(exist_ok=True)
+    # 日志属于运行产物，放在项目内 logs/（原来在 ../CodeX/featureengineering_logs）。
+    log_dir = ROOT / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
     handlers: list[logging.Handler] = [
-        logging.FileHandler(ROOT / "logs" / "factors.log", encoding="utf-8")
+        logging.FileHandler(log_dir / "factors.log", encoding="utf-8")
     ]
     if verbose:
         handlers.append(logging.StreamHandler())

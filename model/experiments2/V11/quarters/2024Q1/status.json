@@ -1,0 +1,140 @@
+{
+  "quarter": "2024Q1",
+  "state": "complete",
+  "recipe": {
+    "name": "V11-LambdaRank-four-bank",
+    "objective": "lambdarank",
+    "label": "within-date ascending rank of label_ret_5d (integer relevance 0..3; ties share rank)",
+    "n_estimators": 180,
+    "learning_rate": 0.03,
+    "num_leaves": 7,
+    "max_depth": 3,
+    "min_child_samples": 80,
+    "feature_fraction": 0.8,
+    "bagging_fraction": 0.8,
+    "bagging_freq": 1,
+    "reg_alpha": 2.0,
+    "reg_lambda": 20.0,
+    "label_gain": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "seed": 17,
+    "threads": 1,
+    "early_stopping": false,
+    "sample_weight": null
+  },
+  "data_built_at": "2026-09-27 14:19:24",
+  "factor_semantics": "zscore_win1_99_v1",
+  "n_features": 610,
+  "n_train_days_available": 1452,
+  "train_first": "2018-01-02",
+  "train_last": "2023-12-22",
+  "first_test": "2024-01-02",
+  "last_test": "2024-03-29",
+  "purge_rule": "train_day_index + 5 < first_test_day_index",
+  "n_train_queries": 1452,
+  "n_train_rows_after_label_filter": 5808,
+  "train_group_size_min": 4,
+  "train_group_size_max": 4,
+  "n_test_days": 58,
+  "monthly_signal_dates": [
+    "2024-01-02",
+    "2024-02-01",
+    "2024-03-01"
+  ],
+  "fit_seconds": 6.383,
+  "rss_gib": {
+    "after_panel_load": 1.462,
+    "rss_at_completion": 0.696
+  },
+  "top_features_by_gain": [
+    {
+      "feature": "rel_mom_ind_5d",
+      "gain": 298.25214195251465
+    },
+    {
+      "feature": "mf_tier_flow_agreement_20",
+      "gain": 284.4081988334656
+    },
+    {
+      "feature": "rel_mom_ind_10d",
+      "gain": 275.98689222335815
+    },
+    {
+      "feature": "ret_kurt_20",
+      "gain": 267.6193494796753
+    },
+    {
+      "feature": "open5_capacity_floor_ratio_20",
+      "gain": 245.4550905227661
+    },
+    {
+      "feature": "cost_skew_ratio",
+      "gain": 231.1979193687439
+    },
+    {
+      "feature": "bw_session_follow_20",
+      "gain": 212.3134994506836
+    },
+    {
+      "feature": "bw_overnight_lag_beta_20",
+      "gain": 197.56331062316895
+    },
+    {
+      "feature": "rel_mom_ind_3d",
+      "gain": 190.52511835098267
+    },
+    {
+      "feature": "amihud_asymmetry_20",
+      "gain": 185.7393102645874
+    },
+    {
+      "feature": "id2_vol_peak_std_20",
+      "gain": 179.88531160354614
+    },
+    {
+      "feature": "ep_ttm",
+      "gain": 170.88243007659912
+    },
+    {
+      "feature": "trend_strength_60",
+      "gain": 170.32354068756104
+    },
+    {
+      "feature": "inside_bar_count_20",
+      "gain": 165.1614203453064
+    },
+    {
+      "feature": "id2_close_vs_pm_vwap_20",
+      "gain": 161.19397926330566
+    },
+    {
+      "feature": "gap_down_recover_freq_20d",
+      "gain": 154.599280834198
+    },
+    {
+      "feature": "liquidity_shock_20",
+      "gain": 154.10269927978516
+    },
+    {
+      "feature": "tail_risk_pct_60",
+      "gain": 153.81217050552368
+    },
+    {
+      "feature": "qf_cash_margin_yoy_change",
+      "gain": 153.54893684387207
+    },
+    {
+      "feature": "efx_free_turnover",
+      "gain": 150.28541946411133
+    }
+  ],
+  "model_file": "ranker.txt",
+  "predictions_file": "predictions.csv",
+  "worker_pid": 34912,
+  "seconds_total": 29.988,
+  "finished_at": "2026-09-27 17:51:45"
+}

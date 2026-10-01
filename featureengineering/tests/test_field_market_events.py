@@ -64,11 +64,11 @@ class FieldMarketEventTests(unittest.TestCase):
         frame=pd.DataFrame({'pressure':signal},index=days)
         def ctx(n):
             panel=Panel(days[:n],np.array(['A','B']))
-            # ★ 2026-09-22 去冗余：`mfx_tdx_pressure`（与 `mfx_dc_pressure` |ρ|=0.988）已删，
-            #   改用同族的 `mfx_dc_pressure`（数据集相应从 tdx_daily 换成 dc_daily）。
-            up=SimpleNamespace(audit_cutoff=None,_expansion_market_cache={('dc_daily',int(days[0]),int(days[n-1])):frame.iloc[:n]})
+            # ★ 2026-09-24 质检瘦身：`mfx_dc_pressure` 与 `mfx_tdx_pressure` 同批删除，
+            #   改用同族存活的 `mfx_index_pressure`（数据集 index_daily）。
+            up=SimpleNamespace(audit_cutoff=None,_expansion_market_cache={('index_daily',int(days[0]),int(days[n-1])):frame.iloc[:n]})
             return SimpleNamespace(panel=panel,up=up,ret_clean=lambda:np.stack([signal[:n],-signal[:n]],axis=1))
-        full=mk.mfx_dc_pressure(ctx(150));prefix=mk.mfx_dc_pressure(ctx(100))
+        full=mk.mfx_index_pressure(ctx(150));prefix=mk.mfx_index_pressure(ctx(100))
         np.testing.assert_allclose(full[:100],prefix,atol=1e-12,equal_nan=True)
         np.testing.assert_allclose(full[-1],[1,-1],atol=1e-12)
 
@@ -103,10 +103,18 @@ class FieldMarketEventTests(unittest.TestCase):
         self.assertEqual(seen,[(2022,2025)])
 
     def test_board_minute_does_not_rebuild_stock_minute_layer(self):
+        """只吃板块分钟线的市场因子，不得触发**个股**日内层的重建。
+
+        ★ 2026-09-25：断言从「`ensure` 被调成 `(0,-1)`」改成「压根不调」。
+          `ensure(0,-1)` 是纯空操作（`range(0,0)` 空循环、直接 return，连 manifest
+          都不落盘），所以「不调」与「调成空区间」等价 —— 而前者是更强的表述。
+          改动的由来：prebuild 现在把 4 个派生层按层并行，只对**真有工作**的层派发，
+          没工作（`yr[1] < yr[0]`）的层直接不进计划，不再走一遍空调用。
+        """
         from fea.engine import Engine
         from fea.spec import FactorSpec
         with tempfile.TemporaryDirectory() as temp:
-            for dataset,expected in [('tdx_minute',(0,-1)),('stock_history_5min',(2017,2018))]:
+            for dataset,expected in [('tdx_minute',[]),('stock_history_5min',[(2017,2018)])]:
                 calls=[]
                 engine=object.__new__(Engine)
                 engine.cfg=SimpleNamespace(state_dir=Path(temp))
@@ -126,7 +134,122 @@ class FieldMarketEventTests(unittest.TestCase):
                 # 故把两道闸门打成空操作（它们自己的路径由 main.py run 的集成流程覆盖）。
                 engine.st_gate=lambda:{}
                 engine.delay_gate=lambda:{}
+                engine.cfg.default_start='2018-01-01'
+                engine._start_floor=20180101
                 engine.prebuild([FactorSpec('fixture','fixture',deps=(dataset,),warmup_days=220)],20181228)
-                self.assertEqual(calls,[expected])
+                self.assertEqual(calls,expected)
+
+    def test_parallel_layer_build_leaves_layers_on_parent(self):
+        """派生层**并行**构建后，父进程仍必须持有层实例。
+
+        ★ 2026-09-25 实测事故：并行分支让 4 个子进程各自 `_layer(n).ensure(...)`，
+          子进程把自己的实例缓存在**自己的**地址空间里（fork 写时复制），父进程的
+          `self._intraday/_chips/_open5` 仍然是 None。随后父进程 fork 因子 worker，
+          worker 里 `ctx.chip(...)` 直接抛「引擎没有预建 ChipLayer」——
+          整块 46 个因子失败、退出码 1。
+
+        这是「层必须在 fork 之前建好」这条既有约束的第二半：不仅要**建好**，
+        还得建在**正确的进程**里。本用例用假执行器在父进程内跑任务，断言父进程有实例。
+        """
+        from concurrent.futures import Future
+        from fea.engine import Engine
+        from fea.spec import FactorSpec
+
+        with tempfile.TemporaryDirectory() as temp:
+            engine = object.__new__(Engine)
+            engine.cfg = SimpleNamespace(state_dir=Path(temp), default_start='2018-01-01')
+            engine.plan = lambda *args: {2018: np.array([20180102, 20181228], np.int32)}
+            engine._propagate_parent_plans = lambda *args: None
+            engine.deriv_for = lambda *args, **kwargs: None
+            engine._st = ()
+            engine._prices = None
+            engine.prices_for = lambda *args: None
+            engine.factor_io = lambda: None
+            engine.up = SimpleNamespace(clear_cache=lambda: None)
+            engine.st_gate = lambda: {}
+            engine.delay_gate = lambda: {}
+            engine._start_floor = 20180101
+            engine._intraday = engine._chips = engine._open5 = None
+
+            def _accessor(attr):
+                """仿真实访问器：**首次调用就把实例挂在 engine 上**（零成本构造）。"""
+                def get():
+                    cur = getattr(engine, attr)
+                    if cur is None:
+                        cur = SimpleNamespace(ensure=lambda *a: None)
+                        setattr(engine, attr, cur)
+                    return cur
+                return get
+
+            engine.intraday_layer = _accessor('_intraday')
+            engine.chips_layer = _accessor('_chips')
+            engine.open5_layer = _accessor('_open5')
+            # ★ 这里用**真的 fork**（不替换执行器）：子进程写时复制继承 engine，
+            #   它在自己那份里建的层父进程看不到 —— 正是事故的真实形态。
+            #   用「本进程内跑」的替身反而测不出来（子任务的副作用会落在同一个 engine 上）。
+            engine.prebuild(
+                [FactorSpec('a', 'a', deps=('stock_history_5min',), warmup_days=220),
+                 FactorSpec('b', 'b', deps=('stock_cyq_chips',), warmup_days=220)],
+                20181228, jobs=4)
+            self.assertIsNotNone(engine._intraday, "父进程缺 IntradayLayer：worker 会直接失败")
+            self.assertIsNotNone(engine._chips, "父进程缺 ChipLayer：worker 会直接失败")
+            self.assertIsNotNone(engine._open5, "父进程缺 Open5Layer：worker 会直接失败")
+
+    def test_parallel_layer_build_is_used_when_jobs_gt_1(self):
+        """jobs>1 时真的走并行分支（而不是静默退化成串行）。"""
+        from concurrent.futures import Future
+        from fea.engine import Engine
+        from fea.spec import FactorSpec
+        import fea.engine as E
+
+        seen = []
+
+        class _InlinePool:
+            def __init__(self, max_workers=None, mp_context=None, **k):
+                seen.append(max_workers)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def submit(self, fn, name):
+                fut = Future()
+                try:
+                    fut.set_result(fn(name))
+                except BaseException as exc:      # noqa: BLE001
+                    fut.set_exception(exc)
+                return fut
+
+        with tempfile.TemporaryDirectory() as temp:
+            engine = object.__new__(Engine)
+            engine.cfg = SimpleNamespace(state_dir=Path(temp), default_start='2018-01-01')
+            engine.plan = lambda *args: {2018: np.array([20180102, 20181228], np.int32)}
+            engine._propagate_parent_plans = lambda *args: None
+            engine.deriv_for = lambda *args, **kwargs: None
+            engine._st = ()
+            engine._prices = None
+            engine.prices_for = lambda *args: None
+            engine.factor_io = lambda: None
+            engine.up = SimpleNamespace(clear_cache=lambda: None)
+            engine.st_gate = lambda: {}
+            engine.delay_gate = lambda: {}
+            engine._start_floor = 20180101
+            engine._intraday = engine._chips = engine._open5 = None
+            engine.intraday_layer = lambda: SimpleNamespace(ensure=lambda *a: None)
+            engine.chips_layer = lambda: SimpleNamespace(ensure=lambda *a: None)
+            engine.open5_layer = lambda: SimpleNamespace(ensure=lambda *a: None)
+            with patch.object(E, 'ProcessPoolExecutor', _InlinePool, create=True), \
+                 patch('concurrent.futures.ProcessPoolExecutor', _InlinePool), \
+                 patch('multiprocessing.get_context', lambda *a, **k: None):
+                engine.prebuild(
+                    [FactorSpec('a', 'a', deps=('stock_history_5min',), warmup_days=220),
+                     FactorSpec('b', 'b', deps=('stock_cyq_chips',), warmup_days=220)],
+                    20181228, jobs=4)
+            # 本用例只有 intraday/chips/open5 三个层有活（无市场因子 ⇒ 不含
+            # market_morning），所以池大小 = min(jobs, 层数) = min(4, 3) = 3。
+            # 关键是**真的走了并行分支**（>1），而不是静默退化成串行。
+            self.assertEqual(seen, [3], "jobs=4 且有 3 个活跃层时应派发 3 个进程")
 
 if __name__=='__main__':unittest.main()

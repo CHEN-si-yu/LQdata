@@ -1,0 +1,139 @@
+{
+  "quarter": "2024Q4",
+  "state": "complete",
+  "recipe": {
+    "name": "V11-LambdaRank-four-bank",
+    "objective": "lambdarank",
+    "label": "within-date ascending rank of label_ret_5d (integer relevance 0..3; ties share rank)",
+    "n_estimators": 180,
+    "learning_rate": 0.03,
+    "num_leaves": 7,
+    "max_depth": 3,
+    "min_child_samples": 80,
+    "feature_fraction": 0.8,
+    "bagging_fraction": 0.8,
+    "bagging_freq": 1,
+    "reg_alpha": 2.0,
+    "reg_lambda": 20.0,
+    "label_gain": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "seed": 17,
+    "threads": 1,
+    "early_stopping": false,
+    "sample_weight": null
+  },
+  "data_built_at": "2026-09-27 14:19:24",
+  "factor_semantics": "zscore_win1_99_v1",
+  "n_features": 610,
+  "n_train_days_available": 1633,
+  "train_first": "2018-01-02",
+  "train_last": "2024-09-23",
+  "first_test": "2024-10-08",
+  "last_test": "2024-12-31",
+  "purge_rule": "train_day_index + 5 < first_test_day_index",
+  "n_train_queries": 1633,
+  "n_train_rows_after_label_filter": 6532,
+  "train_group_size_min": 4,
+  "train_group_size_max": 4,
+  "n_test_days": 61,
+  "monthly_signal_dates": [
+    "2024-10-08",
+    "2024-11-01",
+    "2024-12-02"
+  ],
+  "fit_seconds": 6.707,
+  "rss_gib": {
+    "after_panel_load": 1.461,
+    "rss_at_completion": 1.482
+  },
+  "top_features_by_gain": [
+    {
+      "feature": "mf_tier_flow_agreement_20",
+      "gain": 309.3197932243347
+    },
+    {
+      "feature": "rel_mom_ind_3d",
+      "gain": 258.6712999343872
+    },
+    {
+      "feature": "mf_open_close_divergence_10d",
+      "gain": 241.75691986083984
+    },
+    {
+      "feature": "afx_bs_surplus_rese",
+      "gain": 239.0248556137085
+    },
+    {
+      "feature": "rel_mom_ind_5d",
+      "gain": 219.28726196289062
+    },
+    {
+      "feature": "open5_capacity_p20_log",
+      "gain": 217.31868839263916
+    },
+    {
+      "feature": "margin_balance_volatility_20d",
+      "gain": 204.3490104675293
+    },
+    {
+      "feature": "bw_tail_comove_60",
+      "gain": 197.76139736175537
+    },
+    {
+      "feature": "rel_mom_ind_60d",
+      "gain": 193.80245208740234
+    },
+    {
+      "feature": "overnight_sign_consistency_20d",
+      "gain": 190.71206903457642
+    },
+    {
+      "feature": "id2_close_vs_pm_vwap_20",
+      "gain": 189.35279941558838
+    },
+    {
+      "feature": "rel_mom_ind_20d",
+      "gain": 185.5864381790161
+    },
+    {
+      "feature": "qf_cash_margin_vol_4q",
+      "gain": 175.14759826660156
+    },
+    {
+      "feature": "rel_mom_ind_250d",
+      "gain": 173.2808198928833
+    },
+    {
+      "feature": "dv_stability_4q",
+      "gain": 172.77424144744873
+    },
+    {
+      "feature": "cfp_ttm",
+      "gain": 172.4307975769043
+    },
+    {
+      "feature": "ret_skew_20",
+      "gain": 165.4683427810669
+    },
+    {
+      "feature": "liquidity_shock_20",
+      "gain": 163.75062894821167
+    },
+    {
+      "feature": "fv_gain_share",
+      "gain": 162.02984237670898
+    },
+    {
+      "feature": "rel_mom_ind_10d",
+      "gain": 155.512348651886
+    }
+  ],
+  "model_file": "ranker.txt",
+  "predictions_file": "predictions.csv",
+  "worker_pid": 34913,
+  "seconds_total": 30.41
+}

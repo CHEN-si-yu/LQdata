@@ -1,0 +1,289 @@
+{
+  "unit": "experiments2/V10 score/momentum Top2 intersection",
+  "built_at": "2026-09-27 17:44:16",
+  "snapshot_built_at": "2026-09-27 14:19:24",
+  "snapshot_last_day": "2026-09-24",
+  "signal_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "execution_only_exit_day": "2026-07-01",
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "official_signal_days": 242,
+  "rule": {
+    "signal": "first trading session of each calendar month at close",
+    "score": "rank cached V1 ensemble score descending across finite-score names; select Top2",
+    "momentum": "rank adjusted close(T)/adjusted close(T-60 sessions)-1 descending; select Top2",
+    "selection": "hold only names in both independently ranked Top2 lists; 0/1/2 names allowed",
+    "allocation": "target 50% of current pre-trade NAV per selected name; unused target allocation remains cash",
+    "execution": "T+1 open; 100-share lots, 1% previous signal-day amount capacity, limit locks, 3bp slippage and fees",
+    "no_retraining": true,
+    "no_parameter_scan": true
+  },
+  "score_input_audit": {
+    "score_days": 242,
+    "score_rows": 968,
+    "score_min_date": "2025-07-01",
+    "score_max_date": "2026-06-30",
+    "source_sha256": {
+      "model_pred/ensemble/year=2025/data.parquet": "3ea8846e49e73d83b7e820a081ff25fa09415384916e99541053d65d42fd76a2",
+      "model_pred/ensemble/year=2026/data.parquet": "58adcf7cccbb477ba6b81dbd47dbc8cfecf4320b0545d300a8d5bef67cca6394"
+    }
+  },
+  "v1_source_hashes_before": {
+    "model.py": "cb1e0d3d437773d7e3f7f83891001122d592fc20264f487276377a32a55f3f9b",
+    "model_info/final_audit.json": "6605e9848406ca4d70312bc221b323c146f4fa1667acb81fe7702bc75378913c",
+    "model_pred/ensemble/score_meta.json": "37582c19709533ce1ee2723fd68aeb306ef3a5dd842f8befa98c4720957ce0a9",
+    "model_pred/ensemble/year=2025/data.parquet": "3ea8846e49e73d83b7e820a081ff25fa09415384916e99541053d65d42fd76a2",
+    "model_pred/ensemble/year=2026/data.parquet": "58adcf7cccbb477ba6b81dbd47dbc8cfecf4320b0545d300a8d5bef67cca6394"
+  },
+  "v1_source_hashes_after": {
+    "model.py": "cb1e0d3d437773d7e3f7f83891001122d592fc20264f487276377a32a55f3f9b",
+    "model_info/final_audit.json": "6605e9848406ca4d70312bc221b323c146f4fa1667acb81fe7702bc75378913c",
+    "model_pred/ensemble/score_meta.json": "37582c19709533ce1ee2723fd68aeb306ef3a5dd842f8befa98c4720957ce0a9",
+    "model_pred/ensemble/year=2025/data.parquet": "3ea8846e49e73d83b7e820a081ff25fa09415384916e99541053d65d42fd76a2",
+    "model_pred/ensemble/year=2026/data.parquet": "58adcf7cccbb477ba6b81dbd47dbc8cfecf4320b0545d300a8d5bef67cca6394"
+  },
+  "v1_source_hashes_unchanged": true,
+  "engine": {
+    "source": "copied from V7/rank_portfolio_lab.py",
+    "sha256": "614fb6c3da6a4bc531c29c5916154c7b8fd0f9925805c9b748e1694b9476d42c",
+    "fixed_window_change": "start account at first supplied lifecycle day",
+    "allocation_change": "0.50 NAV target for each selected symbol"
+  },
+  "strategies": {
+    "consensus": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": -0.03216689233256964,
+        "annualized_return": -0.03203666176227704,
+        "max_drawdown": -0.07542550210125054,
+        "matched_benchmark_return": -0.030625732972489828,
+        "matched_cumulative_excess": -0.0015411593600798135,
+        "avg_exposure": 0.13353677954224005,
+        "average_holdings": 0.2716049382716049,
+        "ending_equity": 96783.31076674303,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.02442876229467794,
+            "matched_return": 0.025559546924541987,
+            "daily_matched_excess": -0.0011307846298640456
+          },
+          "2026": {
+            "strategy_net_return": -0.05524606171782631,
+            "matched_return": -0.05478500011581078,
+            "daily_matched_excess": -0.00046106160201553337
+          }
+        }
+      },
+      "audit": {
+        "days_including_exit": 243,
+        "signal_days": 12,
+        "schedule_events_excluding_exit_liquidation": 12,
+        "cash_min": 50421.247575022004,
+        "ending_cash": 96783.31076674303,
+        "ending_positions": 0,
+        "maximum_simultaneous_holdings": 1,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 4,
+        "fees": 101.04624626588675,
+        "minimum_cash_nonnegative": true,
+        "final_liquidation_complete": true,
+        "max_abs_equity_cash_plus_engine_mark_residual": 7.275957614183426e-12,
+        "exit_day": "2026-07-01",
+        "exit_day_net_return": 0.0,
+        "exit_day_cash": 96783.31076674303,
+        "exit_day_holdings": 0
+      },
+      "quarterly_signal_window": [
+        {
+          "quarter": "2025Q3",
+          "days": 66,
+          "net_return": 0.04096031429875535,
+          "matched_return": 0.04181887810165952,
+          "cost_execution_difference": -0.0008585638029041665
+        },
+        {
+          "quarter": "2025Q4",
+          "days": 60,
+          "net_return": -0.01588105884249169,
+          "matched_return": -0.01560667743585542,
+          "cost_execution_difference": -0.0002743814066362704
+        },
+        {
+          "quarter": "2026Q1",
+          "days": 56,
+          "net_return": -0.05524606171782631,
+          "matched_return": -0.05478500011581078,
+          "cost_execution_difference": -0.00046106160201553337
+        },
+        {
+          "quarter": "2026Q2",
+          "days": 60,
+          "net_return": 0.0,
+          "matched_return": 0.0,
+          "cost_execution_difference": 0.0
+        }
+      ]
+    },
+    "score_only": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": -0.07153320590249579,
+        "annualized_return": -0.07124957649942487,
+        "max_drawdown": -0.1750632281600656,
+        "matched_benchmark_return": -0.06717031918660121,
+        "matched_cumulative_excess": -0.004362886715894576,
+        "avg_exposure": 0.9838582155411048,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 92846.67940975042,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.060857522963779775,
+            "matched_return": 0.06342406579965654,
+            "daily_matched_excess": -0.0025665428358767617
+          },
+          "2026": {
+            "strategy_net_return": -0.12479595610200978,
+            "matched_return": -0.12280555724310716,
+            "daily_matched_excess": -0.00199039885890262
+          }
+        }
+      },
+      "audit": {
+        "days_including_exit": 243,
+        "signal_days": 12,
+        "schedule_events_excluding_exit_liquidation": 12,
+        "cash_min": 110.15006879942302,
+        "ending_cash": 92846.67940975042,
+        "ending_positions": 0,
+        "maximum_simultaneous_holdings": 2,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 21,
+        "fees": 313.88692417078005,
+        "minimum_cash_nonnegative": true,
+        "final_liquidation_complete": true,
+        "max_abs_equity_cash_plus_engine_mark_residual": 1.4551915228366852e-11,
+        "exit_day": "2026-07-01",
+        "exit_day_net_return": -0.02128617779724673,
+        "exit_day_cash": 92846.67940975042,
+        "exit_day_holdings": 0
+      },
+      "quarterly_signal_window": [
+        {
+          "quarter": "2025Q3",
+          "days": 66,
+          "net_return": -0.04531327516538419,
+          "matched_return": -0.04382949949232595,
+          "cost_execution_difference": -0.0014837756730582408
+        },
+        {
+          "quarter": "2025Q4",
+          "days": 60,
+          "net_return": 0.11121009161152395,
+          "matched_return": 0.11216991659441056,
+          "cost_execution_difference": -0.0009598249828866035
+        },
+        {
+          "quarter": "2026Q1",
+          "days": 56,
+          "net_return": -0.07861538930510048,
+          "matched_return": -0.07775572202990455,
+          "cost_execution_difference": -0.00085966727519593
+        },
+        {
+          "quarter": "2026Q2",
+          "days": 60,
+          "net_return": -0.029461786852884253,
+          "matched_return": -0.029189259678652713,
+          "cost_execution_difference": -0.0002725271742315405
+        }
+      ]
+    },
+    "momentum_only": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": 0.11583617552664371,
+        "annualized_return": 0.11533299612529535,
+        "max_drawdown": -0.17361043254181552,
+        "matched_benchmark_return": 0.12086764280396056,
+        "matched_cumulative_excess": -0.005031467277316848,
+        "avg_exposure": 0.9873526601540118,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 111583.61755266436,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.13453465790659158,
+            "matched_return": 0.13736822562563544,
+            "daily_matched_excess": -0.0028335677190438613
+          },
+          "2026": {
+            "strategy_net_return": -0.01648119098842671,
+            "matched_return": -0.014507687528019675,
+            "daily_matched_excess": -0.0019735034604070334
+          }
+        }
+      },
+      "audit": {
+        "days_including_exit": 243,
+        "signal_days": 12,
+        "schedule_events_excluding_exit_liquidation": 12,
+        "cash_min": 124.91914658427686,
+        "ending_cash": 111583.61755266436,
+        "ending_positions": 0,
+        "maximum_simultaneous_holdings": 2,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 19,
+        "fees": 322.5822428235708,
+        "minimum_cash_nonnegative": true,
+        "final_liquidation_complete": true,
+        "max_abs_equity_cash_plus_engine_mark_residual": 1.4551915228366852e-11,
+        "exit_day": "2026-07-01",
+        "exit_day_net_return": -0.019061321356375616,
+        "exit_day_cash": 111583.61755266436,
+        "exit_day_holdings": 0
+      },
+      "quarterly_signal_window": [
+        {
+          "quarter": "2025Q3",
+          "days": 66,
+          "net_return": 0.024883319857003983,
+          "matched_return": 0.026451905912068252,
+          "cost_execution_difference": -0.0015685860550642694
+        },
+        {
+          "quarter": "2025Q4",
+          "days": 60,
+          "net_return": 0.10698909419746161,
+          "matched_return": 0.1080579801885706,
+          "cost_execution_difference": -0.001068885991108992
+        },
+        {
+          "quarter": "2026Q1",
+          "days": 56,
+          "net_return": -0.016988978508989394,
+          "matched_return": -0.016156086143197523,
+          "cost_execution_difference": -0.0008328923657918708
+        },
+        {
+          "quarter": "2026Q2",
+          "days": 60,
+          "net_return": 0.019958316648902574,
+          "matched_return": 0.0200587752752881,
+          "cost_execution_difference": -0.0001004586263855245
+        }
+      ]
+    }
+  },
+  "script_sha256": "10e1289f28fd12050515d029445c182b1e6e78c263846ffeba30bce19467a97c",
+  "runtime_seconds": 28.74942135810852,
+  "interpretation": "Matched return is the same realized holdings path without transaction costs; the gap measures costs/execution only and is not selection alpha."
+}

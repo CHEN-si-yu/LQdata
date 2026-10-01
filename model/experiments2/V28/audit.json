@@ -1,0 +1,155 @@
+{
+  "holdout": {
+    "start": "2024-01-02",
+    "end": "2026-06-30",
+    "signals": 30,
+    "trading_days_per_strategy": 601
+  },
+  "signal_dates": [
+    "2024-01-02",
+    "2024-02-01",
+    "2024-03-01",
+    "2024-04-01",
+    "2024-05-06",
+    "2024-06-03",
+    "2024-07-01",
+    "2024-08-01",
+    "2024-09-02",
+    "2024-10-08",
+    "2024-11-01",
+    "2024-12-02",
+    "2025-01-02",
+    "2025-02-05",
+    "2025-03-03",
+    "2025-04-01",
+    "2025-05-06",
+    "2025-06-03",
+    "2025-07-01",
+    "2025-08-01",
+    "2025-09-01",
+    "2025-10-09",
+    "2025-11-03",
+    "2025-12-01",
+    "2026-01-05",
+    "2026-02-02",
+    "2026-03-02",
+    "2026-04-01",
+    "2026-05-06",
+    "2026-06-01"
+  ],
+  "window_causality": {
+    "price_series": "V11 price cache adj_close = close * adj_factor",
+    "60d_return": "adj_close[signal_index] / adj_close[signal_index - 60] - 1; both endpoints at or before signal close",
+    "250d_return": "adj_close[signal_index] / adj_close[signal_index - 250] - 1; both endpoints at or before signal close",
+    "ranking": "rank each return descending across four banks; arithmetic mean of the two ordinal ranks with fixed 50/50 weights; select lowest two mean ranks; code ascending resolves ties",
+    "execution": "T+1 next-session open",
+    "uses_post_signal_data": false,
+    "all_signal_windows_end_at_signal_close": true,
+    "all_execution_dates_are_next_trading_day": true
+  },
+  "same_lifecycle": [
+    {
+      "strategy": "60d momentum Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "V11 LambdaRank Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "V24 stable-factor consensus Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "V28 60d+250d momentum rank Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "equal-weight hold",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    }
+  ],
+  "v24_membership_reproduction": {
+    "matches_cached_metrics": true,
+    "checked_fields": [
+      "net_return",
+      "gross_return_same_fills",
+      "fees",
+      "slippage_cost",
+      "turnover",
+      "trades",
+      "max_abs_accounting_residual"
+    ],
+    "metric_differences": {
+      "net_return": 0.0,
+      "gross_return_same_fills": 0.0,
+      "fees": 0.0,
+      "slippage_cost": 0.0,
+      "turnover": 0.0,
+      "trades": 0.0,
+      "max_abs_accounting_residual": 0.0
+    }
+  },
+  "ledger_checks": {
+    "V28 60d+250d momentum rank Top2": {
+      "cash_nonnegative": true,
+      "min_cash": 2.5715065768599743,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 45,
+      "ending_cash": 361.9007857242909,
+      "ending_positions": 2
+    },
+    "60d momentum Top2": {
+      "cash_nonnegative": true,
+      "min_cash": 61.0696464866453,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 48,
+      "ending_cash": 184.0280234584418,
+      "ending_positions": 2
+    },
+    "V11 LambdaRank Top2": {
+      "cash_nonnegative": true,
+      "min_cash": 36.23176302149659,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 73,
+      "ending_cash": 479.7809147711232,
+      "ending_positions": 2
+    },
+    "V24 stable-factor consensus Top2": {
+      "cash_nonnegative": true,
+      "min_cash": 3.4397542918886757,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 81,
+      "ending_cash": 284.5155607137858,
+      "ending_positions": 2
+    },
+    "equal-weight hold": {
+      "cash_nonnegative": true,
+      "min_cash": 328.2072699519849,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 1.4551915228366852e-11,
+      "trades": 4,
+      "ending_cash": 328.2072699519849,
+      "ending_positions": 4
+    }
+  },
+  "period_tables": {
+    "quarter_rows": 50,
+    "annual_rows": 15,
+    "end_date_is_signal_window_end_not_appended_exit_day": true
+  }
+}

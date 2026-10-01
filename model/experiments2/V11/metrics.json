@@ -1,0 +1,732 @@
+{
+  "model": "V11 cross-sectional LightGBM LambdaRank",
+  "quarters_included": [
+    "2020Q1",
+    "2020Q2",
+    "2020Q3",
+    "2020Q4",
+    "2021Q1",
+    "2021Q2",
+    "2021Q3",
+    "2021Q4",
+    "2022Q1",
+    "2022Q2",
+    "2022Q3",
+    "2022Q4",
+    "2023Q1",
+    "2023Q2",
+    "2023Q3",
+    "2023Q4",
+    "2024Q1",
+    "2024Q2",
+    "2024Q3",
+    "2024Q4",
+    "2025Q1",
+    "2025Q2",
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "n_quarters": 26,
+  "test_dates": [
+    "2020-01-02",
+    "2026-06-30"
+  ],
+  "signal_count": 78,
+  "execution": "first trading day close signal; next-session open; monthly rebalance; shared cash; 50/50 Top2",
+  "costs": {
+    "commission": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer": 1e-05,
+    "sell_stamp": 0.0005,
+    "adverse_slippage": 0.0003,
+    "max_participation": 0.01,
+    "lot_size": 100
+  },
+  "metrics": {
+    "V11 LambdaRank Top2": {
+      "strategy": "V11 LambdaRank Top2",
+      "start": "2020-01-02",
+      "end": "2026-06-30",
+      "days": 1571,
+      "net_return": 1.1488570877015314,
+      "gross_return_same_fills": 1.228077217051609,
+      "annualized_net_return": 0.13063515010178572,
+      "annualized_volatility": 0.16624180326210194,
+      "max_drawdown": -0.1806427594279295,
+      "fees": 5044.9125112355505,
+      "slippage_cost": 2877.1004237726133,
+      "total_trading_cost": 7922.012935008164,
+      "turnover": 9590334.745908707,
+      "trades": 190,
+      "blocked_trade_events": 0,
+      "min_cash": 13.84519483369968,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "vs_equal_weight_hold": {
+        "net_return_difference_pp": 12.712660274823406,
+        "drawdown_difference_pp": -2.585659004898333
+      },
+      "vs_60d_momentum_Top2": {
+        "net_return_difference_pp": -2.6790803214161496,
+        "drawdown_difference_pp": -0.6574014756042024
+      }
+    },
+    "60d momentum Top2": {
+      "strategy": "60d momentum Top2",
+      "start": "2020-01-02",
+      "end": "2026-06-30",
+      "days": 1571,
+      "net_return": 1.1756478909156929,
+      "gross_return_same_fills": 1.2182734440776506,
+      "annualized_net_return": 0.13288596709222356,
+      "annualized_volatility": 0.16974411653921065,
+      "max_drawdown": -0.1740687446718875,
+      "fees": 2773.1163840880376,
+      "slippage_cost": 1489.4389321079361,
+      "total_trading_cost": 4262.555316195974,
+      "turnover": 4964796.440359789,
+      "trades": 140,
+      "blocked_trade_events": 0,
+      "min_cash": 9.126485533386585,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "equal-weight hold": {
+      "strategy": "equal-weight hold",
+      "start": "2020-01-02",
+      "end": "2026-06-30",
+      "days": 1571,
+      "net_return": 1.0217304849532973,
+      "gross_return_same_fills": 1.0222849957779774,
+      "annualized_net_return": 0.11962220769643639,
+      "annualized_volatility": 0.1598501855230107,
+      "max_drawdown": -0.15478616937894618,
+      "fees": 25.749282468,
+      "slippage_cost": 29.7018,
+      "total_trading_cost": 55.451082467999996,
+      "turnover": 99006.0,
+      "trades": 4,
+      "blocked_trade_events": 0,
+      "min_cash": 938.5489175319963,
+      "max_positions": 4,
+      "max_abs_accounting_residual": 0.0
+    }
+  },
+  "annual_returns": {
+    "V11 LambdaRank Top2": [
+      {
+        "period": "2020",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.08687177961454773,
+        "gross_return_same_fills": -0.07837610422678665
+      },
+      {
+        "period": "2021",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.012549733763679072,
+        "gross_return_same_fills": -0.002510475002255874
+      },
+      {
+        "period": "2022",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06611265621444007,
+        "gross_return_same_fills": 0.07655132608940574
+      },
+      {
+        "period": "2023",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.26006805608712935,
+        "gross_return_same_fills": 0.2634409787125094
+      },
+      {
+        "period": "2024",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.4999880139607862,
+        "gross_return_same_fills": 0.49308149397644363
+      },
+      {
+        "period": "2025",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.31920263778109415,
+        "gross_return_same_fills": 0.3212210284707886
+      },
+      {
+        "period": "2026",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.10347142517727814,
+        "gross_return_same_fills": -0.09672606443550891
+      }
+    ],
+    "60d momentum Top2": [
+      {
+        "period": "2020",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.10718802338799283,
+        "gross_return_same_fills": -0.10131207337338621
+      },
+      {
+        "period": "2021",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.007176017968466675,
+        "gross_return_same_fills": 0.0007335239531058857
+      },
+      {
+        "period": "2022",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.029456328878828986,
+        "gross_return_same_fills": 0.03462971803727455
+      },
+      {
+        "period": "2023",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.30462675018686225,
+        "gross_return_same_fills": 0.30399199520336406
+      },
+      {
+        "period": "2024",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.4153256412927704,
+        "gross_return_same_fills": 0.41553925318634244
+      },
+      {
+        "period": "2025",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.3167929396043805,
+        "gross_return_same_fills": 0.3154999364113933
+      },
+      {
+        "period": "2026",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.019408165854741144,
+        "gross_return_same_fills": -0.018217917813068807
+      }
+    ],
+    "equal-weight hold": [
+      {
+        "period": "2020",
+        "strategy": "equal-weight hold",
+        "net_return": -0.10917164149138803,
+        "gross_return_same_fills": -0.10861713066670797
+      },
+      {
+        "period": "2021",
+        "strategy": "equal-weight hold",
+        "net_return": -0.005348778267581511,
+        "gross_return_same_fills": -0.0053454509033812325
+      },
+      {
+        "period": "2022",
+        "strategy": "equal-weight hold",
+        "net_return": 0.04969519660122579,
+        "gross_return_same_fills": 0.04966411610924082
+      },
+      {
+        "period": "2023",
+        "strategy": "equal-weight hold",
+        "net_return": 0.27066707179065874,
+        "gross_return_same_fills": 0.27050579994892376
+      },
+      {
+        "period": "2024",
+        "strategy": "equal-weight hold",
+        "net_return": 0.4819243731459175,
+        "gross_return_same_fills": 0.4816983643402686
+      },
+      {
+        "period": "2025",
+        "strategy": "equal-weight hold",
+        "net_return": 0.24876183098043714,
+        "gross_return_same_fills": 0.24868309551259626
+      },
+      {
+        "period": "2026",
+        "strategy": "equal-weight hold",
+        "net_return": -0.07560462672726798,
+        "gross_return_same_fills": -0.07558546287523848
+      }
+    ]
+  },
+  "limitations": [
+    "Mark-to-market at adjusted share quantity and raw close; open positions are not liquidated at test end.",
+    "Equal hold and 60d Top2 use the same cash ledger, price series, monthly signal dates, and cost assumptions.",
+    "Returns are backtest results on this four-bank universe and do not establish stable alpha."
+  ],
+  "quarter_returns": {
+    "V11 LambdaRank Top2": [
+      {
+        "period": "2020Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.1276884541855099,
+        "gross_return_same_fills": -0.12636000000000003
+      },
+      {
+        "period": "2020Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.00521487374762708,
+        "gross_return_same_fills": -0.003594157776658613
+      },
+      {
+        "period": "2020Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.014085283270095172,
+        "gross_return_same_fills": -0.010816891702224773
+      },
+      {
+        "period": "2020Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06731229311821729,
+        "gross_return_same_fills": 0.07030673816706079
+      },
+      {
+        "period": "2021Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.0775268440729453,
+        "gross_return_same_fills": 0.07850712138541693
+      },
+      {
+        "period": "2021Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.04646158016956703,
+        "gross_return_same_fills": -0.04439736381827286
+      },
+      {
+        "period": "2021Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.03364776803776137,
+        "gross_return_same_fills": -0.03001296498484196
+      },
+      {
+        "period": "2021Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.005480088840247643,
+        "gross_return_same_fills": -0.0022033121311894055
+      },
+      {
+        "period": "2022Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06336774848996662,
+        "gross_return_same_fills": 0.06463542029888814
+      },
+      {
+        "period": "2022Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.003283513695150786,
+        "gross_return_same_fills": 1.0217320548289166e-05
+      },
+      {
+        "period": "2022Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.020046962057509332,
+        "gross_return_same_fills": -0.01725755765352277
+      },
+      {
+        "period": "2022Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.026461605683597123,
+        "gross_return_same_fills": 0.028939120050637257
+      },
+      {
+        "period": "2023Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.05934007676787956,
+        "gross_return_same_fills": 0.060787042933628355
+      },
+      {
+        "period": "2023Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.11923378801028583,
+        "gross_return_same_fills": 0.11823678289408157
+      },
+      {
+        "period": "2023Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.04592705051588264,
+        "gross_return_same_fills": 0.04623819560384179
+      },
+      {
+        "period": "2023Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.016099860213530715,
+        "gross_return_same_fills": 0.018034293088220466
+      },
+      {
+        "period": "2024Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.09284734249858051,
+        "gross_return_same_fills": 0.0925297927971962
+      },
+      {
+        "period": "2024Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.07987668819317206,
+        "gross_return_same_fills": 0.0790660511410004
+      },
+      {
+        "period": "2024Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.1280796008501286,
+        "gross_return_same_fills": 0.12517605969714674
+      },
+      {
+        "period": "2024Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.1267157788305897,
+        "gross_return_same_fills": 0.1255938496419582
+      },
+      {
+        "period": "2025Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.022595304010490702,
+        "gross_return_same_fills": 0.024377692589608424
+      },
+      {
+        "period": "2025Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06476009093326973,
+        "gross_return_same_fills": 0.06535187825632427
+      },
+      {
+        "period": "2025Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06189268816453808,
+        "gross_return_same_fills": 0.06349956268849821
+      },
+      {
+        "period": "2025Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.14097288060161084,
+        "gross_return_same_fills": 0.13837401359101786
+      },
+      {
+        "period": "2026Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.06563212288558706,
+        "gross_return_same_fills": -0.06227269408977387
+      },
+      {
+        "period": "2026Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.04049722086824015,
+        "gross_return_same_fills": -0.036741353406886335
+      }
+    ],
+    "60d momentum Top2": [
+      {
+        "period": "2020Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.09080219310379001,
+        "gross_return_same_fills": -0.08947000000000005
+      },
+      {
+        "period": "2020Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.007023600692196652,
+        "gross_return_same_fills": -0.006205177204485324
+      },
+      {
+        "period": "2020Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.019244085220521234,
+        "gross_return_same_fills": -0.016678535688031793
+      },
+      {
+        "period": "2020Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.008327856942142775,
+        "gross_return_same_fills": 0.01000238341482329
+      },
+      {
+        "period": "2021Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.13956706665746732,
+        "gross_return_same_fills": 0.138893939411177
+      },
+      {
+        "period": "2021Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.07550173225421719,
+        "gross_return_same_fills": -0.07347022303001516
+      },
+      {
+        "period": "2021Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.035075629992118995,
+        "gross_return_same_fills": -0.0324125478318501
+      },
+      {
+        "period": "2021Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.0233634067193621,
+        "gross_return_same_fills": -0.019865767629111186
+      },
+      {
+        "period": "2022Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.05016176247571824,
+        "gross_return_same_fills": 0.05118157179847915
+      },
+      {
+        "period": "2022Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.03581204129100923,
+        "gross_return_same_fills": -0.033542169363910634
+      },
+      {
+        "period": "2022Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.0031680108025570197,
+        "gross_return_same_fills": -0.0013265284075745232
+      },
+      {
+        "period": "2022Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.019924576626910273,
+        "gross_return_same_fills": 0.019766608285208154
+      },
+      {
+        "period": "2023Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.06278286022521518,
+        "gross_return_same_fills": 0.06320242723954927
+      },
+      {
+        "period": "2023Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.1457635269188391,
+        "gross_return_same_fills": 0.14300080438547313
+      },
+      {
+        "period": "2023Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.053722280817392276,
+        "gross_return_same_fills": 0.05306707191654425
+      },
+      {
+        "period": "2023Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.016764982818164187,
+        "gross_return_same_fills": 0.018958266195548745
+      },
+      {
+        "period": "2024Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.08814071339797769,
+        "gross_return_same_fills": 0.08747659167190092
+      },
+      {
+        "period": "2024Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.08296873893886691,
+        "gross_return_same_fills": 0.08226222811367467
+      },
+      {
+        "period": "2024Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.11344484126032017,
+        "gross_return_same_fills": 0.1131427142246304
+      },
+      {
+        "period": "2024Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.07866524774485484,
+        "gross_return_same_fills": 0.08048477087251849
+      },
+      {
+        "period": "2025Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.021047180110950636,
+        "gross_return_same_fills": 0.021419962229948464
+      },
+      {
+        "period": "2025Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.09561206115321674,
+        "gross_return_same_fills": 0.0953677069497556
+      },
+      {
+        "period": "2025Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.054157286840423424,
+        "gross_return_same_fills": 0.05406139200024085
+      },
+      {
+        "period": "2025Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.11663043097431647,
+        "gross_return_same_fills": 0.115477078725442
+      },
+      {
+        "period": "2026Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.005860462485638429,
+        "gross_return_same_fills": -0.005015671892695139
+      },
+      {
+        "period": "2026Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.013627567215539926,
+        "gross_return_same_fills": -0.013268797856833991
+      }
+    ],
+    "equal-weight hold": [
+      {
+        "period": "2020Q1",
+        "strategy": "equal-weight hold",
+        "net_return": -0.10832451082468009,
+        "gross_return_same_fills": -0.10777000000000003
+      },
+      {
+        "period": "2020Q2",
+        "strategy": "equal-weight hold",
+        "net_return": 0.0037031189596470337,
+        "gross_return_same_fills": 0.0037008175132169363
+      },
+      {
+        "period": "2020Q3",
+        "strategy": "equal-weight hold",
+        "net_return": -0.009272557931208625,
+        "gross_return_same_fills": -0.009266816390026578
+      },
+      {
+        "period": "2020Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.004679958111210691,
+        "gross_return_same_fills": 0.004677033189909752
+      },
+      {
+        "period": "2021Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.10318540665746068,
+        "gross_return_same_fills": 0.1031212171526934
+      },
+      {
+        "period": "2021Q2",
+        "strategy": "equal-weight hold",
+        "net_return": -0.05981454489840232,
+        "gross_return_same_fills": -0.05978081389115519
+      },
+      {
+        "period": "2021Q3",
+        "strategy": "equal-weight hold",
+        "net_return": -0.035073843984653186,
+        "gross_return_same_fills": -0.035052807325814395
+      },
+      {
+        "period": "2021Q4",
+        "strategy": "equal-weight hold",
+        "net_return": -0.006164043911147665,
+        "gross_return_same_fills": -0.00616021252808574
+      },
+      {
+        "period": "2022Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.05572135141739554,
+        "gross_return_same_fills": 0.055686502032855856
+      },
+      {
+        "period": "2022Q2",
+        "strategy": "equal-weight hold",
+        "net_return": -0.014766312657018554,
+        "gross_return_same_fills": -0.01475756462099398
+      },
+      {
+        "period": "2022Q3",
+        "strategy": "equal-weight hold",
+        "net_return": -0.005476350189615231,
+        "gross_return_same_fills": -0.005473057228475686
+      },
+      {
+        "period": "2022Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.014751114116462016,
+        "gross_return_same_fills": 0.014742195373174338
+      },
+      {
+        "period": "2023Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.05569592298703929,
+        "gross_return_same_fills": 0.05566273762755758
+      },
+      {
+        "period": "2023Q2",
+        "strategy": "equal-weight hold",
+        "net_return": 0.1082815750098336,
+        "gross_return_same_fills": 0.10822045935168467
+      },
+      {
+        "period": "2023Q3",
+        "strategy": "equal-weight hold",
+        "net_return": 0.052679964822190284,
+        "gross_return_same_fills": 0.05265313503416125
+      },
+      {
+        "period": "2023Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.03168344310597093,
+        "gross_return_same_fills": 0.031668113928642994
+      },
+      {
+        "period": "2024Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.10665161971788018,
+        "gross_return_same_fills": 0.106601603145704
+      },
+      {
+        "period": "2024Q2",
+        "strategy": "equal-weight hold",
+        "net_return": 0.0720629214872881,
+        "gross_return_same_fills": 0.07203238162749837
+      },
+      {
+        "period": "2024Q3",
+        "strategy": "equal-weight hold",
+        "net_return": 0.1258514887422033,
+        "gross_return_same_fills": 0.12580173730538835
+      },
+      {
+        "period": "2024Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.10946532843895063,
+        "gross_return_same_fills": 0.10942689033647834
+      },
+      {
+        "period": "2025Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.01919699357686433,
+        "gross_return_same_fills": 0.019190917547175834
+      },
+      {
+        "period": "2025Q2",
+        "strategy": "equal-weight hold",
+        "net_return": 0.0859431167335083,
+        "gross_return_same_fills": 0.08591642712384928
+      },
+      {
+        "period": "2025Q3",
+        "strategy": "equal-weight hold",
+        "net_return": -0.0016952334146870252,
+        "gross_return_same_fills": -0.001694748612886543
+      },
+      {
+        "period": "2025Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.13018947951886406,
+        "gross_return_same_fills": 0.13015218480710034
+      },
+      {
+        "period": "2026Q1",
+        "strategy": "equal-weight hold",
+        "net_return": -0.03578574788152045,
+        "gross_return_same_fills": -0.035776677103621646
+      },
+      {
+        "period": "2026Q2",
+        "strategy": "equal-weight hold",
+        "net_return": -0.04129671259085965,
+        "gross_return_same_fills": -0.04128585652962358
+      }
+    ]
+  }
+}

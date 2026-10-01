@@ -1,0 +1,2053 @@
+{
+  "unit": "experiments2/V7 score-momentum rank fusion",
+  "snapshot_built_at": "2026-09-27 14:19:24",
+  "snapshot_last_day": "2026-09-24",
+  "signal_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "execution_end": "2026-07-01",
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "protocol": {
+    "signal": "first trading session each month at close; execute next trading session open",
+    "score": "cached V1 ensemble cross-sectional ordinal rank",
+    "momentum": "adjusted close(T)/adjusted close(T-60 sessions)-1 ordinal rank",
+    "primary_rule": "equal weight of score and 60-session momentum ranks; Top2, equal weight",
+    "ablations": [
+      "score-only Top2",
+      "momentum-only Top2"
+    ],
+    "no_retraining": true,
+    "no_parameter_sweep": true,
+    "execution": "same audited cash ledger; 100-share lots, capacity, limit locks, fees and slippage"
+  },
+  "score_input_audit": {
+    "score_days": 242,
+    "score_rows": 968,
+    "min_day": "2025-07-01",
+    "max_day": "2026-06-30"
+  },
+  "strategies": {
+    "momentum": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": 0.11583617552664371,
+        "annualized_return": 0.11533299612529535,
+        "max_drawdown": -0.17361043254181552,
+        "matched_benchmark_return": 0.12086764280396056,
+        "matched_cumulative_excess": -0.005031467277316848,
+        "avg_exposure": 0.9873526601540118,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 111583.61755266436,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.13453465790659158,
+            "matched_return": 0.13736822562563544,
+            "daily_matched_excess": -0.0028335677190438613
+          },
+          "2026": {
+            "strategy_net_return": -0.01648119098842671,
+            "matched_return": -0.014507687528019675,
+            "daily_matched_excess": -0.0019735034604070334
+          }
+        }
+      },
+      "audit": {
+        "days": 243,
+        "monthly_signals": 12,
+        "schedule_events_excluding_final_liquidation": 12,
+        "cash_min": 124.91914658427686,
+        "ending_cash": 111583.61755266436,
+        "ending_positions": 0,
+        "maximum_simultaneous_holdings": 2,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 19,
+        "fees": 322.5822428235708,
+        "minimum_cash_nonnegative": true,
+        "final_liquidation_complete": true,
+        "max_abs_equity_cash_plus_engine_mark_residual": 1.4551915228366852e-11,
+        "matching_method": "previous execution-day shares x previous-close-to-current-open adjusted return / previous equity; compounded without fees"
+      },
+      "signals": [
+        {
+          "signal_date": "2025-07-01",
+          "execution_date": "2025-07-02",
+          "mode": "momentum",
+          "selected": [
+            "601288.SH",
+            "601939.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": -0.11143755167722702,
+              "score_rank": 3,
+              "momentum_60d": 0.16179337231968827,
+              "momentum_rank": 3,
+              "combined_rank": 6
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.6005892157554626,
+              "score_rank": 0,
+              "momentum_60d": 0.14581917444456782,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            },
+            {
+              "code": "601398.SH",
+              "score": -0.33561936020851135,
+              "score_rank": 1,
+              "momentum_60d": 0.1264705882352941,
+              "momentum_rank": 1,
+              "combined_rank": 2
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.24754613637924194,
+              "score_rank": 2,
+              "momentum_60d": 0.045073987538940985,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-08-01",
+          "execution_date": "2025-08-04",
+          "mode": "momentum",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 1.4720817804336548,
+              "score_rank": 1,
+              "momentum_60d": 0.18814176285600004,
+              "momentum_rank": 3,
+              "combined_rank": 4
+            },
+            {
+              "code": "601398.SH",
+              "score": 1.3933238983154297,
+              "score_rank": 0,
+              "momentum_60d": 0.09357833854000996,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            },
+            {
+              "code": "601939.SH",
+              "score": 1.7476511001586914,
+              "score_rank": 3,
+              "momentum_60d": 0.035183104042275204,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.6283705234527588,
+              "score_rank": 2,
+              "momentum_60d": -0.008928571428571286,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-09-01",
+          "execution_date": "2025-09-02",
+          "mode": "momentum",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": -1.5336257219314575,
+              "score_rank": 0,
+              "momentum_60d": 0.28777728478843456,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": -0.13881392776966095,
+              "score_rank": 1,
+              "momentum_60d": 0.06362278615974337,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.08678016811609268,
+              "score_rank": 2,
+              "momentum_60d": 0.016574585635359185,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 0.11962024867534637,
+              "score_rank": 3,
+              "momentum_60d": 0.008928571428571175,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-10-09",
+          "execution_date": "2025-10-10",
+          "mode": "momentum",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": -1.186795711517334,
+              "score_rank": 1,
+              "momentum_60d": 0.10343451492064148,
+              "momentum_rank": 3,
+              "combined_rank": 4
+            },
+            {
+              "code": "601398.SH",
+              "score": -1.2032153606414795,
+              "score_rank": 0,
+              "momentum_60d": -0.049806076447960757,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.8185935020446777,
+              "score_rank": 3,
+              "momentum_60d": -0.09515570934256057,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.845930278301239,
+              "score_rank": 2,
+              "momentum_60d": -0.11710794297352334,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-11-03",
+          "execution_date": "2025-11-04",
+          "mode": "momentum",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 0.8593900203704834,
+              "score_rank": 1,
+              "momentum_60d": 0.2654028436018956,
+              "momentum_rank": 3,
+              "combined_rank": 4
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.6383523941040039,
+              "score_rank": 0,
+              "momentum_60d": 0.036745406824147064,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.371986746788025,
+              "score_rank": 2,
+              "momentum_60d": 0.023423423423423406,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 1.4445981979370117,
+              "score_rank": 3,
+              "momentum_60d": -0.00849256900212314,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-12-01",
+          "execution_date": "2025-12-02",
+          "mode": "momentum",
+          "selected": [
+            "601288.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 1.4051798582077026,
+              "score_rank": 3,
+              "momentum_60d": 0.13817663817663828,
+              "momentum_rank": 3,
+              "combined_rank": 6
+            },
+            {
+              "code": "601988.SH",
+              "score": 0.7456083297729492,
+              "score_rank": 1,
+              "momentum_60d": 0.0996376811594204,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.596436083316803,
+              "score_rank": 0,
+              "momentum_60d": 0.088829071332436,
+              "momentum_rank": 1,
+              "combined_rank": 1
+            },
+            {
+              "code": "601939.SH",
+              "score": 0.7647214531898499,
+              "score_rank": 2,
+              "momentum_60d": 0.07222222222222241,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-01-05",
+          "execution_date": "2026-01-06",
+          "mode": "momentum",
+          "selected": [
+            "601288.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 0.8689334988594055,
+              "score_rank": 3,
+              "momentum_60d": 0.14771015613539706,
+              "momentum_rank": 3,
+              "combined_rank": 6
+            },
+            {
+              "code": "601988.SH",
+              "score": 0.09561428427696228,
+              "score_rank": 0,
+              "momentum_60d": 0.10525998950811388,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            },
+            {
+              "code": "601939.SH",
+              "score": 0.680192768573761,
+              "score_rank": 2,
+              "momentum_60d": 0.08940757429509016,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.6588711142539978,
+              "score_rank": 1,
+              "momentum_60d": 0.08891560735735626,
+              "momentum_rank": 0,
+              "combined_rank": 1
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-02-02",
+          "execution_date": "2026-02-03",
+          "mode": "momentum",
+          "selected": [
+            "601988.SH",
+            "601939.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601988.SH",
+              "score": 2.20242977142334,
+              "score_rank": 0,
+              "momentum_60d": -0.023739013885283544,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 2.6839542388916016,
+              "score_rank": 1,
+              "momentum_60d": -0.04920993298526333,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 2.841775894165039,
+              "score_rank": 2,
+              "momentum_60d": -0.07898351004514059,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601288.SH",
+              "score": 2.9632859230041504,
+              "score_rank": 3,
+              "momentum_60d": -0.15598399330745472,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-03-02",
+          "execution_date": "2026-03-03",
+          "mode": "momentum",
+          "selected": [
+            "601939.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601939.SH",
+              "score": 1.81113862991333,
+              "score_rank": 0,
+              "momentum_60d": -0.08500305240578643,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.934859037399292,
+              "score_rank": 1,
+              "momentum_60d": -0.11975719457344514,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 2.405494451522827,
+              "score_rank": 3,
+              "momentum_60d": -0.13179171203668616,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601288.SH",
+              "score": 2.3425159454345703,
+              "score_rank": 2,
+              "momentum_60d": -0.17097877178617715,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-04-01",
+          "execution_date": "2026-04-02",
+          "mode": "momentum",
+          "selected": [
+            "601988.SH",
+            "601939.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601988.SH",
+              "score": -0.15702520310878754,
+              "score_rank": 0,
+              "momentum_60d": 0.04634581105169344,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.0919581726193428,
+              "score_rank": 1,
+              "momentum_60d": 0.03960396039603964,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.22795003652572632,
+              "score_rank": 2,
+              "momentum_60d": -0.02944942381562099,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601288.SH",
+              "score": 0.8190828561782837,
+              "score_rank": 3,
+              "momentum_60d": -0.10918774966711053,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-05-06",
+          "execution_date": "2026-05-07",
+          "mode": "momentum",
+          "selected": [
+            "601939.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601939.SH",
+              "score": -0.896735668182373,
+              "score_rank": 0,
+              "momentum_60d": 0.12514351320321482,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.6008476614952087,
+              "score_rank": 1,
+              "momentum_60d": 0.06928838951310867,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.4541308283805847,
+              "score_rank": 3,
+              "momentum_60d": 0.022222222222222143,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601288.SH",
+              "score": -0.32576000690460205,
+              "score_rank": 2,
+              "momentum_60d": 0.008823529411764675,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-06-01",
+          "execution_date": "2026-06-02",
+          "mode": "momentum",
+          "selected": [
+            "601939.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601939.SH",
+              "score": 0.9816174507141113,
+              "score_rank": 0,
+              "momentum_60d": 0.13258426966292136,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.2046077251434326,
+              "score_rank": 1,
+              "momentum_60d": 0.09409594095940954,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 1.4698784351348877,
+              "score_rank": 2,
+              "momentum_60d": 0.04914183227304725,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601288.SH",
+              "score": 1.5143063068389893,
+              "score_rank": 3,
+              "momentum_60d": -0.016828492086017444,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            }
+          ]
+        }
+      ],
+      "initial_top2_hold": {
+        "days": 243,
+        "cumulative_net_return": 0.03585366199727691,
+        "annualized_return": 0.03570351297192054,
+        "max_drawdown": -0.1776915007667107,
+        "matched_benchmark_return": 0.03752239066547225,
+        "matched_cumulative_excess": -0.0016687286681953406,
+        "avg_exposure": 0.985655579598805,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 103585.3661997277,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.1411090183615351,
+            "matched_return": 0.14174385424488323,
+            "daily_matched_excess": -0.0006348358833481171
+          },
+          "2026": {
+            "strategy_net_return": -0.09223952722360285,
+            "matched_return": -0.09128270162517371,
+            "daily_matched_excess": -0.0009568255984291341
+          }
+        }
+      },
+      "four_bank_equal_weight_hold": {
+        "days": 243,
+        "cumulative_net_return": 0.016224063124026022,
+        "annualized_return": 0.016156760960971406,
+        "max_drawdown": -0.15119064253391168,
+        "matched_benchmark_return": 0.017845624128968174,
+        "matched_cumulative_excess": -0.0016215610049421514,
+        "avg_exposure": 0.9764779741364771,
+        "average_holdings": 3.9670781893004117,
+        "ending_equity": 101622.4063124026,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.08883113643818707,
+            "matched_return": 0.08943112526831754,
+            "daily_matched_excess": -0.0005999888301304601
+          },
+          "2026": {
+            "strategy_net_return": -0.06668350204575901,
+            "matched_return": -0.06570906547370559,
+            "daily_matched_excess": -0.0009744365720534276
+          }
+        }
+      },
+      "baseline_audit": {
+        "initial_top2_hold": {
+          "fees": 104.09588964392242,
+          "trade_count": 4,
+          "blocked_entries": 0,
+          "blocked_exits": 0
+        },
+        "four_bank_equal_weight_hold": {
+          "fees": 101.63900403249067,
+          "trade_count": 8,
+          "blocked_entries": 0,
+          "blocked_exits": 0
+        }
+      },
+      "selection_net_gain_pp": {
+        "versus_initial_top2_hold": 7.9982513529366805,
+        "versus_four_bank_equal_weight_hold": 9.961211240261768
+      },
+      "quarterly": [
+        {
+          "period": "2025Q3",
+          "days": 66,
+          "net_return": 0.024883319857003983,
+          "matched_return": 0.026451905912068252,
+          "cost_execution_difference": -0.0015685860550642694
+        },
+        {
+          "period": "2025Q4",
+          "days": 60,
+          "net_return": 0.10698909419746161,
+          "matched_return": 0.1080579801885706,
+          "cost_execution_difference": -0.001068885991108992
+        },
+        {
+          "period": "2026Q1",
+          "days": 56,
+          "net_return": -0.016988978508989394,
+          "matched_return": -0.016156086143197523,
+          "cost_execution_difference": -0.0008328923657918708
+        },
+        {
+          "period": "2026Q2",
+          "days": 60,
+          "net_return": 0.019958316648902574,
+          "matched_return": 0.0200587752752881,
+          "cost_execution_difference": -0.0001004586263855245
+        }
+      ],
+      "yearly": [
+        {
+          "period": "2025",
+          "days": 126,
+          "net_return": 0.13453465790659158,
+          "matched_return": 0.13736822562563544,
+          "cost_execution_difference": -0.0028335677190438613
+        },
+        {
+          "period": "2026",
+          "days": 116,
+          "net_return": 0.002630266727290831,
+          "matched_return": 0.0035786178308157,
+          "cost_execution_difference": -0.0009483511035248693
+        }
+      ],
+      "execution_end_daily_return": -0.019061321356375616
+    },
+    "score": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": -0.07153320590249579,
+        "annualized_return": -0.07124957649942487,
+        "max_drawdown": -0.1750632281600656,
+        "matched_benchmark_return": -0.06717031918660121,
+        "matched_cumulative_excess": -0.004362886715894576,
+        "avg_exposure": 0.9838582155411048,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 92846.67940975042,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.060857522963779775,
+            "matched_return": 0.06342406579965654,
+            "daily_matched_excess": -0.0025665428358767617
+          },
+          "2026": {
+            "strategy_net_return": -0.12479595610200978,
+            "matched_return": -0.12280555724310716,
+            "daily_matched_excess": -0.00199039885890262
+          }
+        }
+      },
+      "audit": {
+        "days": 243,
+        "monthly_signals": 12,
+        "schedule_events_excluding_final_liquidation": 12,
+        "cash_min": 110.15006879942302,
+        "ending_cash": 92846.67940975042,
+        "ending_positions": 0,
+        "maximum_simultaneous_holdings": 2,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 21,
+        "fees": 313.88692417078005,
+        "minimum_cash_nonnegative": true,
+        "final_liquidation_complete": true,
+        "max_abs_equity_cash_plus_engine_mark_residual": 1.4551915228366852e-11,
+        "matching_method": "previous execution-day shares x previous-close-to-current-open adjusted return / previous equity; compounded without fees"
+      },
+      "signals": [
+        {
+          "signal_date": "2025-07-01",
+          "execution_date": "2025-07-02",
+          "mode": "score",
+          "selected": [
+            "601288.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": -0.11143755167722702,
+              "score_rank": 3,
+              "momentum_60d": 0.16179337231968827,
+              "momentum_rank": 3,
+              "combined_rank": 6
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.24754613637924194,
+              "score_rank": 2,
+              "momentum_60d": 0.045073987538940985,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601398.SH",
+              "score": -0.33561936020851135,
+              "score_rank": 1,
+              "momentum_60d": 0.1264705882352941,
+              "momentum_rank": 1,
+              "combined_rank": 2
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.6005892157554626,
+              "score_rank": 0,
+              "momentum_60d": 0.14581917444456782,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-08-01",
+          "execution_date": "2025-08-04",
+          "mode": "score",
+          "selected": [
+            "601939.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601939.SH",
+              "score": 1.7476511001586914,
+              "score_rank": 3,
+              "momentum_60d": 0.035183104042275204,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.6283705234527588,
+              "score_rank": 2,
+              "momentum_60d": -0.008928571428571286,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601288.SH",
+              "score": 1.4720817804336548,
+              "score_rank": 1,
+              "momentum_60d": 0.18814176285600004,
+              "momentum_rank": 3,
+              "combined_rank": 4
+            },
+            {
+              "code": "601398.SH",
+              "score": 1.3933238983154297,
+              "score_rank": 0,
+              "momentum_60d": 0.09357833854000996,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-09-01",
+          "execution_date": "2025-09-02",
+          "mode": "score",
+          "selected": [
+            "601939.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601939.SH",
+              "score": 0.11962024867534637,
+              "score_rank": 3,
+              "momentum_60d": 0.008928571428571175,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.08678016811609268,
+              "score_rank": 2,
+              "momentum_60d": 0.016574585635359185,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": -0.13881392776966095,
+              "score_rank": 1,
+              "momentum_60d": 0.06362278615974337,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601288.SH",
+              "score": -1.5336257219314575,
+              "score_rank": 0,
+              "momentum_60d": 0.28777728478843456,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-10-09",
+          "execution_date": "2025-10-10",
+          "mode": "score",
+          "selected": [
+            "601988.SH",
+            "601939.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601988.SH",
+              "score": -0.8185935020446777,
+              "score_rank": 3,
+              "momentum_60d": -0.09515570934256057,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.845930278301239,
+              "score_rank": 2,
+              "momentum_60d": -0.11710794297352334,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601288.SH",
+              "score": -1.186795711517334,
+              "score_rank": 1,
+              "momentum_60d": 0.10343451492064148,
+              "momentum_rank": 3,
+              "combined_rank": 4
+            },
+            {
+              "code": "601398.SH",
+              "score": -1.2032153606414795,
+              "score_rank": 0,
+              "momentum_60d": -0.049806076447960757,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-11-03",
+          "execution_date": "2025-11-04",
+          "mode": "score",
+          "selected": [
+            "601939.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601939.SH",
+              "score": 1.4445981979370117,
+              "score_rank": 3,
+              "momentum_60d": -0.00849256900212314,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.371986746788025,
+              "score_rank": 2,
+              "momentum_60d": 0.023423423423423406,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601288.SH",
+              "score": 0.8593900203704834,
+              "score_rank": 1,
+              "momentum_60d": 0.2654028436018956,
+              "momentum_rank": 3,
+              "combined_rank": 4
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.6383523941040039,
+              "score_rank": 0,
+              "momentum_60d": 0.036745406824147064,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-12-01",
+          "execution_date": "2025-12-02",
+          "mode": "score",
+          "selected": [
+            "601288.SH",
+            "601939.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 1.4051798582077026,
+              "score_rank": 3,
+              "momentum_60d": 0.13817663817663828,
+              "momentum_rank": 3,
+              "combined_rank": 6
+            },
+            {
+              "code": "601939.SH",
+              "score": 0.7647214531898499,
+              "score_rank": 2,
+              "momentum_60d": 0.07222222222222241,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601988.SH",
+              "score": 0.7456083297729492,
+              "score_rank": 1,
+              "momentum_60d": 0.0996376811594204,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.596436083316803,
+              "score_rank": 0,
+              "momentum_60d": 0.088829071332436,
+              "momentum_rank": 1,
+              "combined_rank": 1
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-01-05",
+          "execution_date": "2026-01-06",
+          "mode": "score",
+          "selected": [
+            "601288.SH",
+            "601939.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 0.8689334988594055,
+              "score_rank": 3,
+              "momentum_60d": 0.14771015613539706,
+              "momentum_rank": 3,
+              "combined_rank": 6
+            },
+            {
+              "code": "601939.SH",
+              "score": 0.680192768573761,
+              "score_rank": 2,
+              "momentum_60d": 0.08940757429509016,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.6588711142539978,
+              "score_rank": 1,
+              "momentum_60d": 0.08891560735735626,
+              "momentum_rank": 0,
+              "combined_rank": 1
+            },
+            {
+              "code": "601988.SH",
+              "score": 0.09561428427696228,
+              "score_rank": 0,
+              "momentum_60d": 0.10525998950811388,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-02-02",
+          "execution_date": "2026-02-03",
+          "mode": "score",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 2.9632859230041504,
+              "score_rank": 3,
+              "momentum_60d": -0.15598399330745472,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 2.841775894165039,
+              "score_rank": 2,
+              "momentum_60d": -0.07898351004514059,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 2.6839542388916016,
+              "score_rank": 1,
+              "momentum_60d": -0.04920993298526333,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": 2.20242977142334,
+              "score_rank": 0,
+              "momentum_60d": -0.023739013885283544,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-03-02",
+          "execution_date": "2026-03-03",
+          "mode": "score",
+          "selected": [
+            "601398.SH",
+            "601288.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601398.SH",
+              "score": 2.405494451522827,
+              "score_rank": 3,
+              "momentum_60d": -0.13179171203668616,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601288.SH",
+              "score": 2.3425159454345703,
+              "score_rank": 2,
+              "momentum_60d": -0.17097877178617715,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.934859037399292,
+              "score_rank": 1,
+              "momentum_60d": -0.11975719457344514,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 1.81113862991333,
+              "score_rank": 0,
+              "momentum_60d": -0.08500305240578643,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-04-01",
+          "execution_date": "2026-04-02",
+          "mode": "score",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 0.8190828561782837,
+              "score_rank": 3,
+              "momentum_60d": -0.10918774966711053,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.22795003652572632,
+              "score_rank": 2,
+              "momentum_60d": -0.02944942381562099,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.0919581726193428,
+              "score_rank": 1,
+              "momentum_60d": 0.03960396039603964,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.15702520310878754,
+              "score_rank": 0,
+              "momentum_60d": 0.04634581105169344,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-05-06",
+          "execution_date": "2026-05-07",
+          "mode": "score",
+          "selected": [
+            "601398.SH",
+            "601288.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601398.SH",
+              "score": 0.4541308283805847,
+              "score_rank": 3,
+              "momentum_60d": 0.022222222222222143,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601288.SH",
+              "score": -0.32576000690460205,
+              "score_rank": 2,
+              "momentum_60d": 0.008823529411764675,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.6008476614952087,
+              "score_rank": 1,
+              "momentum_60d": 0.06928838951310867,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.896735668182373,
+              "score_rank": 0,
+              "momentum_60d": 0.12514351320321482,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-06-01",
+          "execution_date": "2026-06-02",
+          "mode": "score",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 1.5143063068389893,
+              "score_rank": 3,
+              "momentum_60d": -0.016828492086017444,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 1.4698784351348877,
+              "score_rank": 2,
+              "momentum_60d": 0.04914183227304725,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.2046077251434326,
+              "score_rank": 1,
+              "momentum_60d": 0.09409594095940954,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 0.9816174507141113,
+              "score_rank": 0,
+              "momentum_60d": 0.13258426966292136,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        }
+      ],
+      "initial_top2_hold": {
+        "days": 243,
+        "cumulative_net_return": 0.045329441712179896,
+        "annualized_return": 0.04513875277001467,
+        "max_drawdown": -0.17283326300705515,
+        "matched_benchmark_return": 0.04701486899410656,
+        "matched_cumulative_excess": -0.0016854272819266658,
+        "avg_exposure": 0.9864974306125602,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 104532.94417121798,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.16792519364347447,
+            "matched_return": 0.1685754917649014,
+            "daily_matched_excess": -0.0006502981214269177
+          },
+          "2026": {
+            "strategy_net_return": -0.10496883927029887,
+            "matched_return": -0.1040246211112994,
+            "daily_matched_excess": -0.0009442181589994769
+          }
+        }
+      },
+      "four_bank_equal_weight_hold": {
+        "days": 243,
+        "cumulative_net_return": 0.016224063124026022,
+        "annualized_return": 0.016156760960971406,
+        "max_drawdown": -0.15119064253391168,
+        "matched_benchmark_return": 0.017845624128968174,
+        "matched_cumulative_excess": -0.0016215610049421514,
+        "avg_exposure": 0.9764779741364771,
+        "average_holdings": 3.9670781893004117,
+        "ending_equity": 101622.4063124026,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.08883113643818707,
+            "matched_return": 0.08943112526831754,
+            "daily_matched_excess": -0.0005999888301304601
+          },
+          "2026": {
+            "strategy_net_return": -0.06668350204575901,
+            "matched_return": -0.06570906547370559,
+            "daily_matched_excess": -0.0009744365720534276
+          }
+        }
+      },
+      "baseline_audit": {
+        "initial_top2_hold": {
+          "fees": 104.90134644742571,
+          "trade_count": 4,
+          "blocked_entries": 0,
+          "blocked_exits": 0
+        },
+        "four_bank_equal_weight_hold": {
+          "fees": 101.63900403249067,
+          "trade_count": 8,
+          "blocked_entries": 0,
+          "blocked_exits": 0
+        }
+      },
+      "selection_net_gain_pp": {
+        "versus_initial_top2_hold": -11.68626476146757,
+        "versus_four_bank_equal_weight_hold": -8.775726902652181
+      },
+      "quarterly": [
+        {
+          "period": "2025Q3",
+          "days": 66,
+          "net_return": -0.04531327516538419,
+          "matched_return": -0.04382949949232595,
+          "cost_execution_difference": -0.0014837756730582408
+        },
+        {
+          "period": "2025Q4",
+          "days": 60,
+          "net_return": 0.11121009161152395,
+          "matched_return": 0.11216991659441056,
+          "cost_execution_difference": -0.0009598249828866035
+        },
+        {
+          "period": "2026Q1",
+          "days": 56,
+          "net_return": -0.07861538930510048,
+          "matched_return": -0.07775572202990455,
+          "cost_execution_difference": -0.00085966727519593
+        },
+        {
+          "period": "2026Q2",
+          "days": 60,
+          "net_return": -0.029461786852884253,
+          "matched_return": -0.029189259678652713,
+          "cost_execution_difference": -0.0002725271742315405
+        }
+      ],
+      "yearly": [
+        {
+          "period": "2025",
+          "days": 126,
+          "net_return": 0.060857522963779775,
+          "matched_return": 0.06342406579965654,
+          "cost_execution_difference": -0.0025665428358767617
+        },
+        {
+          "period": "2026",
+          "days": 116,
+          "net_return": -0.10576102631492179,
+          "matched_return": -0.10467534974672554,
+          "cost_execution_difference": -0.0010856765681962477
+        }
+      ],
+      "execution_end_daily_return": -0.02128617779724673
+    },
+    "blend": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": 0.04190361358082639,
+        "annualized_return": 0.0417276220368481,
+        "max_drawdown": -0.19386194817751745,
+        "matched_benchmark_return": 0.05340234438553981,
+        "matched_cumulative_excess": -0.01149873080471342,
+        "avg_exposure": 0.9861994627957823,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 104190.36135808263,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.12185442124707913,
+            "matched_return": 0.1273290372835305,
+            "daily_matched_excess": -0.005474616036451385
+          },
+          "2026": {
+            "strategy_net_return": -0.07126665113765551,
+            "matched_return": -0.06557685507341138,
+            "daily_matched_excess": -0.005689796064244135
+          }
+        }
+      },
+      "audit": {
+        "days": 243,
+        "monthly_signals": 12,
+        "schedule_events_excluding_final_liquidation": 12,
+        "cash_min": 254.23078693472053,
+        "ending_cash": 104190.36135808263,
+        "ending_positions": 0,
+        "maximum_simultaneous_holdings": 2,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 35,
+        "fees": 753.6981895982376,
+        "minimum_cash_nonnegative": true,
+        "final_liquidation_complete": true,
+        "max_abs_equity_cash_plus_engine_mark_residual": 1.4551915228366852e-11,
+        "matching_method": "previous execution-day shares x previous-close-to-current-open adjusted return / previous equity; compounded without fees"
+      },
+      "signals": [
+        {
+          "signal_date": "2025-07-01",
+          "execution_date": "2025-07-02",
+          "mode": "blend",
+          "selected": [
+            "601288.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": -0.11143755167722702,
+              "score_rank": 3,
+              "momentum_60d": 0.16179337231968827,
+              "momentum_rank": 3,
+              "combined_rank": 6
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.24754613637924194,
+              "score_rank": 2,
+              "momentum_60d": 0.045073987538940985,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601398.SH",
+              "score": -0.33561936020851135,
+              "score_rank": 1,
+              "momentum_60d": 0.1264705882352941,
+              "momentum_rank": 1,
+              "combined_rank": 2
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.6005892157554626,
+              "score_rank": 0,
+              "momentum_60d": 0.14581917444456782,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-08-01",
+          "execution_date": "2025-08-04",
+          "mode": "blend",
+          "selected": [
+            "601939.SH",
+            "601288.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601939.SH",
+              "score": 1.7476511001586914,
+              "score_rank": 3,
+              "momentum_60d": 0.035183104042275204,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601288.SH",
+              "score": 1.4720817804336548,
+              "score_rank": 1,
+              "momentum_60d": 0.18814176285600004,
+              "momentum_rank": 3,
+              "combined_rank": 4
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.6283705234527588,
+              "score_rank": 2,
+              "momentum_60d": -0.008928571428571286,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601398.SH",
+              "score": 1.3933238983154297,
+              "score_rank": 0,
+              "momentum_60d": 0.09357833854000996,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-09-01",
+          "execution_date": "2025-09-02",
+          "mode": "blend",
+          "selected": [
+            "601939.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601939.SH",
+              "score": 0.11962024867534637,
+              "score_rank": 3,
+              "momentum_60d": 0.008928571428571175,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.08678016811609268,
+              "score_rank": 2,
+              "momentum_60d": 0.016574585635359185,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": -0.13881392776966095,
+              "score_rank": 1,
+              "momentum_60d": 0.06362278615974337,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601288.SH",
+              "score": -1.5336257219314575,
+              "score_rank": 0,
+              "momentum_60d": 0.28777728478843456,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-10-09",
+          "execution_date": "2025-10-10",
+          "mode": "blend",
+          "selected": [
+            "601988.SH",
+            "601288.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601988.SH",
+              "score": -0.8185935020446777,
+              "score_rank": 3,
+              "momentum_60d": -0.09515570934256057,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601288.SH",
+              "score": -1.186795711517334,
+              "score_rank": 1,
+              "momentum_60d": 0.10343451492064148,
+              "momentum_rank": 3,
+              "combined_rank": 4
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.845930278301239,
+              "score_rank": 2,
+              "momentum_60d": -0.11710794297352334,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601398.SH",
+              "score": -1.2032153606414795,
+              "score_rank": 0,
+              "momentum_60d": -0.049806076447960757,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-11-03",
+          "execution_date": "2025-11-04",
+          "mode": "blend",
+          "selected": [
+            "601288.SH",
+            "601939.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 0.8593900203704834,
+              "score_rank": 1,
+              "momentum_60d": 0.2654028436018956,
+              "momentum_rank": 3,
+              "combined_rank": 4
+            },
+            {
+              "code": "601939.SH",
+              "score": 1.4445981979370117,
+              "score_rank": 3,
+              "momentum_60d": -0.00849256900212314,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.371986746788025,
+              "score_rank": 2,
+              "momentum_60d": 0.023423423423423406,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.6383523941040039,
+              "score_rank": 0,
+              "momentum_60d": 0.036745406824147064,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2025-12-01",
+          "execution_date": "2025-12-02",
+          "mode": "blend",
+          "selected": [
+            "601288.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 1.4051798582077026,
+              "score_rank": 3,
+              "momentum_60d": 0.13817663817663828,
+              "momentum_rank": 3,
+              "combined_rank": 6
+            },
+            {
+              "code": "601988.SH",
+              "score": 0.7456083297729492,
+              "score_rank": 1,
+              "momentum_60d": 0.0996376811594204,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 0.7647214531898499,
+              "score_rank": 2,
+              "momentum_60d": 0.07222222222222241,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.596436083316803,
+              "score_rank": 0,
+              "momentum_60d": 0.088829071332436,
+              "momentum_rank": 1,
+              "combined_rank": 1
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-01-05",
+          "execution_date": "2026-01-06",
+          "mode": "blend",
+          "selected": [
+            "601288.SH",
+            "601939.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 0.8689334988594055,
+              "score_rank": 3,
+              "momentum_60d": 0.14771015613539706,
+              "momentum_rank": 3,
+              "combined_rank": 6
+            },
+            {
+              "code": "601939.SH",
+              "score": 0.680192768573761,
+              "score_rank": 2,
+              "momentum_60d": 0.08940757429509016,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": 0.09561428427696228,
+              "score_rank": 0,
+              "momentum_60d": 0.10525998950811388,
+              "momentum_rank": 2,
+              "combined_rank": 2
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.6588711142539978,
+              "score_rank": 1,
+              "momentum_60d": 0.08891560735735626,
+              "momentum_rank": 0,
+              "combined_rank": 1
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-02-02",
+          "execution_date": "2026-02-03",
+          "mode": "blend",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 2.9632859230041504,
+              "score_rank": 3,
+              "momentum_60d": -0.15598399330745472,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 2.841775894165039,
+              "score_rank": 2,
+              "momentum_60d": -0.07898351004514059,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 2.6839542388916016,
+              "score_rank": 1,
+              "momentum_60d": -0.04920993298526333,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": 2.20242977142334,
+              "score_rank": 0,
+              "momentum_60d": -0.023739013885283544,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-03-02",
+          "execution_date": "2026-03-03",
+          "mode": "blend",
+          "selected": [
+            "601398.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601398.SH",
+              "score": 2.405494451522827,
+              "score_rank": 3,
+              "momentum_60d": -0.13179171203668616,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.934859037399292,
+              "score_rank": 1,
+              "momentum_60d": -0.11975719457344514,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 1.81113862991333,
+              "score_rank": 0,
+              "momentum_60d": -0.08500305240578643,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            },
+            {
+              "code": "601288.SH",
+              "score": 2.3425159454345703,
+              "score_rank": 2,
+              "momentum_60d": -0.17097877178617715,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-04-01",
+          "execution_date": "2026-04-02",
+          "mode": "blend",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 0.8190828561782837,
+              "score_rank": 3,
+              "momentum_60d": -0.10918774966711053,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 0.22795003652572632,
+              "score_rank": 2,
+              "momentum_60d": -0.02944942381562099,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.0919581726193428,
+              "score_rank": 1,
+              "momentum_60d": 0.03960396039603964,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.15702520310878754,
+              "score_rank": 0,
+              "momentum_60d": 0.04634581105169344,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-05-06",
+          "execution_date": "2026-05-07",
+          "mode": "blend",
+          "selected": [
+            "601398.SH",
+            "601988.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601398.SH",
+              "score": 0.4541308283805847,
+              "score_rank": 3,
+              "momentum_60d": 0.022222222222222143,
+              "momentum_rank": 1,
+              "combined_rank": 4
+            },
+            {
+              "code": "601988.SH",
+              "score": -0.6008476614952087,
+              "score_rank": 1,
+              "momentum_60d": 0.06928838951310867,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": -0.896735668182373,
+              "score_rank": 0,
+              "momentum_60d": 0.12514351320321482,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            },
+            {
+              "code": "601288.SH",
+              "score": -0.32576000690460205,
+              "score_rank": 2,
+              "momentum_60d": 0.008823529411764675,
+              "momentum_rank": 0,
+              "combined_rank": 2
+            }
+          ]
+        },
+        {
+          "signal_date": "2026-06-01",
+          "execution_date": "2026-06-02",
+          "mode": "blend",
+          "selected": [
+            "601288.SH",
+            "601398.SH"
+          ],
+          "ranked": [
+            {
+              "code": "601288.SH",
+              "score": 1.5143063068389893,
+              "score_rank": 3,
+              "momentum_60d": -0.016828492086017444,
+              "momentum_rank": 0,
+              "combined_rank": 3
+            },
+            {
+              "code": "601398.SH",
+              "score": 1.4698784351348877,
+              "score_rank": 2,
+              "momentum_60d": 0.04914183227304725,
+              "momentum_rank": 1,
+              "combined_rank": 3
+            },
+            {
+              "code": "601988.SH",
+              "score": 1.2046077251434326,
+              "score_rank": 1,
+              "momentum_60d": 0.09409594095940954,
+              "momentum_rank": 2,
+              "combined_rank": 3
+            },
+            {
+              "code": "601939.SH",
+              "score": 0.9816174507141113,
+              "score_rank": 0,
+              "momentum_60d": 0.13258426966292136,
+              "momentum_rank": 3,
+              "combined_rank": 3
+            }
+          ]
+        }
+      ],
+      "initial_top2_hold": {
+        "days": 243,
+        "cumulative_net_return": 0.045329441712179896,
+        "annualized_return": 0.04513875277001467,
+        "max_drawdown": -0.17283326300705515,
+        "matched_benchmark_return": 0.04701486899410656,
+        "matched_cumulative_excess": -0.0016854272819266658,
+        "avg_exposure": 0.9864974306125602,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 104532.94417121798,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.16792519364347447,
+            "matched_return": 0.1685754917649014,
+            "daily_matched_excess": -0.0006502981214269177
+          },
+          "2026": {
+            "strategy_net_return": -0.10496883927029887,
+            "matched_return": -0.1040246211112994,
+            "daily_matched_excess": -0.0009442181589994769
+          }
+        }
+      },
+      "four_bank_equal_weight_hold": {
+        "days": 243,
+        "cumulative_net_return": 0.016224063124026022,
+        "annualized_return": 0.016156760960971406,
+        "max_drawdown": -0.15119064253391168,
+        "matched_benchmark_return": 0.017845624128968174,
+        "matched_cumulative_excess": -0.0016215610049421514,
+        "avg_exposure": 0.9764779741364771,
+        "average_holdings": 3.9670781893004117,
+        "ending_equity": 101622.4063124026,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.08883113643818707,
+            "matched_return": 0.08943112526831754,
+            "daily_matched_excess": -0.0005999888301304601
+          },
+          "2026": {
+            "strategy_net_return": -0.06668350204575901,
+            "matched_return": -0.06570906547370559,
+            "daily_matched_excess": -0.0009744365720534276
+          }
+        }
+      },
+      "baseline_audit": {
+        "initial_top2_hold": {
+          "fees": 104.90134644742571,
+          "trade_count": 4,
+          "blocked_entries": 0,
+          "blocked_exits": 0
+        },
+        "four_bank_equal_weight_hold": {
+          "fees": 101.63900403249067,
+          "trade_count": 8,
+          "blocked_entries": 0,
+          "blocked_exits": 0
+        }
+      },
+      "selection_net_gain_pp": {
+        "versus_initial_top2_hold": -0.34258281313535033,
+        "versus_four_bank_equal_weight_hold": 2.567955045680037
+      },
+      "quarterly": [
+        {
+          "period": "2025Q3",
+          "days": 66,
+          "net_return": 0.008772307869347795,
+          "matched_return": 0.011102346019437714,
+          "cost_execution_difference": -0.002330038150089919
+        },
+        {
+          "period": "2025Q4",
+          "days": 60,
+          "net_return": 0.11209874864286773,
+          "matched_return": 0.11495047135600167,
+          "cost_execution_difference": -0.0028517227131339418
+        },
+        {
+          "period": "2026Q1",
+          "days": 56,
+          "net_return": -0.054454062148723614,
+          "matched_return": -0.05211321340551289,
+          "cost_execution_difference": -0.0023408487432107217
+        },
+        {
+          "period": "2026Q2",
+          "days": 60,
+          "net_return": 0.003491774061712638,
+          "matched_return": 0.006086547958823685,
+          "cost_execution_difference": -0.0025947738971110468
+        }
+      ],
+      "yearly": [
+        {
+          "period": "2025",
+          "days": 126,
+          "net_return": 0.12185442124707913,
+          "matched_return": 0.1273290372835305,
+          "cost_execution_difference": -0.005474616036451385
+        },
+        {
+          "period": "2026",
+          "days": 116,
+          "net_return": -0.051152429368776176,
+          "matched_return": -0.04634385501936977,
+          "cost_execution_difference": -0.004808574349406403
+        }
+      ],
+      "execution_end_daily_return": -0.02119858066928315
+    }
+  },
+  "script_sha256": "6a7bd5c126444d60e656a900302b7dd8e6238b8e6c6300d2e02f8d7c16ba049f",
+  "runtime_seconds": 31.772643327713013,
+  "interpretation": "Same-window comparison; matched gap measures costs/execution friction only, not stock-selection alpha."
+}

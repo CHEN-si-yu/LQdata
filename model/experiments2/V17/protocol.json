@@ -1,0 +1,57 @@
+{
+  "objective": "experiments2/V17 monthly 20d+60d average-rank Top2",
+  "official_signal_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "official_signal_sessions_expected": 242,
+  "official_final_liquidation_day": "2026-07-01",
+  "extended_signal_window": [
+    "2023-01-03",
+    "2026-09-23"
+  ],
+  "extended_final_liquidation_day": "2026-09-24",
+  "prices_and_amount_only": true,
+  "data_root": "/root/autodl-fs/model/trainingdata",
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "rule": {
+    "signal": "first observed trading session of each calendar month at close",
+    "factors": [
+      "adjusted close(T)/adjusted close(T-20 sessions)-1",
+      "adjusted close(T)/adjusted close(T-60 sessions)-1"
+    ],
+    "ranking": "rank each momentum descending cross-sectionally (best=1), arithmetic mean of the two ordinal ranks, choose lowest-average-rank Top2; equal-weight holdings",
+    "execution": "next trading session open",
+    "top_k": 2,
+    "horizons_sessions": [
+      20,
+      60
+    ],
+    "horizon_rank_weights": [
+      0.5,
+      0.5
+    ],
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "final_liquidation": "official 2026-07-01 open; extended latest snapshot session open; forced by audited account engine"
+  },
+  "cost_model": {
+    "account_money": 100000.0,
+    "lot_size": 100,
+    "max_participation": 0.01,
+    "commission_rate": 0.00025,
+    "min_commission": 5.0,
+    "transfer_rate": 1e-05,
+    "stamp_sell_rate": 0.0005,
+    "slippage_rate": 0.0003
+  },
+  "account_engine_source": "copied V4 audited account_engine.py; V4 and V9 left unchanged",
+  "runner_sha256": "bdf155e1e6524b3e983fb91dbe101259df95ad54a4b75c65a6930967cce572e1",
+  "account_engine_sha256": "825c7a9cee48479ecd75eb1e9787afdbd25e6e7d4cf06826564c6ec34737e20a",
+  "created_at": "2026-09-27 17:57:51"
+}

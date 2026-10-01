@@ -1,0 +1,17 @@
+{
+  "version": "V50",
+  "pre_run_frozen": true,
+  "run_script_sha256": "77a50e79dec3bb7fe49e4983b341c20f0ad9acace262bae408437182f7517ad0",
+  "factor_feature": "id2_close_vs_pm_vwap_20",
+  "momentum_sessions": 60,
+  "factor_rank_weight": 0.5,
+  "momentum_rank_weight": 0.5,
+  "top_n": 1,
+  "holdout_dates": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "factor_semantics": "zscore_win1_99_v1",
+  "portfolio_rule": "Each shared V11 monthly signal, rank four banks by the 50/50 average of frozen V34 factor rank and 60-session adjusted-close momentum rank, select the best combined-rank single bank, target 100% of equity, execute next-session open.",
+  "motivation_and_limitation": "Exploratory concentration follow-up informed by already observed V35/V40 results; do not interpret as independent unseen validation and do not change the frozen weight."
+}

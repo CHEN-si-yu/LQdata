@@ -287,35 +287,6 @@ def limit_down_event_5(ctx):
     return _decay(ctx, _limit_grid(ctx, up=False), 5, 3.0)
 
 
-@register(FactorSpec(
-    name="consecutive_limit_down", group=GROUP, deps=(LL, *PX),
-    desc="当前连续跌停天数（连续段逻辑：断段即归零，非跌停日为 0）",
-    formula='is_ld = daily["pct_chg"].le(-9.8).astype(int)\n'
-            'code = is_ld.index.get_level_values("Code")\n'
-            'seg = (~is_ld.astype(bool)).groupby(level="Code").cumsum()\n'
-            'count = is_ld.groupby([code, seg]).cumsum()      # 参考库原文\n'
-            '# 本实现：同一「连续段」语义（断段归零），向量化为\n'
-            '#   count = 到 t 为止连续跌停的天数（np.maximum.accumulate 求最近一次 0 的位置）',
-    start=None, warmup_days=W60, higher_is_better=False,
-    note="★ 与 `consecutive_limit_up`（event2.py）**镜像不重复**：那个用上游 "
-         "`stock_limit_up.consecutive_days`（供应商算好的连板高度），"
-         "跌停侧**没有对应的表**（`stock_limit_list` 只有 `limit_times`，"
-         "实测在 D 行上 25% 分位=1、中位=1、max=29，与自算连跌天数同量级，但只有 "
-         "2020 起），故本因子在面板上自攒连续段：`_run_len()` 与参考库的 "
-         "`groupby + cumsum` 分段逐格等价（已用 200 组随机 0/1 序列验证），"
-         "但全向量化、不写 Python 循环。"
-         "★ 事件口径与 `limit_down_event_5` **完全共用**（LL 优先 + 价格近似回退）。"
-         "★ 停牌日 = 没成交 = 不可能跌停 → 记 0，**连续段被打断**（与参考库 "
-         "`pct_chg.le(-9.8)` 在 NaN 上取 False 的行为一致）。"
-         "warmup 给 W60（128 日历天 ≈ 60 个交易日）：连续段的起点依赖窗口前段的历史，"
-         "实测历史上最长连续跌停 29 天（LL `limit_times` 的 max），60 天足够覆盖。"
-         "★ 零膨胀（固有）：**实测零值占比 99.41%**（非零仅 0.59%），"
-         "2026 年取到的最大值 5（连续 5 个跌停）。"
-         "这是「状态量」的必然结果 —— 与 `consecutive_limit_up`（连板数）同款："
-         "非连板日为 0 是**定义**，不是缺失。",
-))
-def consecutive_limit_down(ctx):
-    return _run_len(_limit_grid(ctx, up=False))
 
 
 @register(FactorSpec(

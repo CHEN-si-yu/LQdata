@@ -1,0 +1,129 @@
+{
+  "version": "V37",
+  "protocol_file": "PROTOCOL.md",
+  "frozen_before_extension_run": true,
+  "frozen_source": "V34 protocol; 2023Q4 feature selection cutoff",
+  "factor": {
+    "name": "id2_close_vs_pm_vwap_20",
+    "direction": "higher zscore_win1_99_v1 value ranks higher",
+    "semantics": "zscore_win1_99_v1",
+    "feature_selection_changed": false
+  },
+  "windows": {
+    "common": [
+      "2024-01-02",
+      "2026-06-30"
+    ],
+    "extended": [
+      "2024-01-02",
+      "2026-09-24"
+    ],
+    "extended_quarter": "2026Q3 partial through 2026-09-24"
+  },
+  "signals": {
+    "common_dates": [
+      "2024-01-02",
+      "2024-02-01",
+      "2024-03-01",
+      "2024-04-01",
+      "2024-05-06",
+      "2024-06-03",
+      "2024-07-01",
+      "2024-08-01",
+      "2024-09-02",
+      "2024-10-08",
+      "2024-11-01",
+      "2024-12-02",
+      "2025-01-02",
+      "2025-02-05",
+      "2025-03-03",
+      "2025-04-01",
+      "2025-05-06",
+      "2025-06-03",
+      "2025-07-01",
+      "2025-08-01",
+      "2025-09-01",
+      "2025-10-09",
+      "2025-11-03",
+      "2025-12-01",
+      "2026-01-05",
+      "2026-02-02",
+      "2026-03-02",
+      "2026-04-01",
+      "2026-05-06",
+      "2026-06-01"
+    ],
+    "extended_dates": [
+      "2024-01-02",
+      "2024-02-01",
+      "2024-03-01",
+      "2024-04-01",
+      "2024-05-06",
+      "2024-06-03",
+      "2024-07-01",
+      "2024-08-01",
+      "2024-09-02",
+      "2024-10-08",
+      "2024-11-01",
+      "2024-12-02",
+      "2025-01-02",
+      "2025-02-05",
+      "2025-03-03",
+      "2025-04-01",
+      "2025-05-06",
+      "2025-06-03",
+      "2025-07-01",
+      "2025-08-01",
+      "2025-09-01",
+      "2025-10-09",
+      "2025-11-03",
+      "2025-12-01",
+      "2026-01-05",
+      "2026-02-02",
+      "2026-03-02",
+      "2026-04-01",
+      "2026-05-06",
+      "2026-06-01",
+      "2026-07-01",
+      "2026-08-03",
+      "2026-09-01"
+    ],
+    "extended_added_dates": [
+      "2026-07-01",
+      "2026-08-03",
+      "2026-09-01"
+    ],
+    "monthly_close_signal_next_session_open": true
+  },
+  "accounts": {
+    "initial_equity": 100000.0,
+    "independent_account_per_strategy": true,
+    "forced_exit_dates": {
+      "common": "2026-06-30",
+      "extended": "2026-09-24"
+    },
+    "forced_exit_trigger_close": {
+      "common": "2026-06-29",
+      "extended": "2026-09-23"
+    },
+    "forced_exit_rule": "V11 final zero-target sell path at terminal open, including 1% participation, locked-price checks, fees, slippage and odd-lot full exit; assert zero terminal shares"
+  },
+  "comparison_scope": {
+    "common": [
+      "V34 frozen factor",
+      "60d momentum Top2",
+      "equal-weight hold",
+      "V11 LambdaRank Top2"
+    ],
+    "extended": [
+      "V34 frozen factor",
+      "60d momentum Top2",
+      "equal-weight hold"
+    ],
+    "v11_ranker_q3_predictions_generated": false
+  },
+  "no_model_training": true,
+  "no_parameter_sweep": true,
+  "ram_ceiling_gib": 180.0,
+  "input_hashes_file": "input_hashes.json"
+}

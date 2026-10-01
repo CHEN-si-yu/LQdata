@@ -1,0 +1,54 @@
+{
+  "unit": "experiments2/V1",
+  "data_built_at": "2026-09-27 14:19:24",
+  "label_price_check": {
+    "1d": {
+      "n": 8472,
+      "max_abs_error": 4.226246241856302e-09,
+      "passed": true
+    },
+    "3d": {
+      "n": 8464,
+      "max_abs_error": 7.132709867185838e-09,
+      "passed": true
+    },
+    "5d": {
+      "n": 8456,
+      "max_abs_error": 7.259540302229084e-09,
+      "passed": true
+    },
+    "10d": {
+      "n": 8436,
+      "max_abs_error": 9.934107536579972e-09,
+      "passed": true
+    },
+    "20d": {
+      "n": 8396,
+      "max_abs_error": 9.010004742293631e-09,
+      "passed": true
+    }
+  },
+  "account_engine": {
+    "min_cash": 14.854150459001175,
+    "max_exposure": 0.9907387917861351,
+    "ending_positions": 0,
+    "blocked_entries": 0,
+    "blocked_exits": 0,
+    "corporate_action_adjustments": 6,
+    "cash_nonnegative": true,
+    "exposure_at_most_one": true,
+    "final_flat": true
+  },
+  "model_reload_audit": {
+    "folds": 16,
+    "max_abs_diff": 5.474852997622293e-07,
+    "passed": true
+  },
+  "layout": {
+    "expected_files": 159,
+    "present_files": 148,
+    "missing_files": 11,
+    "extra_files": [],
+    "extra_dirs": []
+  }
+}

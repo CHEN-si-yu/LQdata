@@ -4,7 +4,7 @@
 它们必须能拿到其它因子的 **value** 面板，并且**切到当前自己正在算的 (T, C)**。
 
 三个必须做对的地方：
-  1. **缺失因子**：耦合因子的依赖可能还没算出来。返回全 NaN 而不是抛错 ——
+  1. **缺失因子**：耦合因子的依赖可能还没算出来。在应有日期缺失时抛错 ——
      让下游在 `check`/`eval` 里看到"这个因子今天是空的"，而不是整个 run 崩掉。
   2. **面板对齐**：别的因子的落盘日期可能与自己不完全一致（起点不同、上游延迟不同），
      必须按 (日期, 股票) 精确落格，**不能**用 asof 前向填充 ——
@@ -56,6 +56,15 @@ class FactorIO:
         y0 = int(str(panel.dates[0])[:4])
         y1 = int(str(panel.dates[-1])[:4])
         df = self._read(name, y0, y1)
+        from .spec import REGISTRY
+        if name in REGISTRY:
+            spec=REGISTRY[name]
+            if spec.is_market:raise ValueError("市场标量不能通过股票父因子接口读取")
+            expected=panel.dates[panel.dates>=spec.start_int(self.cfg)]
+            got=np.unique(series_to_int(df["trade_date"])) if len(df) else np.array([],dtype=np.int32)
+            absent=np.setdiff1d(expected,got)
+            if len(absent):
+                raise RuntimeError(f"父因子 {name} 缺少 {len(absent)} 个应有交易日，首个 {absent[0]}；必须先生成父因子")
         if df.empty:
             log.warning("耦合因子读到空因子 %s（可能还没算）-> 全 NaN", name)
             return panel.empty()

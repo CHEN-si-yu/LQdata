@@ -1,0 +1,27 @@
+{
+  "objective": "independent fixed-rule four-bank monthly cross-sectional momentum candidate",
+  "requested_by": "parent agent",
+  "start_test": "2025-07-01",
+  "end_test": "2026-06-30",
+  "expected_test_sessions": 242,
+  "extended_start": "2023-01-03",
+  "extended_end": "2026-09-24",
+  "rule": {
+    "signal": "first observed trading session of each calendar month, at T close",
+    "factor": "adjusted close(T) / adjusted close(T-60 trading sessions) - 1",
+    "ranking": "descending 60-session total return; fixed Top2, equal-weight targets",
+    "execution": "T+1 open; shared audited cash ledger, 100-share lots, 1% signal-day amount capacity, one-price limit locks, 3bp slippage, commission/transfer/sell stamp fees",
+    "lookback_trading_intervals": 60,
+    "top_k": 2,
+    "no_parameter_sweep": true,
+    "no_training": true,
+    "matched_benchmark_interpretation": "cost/execution friction only on the same realized holdings path; not stock-selection alpha"
+  },
+  "account_engine_source": "account_engine.py",
+  "panel_loader_source": "/root/autodl-fs/model/experiments2/V1/model.py",
+  "created_at": "2026-09-27 17:23:33",
+  "research_engine_provenance": "audited account_sim, fee, limit-type and summary functions copied into the local account_engine.py; no V3 temporary path is needed by run.py",
+  "research_runner_sha256": "f6a8db9c1b09d6900069545a6e390fc3d6a559476c121ae8238d10dd9e4f9b7c",
+  "packaged_runner_sha256": "37fa69f4e64166650856de180ac4e8b42cf06f2a3bb9b97ff3d3d945a05d6cd1",
+  "packaged_engine_sha256": "825c7a9cee48479ecd75eb1e9787afdbd25e6e7d4cf06826564c6ec34737e20a"
+}

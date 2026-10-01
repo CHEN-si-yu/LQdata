@@ -1,0 +1,127 @@
+{
+  "snapshot_last_day": "2026-09-24",
+  "script_hash_matches": true,
+  "windows": {
+    "official_242d": {
+      "expected_daily_rows": 242,
+      "strategies": {
+        "monthly_top1": {
+          "checks": {
+            "daily_rows": true,
+            "trade_rows_match": true,
+            "nonnegative_cash": true,
+            "holding_cap": true,
+            "flat_end": true,
+            "signal_next_session": true,
+            "month_first_signals": true,
+            "ledger_mark_residual_lt_1e-8": true
+          },
+          "rows": 242,
+          "trades": 10,
+          "net_return": 0.20804625693158374,
+          "max_drawdown": -0.21767239317195253,
+          "cash_min": 245.1607834780152,
+          "fee_total": 602.0175407037351
+        },
+        "monthly_top2": {
+          "checks": {
+            "daily_rows": true,
+            "trade_rows_match": true,
+            "nonnegative_cash": true,
+            "holding_cap": true,
+            "flat_end": true,
+            "signal_next_session": true,
+            "month_first_signals": true,
+            "ledger_mark_residual_lt_1e-8": true
+          },
+          "rows": 242,
+          "trades": 19,
+          "net_return": 0.13631459996679451,
+          "max_drawdown": -0.17361043254181552,
+          "cash_min": 124.91914658427686,
+          "fee_total": 324.13978681445536
+        },
+        "equal_four_hold": {
+          "checks": {
+            "daily_rows": true,
+            "trade_rows_match": true,
+            "nonnegative_cash": true,
+            "holding_cap": true,
+            "flat_end": true,
+            "signal_next_session": true,
+            "month_first_signals": true,
+            "ledger_mark_residual_lt_1e-8": true
+          },
+          "rows": 242,
+          "trades": 8,
+          "net_return": 0.035837236576344855,
+          "max_drawdown": -0.15119064253391168,
+          "cash_min": 1612.926410103999,
+          "fee_total": 103.13073893339161
+        }
+      }
+    },
+    "extended": {
+      "expected_daily_rows": 905,
+      "strategies": {
+        "monthly_top1": {
+          "checks": {
+            "daily_rows": true,
+            "trade_rows_match": true,
+            "nonnegative_cash": true,
+            "holding_cap": true,
+            "flat_end": true,
+            "signal_next_session": true,
+            "month_first_signals": true,
+            "ledger_mark_residual_lt_1e-8": true
+          },
+          "rows": 905,
+          "trades": 44,
+          "net_return": 1.7126272105775033,
+          "max_drawdown": -0.2177571218731309,
+          "cash_min": 2.9690218030882534,
+          "fee_total": 3828.6432765440636
+        },
+        "monthly_top2": {
+          "checks": {
+            "daily_rows": true,
+            "trade_rows_match": true,
+            "nonnegative_cash": true,
+            "holding_cap": true,
+            "flat_end": true,
+            "signal_next_session": true,
+            "month_first_signals": true,
+            "ledger_mark_residual_lt_1e-8": true
+          },
+          "rows": 905,
+          "trades": 87,
+          "net_return": 1.6725117218741636,
+          "max_drawdown": -0.17352887856613208,
+          "cash_min": 5.972270102225593,
+          "fee_total": 2261.2396739036035
+        },
+        "equal_four_hold": {
+          "checks": {
+            "daily_rows": true,
+            "trade_rows_match": true,
+            "nonnegative_cash": true,
+            "holding_cap": true,
+            "flat_end": true,
+            "signal_next_session": true,
+            "month_first_signals": true,
+            "ledger_mark_residual_lt_1e-8": true
+          },
+          "rows": 905,
+          "trades": 8,
+          "net_return": 1.4955412317854537,
+          "max_drawdown": -0.15494783399395506,
+          "cash_min": 644.3842546000087,
+          "fee_total": 215.1410265959074
+        }
+      }
+    }
+  },
+  "overall_pass": true,
+  "script_sha256": "7ef3eb8fad1d83403ac18513619b3ff652fa0c0af12b007bcb0429c79c8e5d9e",
+  "account_engine_sha256": "11660f36e3682d829feb116a9e890cb6dea6b373999428deb450bf41050488e4"
+}

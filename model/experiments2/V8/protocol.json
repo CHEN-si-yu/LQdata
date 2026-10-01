@@ -1,0 +1,32 @@
+{
+  "objective": "fixed four-bank monthly 60-session momentum Top2 with one absolute mean-return sign gate",
+  "requested_by": "parent agent",
+  "start_test": "2025-07-01",
+  "signal_end_test": "2026-06-30",
+  "lifecycle_end_test": "2026-07-01",
+  "expected_signal_window_sessions": 242,
+  "expected_lifecycle_sessions": 243,
+  "final_liquidation_timing": "2026-07-01 open; exit-only, no new signal",
+  "extended_start": "2023-01-03",
+  "extended_end": "2026-09-24",
+  "extended_final_liquidation_timing": "snapshot-end 2026-09-24 open; no post-snapshot T+1 session",
+  "rule": {
+    "signal": "first observed trading session of each calendar month, at T close",
+    "factor": "each bank adjusted close(T) / adjusted close(T-60 trading sessions) - 1",
+    "gate": "hold only when the equal-weight mean of all four bank 60-session adjusted returns is strictly > 0; otherwise target cash",
+    "selection": "when gate passes, descending individual 60-session return; fixed Top2, equal-weight targets",
+    "execution": "T+1 open; shared audited cash ledger, 100-share lots, 1% signal-day amount capacity, one-price limit locks, 3bp slippage, commission/transfer/sell stamp fees",
+    "lookback_trading_intervals": 60,
+    "top_k": 2,
+    "no_parameter_sweep": true,
+    "no_training": true,
+    "matched_benchmark_interpretation": "same realized holdings path, daily matched no-fee open-to-open benchmark; net gap measures trading cost/execution friction, not stock-selection alpha"
+  },
+  "account_engine_source": "account_engine.py",
+  "panel_loader_source": "panel_loader.py (frozen copy of experiments2/V1/model.py)",
+  "no_parameter_sweep": true,
+  "no_retraining": true,
+  "source_sha256": "112929f310fc6ade12c68e0a4c917a49f5a41e6ad176e665c6241819a0fa1915",
+  "sma_research_reference": "/autodl-fs/data/tmp/vlines/trend_gate_report.md",
+  "created_at": "2026-09-27 17:41:29"
+}

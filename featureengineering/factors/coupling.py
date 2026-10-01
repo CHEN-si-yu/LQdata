@@ -283,50 +283,5 @@ def vol_of_rv(ctx):
 
 
 
-@register(FactorSpec(
-    name="amihud_parkinson_ratio", group=GROUP, deps=("stock_daily", "stock_adj_factor"), version=2,
-    desc="非流动性 / 波动率 = 20 日 Amihud ÷ 20 日 Parkinson 波动",
-    formula="Amihud = roll_mean(|ret| / amount, 20);\n"
-            "Parkinson = sqrt( roll_mean( ln(high/low)^2, 20) / (4 ln 2) );\n"
-            "Ratio = Amihud / Parkinson",
-    start=None, warmup_days=W_SHORT, higher_is_better=False,
-    note="参考库同名因子的思路：**单位波动带来的价格冲击**。分母用 Parkinson 波动"
-         "（只用日内高低价、对成交稀疏不敏感），比用收盘价标准差更干净。"
-         "⚠️ 单位：`stock_daily.amount` 是元，Amihud 保留元级量纲（不乘 1e8）——"
-         "这里只取**比率**，量纲自己约掉，乘不乘常数不影响截面排序。"
-         "⚠️ high/low 用**未复权**价：Parkinson 是日内比值，除权日会有一个交易日的失真，"
-         "但 20 日均值把它摊薄到可忽略（与参考库一致）。",
-))
-def amihud_parkinson_ratio(ctx):
-    r = np.abs(ctx.ret(1))
-    amt = ctx.px("amount")
-    amihud = ctx.roll_mean(ctx.safe_div(r, amt, min_abs_den=1.0), 20)
-    hi, lo = ctx.px("high"), ctx.px("low")
-    with np.errstate(invalid="ignore", divide="ignore"):
-        hl = np.log(hi / lo)
-    park = np.sqrt(ctx.roll_mean(hl * hl, 20) / (4.0 * np.log(2.0)))
-    return ctx.safe_div(amihud, park, min_abs_den=1e-12)
 
 
-@register(FactorSpec(
-    name="intraday_ret_share_20", group=GROUP, deps=("stock_daily", "stock_adj_factor"),
-    desc="日内收益占比 = 20 日 Σ(日内收益) / 20 日 Σ(|隔夜| + |日内|)",
-    formula="intraday(t) = hfq_close(t)/hfq_open(t) − 1;  overnight(t) = hfq_open(t)/hfq_close(t−1) − 1;\n"
-            "Share = roll_sum(intraday, 20) / roll_sum(|overnight| + |intraday|, 20)",
-    start=None, warmup_days=W_SHORT, higher_is_better=False,
-    note="与 P0-2 家族的 `overnight_*` 是**同一现象的两个视角**（那边是绝对量、这边是占比）——"
-         "保留两者是因为占比口径对停牌/低流动性股票更稳（分母自带缩放）。"
-         "★ 用 `ctx.hfq`（后复权）算两条腿，停牌日用 `ctx.traded()` 掩码挡掉。",
-))
-def intraday_ret_share_20(ctx):
-    o, c = ctx.hfq("open"), ctx.hfq("close")
-    prev_c = ctx.shift(c, 1)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        intr = np.asarray(c / o - 1.0, dtype=np.float64)
-        over = np.asarray(o / prev_c - 1.0, dtype=np.float64)
-    traded = np.asarray(ctx.traded(), dtype=bool)
-    intr = np.where(traded, intr, np.nan)
-    over = np.where(traded, over, np.nan)
-    num = ctx.roll_sum(intr, 20)
-    den = ctx.roll_sum(np.abs(over) + np.abs(intr), 20)
-    return ctx.safe_div(num, den, min_abs_den=1e-12)

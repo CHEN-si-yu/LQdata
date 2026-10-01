@@ -1,0 +1,186 @@
+{
+  "ok": true,
+  "checked_at": "2026-09-30 19:19:39",
+  "results": {
+    "V66": {
+      "features": 149,
+      "flow": 105,
+      "technical": 44,
+      "market": 61,
+      "basis_width": 194,
+      "fixed_files": 159,
+      "clean_blocks": [
+        [
+          "2025Q3",
+          4
+        ],
+        [
+          "2025Q4",
+          4
+        ],
+        [
+          "2026Q1",
+          4
+        ],
+        [
+          "2026Q2",
+          4
+        ]
+      ],
+      "fresh_five_fit_mean_exact": true,
+      "date_equal_solver_loss_exact": true,
+      "future_input_label_invariance": true,
+      "separate_component_coverage": true,
+      "independent_fusion_score_exact": true,
+      "aux_equals_raw_last_head": true,
+      "cpu_gpu_max_raw_head_error": 4.7013163566589355e-06,
+      "subset_inference_invariant": true,
+      "no_real_trained_artifacts": true,
+      "two_epoch_fixture_completed": true,
+      "absolute_prefit_not_a_completed_fold": true,
+      "prefit_resume_exact": true,
+      "stale_recipe_resume_rejected": true,
+      "all_eight_artifacts": true
+    },
+    "V67": {
+      "features": 149,
+      "flow": 105,
+      "technical": 44,
+      "market": 61,
+      "basis_width": 194,
+      "fixed_files": 159,
+      "clean_blocks": [
+        [
+          "2025Q3",
+          4
+        ],
+        [
+          "2025Q4",
+          4
+        ],
+        [
+          "2026Q1",
+          4
+        ],
+        [
+          "2026Q2",
+          4
+        ]
+      ],
+      "fresh_five_fit_mean_exact": true,
+      "date_equal_solver_loss_exact": true,
+      "future_input_label_invariance": true,
+      "separate_component_coverage": true,
+      "independent_fusion_score_exact": true,
+      "aux_equals_raw_last_head": true,
+      "cpu_gpu_max_raw_head_error": 5.0961971282958984e-06,
+      "subset_inference_invariant": true,
+      "no_real_trained_artifacts": true
+    },
+    "V68": {
+      "features": 149,
+      "flow": 105,
+      "technical": 44,
+      "market": 61,
+      "basis_width": 194,
+      "fixed_files": 159,
+      "clean_blocks": [
+        [
+          "2025Q3",
+          4
+        ],
+        [
+          "2025Q4",
+          4
+        ],
+        [
+          "2026Q1",
+          4
+        ],
+        [
+          "2026Q2",
+          4
+        ]
+      ],
+      "fresh_five_fit_mean_exact": true,
+      "date_equal_solver_loss_exact": true,
+      "future_input_label_invariance": true,
+      "separate_component_coverage": true,
+      "independent_fusion_score_exact": true,
+      "aux_equals_raw_last_head": true,
+      "cpu_gpu_max_raw_head_error": 5.692243576049805e-06,
+      "subset_inference_invariant": true,
+      "no_real_trained_artifacts": true
+    },
+    "V69": {
+      "features": 149,
+      "flow": 105,
+      "technical": 44,
+      "market": 61,
+      "basis_width": 194,
+      "fixed_files": 159,
+      "clean_blocks": [
+        [
+          "2025Q3",
+          4
+        ],
+        [
+          "2025Q4",
+          4
+        ],
+        [
+          "2026Q1",
+          4
+        ],
+        [
+          "2026Q2",
+          4
+        ]
+      ],
+      "fresh_five_fit_mean_exact": true,
+      "date_equal_solver_loss_exact": true,
+      "future_input_label_invariance": true,
+      "separate_component_coverage": true,
+      "independent_fusion_score_exact": true,
+      "aux_equals_raw_last_head": true,
+      "cpu_gpu_max_raw_head_error": 4.649162292480469e-06,
+      "subset_inference_invariant": true,
+      "no_real_trained_artifacts": true
+    }
+  },
+  "real_snapshot_label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 511238,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 511092,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 510964,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 510807,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 510814,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "auxiliary_fourfold_gate_scale_exact": true,
+  "zero_gate_native_cash_exact": true,
+  "top1_baseline_exact": true,
+  "zero_forecast_idle_exact": true,
+  "saved_score_auxiliary_roundtrip_exact": true,
+  "saved_score_cash_no_checkpoint_reads": true,
+  "gross_fee_slippage_identity": true,
+  "scope": "synthetic implementation fixtures and real current price/label checks only; no fitted real-model performance conclusion"
+}

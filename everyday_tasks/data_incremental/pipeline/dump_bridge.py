@@ -316,7 +316,7 @@ def cache_days() -> list[dict]:
 
 
 def _load_or_fetch(client: Client, day: str, log=print,
-                   base: float = 0.0) -> tuple[pd.DataFrame | None, str, str]:
+                   base: float = 0.0, refresh: bool = False) -> tuple[pd.DataFrame | None, str, str]:
     """取某一天的**原始** dump：本地缓存优先，没有再花 1 次配额问服务端。
 
     返回 `(raw | None, source, note)`：
@@ -332,7 +332,7 @@ def _load_or_fetch(client: Client, day: str, log=print,
     """
     hit = load_dump(day)
     cached = hit[0] if hit is not None else None
-    if cached is not None and cache_is_final(cached, base):
+    if not refresh and cached is not None and cache_is_final(cached, base):
         return cached, "local", ""
 
     def _fallback_to_cache(why: str) -> tuple[pd.DataFrame | None, str, str]:
@@ -516,7 +516,12 @@ def run(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     today = _date.today()
     lookback = int(ctx.cfg.get("dump", {}).get("repair_lookback_days",
                                                REPAIR_LOOKBACK_DAYS))
-    lo = max(_minus_days(hi, lookback), ds.start)
+    last = man.max_partition_date()
+    desired_lo = min(_minus_days(hi, lookback), str(last)[:10]) if last else _minus_days(hi, lookback)
+    lo = max(desired_lo, ds.start)
+    if last and str(last)[:10] < (today - __import__("datetime").timedelta(days=88)).isoformat():
+        res.status = "⚠️"
+        res.note = "Minute history has a gap older than daily_dump availability; historical backfill is required"
     win = [d for d in trading_days_between(ctx.cal, lo, hi)
            if (_date.fromisoformat(d) - today).days >= -88]   # dump 只可取最近 90 天
     if not win:
@@ -534,13 +539,15 @@ def run(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     else:
         base = 0.0
 
-    days = [d for d in win if not _is_complete_stats(stats.get(d), base)]
+    tail_lo, tail_hi = ctx.data_window(ds, ds.window(ctx.redundancy))
+    refresh_days = set(trading_days_between(ctx.cal, tail_lo, tail_hi))
+    days = [d for d in win if d in refresh_days or not _is_complete_stats(stats.get(d), base)]
     if not days:
         res.note = (f"近 {len(win)} 个交易日（{win[0]}~{win[-1]}）每天的数据都完整"
                     f"（基准 {base:,.0f} 行/日），无需 dump")
         res.seconds = __import__("time").monotonic() - t0
         return res
-    res.note = (f"窗口 {win[0]}~{win[-1]} 内 {len(days)} 天不完整（基准 {base:,.0f} 行/日）："
+    res.note = (f"窗口 {win[0]}~{win[-1]} 内 {len(days)} 天需要刷新或补齐（基准 {base:,.0f} 行/日）："
                 + ", ".join(
                     f"{d}({stats.get(d, (0, 0))[0]:,}行/{stats.get(d, (0, 0))[1]}只)"
                     for d in days[:6])
@@ -552,13 +559,20 @@ def run(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
         return res
 
     cols = man.columns or HISTORY_COLS
-    buf = _Buf(ds, man, flush_rows=400_000, flush_batches=3)
+    # One normal six-day window fits comfortably within the process budget.
+    # Avoid rewriting the same large annual partition once per individual day.
+    buf = _Buf(ds, man, flush_rows=2_000_000, flush_batches=8)
+    completed = []
     vf = float(calib.get("vol_factor") or 1.0)
     af = float(calib.get("amount_factor") or 1.0)
     n_local = n_api = 0
     for d in days:
-        # ★ 本地优先：缓存里有一份完整的这天 → 0 请求、0 配额直接用（用户 2026-09-15 要求）
-        raw, source, why = _load_or_fetch(ctx.client, d, base=base)
+        # 尾部冗余窗口强制向供应商刷新；窗口外的修复可复用已确认完整的缓存。
+        raw, source, why = _load_or_fetch(ctx.client, d, base=base, refresh=d in refresh_days)
+        if d in refresh_days and source != "api":
+            res.status = "⚠️"
+            man.mark_suspect(f"dump|{d}|refresh")
+            res.note = f"{d}: upstream refresh not confirmed; {why}"
         if raw is None:
             if "配额" in why:
                 res.status = "⚠️"       # 配额用尽不是"数据可疑"，不记 suspect
@@ -591,17 +605,23 @@ def run(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
                         f"基准 {base:,.0f} 行/日）—— 已写入并保留，下轮继续重试")
         buf.add(df)
         # ★ 顺序铁律：先落盘（buf.flush 内部做）→ 再标完成
-        buf.flush()
-        man.mark_done("dumps", f"5min|{d}")
+        if cache_is_final(raw, base):
+            completed.append((d, source))
         if ctx.runner:
             tag = "本地缓存" if source == "local" else "服务端"
             ctx.runner.note(f"   {d} dump → {len(df):,} 行（{df['stock_code'].nunique()} 只）"
                             f" · {tag}" + (f" · {why}" if why else "")
                             + f" · 累计 {buf.rows:,}")
     buf.flush()
+    for d, source in completed:
+        man.mark_done("dumps", f"5min|{d}")
+        if source == "api":
+            for suffix in ("error", "empty", "incomplete", "refresh"):
+                man.suspect.pop(f"dump|{d}|{suffix}", None)
+    man.save()
     res.rows = buf.rows
     res.seconds = __import__("time").monotonic() - t0
-    if not res.note:
+    if res.status == "✔" or not res.note:
         src = f"本地缓存 {n_local} / API {n_api} 天"
         res.note = (f"daily_dump 补 {len(days)} 天（{src}）→ 新增 {res.rows:,} 行"
                     if (n_local or n_api) else f"daily_dump 补 {len(days)} 天 → 新增 {res.rows:,} 行")

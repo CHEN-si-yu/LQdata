@@ -1,0 +1,334 @@
+{
+  "date": "2026-09-24",
+  "policy": "destructive cleanup, no backup, no commit, no model training",
+  "sources": [
+    {
+      "original_path": "history/iterations/V32/evaluation_core.py"
+    },
+    {
+      "original_path": "history/iterations/V32/gated_holding_engine.py"
+    },
+    {
+      "original_path": "history/iterations/V32/phase_holding_engine.py"
+    },
+    {
+      "original_path": "experiments/round_11/source/strategy.py"
+    },
+    {
+      "original_path": "experiments/round_11/source/test_strategy.py"
+    },
+    {
+      "original_path": "experiments/round_11/source/engine.py"
+    },
+    {
+      "original_path": "experiments/round_11/source/model.py"
+    },
+    {
+      "original_path": "experiments/V82/outputs/legacy/model_pred_armA_s6/tables/k_curve.csv"
+    },
+    {
+      "original_path": "experiments/V82/outputs/legacy/model_pred_armA_s6/tables/k_curve_summary.csv"
+    },
+    {
+      "original_path": "experiments/round_01/config/confirmation_plan.json"
+    },
+    {
+      "original_path": "experiments/round_01/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_01/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_02/config/round02_plan.json"
+    },
+    {
+      "original_path": "experiments/round_02/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_02/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_02/outputs/legacy/summary.json"
+    },
+    {
+      "original_path": "experiments/round_03/config/round03_plan.json"
+    },
+    {
+      "original_path": "experiments/round_03/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_03/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_03/outputs/legacy/summary.json"
+    },
+    {
+      "original_path": "experiments/round_04/config/round04_plan.json"
+    },
+    {
+      "original_path": "experiments/round_04/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_04/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_04/outputs/legacy/summary.json"
+    },
+    {
+      "original_path": "experiments/round_05/config/round05_plan.json"
+    },
+    {
+      "original_path": "experiments/round_05/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_05/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_05/outputs/legacy/summary.json"
+    },
+    {
+      "original_path": "experiments/round_06/config/round06_plan.json"
+    },
+    {
+      "original_path": "experiments/round_06/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_06/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_06/outputs/legacy/summary.json"
+    },
+    {
+      "original_path": "experiments/round_07/config/round07_plan.json"
+    },
+    {
+      "original_path": "experiments/round_07/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_07/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_07/outputs/legacy/summary.json"
+    },
+    {
+      "original_path": "experiments/round_08/config/round08_plan.json"
+    },
+    {
+      "original_path": "experiments/round_08/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_08/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_08/outputs/legacy/summary.json"
+    },
+    {
+      "original_path": "experiments/round_09/config/round09_plan.json"
+    },
+    {
+      "original_path": "experiments/round_09/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_09/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_09/outputs/legacy/summary.json"
+    },
+    {
+      "original_path": "experiments/round_10/config/round10_plan.json"
+    },
+    {
+      "original_path": "experiments/round_10/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_10/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_10/outputs/legacy/summary.json"
+    },
+    {
+      "original_path": "experiments/round_11/config/round11_plan.json"
+    },
+    {
+      "original_path": "experiments/round_11/config/candidates.json"
+    },
+    {
+      "original_path": "experiments/round_11/config/unit.json"
+    },
+    {
+      "original_path": "experiments/round_11/outputs/legacy/summary.json"
+    }
+  ],
+  "archived_files": {
+    "evaluation_core.py": {
+      "bytes": 39033
+    },
+    "gated_holding_engine.py": {
+      "bytes": 11069
+    },
+    "phase_holding_engine.py": {
+      "bytes": 10023
+    },
+    "top5_strategy.py": {
+      "bytes": 9181
+    },
+    "test_top5_strategy.py": {
+      "bytes": 5479
+    },
+    "top5_losses.py": {
+      "bytes": 3453
+    },
+    "rd11_k_curve.csv": {
+      "bytes": 17254
+    },
+    "rd11_k_curve_summary.csv": {
+      "bytes": 1803
+    },
+    "top5_research.json": {
+      "bytes": 114717
+    }
+  },
+  "adaptations": {
+    "top5_strategy.py": "Removed unused unit_paths import only.",
+    "test_top5_strategy.py": "Removed unused unit_paths import; renamed strategy import.",
+    "top5_losses.py": "Extracted original wpcc and four loss functions without changing bodies; BASE_WPCC aliases wpcc."
+  },
+  "before": {
+    "docs": {
+      "files": 362,
+      "directories": 356,
+      "bytes": 8093552,
+      "allocated_bytes": 8180224
+    },
+    "experiments": {
+      "files": 25658,
+      "directories": 4678,
+      "bytes": 30377508016,
+      "allocated_bytes": 30382695424
+    },
+    "history": {
+      "files": 778,
+      "directories": 124,
+      "bytes": 13370255,
+      "allocated_bytes": 13572096
+    }
+  },
+  "baseline_before": {
+    "files": 200,
+    "directories": 32,
+    "bytes": 76141882,
+    "allocated_bytes": 76197376
+  },
+  "protected_before": {
+    "baseline_source": {
+      "analysis.py": {
+        "size": 76635,
+        "mode": 33204
+      },
+      "model.py": {
+        "size": 34188,
+        "mode": 33204
+      },
+      "paths.py": {
+        "size": 2331,
+        "mode": 33204
+      },
+      "run.py": {
+        "size": 3574,
+        "mode": 33204
+      },
+      "train.sh": {
+        "size": 121,
+        "mode": 33277
+      }
+    },
+    "releases": {
+      "files": 780,
+      "directories": 105,
+      "bytes": 1736242316,
+      "allocated_bytes": 1736374784
+    },
+    "trainingdata": {
+      "files": 48,
+      "directories": 51,
+      "bytes": 3839072248,
+      "allocated_bytes": 3839085056
+    }
+  },
+  "user_scope_update": "All training artifacts in the three cleanup directories may be deleted, including baseline outputs; baseline source remains unchanged.",
+  "after": {
+    "docs": {
+      "files": 11,
+      "directories": 0,
+      "bytes": 22376,
+      "allocated_bytes": 25088
+    },
+    "experiments": {
+      "files": 5,
+      "directories": 1,
+      "bytes": 116849,
+      "allocated_bytes": 117760
+    },
+    "history": {
+      "files": 9,
+      "directories": 0,
+      "bytes": 212012,
+      "allocated_bytes": 214016
+    }
+  },
+  "protected_after": {
+    "baseline_source": {
+      "analysis.py": {
+        "size": 76635,
+        "mode": 33204
+      },
+      "model.py": {
+        "size": 34188,
+        "mode": 33204
+      },
+      "paths.py": {
+        "size": 2331,
+        "mode": 33204
+      },
+      "run.py": {
+        "size": 3574,
+        "mode": 33204
+      },
+      "train.sh": {
+        "size": 121,
+        "mode": 33277
+      }
+    },
+    "releases": {
+      "files": 780,
+      "directories": 105,
+      "bytes": 1736242316,
+      "allocated_bytes": 1736374784
+    },
+    "trainingdata": {
+      "files": 48,
+      "directories": 51,
+      "bytes": 3839072248,
+      "allocated_bytes": 3839085056
+    }
+  },
+  "verification": {
+    "flat_docs": true,
+    "flat_history": true,
+    "only_baseline_experiment": true,
+    "baseline_training_artifacts_removed": true,
+    "markdown_links_valid": true,
+    "archive_syntax_valid": true,
+    "runtime_tests": "passed",
+    "top5_strategy_tests": "12 original test_top5_strategy tests passed in the preceding validation step (2026-09-24).",
+    "holding_engine_checks": "Synthetic holding checks: 56",
+    "loss_checks": "15 finite loss/gradient checks passed",
+    "baseline_check": "passed",
+    "release_check": "passed",
+    "k_curve_rows": 189,
+    "k_curve_summary_rows": 18
+  },
+  "cleanup_peak_rss_bytes": 26779648,
+  "system_memory_used_bytes_at_end": 50668224512,
+  "validation_child_peak_rss_bytes": 692731904
+}

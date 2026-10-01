@@ -72,78 +72,6 @@
   }
  },
  {
-  "name": "afx_bs_div_receiv",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "div_receiv",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "应收股利年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "div_receiv",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_int_receiv",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "int_receiv",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "应收利息年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "int_receiv",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_nca_within_1y",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "nca_within_1y",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "一年内到期的非流动资产年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "nca_within_1y",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_pur_resale_fa",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "pur_resale_fa",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "买入返售金融资产年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "pur_resale_fa",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
   "name": "afx_bs_oth_cur_assets",
   "group": "field_balance",
   "dataset": "stock_balancesheet",
@@ -198,96 +126,6 @@
   }
  },
  {
-  "name": "afx_bs_oth_assets",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "oth_assets",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "其他资产年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "oth_assets",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_lt_rec",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "lt_rec",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "长期应收款年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "lt_rec",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_const_materials",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "const_materials",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "工程物资年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "const_materials",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_fixed_assets_disp",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "fixed_assets_disp",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "固定资产清理年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "fixed_assets_disp",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_produc_bio_assets",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "produc_bio_assets",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "生产性生物资产年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "produc_bio_assets",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
   "name": "afx_bs_lt_amor_exp",
   "group": "field_balance",
   "dataset": "stock_balancesheet",
@@ -306,24 +144,6 @@
   }
  },
  {
-  "name": "afx_bs_decr_in_disbur",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "decr_in_disbur",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "发放贷款及垫款年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "decr_in_disbur",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
   "name": "afx_bs_oth_nca",
   "group": "field_balance",
   "dataset": "stock_balancesheet",
@@ -337,78 +157,6 @@
   "source_fields": {
    "stock_balancesheet": [
     "oth_nca",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_deriv_assets",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "deriv_assets",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "衍生金融资产年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "deriv_assets",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_loan_oth_bank",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "loan_oth_bank",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "拆入资金年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "loan_oth_bank",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_trading_fl",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "trading_fl",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "交易性金融负债年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "trading_fl",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_sold_for_repur_fa",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "sold_for_repur_fa",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "卖出回购金融资产款年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "sold_for_repur_fa",
     "total_liab_hldr_eqy"
    ]
   }
@@ -450,24 +198,6 @@
   }
  },
  {
-  "name": "afx_bs_int_payable",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "int_payable",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "应付利息年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "int_payable",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
   "name": "afx_bs_div_payable",
   "group": "field_balance",
   "dataset": "stock_balancesheet",
@@ -481,24 +211,6 @@
   "source_fields": {
    "stock_balancesheet": [
     "div_payable",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_oth_payable",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "oth_payable",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "其他应付款年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "oth_payable",
     "total_liab_hldr_eqy"
    ]
   }
@@ -522,42 +234,6 @@
   }
  },
  {
-  "name": "afx_bs_lt_payable",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "lt_payable",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "长期应付款年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "lt_payable",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_specific_payables",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "specific_payables",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "专项应付款年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "specific_payables",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
   "name": "afx_bs_estimated_liab",
   "group": "field_balance",
   "dataset": "stock_balancesheet",
@@ -576,78 +252,6 @@
   }
  },
  {
-  "name": "afx_bs_oth_ncl",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "oth_ncl",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "其他非流动负债年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "oth_ncl",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_deriv_liab",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "deriv_liab",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "衍生金融负债年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "deriv_liab",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_ordin_risk_reser",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "ordin_risk_reser",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "一般风险准备年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "ordin_risk_reser",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_lt_payroll_payable",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "lt_payroll_payable",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "长期应付职工薪酬年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "lt_payroll_payable",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
   "name": "afx_bs_oth_comp_income",
   "group": "field_balance",
   "dataset": "stock_balancesheet",
@@ -661,42 +265,6 @@
   "source_fields": {
    "stock_balancesheet": [
     "oth_comp_income",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_oth_eqt_tools",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "oth_eqt_tools",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "其他权益工具年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "oth_eqt_tools",
-    "total_liab_hldr_eqy"
-   ]
-  }
- },
- {
-  "name": "afx_bs_hfs_assets",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "hfs_assets",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "持有待售的资产年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "hfs_assets",
     "total_liab_hldr_eqy"
    ]
   }
@@ -774,44 +342,6 @@
   }
  },
  {
-  "name": "afx_bs_debt_invest",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "debt_invest",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "债权投资年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "debt_invest",
-    "total_liab_hldr_eqy"
-   ]
-  },
-  "start": "2019-04-01"
- },
- {
-  "name": "afx_bs_oth_debt_invest",
-  "group": "field_balance",
-  "dataset": "stock_balancesheet",
-  "field": "oth_debt_invest",
-  "mode": "ratio",
-  "den_dataset": "stock_balancesheet",
-  "den_field": "total_liab_hldr_eqy",
-  "desc": "其他债权投资年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_balancesheet": [
-    "oth_debt_invest",
-    "total_liab_hldr_eqy"
-   ]
-  },
-  "start": "2019-04-01"
- },
- {
   "name": "afx_is_basic_eps",
   "group": "field_income",
   "dataset": "stock_income",
@@ -825,60 +355,6 @@
   "source_fields": {
    "stock_income": [
     "basic_eps"
-   ]
-  }
- },
- {
-  "name": "afx_is_int_income",
-  "group": "field_income",
-  "dataset": "stock_income",
-  "field": "int_income",
-  "mode": "ratio",
-  "den_dataset": "stock_income",
-  "den_field": "total_revenue",
-  "desc": "利息收入年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_income": [
-    "int_income",
-    "total_revenue"
-   ]
-  }
- },
- {
-  "name": "afx_is_comm_income",
-  "group": "field_income",
-  "dataset": "stock_income",
-  "field": "comm_income",
-  "mode": "ratio",
-  "den_dataset": "stock_income",
-  "den_field": "total_revenue",
-  "desc": "手续费及佣金收入年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_income": [
-    "comm_income",
-    "total_revenue"
-   ]
-  }
- },
- {
-  "name": "afx_is_n_oth_b_income",
-  "group": "field_income",
-  "dataset": "stock_income",
-  "field": "n_oth_b_income",
-  "mode": "ratio",
-  "den_dataset": "stock_income",
-  "den_field": "total_revenue",
-  "desc": "加:其他业务净收益年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_income": [
-    "n_oth_b_income",
-    "total_revenue"
    ]
   }
  },
@@ -901,60 +377,6 @@
   }
  },
  {
-  "name": "afx_is_forex_gain",
-  "group": "field_income",
-  "dataset": "stock_income",
-  "field": "forex_gain",
-  "mode": "ratio",
-  "den_dataset": "stock_income",
-  "den_field": "total_revenue",
-  "desc": "加:汇兑净收益年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_income": [
-    "forex_gain",
-    "total_revenue"
-   ]
-  }
- },
- {
-  "name": "afx_is_int_exp",
-  "group": "field_income",
-  "dataset": "stock_income",
-  "field": "int_exp",
-  "mode": "ratio",
-  "den_dataset": "stock_income",
-  "den_field": "total_revenue",
-  "desc": "减:利息支出年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_income": [
-    "int_exp",
-    "total_revenue"
-   ]
-  }
- },
- {
-  "name": "afx_is_comm_exp",
-  "group": "field_income",
-  "dataset": "stock_income",
-  "field": "comm_exp",
-  "mode": "ratio",
-  "den_dataset": "stock_income",
-  "den_field": "total_revenue",
-  "desc": "减:手续费及佣金支出年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_income": [
-    "comm_exp",
-    "total_revenue"
-   ]
-  }
- },
- {
   "name": "afx_is_biz_tax_surchg",
   "group": "field_income",
   "dataset": "stock_income",
@@ -968,6 +390,24 @@
   "source_fields": {
    "stock_income": [
     "biz_tax_surchg",
+    "total_revenue"
+   ]
+  }
+ },
+ {
+  "name": "afx_is_fin_exp_int_inc",
+  "group": "field_income",
+  "dataset": "stock_income",
+  "field": "fin_exp_int_inc",
+  "mode": "ratio",
+  "den_dataset": "stock_income",
+  "den_field": "total_revenue",
+  "desc": "财务费用:利息收入年度结构占比",
+  "min_den": 1000000.0,
+  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。；起点已放开至全局下界：实测 fin_exp_int_inc 在 2018 年有 50.3% 真实值，早年截断会丢掉这些观测。",
+  "source_fields": {
+   "stock_income": [
+    "fin_exp_int_inc",
     "total_revenue"
    ]
   }
@@ -1063,62 +503,6 @@
   }
  },
  {
-  "name": "afx_is_fin_exp_int_inc",
-  "group": "field_income",
-  "dataset": "stock_income",
-  "field": "fin_exp_int_inc",
-  "mode": "ratio",
-  "den_dataset": "stock_income",
-  "den_field": "total_revenue",
-  "desc": "财务费用:利息收入年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_income": [
-    "fin_exp_int_inc",
-    "total_revenue"
-   ]
-  },
-  "start": "2019-02-22"
- },
- {
-  "name": "afx_is_continued_net_profit",
-  "group": "field_income",
-  "dataset": "stock_income",
-  "field": "continued_net_profit",
-  "mode": "ratio",
-  "den_dataset": "stock_income",
-  "den_field": "total_revenue",
-  "desc": "持续经营净利润年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_income": [
-    "continued_net_profit",
-    "total_revenue"
-   ]
-  },
-  "start": "2026-04-09"
- },
- {
-  "name": "afx_cf_net_profit",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "net_profit",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "净利润年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "net_profit",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
   "name": "afx_cf_finan_exp",
   "group": "field_cashflow",
   "dataset": "stock_cashflow",
@@ -1155,42 +539,6 @@
   }
  },
  {
-  "name": "afx_cf_ifc_cash_incr",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "ifc_cash_incr",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "收取利息和手续费净增加额年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "ifc_cash_incr",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
-  "name": "afx_cf_n_incr_loans_oth_bank",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "n_incr_loans_oth_bank",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "拆入资金净增加额年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "n_incr_loans_oth_bank",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
   "name": "afx_cf_c_fr_oth_operate_a",
   "group": "field_cashflow",
   "dataset": "stock_cashflow",
@@ -1204,42 +552,6 @@
   "source_fields": {
    "stock_cashflow": [
     "c_fr_oth_operate_a",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
-  "name": "afx_cf_n_incr_clt_loan_adv",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "n_incr_clt_loan_adv",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "客户贷款及垫款净增加额年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "n_incr_clt_loan_adv",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
-  "name": "afx_cf_pay_handling_chrg",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "pay_handling_chrg",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "支付手续费的现金年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "pay_handling_chrg",
     "c_inf_fr_operate_a"
    ]
   }
@@ -1281,24 +593,6 @@
   }
  },
  {
-  "name": "afx_cf_c_disp_withdrwl_invest",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "c_disp_withdrwl_invest",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "收回投资收到的现金年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "c_disp_withdrwl_invest",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
   "name": "afx_cf_c_recp_return_invest",
   "group": "field_cashflow",
   "dataset": "stock_cashflow",
@@ -1335,42 +629,6 @@
   }
  },
  {
-  "name": "afx_cf_n_recp_disp_sobu",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "n_recp_disp_sobu",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "处置子公司及其他营业单位收到的现金净额年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "n_recp_disp_sobu",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
-  "name": "afx_cf_stot_inflows_inv_act",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "stot_inflows_inv_act",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "投资活动现金流入小计年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "stot_inflows_inv_act",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
   "name": "afx_cf_c_paid_invest",
   "group": "field_cashflow",
   "dataset": "stock_cashflow",
@@ -1384,24 +642,6 @@
   "source_fields": {
    "stock_cashflow": [
     "c_paid_invest",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
-  "name": "afx_cf_n_disp_subs_oth_biz",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "n_disp_subs_oth_biz",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "取得子公司及其他营业单位支付的现金净额年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "n_disp_subs_oth_biz",
     "c_inf_fr_operate_a"
    ]
   }
@@ -1438,24 +678,6 @@
   "source_fields": {
    "stock_cashflow": [
     "stot_out_inv_act",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
-  "name": "afx_cf_proc_issue_bonds",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "proc_issue_bonds",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "发行债券收到的现金年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "proc_issue_bonds",
     "c_inf_fr_operate_a"
    ]
   }
@@ -1528,24 +750,6 @@
   "source_fields": {
    "stock_cashflow": [
     "oth_cashpay_ral_fnc_act",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
-  "name": "afx_cf_stot_cashout_fnc_act",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "stot_cashout_fnc_act",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "筹资活动现金流出小计年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "stot_cashout_fnc_act",
     "c_inf_fr_operate_a"
    ]
   }
@@ -1801,61 +1005,8 @@
     "c_inf_fr_operate_a"
    ]
   },
-  "start": "2020-03-30"
- },
- {
-  "name": "afx_cf_beg_bal_cash",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "beg_bal_cash",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "减:现金的期初余额年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "beg_bal_cash",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
-  "name": "afx_cf_end_bal_cash_equ",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "end_bal_cash_equ",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "加:现金等价物的期末余额年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "end_bal_cash_equ",
-    "c_inf_fr_operate_a"
-   ]
-  }
- },
- {
-  "name": "afx_cf_beg_bal_cash_equ",
-  "group": "field_cashflow",
-  "dataset": "stock_cashflow",
-  "field": "beg_bal_cash_equ",
-  "mode": "ratio",
-  "den_dataset": "stock_cashflow",
-  "den_field": "c_inf_fr_operate_a",
-  "desc": "减:现金等价物的期初余额年度结构占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_cashflow": [
-    "beg_bal_cash_equ",
-    "c_inf_fr_operate_a"
-   ]
-  }
+  "start": "2020-03-30",
+  "align_fill": 0.0
  },
  {
   "name": "afx_fi_revenue_ps",
@@ -1871,24 +1022,6 @@
   "source_fields": {
    "stock_financial_indicator": [
     "revenue_ps",
-    "bps"
-   ]
-  }
- },
- {
-  "name": "afx_fi_capital_rese_ps",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "capital_rese_ps",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "bps",
-  "desc": "每股资本公积年度每股净资产归一化",
-  "min_den": 0.01,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "capital_rese_ps",
     "bps"
    ]
   }
@@ -1925,24 +1058,6 @@
   "source_fields": {
    "stock_financial_indicator": [
     "extra_item",
-    "invest_capital"
-   ]
-  }
- },
- {
-  "name": "afx_fi_profit_dedt",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "profit_dedt",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "扣除非经常性损益后的净利润（扣非净利润）年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "profit_dedt",
     "invest_capital"
    ]
   }
@@ -2068,41 +1183,6 @@
   }
  },
  {
-  "name": "afx_fi_assets_turn",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "assets_turn",
-  "mode": "delta",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "assets_turn",
-  "desc": "总资产周转率年度同期差",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "assets_turn"
-   ]
-  }
- },
- {
-  "name": "afx_fi_op_income",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "op_income",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "经营活动净收益年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "op_income",
-    "invest_capital"
-   ]
-  }
- },
- {
   "name": "afx_fi_valuechange_income",
   "group": "field_indicator",
   "dataset": "stock_financial_indicator",
@@ -2152,42 +1232,6 @@
   "source_fields": {
    "stock_financial_indicator": [
     "daa",
-    "invest_capital"
-   ]
-  }
- },
- {
-  "name": "afx_fi_ebit",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "ebit",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "息税前利润年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "ebit",
-    "invest_capital"
-   ]
-  }
- },
- {
-  "name": "afx_fi_ebitda",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "ebitda",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "息税折旧摊销前利润年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "ebitda",
     "invest_capital"
    ]
   }
@@ -2265,60 +1309,6 @@
   }
  },
  {
-  "name": "afx_fi_interestdebt",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "interestdebt",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "带息债务年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "interestdebt",
-    "invest_capital"
-   ]
-  }
- },
- {
-  "name": "afx_fi_netdebt",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "netdebt",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "净债务年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "netdebt",
-    "invest_capital"
-   ]
-  }
- },
- {
-  "name": "afx_fi_tangible_asset",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "tangible_asset",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "有形资产年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "tangible_asset",
-    "invest_capital"
-   ]
-  }
- },
- {
   "name": "afx_fi_working_capital",
   "group": "field_indicator",
   "dataset": "stock_financial_indicator",
@@ -2367,24 +1357,6 @@
   "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
   "source_fields": {
    "stock_financial_indicator": [
-    "invest_capital"
-   ]
-  }
- },
- {
-  "name": "afx_fi_retained_earnings",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "retained_earnings",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "留存收益年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "retained_earnings",
     "invest_capital"
    ]
   }
@@ -2456,42 +1428,6 @@
   "source_fields": {
    "stock_financial_indicator": [
     "retainedps",
-    "bps"
-   ]
-  }
- },
- {
-  "name": "afx_fi_cfps",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "cfps",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "bps",
-  "desc": "每股现金流量净额年度每股净资产归一化",
-  "min_den": 0.01,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "cfps",
-    "bps"
-   ]
-  }
- },
- {
-  "name": "afx_fi_ebit_ps",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "ebit_ps",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "bps",
-  "desc": "每股息税前利润年度每股净资产归一化",
-  "min_den": 0.01,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "ebit_ps",
     "bps"
    ]
   }
@@ -2629,23 +1565,6 @@
   "source_fields": {
    "stock_financial_indicator": [
     "ebit_of_gr"
-   ]
-  }
- },
- {
-  "name": "afx_fi_npta",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "npta",
-  "mode": "delta",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "npta",
-  "desc": "总资产净利润年度同期差",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "npta"
    ]
   }
  },
@@ -2905,23 +1824,6 @@
   }
  },
  {
-  "name": "afx_fi_ocf_to_debt",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "ocf_to_debt",
-  "mode": "delta",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "ocf_to_debt",
-  "desc": "经营活动产生的现金流量净额/负债合计年度同期差",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "ocf_to_debt"
-   ]
-  }
- },
- {
   "name": "afx_fi_ocf_to_interestdebt",
   "group": "field_indicator",
   "dataset": "stock_financial_indicator",
@@ -2986,24 +1888,6 @@
   "source_fields": {
    "stock_financial_indicator": [
     "longdebt_to_workingcapital"
-   ]
-  }
- },
- {
-  "name": "afx_fi_fixed_assets",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "fixed_assets",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "固定资产合计年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "fixed_assets",
-    "invest_capital"
    ]
   }
  },
@@ -3111,23 +1995,6 @@
   }
  },
  {
-  "name": "afx_fi_op_to_debt",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "op_to_debt",
-  "mode": "delta",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "op_to_debt",
-  "desc": "营业利润／负债合计年度同期差",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "op_to_debt"
-   ]
-  }
- },
- {
   "name": "afx_fi_total_fa_trun",
   "group": "field_indicator",
   "dataset": "stock_financial_indicator",
@@ -3141,24 +2008,6 @@
   "source_fields": {
    "stock_financial_indicator": [
     "total_fa_trun"
-   ]
-  }
- },
- {
-  "name": "afx_fi_q_opincome",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "q_opincome",
-  "mode": "ratio",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "invest_capital",
-  "desc": "经营活动单季度净收益年度投入资本占比",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "q_opincome",
-    "invest_capital"
    ]
   }
  },
@@ -3301,23 +2150,6 @@
   }
  },
  {
-  "name": "afx_fi_q_impair_to_gr_ttm",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "q_impair_to_gr_ttm",
-  "mode": "delta",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "q_impair_to_gr_ttm",
-  "desc": "资产减值损失／营业总收入(单季度)年度同期差",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "q_impair_to_gr_ttm"
-   ]
-  }
- },
- {
   "name": "afx_fi_q_gc_to_gr",
   "group": "field_indicator",
   "dataset": "stock_financial_indicator",
@@ -3331,23 +2163,6 @@
   "source_fields": {
    "stock_financial_indicator": [
     "q_gc_to_gr"
-   ]
-  }
- },
- {
-  "name": "afx_fi_q_op_to_gr",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "q_op_to_gr",
-  "mode": "delta",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "q_op_to_gr",
-  "desc": "营业利润／营业总收入(单季度)年度同期差",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "q_op_to_gr"
    ]
   }
  },
@@ -3518,57 +2333,6 @@
   "source_fields": {
    "stock_financial_indicator": [
     "q_op_yoy"
-   ]
-  }
- },
- {
-  "name": "afx_fi_q_op_qoq",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "q_op_qoq",
-  "mode": "delta",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "q_op_qoq",
-  "desc": "营业利润环比增长率(%)(单季度)年度同期差",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "q_op_qoq"
-   ]
-  }
- },
- {
-  "name": "afx_fi_q_profit_qoq",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "q_profit_qoq",
-  "mode": "delta",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "q_profit_qoq",
-  "desc": "净利润环比增长率(%)(单季度)年度同期差",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "q_profit_qoq"
-   ]
-  }
- },
- {
-  "name": "afx_fi_q_netprofit_yoy",
-  "group": "field_indicator",
-  "dataset": "stock_financial_indicator",
-  "field": "q_netprofit_yoy",
-  "mode": "delta",
-  "den_dataset": "stock_financial_indicator",
-  "den_field": "q_netprofit_yoy",
-  "desc": "归母净利润同比增长率(%)(单季度)年度同期差",
-  "min_den": 1000000.0,
-  "note": "只取已公告的12月31日年度报告；单季度字段在年报中为Q4口径。",
-  "source_fields": {
-   "stock_financial_indicator": [
-    "q_netprofit_yoy"
    ]
   }
  },

@@ -1,0 +1,46 @@
+{
+  "frozen_before_training": true,
+  "clean_blocks": 16,
+  "seeds": [
+    3253,
+    4253,
+    5253,
+    6253
+  ],
+  "risk_lambda": [
+    0.0,
+    0.25,
+    0.5,
+    0.75
+  ],
+  "topn": [
+    5,
+    10,
+    20
+  ],
+  "period": [
+    1,
+    5,
+    10
+  ],
+  "band": [
+    0,
+    20,
+    40
+  ],
+  "rebalance_phases": "all",
+  "criterion": "negative day-equal pinball; same trained weights and epochs for paired lambda evaluations",
+  "all_candidates_retained": true,
+  "no_test_selection": true,
+  "no_release_modified": true,
+  "calibration_fields": [
+    "day_equal_pinball",
+    "day_equal_empirical_coverage",
+    "interquartile_width"
+  ],
+  "script_sha256": {
+    "quantile_validation_lab.py": "4ffb6b82a06374d0d91a802f3be2934aae19ab6202e762f2623d3a2feb3189b7",
+    "quantile_strategy_lab.py": "d8ba8b902260af71b3e79cf3b9312c89751f5de9f2987fc3ac2e1275786a7d59"
+  },
+  "synthetic_preflight_passed": true
+}

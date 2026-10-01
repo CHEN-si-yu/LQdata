@@ -1,0 +1,147 @@
+{
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "exploratory": true,
+  "independent_unseen_holdout": false,
+  "motivation": "V41 quarterly-rebalance result",
+  "monthly_signal_count": 30,
+  "bimonthly_update_signal_dates": [
+    "2024-01-02",
+    "2024-03-01",
+    "2024-05-06",
+    "2024-07-01",
+    "2024-09-02",
+    "2024-11-01",
+    "2025-01-02",
+    "2025-03-03",
+    "2025-05-06",
+    "2025-07-01",
+    "2025-09-01",
+    "2025-11-03",
+    "2026-01-05",
+    "2026-03-02",
+    "2026-05-06"
+  ],
+  "bimonthly_update_execution_dates": [
+    "2024-01-03",
+    "2024-03-04",
+    "2024-05-07",
+    "2024-07-02",
+    "2024-09-03",
+    "2024-11-04",
+    "2025-01-03",
+    "2025-03-04",
+    "2025-05-07",
+    "2025-07-02",
+    "2025-09-02",
+    "2025-11-04",
+    "2026-01-06",
+    "2026-03-03",
+    "2026-05-07"
+  ],
+  "only_odd_month_signals_update_target": true,
+  "even_month_signal_count_carried_forward": 15,
+  "even_month_signals_place_no_orders": true,
+  "frozen_v34_membership_reused_for_all_updates": true,
+  "initial_entry_is_january_2024_top2_equal_50_50": true,
+  "all_updates_execute_next_session_open": true,
+  "candidate_trade_dates_are_odd_month_executions_only": true,
+  "positions_marked_to_2026_06_30_close_without_forced_liquidation": true,
+  "factor_pre_holdout_selection_record": {
+    "factor": "id2_close_vs_pm_vwap_20",
+    "selection_cutoff": "2023Q4",
+    "top20_quarters": 10,
+    "total_quarters": 16
+  },
+  "ledger_source": "/root/autodl-fs/model/experiments2/V11/analysis.py",
+  "ledger_cost_parameters": {
+    "initial_equity": 100000.0,
+    "commission_rate": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer_fee_rate": 1e-05,
+    "sell_stamp_duty_rate": 0.0005,
+    "adverse_slippage_rate": 0.0003,
+    "maximum_participation": 0.01,
+    "lot_size": 100
+  },
+  "v34_monthly_replay": {
+    "reference": "V34 daily_equity.csv, trades.csv, metrics.json",
+    "daily_rows": 601,
+    "daily_max_abs_differences": {
+      "equity_net": 4.989688750356436e-05,
+      "equity_gross": 4.995934432372451e-05,
+      "cash": 4.8018705456343014e-08,
+      "fees_cumulative": 4.67901372758206e-07,
+      "slippage_cumulative": 4.5618162403116003e-07,
+      "turnover_cumulative": 0.0004837196320295334,
+      "accounting_residual": 3.26629713207609e-21,
+      "daily_return_net": 4.998501612618611e-12,
+      "drawdown": 4.9974135940544784e-11
+    },
+    "metric_abs_differences": {
+      "net_return": 0.0,
+      "annualized_net_return": 0.0,
+      "fees": 0.0,
+      "slippage_cost": 0.0,
+      "total_trading_cost": 0.0,
+      "turnover": 0.0,
+      "max_drawdown": 0.0,
+      "annualized_volatility": 0.0,
+      "min_cash": 0.0
+    },
+    "shares_json_exact_match": true,
+    "trade_string_fields_exact_match": true,
+    "trade_numeric_max_abs_differences": {
+      "shares": 0.0,
+      "open": 0.0,
+      "fill": 1.7763568394002505e-15,
+      "notional": 2.3673143004998565e-05,
+      "fee": 4.620432036972488e-09,
+      "slippage_cost": 4.179234736056969e-09
+    },
+    "trades_equal": true,
+    "tolerance": 0.001
+  },
+  "strategies": {
+    "V34 id2_close_vs_pm_vwap_20 Top2": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 72,
+      "turnover": 4550928.231483719,
+      "fees": 2362.692232079848,
+      "slippage_cost": 1365.2784694451154,
+      "total_trading_cost": 3727.9707015249633,
+      "min_cash": 77.63304206021712
+    },
+    "V47 id2_close_vs_pm_vwap_20 Top2 bimonthly": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "trades": 35,
+      "turnover": 2134166.703377188,
+      "fees": 1097.5058825422927,
+      "slippage_cost": 640.2500110131565,
+      "total_trading_cost": 1737.7558935554493,
+      "min_cash": 98.50579823198495
+    }
+  },
+  "resource_usage": {
+    "host_cpu_utilization_pct": 24.700000000000003,
+    "host_cpu_idle_pct": 75.3,
+    "host_load_1m_5m_15m": [
+      9.71,
+      10.05,
+      10.73
+    ],
+    "host_logical_cpus": 48,
+    "host_load_1m_per_cpu": 0.20229166666666668,
+    "host_available_memory_gib": 349.52269744873047,
+    "process_address_space_cap_gib": 180.0,
+    "process_peak_rss_gib": 0.2416229248046875,
+    "process_peak_rss_under_180_gib": true,
+    "host_cpu_gate_passed": true
+  }
+}

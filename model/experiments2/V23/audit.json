@@ -1,0 +1,443 @@
+{
+  "window": {
+    "start": "2020-01-02",
+    "end": "2026-06-30",
+    "days": 1571,
+    "monthly_signal_dates": 78
+  },
+  "source_cache_quarters": [
+    "2020Q1",
+    "2020Q2",
+    "2020Q3",
+    "2020Q4",
+    "2021Q1",
+    "2021Q2",
+    "2021Q3",
+    "2021Q4",
+    "2022Q1",
+    "2022Q2",
+    "2022Q3",
+    "2022Q4",
+    "2023Q1",
+    "2023Q2",
+    "2023Q3",
+    "2023Q4",
+    "2024Q1",
+    "2024Q2",
+    "2024Q3",
+    "2024Q4",
+    "2025Q1",
+    "2025Q2",
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "all_26_quarter_cache_hashes_verified": true,
+  "model_scores_read_from_cache_only": true,
+  "model_training_or_inference_performed": false,
+  "price_adjustment_source": "V11-compatible four-bank adjusted close from shared parquet cache",
+  "risk_adjusted_score": "60-session adjusted close cumulative return divided by sample standard deviation of the 60 adjusted-close daily simple returns ending at signal close",
+  "causal_checks": {
+    "all_signals_use_60_return_intervals": true,
+    "all_volatility_end_dates_equal_signal_dates": true,
+    "all_execution_dates_t_plus_1": true,
+    "signal_dates_match_all_comparators": true
+  },
+  "ledger": "cash_engine.py copied from V11 final analysis engine; same commission, stamp/transfer, slippage, 100-share lots, 1% participation, limit locks, corporate-action share adjustment, and zero-target odd-lot exit rule",
+  "same_lifecycle_for_all_scenarios": true,
+  "forced_final_liquidation": false,
+  "scenarios": {
+    "V23 60d risk-adjusted momentum Top2": {
+      "strategy": "V23 60d risk-adjusted momentum Top2",
+      "net_return": 1.0808355538092895,
+      "gross_return_same_fills": 1.1265120330582423,
+      "annualized_net_return": 0.12481267333603618,
+      "annualized_volatility": 0.16662608304508722,
+      "max_drawdown": -0.17388204730857149,
+      "fees": 2944.9156343685477,
+      "slippage_cost": 1622.732290526979,
+      "total_trading_cost": 4567.647924895527,
+      "turnover": 5409107.635089932,
+      "trades": 139,
+      "blocked_trade_events": 0,
+      "cash_min": 19.820406198268756,
+      "cash_nonnegative": true,
+      "ending_cash": 267.98716503686774,
+      "ending_positions": 2,
+      "ending_shares_json": "{\"601939.SH\": 10800.0, \"601988.SH\": 18148.8756}",
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "odd_lot_zero_target_sell_trade_count": 18,
+      "odd_lot_exit_trades": [
+        {
+          "trade_date": "2020-08-04",
+          "stock_code": "601288.SH",
+          "shares": 13571.1364,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-04-02",
+          "stock_code": "601398.SH",
+          "shares": 8900.4709,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-05-07",
+          "stock_code": "601939.SH",
+          "shares": 6800.746,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-07-02",
+          "stock_code": "601288.SH",
+          "shares": 15398.5419,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-08-03",
+          "stock_code": "601398.SH",
+          "shares": 9385.7143,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2022-03-02",
+          "stock_code": "601988.SH",
+          "shares": 14595.5906,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2022-08-02",
+          "stock_code": "601398.SH",
+          "shares": 10005.6824,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2023-04-04",
+          "stock_code": "601988.SH",
+          "shares": 14416.0859,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2023-06-02",
+          "stock_code": "601939.SH",
+          "shares": 8301.6003,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2023-08-02",
+          "stock_code": "601988.SH",
+          "shares": 14538.1325,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2023-11-02",
+          "stock_code": "601288.SH",
+          "shares": 15777.2582,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2024-07-02",
+          "stock_code": "601288.SH",
+          "shares": 15401.7973,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2024-09-03",
+          "stock_code": "601939.SH",
+          "shares": 9493.9819,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2024-10-09",
+          "stock_code": "601398.SH",
+          "shares": 12215.8721,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-04-02",
+          "stock_code": "601398.SH",
+          "shares": 11743.8076,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-05-07",
+          "stock_code": "601988.SH",
+          "shares": 15047.478,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-08-04",
+          "stock_code": "601939.SH",
+          "shares": 9514.7833,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2026-02-03",
+          "stock_code": "601288.SH",
+          "shares": 13939.5687,
+          "reason": "monthly_rebalance"
+        }
+      ]
+    },
+    "60d raw momentum Top2": {
+      "strategy": "60d raw momentum Top2",
+      "net_return": 1.1756478909156929,
+      "gross_return_same_fills": 1.2182734440776506,
+      "annualized_net_return": 0.13288596709222356,
+      "annualized_volatility": 0.16974411653921065,
+      "max_drawdown": -0.1740687446718875,
+      "fees": 2773.1163840880376,
+      "slippage_cost": 1489.4389321079361,
+      "total_trading_cost": 4262.555316195974,
+      "turnover": 4964796.440359789,
+      "trades": 140,
+      "blocked_trade_events": 0,
+      "cash_min": 9.126485533386585,
+      "cash_nonnegative": true,
+      "ending_cash": 257.8850435932636,
+      "ending_positions": 2,
+      "ending_shares_json": "{\"601939.SH\": 11300.0, \"601988.SH\": 18966.4168}",
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "odd_lot_zero_target_sell_trade_count": 15,
+      "odd_lot_exit_trades": [
+        {
+          "trade_date": "2020-08-04",
+          "stock_code": "601288.SH",
+          "shares": 14097.1494,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-05-07",
+          "stock_code": "601398.SH",
+          "shares": 9200.4816,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-05-07",
+          "stock_code": "601939.SH",
+          "shares": 6900.7568,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-07-02",
+          "stock_code": "601288.SH",
+          "shares": 15504.7388,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-08-03",
+          "stock_code": "601398.SH",
+          "shares": 9491.1717,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-11-02",
+          "stock_code": "601988.SH",
+          "shares": 14908.294,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2022-08-02",
+          "stock_code": "601398.SH",
+          "shares": 9899.239,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2023-10-10",
+          "stock_code": "601988.SH",
+          "shares": 15277.3356,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2023-11-02",
+          "stock_code": "601288.SH",
+          "shares": 16309.4049,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2024-08-02",
+          "stock_code": "601288.SH",
+          "shares": 16140.2396,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2024-10-09",
+          "stock_code": "601398.SH",
+          "shares": 12842.1914,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-04-02",
+          "stock_code": "601398.SH",
+          "shares": 12254.408,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-05-07",
+          "stock_code": "601988.SH",
+          "shares": 15776.3623,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-08-04",
+          "stock_code": "601939.SH",
+          "shares": 9924.0213,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2026-02-03",
+          "stock_code": "601288.SH",
+          "shares": 14566.1905,
+          "reason": "monthly_rebalance"
+        }
+      ]
+    },
+    "V11 LambdaRank Top2": {
+      "strategy": "V11 LambdaRank Top2",
+      "net_return": 1.1488570877015314,
+      "gross_return_same_fills": 1.228077217051609,
+      "annualized_net_return": 0.13063515010178572,
+      "annualized_volatility": 0.16624180326210194,
+      "max_drawdown": -0.1806427594279295,
+      "fees": 5044.9125112355505,
+      "slippage_cost": 2877.1004237726133,
+      "total_trading_cost": 7922.012935008164,
+      "turnover": 9590334.745908707,
+      "trades": 190,
+      "blocked_trade_events": 0,
+      "cash_min": 13.84519483369968,
+      "cash_nonnegative": true,
+      "ending_cash": 798.7329736971296,
+      "ending_positions": 2,
+      "ending_shares_json": "{\"601288.SH\": 17365.2349, \"601988.SH\": 19000.0}",
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "odd_lot_zero_target_sell_trade_count": 17,
+      "odd_lot_exit_trades": [
+        {
+          "trade_date": "2020-08-04",
+          "stock_code": "601939.SH",
+          "shares": 7117.4334,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-02-02",
+          "stock_code": "601988.SH",
+          "shares": 14400.7559,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2021-09-02",
+          "stock_code": "601398.SH",
+          "shares": 9696.6292,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2022-08-02",
+          "stock_code": "601988.SH",
+          "shares": 15452.6357,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2022-10-11",
+          "stock_code": "601398.SH",
+          "shares": 10750.7864,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2023-06-02",
+          "stock_code": "601939.SH",
+          "shares": 8701.6774,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2023-09-04",
+          "stock_code": "601398.SH",
+          "shares": 12682.7455,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2023-10-10",
+          "stock_code": "601988.SH",
+          "shares": 15492.4748,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2024-09-03",
+          "stock_code": "601988.SH",
+          "shares": 16301.5388,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2024-12-03",
+          "stock_code": "601288.SH",
+          "shares": 16756.7149,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-02-06",
+          "stock_code": "601398.SH",
+          "shares": 13377.7287,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-02-06",
+          "stock_code": "601939.SH",
+          "shares": 10540.7884,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-07-02",
+          "stock_code": "601939.SH",
+          "shares": 10640.1878,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-08-04",
+          "stock_code": "601398.SH",
+          "shares": 13367.0577,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2025-09-02",
+          "stock_code": "601288.SH",
+          "shares": 16754.2894,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2026-02-03",
+          "stock_code": "601398.SH",
+          "shares": 15168.4906,
+          "reason": "monthly_rebalance"
+        },
+        {
+          "trade_date": "2026-06-02",
+          "stock_code": "601398.SH",
+          "shares": 15860.725,
+          "reason": "monthly_rebalance"
+        }
+      ]
+    },
+    "four-bank equal-weight hold": {
+      "strategy": "four-bank equal-weight hold",
+      "net_return": 1.0217304849532973,
+      "gross_return_same_fills": 1.0222849957779774,
+      "annualized_net_return": 0.11962220769643639,
+      "annualized_volatility": 0.1598501855230107,
+      "max_drawdown": -0.15478616937894618,
+      "fees": 25.749282468,
+      "slippage_cost": 29.7018,
+      "total_trading_cost": 55.451082467999996,
+      "turnover": 99006.0,
+      "trades": 4,
+      "blocked_trade_events": 0,
+      "cash_min": 938.5489175319963,
+      "cash_nonnegative": true,
+      "ending_cash": 938.5489175319963,
+      "ending_positions": 4,
+      "ending_shares_json": "{\"601288.SH\": 9645.6347, \"601398.SH\": 5896.1157, \"601939.SH\": 4794.9754, \"601988.SH\": 9584.6759}",
+      "max_abs_accounting_residual": 0.0,
+      "odd_lot_zero_target_sell_trade_count": 0,
+      "odd_lot_exit_trades": []
+    }
+  }
+}

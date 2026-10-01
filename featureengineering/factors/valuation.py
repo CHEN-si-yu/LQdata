@@ -254,20 +254,6 @@ def free_share_ratio(ctx):
 #   （自由流通口径），与 liquidity 的那两个不是同一个东西。
 
 
-@register(FactorSpec(
-    name="turnover_f_20", group="value", deps=DEP_PX,
-    desc="20 日平均自由流通换手率（% = vol/free_share×100），低换手排前",
-    formula="avg_turnover = turnover_rate_f.groupby(level='Code').transform(\n"
-            "    lambda s: s.rolling(20, min_periods=10).mean())",
-    start=VAL_START, warmup_days=ROLL20_WARMUP, higher_is_better=False,
-    note="价格层没有自由流通换手率字段，故自算 vol/free_share×100"
-         "（vol 与 free_share 都是**股**；实测与供应商 turnover_rate_f 的"
-         "中位相对偏差 8.3e-4 —— 差的是股本快照版本，可忽略）。"
-         "自由流通口径剔除大股东锁定股份，比 turnover_20 更贴近真实交易活跃度。"
-         "min_count=10 的理由同 turnover_20（对齐参考库 min_periods=10）。",
-))
-def turnover_f_20(ctx):
-    return ctx.roll_mean(_turnover_f(ctx), 20, min_count=10)
 
 
 @register(FactorSpec(

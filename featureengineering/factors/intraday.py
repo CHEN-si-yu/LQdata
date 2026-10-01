@@ -462,30 +462,6 @@ def idt_vol_stability(ctx):
 # 6. 分钟级方向占比（1 个）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="idt_up_minutes_ratio",
-    group="intraday",
-    desc="上涨棒占比：n_up / n_bars，买盘持续主导",
-    formula="n_up / n_bars   （5min 口径 = 参考库 intra_trend）",
-    deps=("stock_history_5min",),
-    start=IDT_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + "★ 参考库 `up_minutes_ratio` 是「1 分钟正收益分钟数/总分钟数」；"
-          "本项目是 5 分钟棒，所以本因子**精确等于**参考库同族的 `intra_trend`"
-          "（其定义逐字为「正收益 5 分钟区间占比」）。二者同义不同分辨率，"
-          "方向均为正（买盘主导排前）。"
-          "★ 取值 ∈[0,1]：分子 `n_up` 只数 `r>0` 的棒。"
-          "★ 日内层的每根棒的首棒相对上一棒，**当日第一根棒没有前收**（段首 diff=NaN→0）"
-          "所以在所有口径下都不计入 `n_up`，与参考库 1min 口径一致"
-          "（240 根里最新一根也没有下一根）。副作用：全天一字涨停（所有棒收益为 0）"
-          "会得到 `n_up=0` → 本因子 0.0 —— 这是**真的**（没有一根棒在涨），"
-          "不是缺失；如果下游想区分「一字板」与「全天阴跌」，"
-          "请配 `idt_rv_daily`（一字板 RV=0）或 `idt_close_position`（NaN）。"
-          "★ 停牌日 NaN（日内层无行）。"),
-))
-def idt_up_minutes_ratio(ctx):
-    return ctx.safe_div(_f(ctx, "n_up"), _f(ctx, "n_bars"), min_abs_den=0.0)
 
 
 # ══════════════════════════════════════════════════════════════════════

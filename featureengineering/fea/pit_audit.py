@@ -21,7 +21,7 @@ from . import store
 def compare_frames(reference, candidate, tol):
     if reference.empty or candidate.empty:
         raise ValueError('Missing production or recomputed rows')
-    keys=['trade_date','stock_code']
+    keys=['trade_date'] if 'stock_code' not in reference.columns else ['trade_date','stock_code']
     if reference.duplicated(keys).any() or candidate.duplicated(keys).any():
         raise ValueError('Duplicate factor keys')
     a=reference.sort_values(keys,ignore_index=True)
@@ -29,7 +29,7 @@ def compare_frames(reference, candidate, tol):
     if len(a)!=len(b) or not a[keys].equals(b[keys]):
         raise ValueError('Date/stock grid differs')
     mismatches={}
-    for column in ('value','rank'):
+    for column in (('value','rank') if 'rank' in reference.columns else ('value',)):
         x=a[column].to_numpy(dtype=np.float64)
         y=b[column].to_numpy(dtype=np.float64)
         bad=~np.isclose(x,y,rtol=tol,atol=0,equal_nan=True)
@@ -93,7 +93,7 @@ def run_dynamic(args,cfg,specs):
         sandbox=Path(tempfile.mkdtemp(prefix='factor_pit_'))
         local=copy.deepcopy(cfg)
         local.raw['_audit_cutoff'] = cutoff
-        local.raw['paths'].update(factors=str(sandbox/'factors'),state=str(sandbox/'state'))
+        local.raw['paths'].update(factors=str(sandbox/'factors'),market_factors=str(sandbox/'market_factors'),state=str(sandbox/'state'))
         active=[s for s in specs if s.start_int(cfg)<=cutoff]
         report['skipped'] += [[s.name,int_to_str(cutoff),'before effective start'] for s in specs if s not in active]
         try:
@@ -104,8 +104,8 @@ def run_dynamic(args,cfg,specs):
                     _compute(local,parents,max(floor,year*10000+101),min(cutoff,year*10000+1231),jobs)
             _compute(local,active,cutoff//10000*10000+101,cutoff,jobs)
             for spec in active:
-                reference=store.read_year(cfg.factors_dir,spec.name,cutoff//10000)
-                candidate=store.read_year(local.factors_dir,spec.name,cutoff//10000)
+                reference=store.read_year(cfg.factor_root(spec),spec.name,cutoff//10000)
+                candidate=store.read_year(local.factor_root(spec),spec.name,cutoff//10000)
                 if reference.empty or candidate.empty:
                     raise ValueError(f'{spec.name}: missing partition')
                 day=int_to_str(cutoff)
@@ -123,7 +123,8 @@ def run_dynamic(args,cfg,specs):
             shutil.rmtree(sandbox)
     if not report['comparisons']:
         report['errors'].append({'error':'No completed comparisons'})
-    dest=cfg.state_dir/'pit_audit'/time.strftime('%Y%m%d_%H%M%S')
+    # 审计报告是运行产物：放项目内 artifacts/pit/（原来在 ../CodeX/featureengineering_pit）。
+    dest=Path(cfg.root)/'artifacts'/'pit'/time.strftime('%Y%m%d_%H%M%S')
     dest.mkdir(parents=True,exist_ok=True)
     (dest/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     print(f'动态审计报告：{dest / "report.json"}')

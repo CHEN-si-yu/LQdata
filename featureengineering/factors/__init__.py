@@ -64,14 +64,22 @@ from . import annual_field_expansion, field_events, field_markets  # noqa: F401
 #   ★ 这三个是**执行/容量**口径，不是 alpha 声称；`higher_is_better` 只用于符号统一。
 from . import open5  # noqa: F401
 
+# 新增的收盘前 30 分钟、局部筹码供给与开盘容量因子。
+from . import closing30, chipwall, open_capacity  # noqa: F401
+
 __all__ = ["annual_field_expansion", "field_events", "field_markets", "quarterly_quality", "cyq_perf", "financial_detail", "disclosure_detail","fundamental", "event", "labels", "chips", "fundflow", "growth",
            "intraday", "liquidity", "margin", "momentum", "quality", "technical",
            "valuation", "volatility", "coupling", "overnight_pattern", "chips2",
            "fundflow2", "event3", "fundamental2",
-           "intraday2", "breadth", "sector", "fundflow3", "fundamental3", "open5"]
+           "intraday2", "breadth", "sector", "fundflow3", "fundamental3", "open5",
+           "closing30", "chipwall", "open_capacity"]
 
 # ★ 兜底：核对 `register(...)` 的调用次数与注册表大小。
 #   防的是「把装饰器写成普通调用」——那是个**静默 no-op**，不报错也不注册，
 #   让人以为守卫通过了、其实根本没跑（实测有 Agent 这样被绕过一次）。
+from . import market
+from . import market2
+from . import tradability
+
 from fea.spec import check_all_applied as _check_all_applied   # noqa: E402
 _check_all_applied(strict=True)

@@ -1,0 +1,36 @@
+{
+  "objective": "fixed four-bank monthly 60-session momentum Top2 with rank-based 60/40 allocation",
+  "official_signal_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "official_exit_only_day": "2026-07-01",
+  "official_signal_sessions": 242,
+  "extended_window": [
+    "2023-01-03",
+    "2026-09-24"
+  ],
+  "signal_rule": {
+    "signal": "first observed session of each calendar month at T close",
+    "selection": "fixed 60-session adjusted-close return Top2 ranking as V4",
+    "allocation": "momentum rank 1 receives 60% and rank 2 receives 40%; fixed weights, no volatility scaling",
+    "execution": "T+1 open; final lifecycle exit at closing price; audited cash-only ledger; 100-share lots, 1% prior signal-day amount capacity, one-price limit locks, 3bp slippage, commission/transfer/sell stamp fees",
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "cash_constraints": {
+      "account_money": 100000.0,
+      "lot_size": 100,
+      "max_participation": 0.01,
+      "commission_rate": 0.00025,
+      "min_commission": 5.0,
+      "transfer_rate": 1e-05,
+      "stamp_sell_rate": 0.0005,
+      "slippage_rate": 0.0003
+    },
+    "interpretation": "strict matched friction is same-holdings gross reference minus trading costs/slippage; not selection alpha"
+  },
+  "source_snapshot": "/root/autodl-fs/model/trainingdata/meta.json",
+  "amount_column": "amount",
+  "script_sha256": "635410fbd3f2cb9017249de1d176e0de4a27cd679eb10422020cabffc101325f",
+  "price_loader": "parquet filters only four bank codes and reads price plus amount; no model/features loaded"
+}

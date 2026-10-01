@@ -1,0 +1,27 @@
+{
+  "objective": "Compare drift-preserving Top2 momentum with V4 monthly reweighting",
+  "rule": {
+    "signal": "first observed trading session of each calendar month at close",
+    "factor": "adjusted close(T)/adjusted close(T-60 trading sessions)-1; fixed Top2",
+    "execution": "T+1 open; equal-value targets only when Top2 membership changes; otherwise preserve share counts; shared cash ledger copied from V4; 100-share lots, capacity, price locks, fees and slippage",
+    "official_signal_window": [
+      "2025-07-01",
+      "2026-06-30"
+    ],
+    "official_session_count": 242,
+    "official_forced_exit": "2026-07-01",
+    "extended_signal_window": [
+      "2023-01-03",
+      "2026-09-24"
+    ],
+    "extended_forced_exit": "2026-09-24",
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "matched_return_interpretation": "same realized holdings path without fees; net-minus-matched is execution friction, not selection alpha",
+    "engine_copy": "V13/account_engine.py copied from V4/account_engine.py"
+  },
+  "runner_sha256": "81384da20beee9f4f4032f9675ec96cc3d30dd2b72a33280eb2acd54b6c3172c",
+  "engine_sha256": "825c7a9cee48479ecd75eb1e9787afdbd25e6e7d4cf06826564c6ec34737e20a",
+  "panel_loader": "/root/autodl-fs/model/experiments2/V1/model.py",
+  "created_at": "2026-09-27 17:51:25"
+}

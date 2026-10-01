@@ -1,0 +1,42 @@
+{
+  "version": "V41",
+  "frozen_at_utc": "2026-09-27 10:36:38 UTC",
+  "hypothesis": "Rebalancing the frozen V34 factor Top2 portfolio only on the first shared trading signal date of each calendar quarter reduces turnover and ledger costs versus V34 monthly rebalancing, while comparing net return, drawdown, and volatility on the same holdout.",
+  "source_strategy": {
+    "experiment": "V34",
+    "factor": "id2_close_vs_pm_vwap_20",
+    "factor_semantics": "zscore_win1_99_v1",
+    "direction": "higher ranks higher",
+    "selection_cutoff": "2023Q4",
+    "training_top20_quarters": 10,
+    "training_quarters": 16,
+    "portfolio_rule": "Rank the four banks by the signal-date close factor value descending, break ties by stock code, and target equal 50% weights in the Top2."
+  },
+  "holdout_dates_inclusive": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "shared_monthly_signal_dates": [
+    "2024-01-02", "2024-02-01", "2024-03-01", "2024-04-01", "2024-05-06", "2024-06-03",
+    "2024-07-01", "2024-08-01", "2024-09-02", "2024-10-08", "2024-11-01", "2024-12-02",
+    "2025-01-02", "2025-02-05", "2025-03-03", "2025-04-01", "2025-05-06", "2025-06-03",
+    "2025-07-01", "2025-08-01", "2025-09-01", "2025-10-09", "2025-11-03", "2025-12-01",
+    "2026-01-05", "2026-02-02", "2026-03-02", "2026-04-01", "2026-05-06", "2026-06-01"
+  ],
+  "quarterly_rebalance_signal_dates": [
+    "2024-01-02", "2024-04-01", "2024-07-01", "2024-10-08",
+    "2025-01-02", "2025-04-01", "2025-07-01", "2025-10-09",
+    "2026-01-05", "2026-04-01"
+  ],
+  "rebalance_rule": "Use only the first shared V34 monthly signal date in each calendar quarter. Other monthly signals do not change holdings. After each quarterly signal close, execute the target at the next trading session open. The first order remains the 2024-01-02 signal and starts with the same equal 50/50 Top2 target.",
+  "comparison": {
+    "monthly_control": "V34 id2_close_vs_pm_vwap_20 Top2 monthly schedule replayed with the same V11 ledger and verified against the frozen V34 outputs.",
+    "common_window": true,
+    "initial_equity": 100000.0
+  },
+  "ledger": "Use V11/analysis.py unchanged: next-session open; shared cash; 100-share lots; 1% participation cap; minimum commission and commission, transfer and sell stamp fees; adverse slippage; one-price limit blocks; corporate-action adjusted shares; odd-lot full-exit handling. Mark at 2026-06-30 close without forced liquidation.",
+  "no_retraining": true,
+  "no_parameter_sweep": true,
+  "no_frequency_change_after_results": true,
+  "no_holdout_based_rule_changes": true
+}

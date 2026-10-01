@@ -1,0 +1,65 @@
+{
+  "frozen_at": "2026-09-30 19:06:03",
+  "units": [
+    "V66",
+    "V67",
+    "V68",
+    "V69"
+  ],
+  "seeds": [
+    3253,
+    4253,
+    5253,
+    6253
+  ],
+  "parents": [
+    "V50",
+    "V62"
+  ],
+  "weight_origin": "scripts only; both branches freshly fitted; no old model artifacts copied",
+  "snapshot_root": "/root/autodl-fs/model/history/diversification_20260930/trainingdata_frozen",
+  "feature_counts": {
+    "flow": 105,
+    "technical": 44,
+    "total": 149,
+    "market": 61
+  },
+  "primary": {
+    "topn": 5,
+    "period": 5,
+    "band": 40,
+    "phase": 0,
+    "flow_weight": 0.5,
+    "cost_gate_multiplier": 1.0
+  },
+  "selection": "weighted delivered fusion RankIC on valid only; absolute all five training fits bagged equally. No fixed test seed/weight/phase selection.",
+  "forecast_contract": "rank scores remain2D float32; within-submodel cross-family percentile transform explicit; four raw fold scores summed. Separate absolute1d forecasts rederived from own checkpoints and stored as one added column in existing yearly score files; fourfold raw sum gate scaled4; Top1 baseline unchanged.",
+  "artifact_contract": "three scripts only; unchanged159 files/28dirs,4quarters x4folds/eight files. No history or other unit runtime imports.",
+  "source_sha256": {
+    "V66": {
+      "model.py": "de7c58b9dc458945cb723fca513626395a48c9270e9974cb7305b47611cde12a",
+      "analysis.py": "9bcafcd07971ba7f79fc4ecaccbe7fc410043db04be19165229991d3d9db2ab5",
+      "run.py": "bf4fbf51f46e7cc2c72df477e6d2af5767cb1e40b53d9cd3bf5cfa8b59cce3aa"
+    },
+    "V67": {
+      "model.py": "2a54ffd2376e78d343cecf8944f416d3d41458f9e22466864166cfd41e9cf455",
+      "analysis.py": "9bcafcd07971ba7f79fc4ecaccbe7fc410043db04be19165229991d3d9db2ab5",
+      "run.py": "bf4fbf51f46e7cc2c72df477e6d2af5767cb1e40b53d9cd3bf5cfa8b59cce3aa"
+    },
+    "V68": {
+      "model.py": "c2ab9b3092f9cd8bb59c5d9a942e1b0f350ca6a083bccd6ea770d87bf62f0d55",
+      "analysis.py": "9bcafcd07971ba7f79fc4ecaccbe7fc410043db04be19165229991d3d9db2ab5",
+      "run.py": "bf4fbf51f46e7cc2c72df477e6d2af5767cb1e40b53d9cd3bf5cfa8b59cce3aa"
+    },
+    "V69": {
+      "model.py": "7ba72357f748f58d7fdbf0a053eafa881d1fc195b0ad4ad87c881a9ed69c8939",
+      "analysis.py": "9bcafcd07971ba7f79fc4ecaccbe7fc410043db04be19165229991d3d9db2ab5",
+      "run.py": "bf4fbf51f46e7cc2c72df477e6d2af5767cb1e40b53d9cd3bf5cfa8b59cce3aa"
+    }
+  },
+  "planned_folds": 64,
+  "former_reserved_identifiers": "V66–V69 previously only reserved for rejected variance prototype, never created; these now identify fresh fusion models",
+  "implementation_corrections": [
+    "/root/autodl-fs/model/history/flow_technical_joint_20260930/canonical_backend_correction.json"
+  ]
+}

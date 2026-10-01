@@ -1,0 +1,399 @@
+{
+  "unit": "experiments2/V1",
+  "data": {
+    "built_at": "2026-09-27 14:19:24",
+    "last_upstream_day": "2026-09-24",
+    "factors": 484,
+    "market_features": 122,
+    "model_features": 610
+  },
+  "window": {
+    "start": "2025-07-01",
+    "end": "2026-06-30",
+    "days": 242
+  },
+  "metrics_total": {
+    "action": {
+      "return_value": -0.06997144680621104,
+      "annualized": -0.06997144680621104,
+      "max_drawdown": -0.14585909317713508,
+      "total_fees": 1334.86973466814,
+      "trades": 162,
+      "avg_exposure": 0.742623218548127,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "ending_positions": 0,
+      "alpha_vs_buy_hold": -0.08201981278130321,
+      "final_equity": 93002.8553193789,
+      "gross_return": -0.05129810136171287,
+      "cost_drag": 0.01867334544449817
+    },
+    "buy_hold": {
+      "return_value": 0.016224063124026022,
+      "annualized": 0.016224063124026022,
+      "max_drawdown": -0.15119064253391168,
+      "total_fees": 101.63900403249067,
+      "trades": 8,
+      "avg_exposure": 0.9805130070874543,
+      "blocked_entries": 0,
+      "blocked_exits": 0,
+      "ending_positions": 0,
+      "alpha_vs_buy_hold": 0.00031615820311059126,
+      "final_equity": 101622.4063124026,
+      "gross_return": 0.017835795903121676,
+      "cost_drag": 0.0016117327790956537
+    },
+    "buy_hold_gross_return": 0.017835795903121676
+  },
+  "quarters": [
+    {
+      "quarter": "2025Q3",
+      "action": {
+        "quarter": "2025Q3",
+        "days": 66,
+        "return_value": -0.022751142065857932,
+        "avg_exposure": 0.5898602022847398,
+        "total_fees": 448.0048613099093,
+        "trades": 56,
+        "alpha_vs_buy_hold": -0.006683357239429592
+      },
+      "buy_hold": {
+        "quarter": "2025Q3",
+        "days": 66,
+        "return_value": -0.027239987990700265,
+        "avg_exposure": 0.9841283243244984,
+        "total_fees": 25.573989896,
+        "trades": 4
+      }
+    },
+    {
+      "quarter": "2025Q4",
+      "action": {
+        "quarter": "2025Q4",
+        "days": 60,
+        "return_value": 0.034779911970950206,
+        "avg_exposure": 0.7669835204077173,
+        "total_fees": 298.711301164,
+        "trades": 38,
+        "alpha_vs_buy_hold": -0.06439537154379732
+      },
+      "buy_hold": {
+        "quarter": "2025Q4",
+        "days": 60,
+        "return_value": 0.12930562505701215,
+        "avg_exposure": 0.9851951306500436,
+        "total_fees": 0.0,
+        "trades": 0
+      }
+    },
+    {
+      "quarter": "2026Q1",
+      "action": {
+        "quarter": "2026Q1",
+        "days": 56,
+        "return_value": -0.024735829380783225,
+        "avg_exposure": 0.895282065396726,
+        "total_fees": 152.70402440834323,
+        "trades": 18,
+        "alpha_vs_buy_hold": 0.0050502255161989675
+      },
+      "buy_hold": {
+        "quarter": "2026Q1",
+        "days": 56,
+        "return_value": -0.0332700229885462,
+        "avg_exposure": 0.9841983466424844,
+        "total_fees": 0.0,
+        "trades": 0
+      }
+    },
+    {
+      "quarter": "2026Q2",
+      "action": {
+        "quarter": "2026Q2",
+        "days": 60,
+        "return_value": -0.056980111773422104,
+        "avg_exposure": 0.7438206441862363,
+        "total_fees": 435.44954778588783,
+        "trades": 50,
+        "alpha_vs_buy_hold": -0.024922315991983822
+      },
+      "buy_hold": {
+        "quarter": "2026Q2",
+        "days": 60,
+        "return_value": -0.04309882500842732,
+        "avg_exposure": 0.9684143843127547,
+        "total_fees": 76.06501413649067,
+        "trades": 4
+      }
+    }
+  ],
+  "ts_ic": {
+    "label_ret_1d": {
+      "pearson": -0.03699093510504274,
+      "spearman": -0.019047076533190682,
+      "days": 242,
+      "standard_error": 0.06468462273531508,
+      "per_code": {
+        "601288.SH": {
+          "pearson": -0.1303982166912199,
+          "spearman": -0.13750936427538052,
+          "days": 242,
+          "standard_error": 0.06468462273531508
+        },
+        "601398.SH": {
+          "pearson": -0.03939948347745386,
+          "spearman": -0.007793741904347608,
+          "days": 242,
+          "standard_error": 0.06468462273531508
+        },
+        "601939.SH": {
+          "pearson": -0.013505781813042557,
+          "spearman": 0.018221691603670178,
+          "days": 242,
+          "standard_error": 0.06468462273531508
+        },
+        "601988.SH": {
+          "pearson": 0.03533974156154534,
+          "spearman": 0.05089310844329522,
+          "days": 242,
+          "standard_error": 0.06468462273531508
+        }
+      }
+    },
+    "label_ret_5d": {
+      "pearson": -0.042675787031308754,
+      "spearman": -0.013308569882265038,
+      "days": 242,
+      "standard_error": 0.06468462273531508,
+      "per_code": {
+        "601288.SH": {
+          "pearson": -0.17312755274335462,
+          "spearman": -0.19140531066368077,
+          "days": 242,
+          "standard_error": 0.06468462273531508
+        },
+        "601398.SH": {
+          "pearson": -0.06965457051749006,
+          "spearman": -0.0066374870689062775,
+          "days": 242,
+          "standard_error": 0.06468462273531508
+        },
+        "601939.SH": {
+          "pearson": -0.04674605992378038,
+          "spearman": 0.013608221409943841,
+          "days": 242,
+          "standard_error": 0.06468462273531508
+        },
+        "601988.SH": {
+          "pearson": 0.11882503505939006,
+          "spearman": 0.13120029679358305,
+          "days": 242,
+          "standard_error": 0.06468462273531508
+        }
+      }
+    }
+  },
+  "action_hit_rate": {
+    "601288.SH": {
+      "add_count": 21,
+      "add_hit_rate": 0.6190476190476191,
+      "positive_base_rate": 0.48760330578512395,
+      "exit_count": 19,
+      "exit_hit_rate": 0.2631578947368421,
+      "negative_base_rate": 0.49586776859504134
+    },
+    "601398.SH": {
+      "add_count": 19,
+      "add_hit_rate": 0.3157894736842105,
+      "positive_base_rate": 0.4628099173553719,
+      "exit_count": 17,
+      "exit_hit_rate": 0.29411764705882354,
+      "negative_base_rate": 0.48760330578512395
+    },
+    "601939.SH": {
+      "add_count": 21,
+      "add_hit_rate": 0.42857142857142855,
+      "positive_base_rate": 0.4669421487603306,
+      "exit_count": 19,
+      "exit_hit_rate": 0.3684210526315789,
+      "negative_base_rate": 0.5082644628099173
+    },
+    "601988.SH": {
+      "add_count": 22,
+      "add_hit_rate": 0.36363636363636365,
+      "positive_base_rate": 0.4669421487603306,
+      "exit_count": 20,
+      "exit_hit_rate": 0.4,
+      "negative_base_rate": 0.4834710743801653
+    },
+    "equal_weight": {
+      "add_hit_rate": 0.43176122123490546,
+      "positive_base_rate": 0.47107438016528924,
+      "exit_hit_rate": 0.33142414860681113,
+      "negative_base_rate": 0.493801652892562
+    }
+  },
+  "seed_results": [
+    {
+      "seed": 17,
+      "return_value": -0.059600057930017325,
+      "avg_exposure": 0.7368322753056163,
+      "alpha_vs_buy_hold": -0.07155447127639536,
+      "total_fees": 1239.326629348148,
+      "trades": 150
+    },
+    {
+      "seed": 29,
+      "return_value": -0.06829796946434474,
+      "avg_exposure": 0.7452497062913944,
+      "alpha_vs_buy_hold": -0.08038894774237818,
+      "total_fees": 1318.5535233488024,
+      "trades": 160
+    },
+    {
+      "seed": 43,
+      "return_value": -0.07195946307212575,
+      "avg_exposure": 0.7377216112758898,
+      "alpha_vs_buy_hold": -0.08392830506142397,
+      "total_fees": 1218.0441453190106,
+      "trades": 148
+    },
+    {
+      "seed": 71,
+      "return_value": -0.07746324478944122,
+      "avg_exposure": 0.7335656413021624,
+      "alpha_vs_buy_hold": -0.08936466005954413,
+      "total_fees": 1284.059571845956,
+      "trades": 156
+    }
+  ],
+  "seed_summary": {
+    "n": 4,
+    "return_mean": -0.06933018381398226,
+    "return_std": 0.007501124503015955,
+    "return_min": -0.07746324478944122,
+    "return_max": -0.059600057930017325,
+    "alpha_mean": -0.08130909603493541,
+    "alpha_std": 0.007477783645332975,
+    "positive_alpha_seeds": 0
+  },
+  "sensitivity": [
+    {
+      "variant": "q20_80_b00",
+      "band_fraction": 0.0,
+      "return_value": -0.054877931509339506,
+      "avg_exposure": 0.7089485712864713,
+      "alpha_vs_buy_hold": -0.06637995788157927,
+      "total_fees": 1606.3278550111108,
+      "trades": 194
+    },
+    {
+      "variant": "q20_80_b10",
+      "band_fraction": 0.1,
+      "return_value": -0.04413181162675772,
+      "avg_exposure": 0.7138521630578033,
+      "alpha_vs_buy_hold": -0.05571339418143004,
+      "total_fees": 1049.3223177076795,
+      "trades": 126
+    },
+    {
+      "variant": "q20_80_b25",
+      "band_fraction": 0.25,
+      "return_value": -0.04672686217402133,
+      "avg_exposure": 0.7110890824109826,
+      "alpha_vs_buy_hold": -0.05826361633386286,
+      "total_fees": 638.4164566150016,
+      "trades": 76
+    },
+    {
+      "variant": "q30_70_b00",
+      "band_fraction": 0.0,
+      "return_value": -0.08225387717821508,
+      "avg_exposure": 0.739133366410698,
+      "alpha_vs_buy_hold": -0.09424562357193611,
+      "total_fees": 1575.7389977673483,
+      "trades": 192
+    },
+    {
+      "variant": "q30_70_b10",
+      "band_fraction": 0.1,
+      "return_value": -0.06997144680621104,
+      "avg_exposure": 0.742623218548127,
+      "alpha_vs_buy_hold": -0.08201981278130321,
+      "total_fees": 1334.86973466814,
+      "trades": 162
+    },
+    {
+      "variant": "q30_70_b25",
+      "band_fraction": 0.25,
+      "return_value": -0.0626500810120515,
+      "avg_exposure": 0.7429895912728356,
+      "alpha_vs_buy_hold": -0.07470439104135627,
+      "total_fees": 929.9745254289302,
+      "trades": 112
+    },
+    {
+      "variant": "q40_60_b00",
+      "band_fraction": 0.0,
+      "return_value": -0.08792176209013502,
+      "avg_exposure": 0.7608628314302253,
+      "alpha_vs_buy_hold": -0.10026604869598417,
+      "total_fees": 1425.884860424797,
+      "trades": 174
+    },
+    {
+      "variant": "q40_60_b10",
+      "band_fraction": 0.1,
+      "return_value": -0.0861273857784226,
+      "avg_exposure": 0.7595428348620086,
+      "alpha_vs_buy_hold": -0.0984502566766255,
+      "total_fees": 1311.3938949793169,
+      "trades": 160
+    },
+    {
+      "variant": "q40_60_b25",
+      "band_fraction": 0.25,
+      "return_value": -0.08421091876712483,
+      "avg_exposure": 0.7540034244371174,
+      "alpha_vs_buy_hold": -0.09644391792092441,
+      "total_fees": 1033.1735085197984,
+      "trades": 126
+    }
+  ],
+  "clean_blocks": [
+    {
+      "quarter": "2025Q3",
+      "train_end": "2025-06-20",
+      "test_start": "2025-07-01",
+      "clean": true,
+      "days": 66
+    },
+    {
+      "quarter": "2025Q4",
+      "train_end": "2025-09-22",
+      "test_start": "2025-10-09",
+      "clean": true,
+      "days": 60
+    },
+    {
+      "quarter": "2026Q1",
+      "train_end": "2025-12-23",
+      "test_start": "2026-01-05",
+      "clean": true,
+      "days": 56
+    },
+    {
+      "quarter": "2026Q2",
+      "train_end": "2026-03-23",
+      "test_start": "2026-04-01",
+      "clean": true,
+      "days": 60
+    }
+  ],
+  "gross_account": {
+    "action_return": -0.05129810136171287,
+    "buy_hold_return": 0.017835795903121676,
+    "action_avg_exposure": 0.7424438997617073,
+    "action_fees_zero": true
+  }
+}

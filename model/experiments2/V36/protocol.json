@@ -1,0 +1,45 @@
+{
+  "version": "V36",
+  "hypothesis": "A fixed equal allocation between two factors selected entirely from pre-2024 training importance may combine their strict holdout performance without tuning weights on holdout results.",
+  "rule_frozen_before_backtest": true,
+  "holdout_dates": ["2024-01-02", "2026-06-30"],
+  "monthly_signal_schedule": "Use the same 30 first-session monthly signal dates as V11, V26, and V34.",
+  "components": [
+    {
+      "name": "V26 mf_tier_flow_agreement_20 Top2",
+      "factor": "mf_tier_flow_agreement_20",
+      "pre_holdout_training_top20_frequency": "16/16 quarters through 2023Q4",
+      "equity_allocation": 0.5,
+      "per_name_weight": 0.25,
+      "membership_source": "Frozen V26 membership_audit.json; signal-date factor values only."
+    },
+    {
+      "name": "V34 id2_close_vs_pm_vwap_20 Top2",
+      "factor": "id2_close_vs_pm_vwap_20",
+      "pre_holdout_training_top20_frequency": "10/16 quarters through 2023Q4",
+      "equity_allocation": 0.5,
+      "per_name_weight": 0.25,
+      "membership_source": "Frozen V34 membership_audit.json; signal-date factor values only."
+    }
+  ],
+  "portfolio_rule": "At each shared monthly signal, allocate exactly 50% of total account equity to each component's Top2; allocate 25% to each member and add allocations when a bank appears in both components. Do not alter weights from holdout results.",
+  "execution": "V11 final corrected cash ledger; target weights calculated after signal close and executed at next-session open.",
+  "costs_and_constraints": {
+    "initial_cash": 100000.0,
+    "commission_rate": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer_fee_rate": 0.00001,
+    "sell_stamp_duty_rate": 0.0005,
+    "adverse_slippage_rate": 0.0003,
+    "participation_cap": 0.01,
+    "ordinary_lot_size": 100,
+    "one_price_limit_blocks": true,
+    "corporate_action_share_adjustment": true,
+    "zero_target_odd_lot_exit_rule": "Sell residual odd lots only on full exits when participation cap covers the entire remaining position."
+  },
+  "sleeve_weights": [0.5, 0.5],
+  "comparisons": ["V26 Top2", "V34 Top2", "V11 LambdaRank Top2", "equal-weight hold"],
+  "retraining": false,
+  "parameter_sweep": false,
+  "post_holdout_weight_adjustment": false
+}

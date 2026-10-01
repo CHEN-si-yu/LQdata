@@ -37,7 +37,7 @@ from data_incremental.core import state                  # noqa: E402
 
 # 频率分组（人读版的顺序）
 GROUPS = [("daily_full", "日频 · 全量发布"), ("daily_sparse", "日频 · 稀疏发布"),
-          ("minute", "分钟级"), ("quarterly", "季频"), ("irregular", "不定期"),
+          ("minute", "分钟级"), ("weekly", "周频"), ("quarterly", "季频"), ("irregular", "不定期"),
           ("snapshot", "快照 · 周期刷新")]
 
 _SUMMARY_RE = re.compile(
@@ -46,20 +46,13 @@ _SUMMARY_RE = re.compile(
 
 def _requests_from_logs() -> tuple[dict[str, int], str]:
     """从最近一次**完整跑批**的日志里取每表请求数（找不到就返回空）。"""
-    logs = sorted(paths.LOGS.glob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
-    for p in logs[:12]:
-        try:
-            text = p.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            continue
-        got: dict[str, int] = {}
-        for ln in text.splitlines():
-            m = _SUMMARY_RE.match(ln)
-            if m and m.group(1) in R.REGISTRY:
-                got[m.group(1)] = int(m.group(3))
-        if len(got) >= 25:                     # 一次完整跑批应覆盖 30+ 张表
-            return got, p.name
-    return {}, "（未找到完整跑批日志）"
+    try:
+        rep = json.loads(paths.LAST_REPORT.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}, "last_report unavailable"
+    got = {row["name"]: int(row.get("requests", 0))
+           for group in rep.get("groups", {}).values() for row in group}
+    return got, str(paths.LAST_REPORT) + " @ " + str(rep.get("finished_at", ""))
 
 
 def _latest_T() -> str:

@@ -214,7 +214,7 @@ def _cluster(corr: np.ndarray, names: list[str], thr: float) -> list[list[int]]:
 def cmd_dedup(args, cfg) -> int:
     from .engine import Engine
     engine = Engine(cfg)
-    specs = [s for s in all_specs() if s.enabled and not s.is_label]
+    specs = [s for s in all_specs() if s.enabled and not s.is_label and not s.is_market]
     if getattr(args, "factors", None):
         want = set(args.factors)
         specs = [s for s in specs if s.name in want]

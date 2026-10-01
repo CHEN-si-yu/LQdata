@@ -1,0 +1,1230 @@
+"""执行引擎 —— 全量 / 增量 / 断点续传。
+
+## 增量为什么这么设计
+
+**状态是「已覆盖的日期区间集合」**，缺口 = 目标区间 − 已覆盖区间。
+
+关键点是每个缺口区间 `[a, b]` 要**用 `[a − warmup_days, b]` 去算**，只保留 `>= a` 的行。
+warmup 保证窗口起点的值与全量重算完全一致：财务因子要覆盖 TTM(4 季) + 同比(再 4 季) +
+ann_date 滞后，所以是 500 个日历天，不是 20 个交易日。
+warmup 给太小，每次增量都会在窗口头部产出一年左右的 NaN —— 而且看起来只像「因子有点噪」。
+
+## 三层失效判定
+
+  L0 因子逻辑指纹变了（version/formula 改动）      -> 全量重建
+  L1 输出日期有缺口 + 最近 revision_days 回刷      -> 常规每日增量
+  L2 上游输入水位变了（行数 / 最新公告日）          -> 从公告日往前回溯重算
+
+L2 是必需的一层：增量是按**输出日期**找缺口的，但上游财报被追溯修正时，
+它的 ann_date 可能远在过去（实测最长滞后 15 个月）。只按日期找缺口，
+修正就永远传播不到历史，而且悄无声息 —— 那些日期已经被标成「已完成」了。
+
+## 每年只写一次
+
+先把缺口归一到 `{年: {交易日集合}}`，再逐年计算+写盘。
+否则「缺口区间」和「回刷窗口」落在同一年时会写两次，跨年的区间更会重复写。
+`store.upsert_year` 是读-改-写整文件，重复写同一个分区就是模块① 踩过的 O(n²) 坑。
+"""
+
+from __future__ import annotations
+
+import datetime as _dt
+import json
+import logging
+import time
+from collections import defaultdict
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from .config import Config
+from .context import FactorContext
+from .dates import Calendar, int_to_str, int_to_str_vec, today_int
+from .deriv import Derivative, load_vintages, financial_dependency
+from .manifest import Manifest
+from .panel import Panel, cs_rank
+from .resources import numeric_env_fingerprint, set_guard_factor
+from .spec import FactorSpec
+from .store import upsert_year
+from .universe import (code_master, frozen_fingerprint, listed_mask,
+                       st_events, st_pool_fingerprint)
+from .upstream import Upstream
+
+log = logging.getLogger("fea.engine")
+
+# 各上游数据集用于「水位」的时间列
+DEP_PIT_COL = {
+    "stock_income": "ann_date",
+    "stock_balancesheet": "ann_date",
+    "stock_cashflow": "ann_date",
+    "stock_financial_indicator": "ann_date",
+    "stock_holder_number": "ann_date",
+    "stock_forecast": "ann_date",
+    "stock_margin_detail": "trade_date",
+    "stock_cyq_perf": "trade_date",
+    "stock_adj_factor_changes": "date",
+    "stock_limit_up": "trade_date",
+    # ⚠️ 下面这张表**没有 trade_date 列**（只有 trade_time）。不写这一条的话
+    #    水位探测会回退到读一个不存在的列 → 退化成全量读（实测 5.3s/次），
+    #    而且 L2 失效判定只剩「行数变化」可用。
+    "stock_history_5min": "trade_time",
+    "tdx_minute": "trade_time",
+    "stock_market_distribution_history": "trade_time",
+}
+
+
+def _file_changed(key, old, new):
+    """Snapshot content hashes avoid false repairs when identical files are rewritten.
+
+    The two-element legacy identity remains valid when size/mtime still match.
+    Annual files use metadata, avoiding full reads of large source partitions.
+    """
+    if old is None or new is None:
+        return old != new
+    if len(old) >= 3 and len(new) >= 3:
+        return old[2] != new[2]
+    return old[:2] != new[:2]
+
+
+
+def minus_days(v: int, n: int) -> int:
+    d = _dt.date(v // 10000, (v // 100) % 100, v % 100) - _dt.timedelta(days=int(n))
+    return d.year * 10000 + d.month * 100 + d.day
+
+
+def _merge_spans(spans: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    spans = sorted((a, b) for a, b in spans if a <= b)
+    out: list[list[int]] = []
+    for a, b in spans:
+        if out and a <= out[-1][1] + 1:
+            out[-1][1] = max(out[-1][1], b)
+        else:
+            out.append([a, b])
+    return [(a, b) for a, b in out]
+
+
+class Engine:
+    def __init__(self, cfg: Config):
+        self.cfg = cfg
+        self.up = Upstream(cfg.upstream, cfg.root)
+        self.up.audit_cutoff = cfg.raw.get("_audit_cutoff")
+        self.cal = Calendar.load(self.up)
+        self.codes = code_master(self.up, cfg)
+        self._deriv: Derivative | None = None
+        self._deriv_window: tuple[int, int] | None = None
+        # ★ run 级财务字段集（prebuild 的并集）：见 run_year 里那段"乒乓"说明。
+        #   None = 全字段（契约：空元组/未声明 = 「我全都要」）。
+        self._deriv_fields_run: frozenset | None = None
+        self._deriv_fields: frozenset | None = None
+        # `--start` 覆盖：本次运行只产出这一天之后的因子值（None = 用 spec 自己的起点）
+        self.override_start: int | None = None
+        # ★ 计算范围的下界（= conf 的 `default_start`）：既用于 plan() 的区间裁剪，
+        #   也用于 run_year() 的面板锚点（见那里的说明）。
+        self._start_floor: int = int(str(cfg.default_start).replace("-", ""))
+        # 本次运行的右端点（YYYYMMDD）+ 其字符串形式；用于裁剪分区里的陈旧尾行
+        self._run_end: int | None = None
+        self._end_str: str = "9999-12-31"
+        # 股票池掩码只取决于 (日期范围, 股票池, universe 配置)，与因子无关。
+        # 同一年的各个因子 warmup 相同 → 面板相同 → 掩码完全一样，缓存即可。
+        self._uni_cache: dict[tuple[int, int, int], np.ndarray] = {}
+        self._st: tuple[np.ndarray, np.ndarray] | None = None
+        # 价格层 / 日内层 / 筹码层 / 耦合 IO —— 都是「按需构建 + fork 共享」
+        self._prices = None
+        self._prices_window: tuple[int, int] | None = None
+        self._intraday = None
+        self._chips = None
+        self._open5 = None
+        self._closing30 = None
+        self._chipwall = None
+        self._factor_io = None
+        # 上游水位按数据集缓存：watermark 要逐分区读 ann_date 列（如 stock_income 有 37 个
+        # 年分区），而它在每个因子收尾时都会被调用。不缓存的话 10 个因子 × 2 个依赖
+        # = 几百次重复的文件读，在共享盘上是实打实的秒级开销。
+        self._wm_cache: dict[str, dict] = {}
+        # ★ 股票池/截面口径也属于「因子定义」的一部分：改了 exclude_st、
+        #   板块白名单或 winsor 分位，历史因子值就会变，必须触发全量重建。
+        #   否则改了配置却因为「日期已覆盖」而不重算，新旧口径会混在一个面板里。
+        self.universe_fp = "|".join([
+            "mb=" + ",".join(cfg.board_prefixes),
+            f"st={int(cfg.exclude_st)}",
+            f"mld={cfg.min_listed_days}",
+            f"w={cfg.winsor[0]},{cfg.winsor[1]}",
+            f"mcs={cfg.min_cross_section}",
+            # ★★ 2026-09-18 冻结股票池：用**内容哈希**进指纹。
+            #   池子决定每个截面的行数与 rank/cs_zscore，改一只票就必须重算全部历史。
+            #   未启用时是常量 "off"，不影响老口径的指纹（老因子不会因此被误判为过期）。
+            "fx=" + frozen_fingerprint(cfg),
+            # ★★ 2026-09-25 **数值环境**也是输入：numpy 版本 + 固定算例位模式哈希。
+            #   实测换一套 numpy 就会让 float32 超越函数核的末位变化（arcsinh 24.76%
+            #   的输入与正确舍入不一致），88 个对象的落盘值静默漂移、`main.py` 只报
+            #   「无法解释的历史变化」。拼进指纹后，环境一变 → 强制全量重建并留日志，
+            #   而不是让两套浮点实现的结果混在同一份产物里。
+            "numenv=" + numeric_env_fingerprint(),
+        ])
+
+    def _recipe(self, spec: FactorSpec) -> str:
+        from .spec import REGISTRY
+        suffix = "||financial-vintages=v3" if financial_dependency(spec, REGISTRY) else ""
+        def uses_price(s, seen=None):
+            seen = set() if seen is None else seen
+            if s.name in seen: return False
+            seen.add(s.name)
+            return "stock_daily" in s.deps or any(d in REGISTRY and uses_price(REGISTRY[d], seen) for d in s.deps)
+        if not spec.is_label and not spec.is_market:
+            suffix += "||sparse-rank=v2"
+        if uses_price(spec):
+            suffix += "||trading-mask=v2"
+        if getattr(spec.fn, "__module__", None) == "factors.sector":
+            suffix += "||sector-return=v3"
+        if getattr(spec.fn, "__module__", "") in ("factors.technical", "factors.breadth", "factors.momentum", "factors.fundamental3"):
+            suffix += "||audited-price-kernels=v3"
+        from .spec import LAGGED_DATASETS
+        delays={d:LAGGED_DATASETS[d] for d in spec.deps if d in LAGGED_DATASETS}
+        if delays: suffix += "||delays=" + json.dumps(delays,sort_keys=True)
+        return f"{spec.recipe(self.cfg)}||{self.universe_fp}{suffix}"
+
+    def _layer_years(self, todo, dep_names: tuple) -> tuple[int, int]:
+        """某个派生层这次真正需要的**年份范围**（只统计 deps 命中该层的因子）。
+
+        没有因子用到它 → 返回 `(0, -1)`，`ensure()` 的 `range(0, 0)` 是空循环、
+        一个分区都不会动。这就是「只跑 2026 就不要去重建 2018」的实现。
+        """
+        lo_all, hi_all = [], []
+        for spec, _, plan in todo:
+            if not any(d in spec.deps for d in dep_names):
+                continue
+            days = np.concatenate(list(plan.values()))
+            anchor = max(spec.start_int(self.cfg), self._start_floor, int(days.min()) // 10000 * 10000 + 101)
+            lo_all.append(minus_days(anchor, spec.warmup_days))
+            hi_all.append(int(days.max()))
+        if not lo_all:
+            return 0, -1
+        return int(str(min(lo_all))[:4]), int(str(max(hi_all))[:4])
+
+    def watermark(self, dep: str) -> dict:
+        w = self._wm_cache.get(dep)
+        if w is None:
+            from .spec import REGISTRY
+            if dep in REGISTRY:
+                # ★ 耦合因子：`deps` 里写的是**别的因子名**（`ctx.load_factor` 的父因子）。
+                #   它的水位要看父因子自己的产出。否则父因子更新不会传播过来 ——
+                #   `up.watermark` 对不存在的目录返回 exists=False，L2 直接 continue，
+                #   表现为耦合因子永远停在首次算出的值上，而且**不报错**。
+                w = self._factor_watermark(dep)
+            else:
+                w = self.up.watermark(dep, DEP_PIT_COL.get(dep))
+            self._wm_cache[dep] = w
+        return w
+
+    def _factor_watermark(self, name: str) -> dict:
+        """父因子的「水位」= 它自己 manifest 里的总行数 + 最新产出日期。"""
+        man = Manifest.load(self.cfg.state_dir, name)
+        rows = man.partition_rows()
+        if not rows:
+            return {"exists": False, "rows": 0, "max_pit": 0}
+        mx = 0
+        for v in man.partitions.values():
+            d = v.get("max_date")
+            if d:
+                mx = max(mx, int(str(d).replace("-", "")[:8]))
+        files = sorted((self.cfg.factor_root(__import__("fea.spec", fromlist=["get"]).get(name)) / name).glob("year=*/data.parquet"))
+        parts = {p.parent.name: [p.stat().st_size, p.stat().st_mtime_ns] for p in files if int(p.parent.name[5:]) >= int(self.cfg.default_start[:4])}
+        return {"exists": True, "rows": int(rows), "max_pit": int(mx), "files": parts}
+
+    # 因子输出的默认右端点取自这张表（`conf/frequency.yaml` 里它也是 baseline）
+    BASELINE_DEP = "stock_daily"
+
+    def baseline_last_day(self) -> int:
+        """上游**日频基准表**的最新交易日 —— 因子输出的默认右端点。
+
+        ★ 不能用「今天」。踩过的坑：`basic_calendar` 会延伸到未来
+          （实测到 2026-10-14），而**财务类因子只依赖已公告的季报**，
+          所以在「今天」（上游行情还没到、甚至还没收盘）也会算出一个有效值。
+          实测 `accruals_ratio` 就出现了 2026-09-15 的行，而上游 `stock_daily`
+          只到 2026-09-14。后果有两个：
+            · 输出覆盖了一个**尚未结束**的交易日；
+            · 那天晚些时候数据到了，值可能变（L2 重算），下游却已经用过了。
+          正确做法：右端点 = 基准表实际覆盖到的最后一天，
+          也就是「上游到齐了没」这道闸门。要强制算到更晚，显式传 `--end`。
+        """
+        w = self.watermark(self.BASELINE_DEP)
+        last = int(w.get("max_pit") or 0)
+        if last <= 0:
+            raise RuntimeError("上游 stock_daily 缺少有效交易日期；请先完成数据端更新，再生成因子")
+        return last
+
+    def universe_for(self, panel: Panel) -> np.ndarray:
+        """带缓存的股票池掩码（见 __init__ 里的说明）。"""
+        key = (int(panel.dates[0]), int(panel.dates[-1]), panel.C)
+        m = self._uni_cache.get(key)
+        if m is None:
+            if self._st is None:
+                # ★ 池子**动态**时 ST 真的会改变结果 → 读失败必须当场炸（见 st_events 的说明）；
+                #   冻结池（当前口径）下池内无 ST 事件，读不到不改变结果，留痕即可。
+                strict = bool(self.cfg.exclude_st) and self.cfg.frozen_universe is None
+                self._st = st_events(self.up, self.codes, strict=strict)
+            m = listed_mask(panel, self.up, self.cfg, st_ev=self._st)
+            self._uni_cache[key] = m
+        return m
+
+    # ---------------------------------------------------------------- 价格层
+    def prices_for(self, lo: int, hi: int):
+        """构建（或复用）价格层。只有用到价格的因子才付这个成本。"""
+        from .prices import PriceLayer
+        if self._prices is None:
+            t0 = time.time()
+            self._prices = PriceLayer(self.up, self.cfg, self.cal, self.codes)
+            log.info("价格层初始化 %.2fs", time.time() - t0)
+        self._prices_window = (lo, hi)
+        return self._prices
+
+    def intraday_layer(self):
+        """构建日内层。构造函数零成本（只在第一次 `panel()` 时才读/建缓存）。"""
+        from .intraday import IntradayLayer
+        if self._intraday is None:
+            self._intraday = IntradayLayer(self.up, self.cfg, self.codes)
+        return self._intraday
+
+    def open5_layer(self):
+        """构建开盘首段层。构造函数零成本（只在第一次 `panel()` 时才读/建缓存）。"""
+        from .open5 import Open5Layer
+        if self._open5 is None:
+            self._open5 = Open5Layer(self.up, self.cfg, self.codes)
+        return self._open5
+
+    def chips_layer(self):
+        """构建筹码层。同上，构造函数零成本。"""
+        from .chips import ChipLayer
+        if self._chips is None:
+            self._chips = ChipLayer(self.up, self.cfg, self.codes)
+        return self._chips
+
+    def closing30_layer(self):
+        """仅新尾盘因子使用；不改变原日内层缓存版本。"""
+        from .closing30 import Closing30Layer
+        if self._closing30 is None:
+            self._closing30 = Closing30Layer(self.up, self.cfg, self.codes)
+        return self._closing30
+
+    def chipwall_layer(self):
+        """局部筹码档位只扫描一次并留在独立派生层。"""
+        from .chipwall import ChipWallLayer
+        if self._chipwall is None:
+            self._chipwall = ChipWallLayer(self.up, self.cfg, self.codes)
+        return self._chipwall
+
+    def morning_layer(self):
+        """上午 11:30 层。同上，构造函数零成本。
+
+        这个层挂在 `self.up` 上而不是 Engine 上（历史原因：市场因子走
+        `ctx.up._market_morning`），这里统一成一个入口，免得两处各写一遍构造逻辑。
+        """
+        from .market_morning import MorningLayer
+        layer = getattr(self.up, "_market_morning", None)
+        if layer is None:
+            layer = self.up._market_morning = MorningLayer(self.up, self.cfg, self.codes)
+        return layer
+
+    def _layer(self, name: str):
+        """按名取派生层（供串行路径与 fork 出来的子进程共用）。"""
+        return {"intraday": self.intraday_layer,
+                "chips": self.chips_layer,
+                "open5": self.open5_layer,
+                "closing30": self.closing30_layer,
+                "chipwall": self.chipwall_layer,
+                "market_morning": self.morning_layer}[name]()
+
+    def factor_io(self):
+        from .factors_io import FactorIO
+        if self._factor_io is None:
+            self._factor_io = FactorIO(self.cfg, self.cal)
+        return self._factor_io
+
+    # ---------------------------------------------------------------- 衍生层
+    def deriv_for(self, lo: int, hi: int, fields: frozenset | None = None) -> Derivative:
+        """构建（或复用）财务衍生层。整个 run 只建一次。
+
+        `fields` 是本次任务用到的财务字段集合（来自各 `FactorSpec.fin_fields` 的并集）。
+        给定时**只加载这些字段**；`None` = 全建。版本表有 80 个字段 × 6 年分区，
+        单跑一个因子时全建是纯浪费。
+        """
+        if fields == frozenset():
+            return None  # No financial consumer in this run; do not build an empty vintage table.
+        # 财务状态必须保留窗口之前最后已知的公告，不能由同批其他因子的预热长度决定。
+        # 例如某股票2014—2021年报仅有2022年的修订版本，2022年5月只能看到2013年报。
+        # 固定读取全部已有历史分区；公告时点筛选仍由 Derivative 完成，未来修订不提前生效。
+        if getattr(self, "_financial_first_year", None) is None:
+            from .deriv import FINANCIAL_SOURCES
+            years = [int(p.parent.name[5:]) for ds in FINANCIAL_SOURCES
+                     for p in (self.up.root / ds).glob("year=*/data.parquet")
+                     if p.parent.name[5:].isdigit()]
+            self._financial_first_year = min(years) if years else self.up.years_for_window(lo, hi, lag_years=3)[0]
+        need = (self._financial_first_year, int(hi) // 10000)
+        # ★ 缓存可复用的判据：**已有字段集必须覆盖请求的字段集**。
+        #   `fields=None` 的语义是「我需要全部字段」，不是「我什么都不要」——
+        #   所以它只在**已缓存的就是全字段**时才可复用。
+        #   踩过的坑：把 `fields is None` 当成「与任何缓存都兼容」，
+        #   于是同一个 worker 里先建了只含 `revenue` 的窄表，
+        #   后面 `debt_asset_ratio` 请求全字段时复用了它 →
+        #   `KeyError: 'total_liab'`（2026 那一轮 277 个因子里挂了 2 个）。
+        if fields is None:
+            ok_fields = self._deriv_fields is None
+        else:
+            ok_fields = self._deriv_fields is not None and fields <= self._deriv_fields
+        if self._deriv is not None and self._deriv_window is not None \
+                and self._deriv_window[0] <= need[0] and self._deriv_window[1] >= need[1] \
+                and ok_fields:
+            return self._deriv
+        t0 = time.time()
+        vt = load_vintages(self.up, need[0], need[1], fields=fields)
+        self._deriv = Derivative(vt, self.codes)
+        self._deriv_window = need
+        self._deriv_fields = fields
+        log.info("财务衍生层：%d 个版本 / %d 个字段 / 年份 %s / %.2fs",
+                 len(vt), len(vt.columns), need, time.time() - t0)
+        return self._deriv
+
+    # ---------------------------------------------------------------- 计划
+    def _rewind_forward_dependency(self, spec, date, floor):
+        """An input at d can affect labels beginning forward_days before d."""
+        if not spec.forward_days or not len(self.cal.days):
+            return max(floor, date)
+        pos = min(int(np.searchsorted(self.cal.days, date, side="left")), len(self.cal.days)-1)
+        return max(floor, int(self.cal.days[max(0, pos-spec.forward_days)]))
+
+    def plan(self, spec: FactorSpec, man: Manifest, end_i: int,
+             rebuild: bool) -> dict[int, np.ndarray]:
+        """算出 `{年份: 需要重算的交易日}`。"""
+        start_i = spec.start_int(self.cfg)
+        # ★★ `default_start` 同时是**计算范围的下界**（2026-09-15 加，实测踩过）。
+        #   `FactorSpec.start` 的语义是「该因子受上游数据起点限制，不能早于这一天」,
+        #   它常常**早于** default_start（筹码 2018、两融 2011、涨停 2015…）。
+        #   如果只把 default_start 当"没写 start 时的默认值"，那么想"只算 2026"时，
+        #   这些显式写了 start 的因子仍会去补 2011–2025 的全历史 —— 实测后果：
+        #   一次 run 在 prebuild 阶段重建了 15 个派生层年分区（并顺带把刚删掉的
+        #   历史筹码/日内缓存重新建回来）。
+        #   取二者较大值 = 「上限政策(default_start) 优先，个别因子更晚的起点也尊重」。
+        start_i = max(start_i, self._start_floor)
+        # `--start YYYY-MM-DD`：本次运行只产出这一天之后的因子值。
+        # 用于「先只跑某一段、验证无误再往前推」。不影响 warmup ——
+        # 面板照旧往前多读 spec.warmup_days 个日历天，所以值与全量重建逐格一致。
+        if self.override_start:
+            start_i = max(start_i, int(self.override_start))
+        recipe = self._recipe(spec)
+        # ★★ 对齐区间的过滤下界：**不能**用 `start_i`（那是真实值起点）。
+        #   `plan.json`（父进程写给切片 worker 的显式计划）里已经包含了对齐年份的
+        #   交易日，若这里按真实起点过滤，会把它们整段滤掉 —— 实测后果：26 个晚起点
+        #   因子在 2018/2019 块"跑了但什么都没写"，退出码还是 0，很难发现。
+        #   见 FactorSpec.align_fill。`align_fill=None` 时退回旧行为。
+        lo_i = self._start_floor if spec.align_fill is not None else start_i
+        if self.override_start:
+            lo_i = max(lo_i, int(self.override_start))
+        explicit = getattr(self.cfg, "raw", {}).get("_explicit_plan")
+        if explicit is not None:
+            if rebuild or man.recipe != recipe:
+                man.reset(recipe)
+            return {int(y): np.asarray([d for d in ds if lo_i <= d <= end_i], dtype=np.int32)
+                    for y, ds in explicit.get(spec.name, {}).items()
+                    if any(lo_i <= d <= end_i for d in ds)}
+        if rebuild or man.recipe != recipe:
+            if man.recipe and man.recipe != recipe and not rebuild:
+                log.warning("%s 逻辑/口径已变，强制全量重建", spec.name)
+            man.reset(recipe)
+            spans = [(lo_i, end_i)]
+        else:
+            spans = [(lo_i, end_i)] if getattr(self, "force_refresh", False) else []
+            # L1a 输出日期缺口（下界用 lo_i：对齐区间的缺口也要能被发现）
+            for a, b in man.missing_ranges(int_to_str(lo_i), int_to_str(end_i)):
+                spans.append((_to_int(a), _to_int(b)))
+            # A manifest cannot certify a partition that was deleted or changed externally.
+            for year, meta in man.partitions.items():
+                lo = max(lo_i, int(year) * 10000 + 101)
+                hi = min(end_i, int(year) * 10000 + 1231)
+                if lo > hi:
+                    continue
+                path = (self.cfg.factor_root(spec) if hasattr(self.cfg, "factor_root") else self.cfg.factors_dir) / spec.name / f"year={year}" / "data.parquet"
+                damaged = not path.exists()
+                expected = meta.get("file_identity")
+                if not damaged and expected:
+                    st = path.stat()
+                    damaged = expected != [st.st_size, st.st_mtime_ns]
+                if damaged:
+                    spans.append((lo, hi))
+                    log.warning("%s output partition %s missing/changed; rebuilding its requested interval", spec.name, year)
+            # L1b 最近 N 天回刷（上游当天数据可能还没定稿）
+            rev = minus_days(end_i, self.cfg.revision_days)
+            rev = self._rewind_forward_dependency(spec, rev, start_i)
+            spans.append((rev, end_i))
+            # L2 上游输入水位变化 -> 从「上次最新公告日」往前回溯
+            for dep in spec.deps:
+                pit_col = DEP_PIT_COL.get(dep)
+                cur = self.watermark(dep)
+                prev = man.input_watermark.get(dep)
+                if not cur.get("exists"):
+                    continue
+                if prev is None:
+                    continue                      # 本因子首次建（L0 已覆盖）
+                old_files, new_files = prev.get("files"), cur.get("files")
+                changed = []
+                if old_files is not None and new_files is not None:
+                    changed = [k for k in set(old_files) | set(new_files)
+                               if _file_changed(k, old_files.get(k), new_files.get(k))]
+                old_days, new_days = prev.get("date_hashes", {}), cur.get("date_hashes", {})
+                changed_days = [int(day.replace("-", "")) for day in set(old_days) | set(new_days)
+                                if old_days.get(day) != new_days.get(day) and len(day) == 10]
+                if changed_days:
+                    lo = self._rewind_forward_dependency(spec, min(changed_days), start_i)
+                    spans.append((lo, end_i))
+                if changed:
+                    latest_year = max(int(cur.get("max_pit") or end_i), int(prev.get("max_pit") or end_i)) // 10000
+                    old_years = [int(k[5:]) for k in changed if k.startswith("year=") and int(k[5:]) < latest_year]
+                    # 有旧年内容修订，或没有已发布的新鲜台账时，不得按20/500天强行收口。
+                    # 后者会让旧数据修订永远传播不到历史，增量与全量出现实质差异。
+                    fallback = old_years or (not cur.get("ledger_fresh"))
+                    if fallback:
+                        changed_years = [int(k[5:]) for k in changed if k.startswith("year=")]
+                        lo = min(changed_years) * 10000 + 101 if changed_years else start_i
+                        spans.append((self._rewind_forward_dependency(spec, lo, start_i), end_i))
+                if (cur["rows"], cur["max_pit"]) != (prev["rows"], prev["max_pit"]):
+                    back = self.cfg.dep_backfill_days(dep)
+                    anchor = prev["max_pit"] or end_i
+                    lo = self._rewind_forward_dependency(spec, minus_days(int(anchor), back), start_i)
+                    spans.append((lo, end_i))
+
+        per_year: dict[int, np.ndarray] = {}
+        for a, b in _merge_spans(spans):
+            # ★★ 裁剪下界用 `lo_i`（对齐下界）而不是 `start_i`（真实值起点）。
+            #   否则起点年「年初 → 真实起点」那段会被 `max(a, start_i)` 夹掉 ——
+            #   实测：`efx_lu_board_density` 的缺口区间 2018-12-29~2019-08-13 被
+            #   `max(…, 20190814)` 夹成空，于是**永远不进计划**，
+            #   `run_year` 里那段"起点年前段填充"也就永远等不到触发。
+            days = self.cal.between(max(a, lo_i), min(b, end_i))
+            if days.size == 0:
+                continue
+            ys = days // 10000
+            for y in np.unique(ys):
+                sel = days[ys == y]
+                prev = per_year.get(int(y))
+                per_year[int(y)] = sel if prev is None else np.union1d(prev, sel)
+        # ★★ 2026-09-25：把**对齐区间**（`resolved_start` 之前的年份）也纳入计划。
+        #   这些年份**不做计算** —— `run_year` 见到"整年早于真实起点"就直接写
+        #   `spec.align_fill`（默认 NaN）。目的是让每个因子的分区布局都从
+        #   `default_start` 起，下游按因子拼矩阵时列是齐的。见 FactorSpec.align_fill。
+        #   `align_fill=None` 可显式关掉对齐（逃生舱）。
+        if spec.align_fill is not None:
+            for y in spec.align_years(self.cfg):
+                lo = max(y * 10000 + 101, self._start_floor)
+                hi = min(y * 10000 + 1231, end_i)
+                if self.override_start:
+                    lo = max(lo, int(self.override_start))
+                if lo > hi:
+                    continue
+                days = self.cal.between(lo, hi)
+                if days.size:
+                    prev = per_year.get(y)
+                    per_year[y] = days if prev is None else np.union1d(prev, days)
+        return per_year
+
+    def plan_years(self, specs: list[FactorSpec], end_i: int,
+                   rebuild: bool = False) -> dict[str, list[int]]:
+        """**只做规划、不建任何层**：返回 `{因子名: [有活的年份, ...]}`。
+
+        用途是"动手之前"判断这次 run 会不会把**一个进程**的内存吃爆
+        （见 `main.py` 的多年守卫）：价格层/派生层缓存只扩不缩，一个因子跨的年头越多，
+        每个 worker 攒下的窗口越大 —— 实测全历史窗口 7~8 GB/worker，
+        8 个 worker 直接顶到 cgroup 上限（表现是 `BrokenProcessPool`，不是 MemoryError）。
+
+        与 `prebuild()` 的区别：这里不读价格/财务数据、不建衍生层，只跑 `plan()`
+        （水位读盘有缓存），所以可以放心地在**决定是否启动**之前调用。
+        ⚠️ 不要用它的结果去跑任务（缺 derived 层）；它只回答"哪几年有活"。
+        ⚠️ `plan()` 对"指纹变了"的因子会就地 `man.reset()`，但**不落盘** ——
+           真正落盘的是 `prebuild()`（它会把清空后的 manifest 存下来）。
+        """
+        out: dict[str, list[int]] = {}
+        for spec in specs:
+            man = Manifest.load(self.cfg.state_dir, spec.name)
+            ys = sorted(int(y) for y, days in self.plan(spec, man, end_i, rebuild).items()
+                        if np.size(days))
+            if ys:
+                out[spec.name] = ys
+        return out
+
+    def _propagate_parent_plans(self, todo, end_i):
+        plans = {s.name: plan for s, _, plan in todo}
+        for _ in range(len(todo)):
+            changed = False
+            for spec, _, plan in todo:
+                floor = max(spec.start_int(self.cfg), self._start_floor, self.override_start or 0)
+                for dep in spec.deps:
+                    parent = plans.get(dep, {})
+                    if not parent: continue
+                    first = min(int(ds.min()) for ds in parent.values() if len(ds))
+                    days = self.cal.between(max(floor, first), end_i)
+                    for year in np.unique(days // 10000):
+                        old = plan.get(int(year), np.array([], dtype=np.int32))
+                        new = np.union1d(old, days[days // 10000 == year])
+                        if len(new) != len(old):
+                            plan[int(year)] = new
+                            changed = True
+            if not changed: break
+
+    # ---------------------------------------------------------------- 执行
+    def _anchor_for(self, spec: FactorSpec, days: np.ndarray) -> int:
+        """本次任务的面板**下界锚点** = max(因子分区下界, 计算下界, 本任务所在年的 1 月 1 日)。
+
+        `days` 必然是同一年的交易日（`plan()` 已按年切分），所以看 `days[0]` 的年份就够。
+        语义与代价见 `run_year` 里那段长注释。
+
+        ★★ 2026-09-25：声明了对齐的因子要用 `align_start_int`，**不能用 `start_int`**。
+        对齐契约下 `plan()` 会把起点年的「年初 → 真实起点」也排进 `days`（那段要产填充行），
+        锚点若仍取真实起点（如 2019-08-14），面板下界 `wlo = 锚点 − warmup` 会**晚于
+        `days[0]`** ⇒ `panel.day_mask(days)` 选不满 ⇒ `_to_frame` 里
+        `np.repeat(days, C)` 与 `val.reshape(-1)` 长度不等 ⇒
+        「All arrays must be of the same length」，整块退出码 1（实测 2019 块）。
+        """
+        year = int(days[0]) // 10000
+        floor = (spec.align_start_int(self.cfg) if spec.align_fill is not None
+                 else spec.start_int(self.cfg))
+        return max(floor, self._start_floor, year * 10000 + 101)
+
+    def write_align_partition(self, spec: FactorSpec, year: int, days: np.ndarray) -> dict:
+        """写「对齐区间」的填充分区：**不做任何计算**。
+
+        ★★ 2026-09-25 用户硬约定：所有因子必须在时间轴上对齐到 `default_start`。
+        整年都早于该因子真实起点（`resolved_start`）时，值恒为 `spec.align_fill`
+        （默认 NaN，上游有明确口径时可声明 0.0），**rank 恒 NaN** —— 常量列的
+        截面百分位没有意义，写个数字会被下游当成真实区分度。
+
+        分区布局与正常年份**完全一致**（同 4 列 / 同 dtype / 同股票轴 / 同文件名），
+        这样下游按因子拼矩阵时每一列都是齐的。
+        """
+        days = np.sort(np.asarray(days, dtype=np.int32))
+        fill = np.float32(spec.align_fill)
+        if spec.is_market:
+            df = pd.DataFrame({"trade_date": pd.Series(int_to_str_vec(days), dtype="string"),
+                               "value": pd.Series(np.full(days.shape, fill, dtype=np.float32),
+                                                  dtype="float32")})
+        else:
+            val = np.full((days.size, self.codes.size), fill, dtype=np.float32)
+            rk = np.full(val.shape, np.nan, dtype=np.float32)
+            df = _to_frame(days, self.codes, val, rk)
+        merged = upsert_year(self.cfg.factor_root(spec), spec.name, year, df,
+                             self.cfg.compression,
+                             prune_after=self._run_end,
+                             # ★★ 对齐区间**就在起点之前**，绝不能按起点裁剪 ——
+                             #    正常年份这里传的是 `max(start_int, _start_floor)`，
+                             #    照抄会把刚写进去的填充行当场删掉。
+                             prune_before=None,
+                             replace_days=days)
+        merged = merged[merged["trade_date"] <= self._end_str] if self._run_end else merged
+        n_ok = int(np.isfinite(merged["value"].to_numpy()).sum())
+        log.info("%s year=%d 对齐区间填充 %.1f（%d 行）", spec.name, year,
+                 spec.align_fill, len(df))
+        return {"factor": spec.name, "year": year, "rows": len(df), "nonnull": n_ok,
+                "partition_rows": len(merged),
+                "min_date": str(merged["trade_date"].min()),
+                "max_date": str(merged["trade_date"].max()),
+                "seconds": 0.0, "aligned_fill": True}
+
+    def run_year(self, spec: FactorSpec, year: int, days: np.ndarray) -> dict:
+        """算**一个因子的一年**并写盘。可被并行 worker 独立调用。
+
+        为什么按 (因子, 年) 而不是按因子切并行：各因子耗时差一倍以上
+        （`debt_asset_ratio` 49s vs `yoy_roe` 87s），按因子切会被最慢的那个拖住；
+        按年切有 150 个任务，负载均衡得多。
+        并发安全性：每个 (因子, 年) 写的是**不同文件**
+        （`data/factors/<因子>/year=YYYY/data.parquet`），互不干扰；
+        manifest 由父进程在最后统一写，worker 不碰。
+        """
+        days = np.sort(np.asarray(days, dtype=np.int32))
+        # ★★ 对齐区间：整年早于该因子的**真实起点** → 不计算，只写填充分区。
+        #    见 FactorSpec.align_fill 与 write_align_partition 的说明。
+        if year < int(spec.resolved_start(self.cfg)[:4]):
+            return self.write_align_partition(spec, year, days)
+        # ★★ 起点年：把**已排进计划**的「起点前」交易日拆出来单独填。
+        #
+        #   注意是**拆**不是**加**：`plan()` 的对齐下界已经是 `lo_i`，起点前的交易日
+        #   本来就在 `days` 里。早先写成"另算一段 pre_days 再 concat"⇒ 同一批日期
+        #   出现两次 ⇒ `upsert_year` 直接抛「重复主键」（实测 2019 块退出码 1）。
+        start_i = spec.start_int(self.cfg)
+        pre_days = None
+        if spec.align_fill is not None:
+            _m = days < start_i
+            if _m.any():
+                pre_days = days[_m]
+                days = days[~_m]
+        if days.size == 0:
+            # 整个任务只有起点前的交易日（极端回填场景）：只写填充。
+            return self.write_align_partition(spec, year, pre_days)
+        hi = int(days[-1])
+        # ★★ 面板下界锚在**本次任务所在年的 1 月 1 日**（2026-09-17 放开全历史时改）。
+        #
+        #   原则（2026-09-15 定的，没变）：**锚点必须与"本次计划的缺口日"无关**。
+        #   增量只重算最近几天，若锚点跟着缺口走，同一格在全量跑与增量跑里会落在不同
+        #   面板上 —— `mathx` 的滚动原语用「列首第一个有效值」做数值中心，面板下界
+        #   一挪中心值就变 → 浮点漂移（实测 **49 个因子**有 0.01%~3% 的格子落在最后
+        #   一个 ULP 上），且价格层/派生层缓存按窗口失效 → 重复读盘（实测重建 73 次）。
+        #
+        #   本次改动：锚点由「因子全局起点（= default_start）」收窄为「本年 1 月 1 日」。
+        #   面板 = [锚点 − warmup, 本年最后一个待算日]，锚点决定**每一格要算多长**：
+        #   · 锚在全局起点时，放开到 2012 后每个 (因子, 年) 任务都要从 2012 重算起
+        #     ⇒ 15 年总计算量 ≈ 120 个「单年」而不是 15 个（**8 倍**），
+        #     且每个 worker 都要把全历史价格层读进内存（实测单进程峰值 7.1~8.1 GB；
+        #     本机 cgroup 上限 60 GiB ⇒ 并行度只能压到 4~5）；
+        #   · 锚在本年年初后：面板 = 1 年 + warmup，总计算量 ≈ 15 × 单年，
+        #     每进程内存回到 2~3 GB，**每日增量顺带从 6 分钟降到 1~2 分钟**。
+        #
+        #   ⚠️ 两种锚定对**已算出的值**只差「浮点中心的舍入」（末位 ULP 量级）：
+        #      唯一的实质差异是「本年第一格往前能看多久」，而那由 `warmup_days` 保证
+        #      （warmup 不足的因子会在每年年初暴露出来 —— 用
+        #      `scripts/check_anchor_warmup.py` 做 A/B 抽检，实测见 docs/2026-09-17.md）。
+        #      **2026 年的值逐位不变**：对 2026 任务两种算法都取 max(..., 2026-01-01)。
+        #
+        #   ⚠️ `--start` 不再参与锚点（它只截输出范围）。否则「先跑一段」的尾部跑会与
+        #      全量跑落在不同面板上，恰好违背 `--start` 自己承诺的「逐格一致」。
+        #
+        #   ⚠️ 别改成"全局统一窗口"：那会把最大 warmup（`pegh5` 2600 天）传染给所有因子，
+        #      让每个任务都去读 2018 年以来的全部价格数据（实测单任务涨到 321s）。
+        anchor = self._anchor_for(spec, days)
+        wlo = minus_days(anchor, spec.warmup_days)
+        # ★ 逐任务计时（2026-09-15 加，用户要求"记录每个因子增量生成的时间是否高效"）。
+        #   原先只记「整轮墙钟时间」，看不出单个因子快不快 —— 而增量的性能问题
+        #   恰恰出在"某些因子的 warmup 很长 / 要重建派生层"上，必须逐任务可见。
+        _t_task = time.time()
+        # ★ 标签要看到未来：面板向后延伸 forward_days 个交易日。
+        #   不延伸的话，每个年分区的最后几天会因为「未来窗口不足」恒为 NaN，
+        #   而且 2026 分区会随时间推移悄悄丢尾巴。
+        hi_panel = hi
+        if spec.forward_days:
+            pos = int(np.searchsorted(self.cal.days, hi, side="right"))
+            hi_panel = int(self.cal.days[min(pos + spec.forward_days,
+                                             self.cal.days.size - 1)])
+        pdays = self.cal.between(wlo, hi_panel)
+        if pdays.size == 0:
+            return {"factor": spec.name, "year": year, "rows": 0, "nonnull": 0,
+                    "seconds": round(time.time() - _t_task, 2)}
+
+        panel = Panel(pdays, self.codes)
+        uni = self.universe_for(panel)
+        # 注意：worker 里必须**沿用父进程已建好的衍生层**（fork 共享）。
+        # ★★ 字段集必须用**run 级**的那一个（`prebuild` 里算好的并集），不能按因子各传各的：
+        #   声明了 `fin_fields` 的因子请求子集、没声明的请求全集，两者会**互相踢掉**
+        #   对方的缓存 → 每个任务都重建一次衍生层。实测增量跑里重建了 **73 次**
+        #   （每次 6~25s，占整轮一半以上耗时），而全量跑因为每任务覆盖 170 天被掩盖了。
+        deriv = self.deriv_for(wlo, hi_panel, fields=self._deriv_fields_run)
+        ctx = FactorContext(panel, deriv, self.up, self.cfg, uni,
+                            prices=self.prices_for(wlo, hi_panel),
+                            intraday=self._intraday, chips=self._chips,
+                            cal=self.cal, factor_io=self._factor_io,
+                            open5=self._open5, closing30=self._closing30,
+                            chipwall=self._chipwall)
+
+        if len(self._uni_cache) > 3:
+            self._uni_cache = {next(reversed(self._uni_cache)): next(reversed(self._uni_cache.values()))}
+        # float32 超越函数探针：只在 FEA_FP_GUARD 打开时记录（默认空操作），
+        # 用来按实际执行找出"还把 float32 送进 asinh/log/... 的因子"——那条路径的
+        # 末位不可复现（见 fea/resources.py::install_float32_guard）。
+        set_guard_factor(spec.name)
+        raw = np.asarray(spec.fn(ctx), dtype=np.float64)
+        import os
+        trace_root = os.environ.get("FEA_AUDIT_TRACE")
+        if trace_root:
+            trace_path = Path(trace_root)
+            trace_path.mkdir(parents=True, exist_ok=True)
+            record = {"factor": spec.name, "year": year, "accessed": sorted(ctx.accessed),
+                      "declared": list(spec.deps), "undeclared": sorted(ctx.accessed - set(spec.deps)),
+                      "shape": list(raw.shape), "finite": int(np.isfinite(raw).sum())}
+            with (trace_path / f"worker_{os.getpid()}.jsonl").open("a") as trace:
+                trace.write(json.dumps(record, ensure_ascii=False) + "\n")
+        undeclared = sorted(ctx.accessed - set(spec.deps))
+        if undeclared:
+            raise ValueError(f"{spec.name}: 实际读取了未声明依赖 {undeclared}，拒绝写入以免增量漏算")
+        expected_shape = (panel.T,) if spec.is_market else panel.shape
+        if tuple(raw.shape) != tuple(expected_shape):
+            # ★ 原来这里是静默 `reshape`：形状错但元素数相同（例如 (C,T)）
+            #   会被悄悄转置，产出**看起来完全正常**的错面板。改成直接报错。
+            raise ValueError(
+                f"因子 {spec.name} 返回形状 {tuple(raw.shape)}，面板要求 {tuple(panel.shape)}。"
+                f"因子函数必须返回 (T, C)：T=交易日数、C=股票数。"
+                f"（特别注意别返回 (C, T) —— 元素数相同，以前会被静默转置。）")
+
+        rows = panel.day_mask(days)
+        sub = raw[rows]
+        submask = uni[rows]
+        if spec.is_market:
+            val = sub.astype(np.float32)
+            if np.isinf(val).any():
+                raise ValueError(f"{spec.name}: 市场因子含无穷值")
+            df = pd.DataFrame({"trade_date": pd.Series(int_to_str_vec(days), dtype="string"),
+                               "value": pd.Series(val, dtype="float32")})
+        elif spec.is_label:
+            # 标签是模块③ 的目标变量、不是因子：跳过 winsor 与截面 rank
+            # （对未来收益排名没有意义），rank 列写 NaN。但仍写出与因子
+            # **完全相同**的 4 列 / 同 dtype / 同分区（用户要求格式统一）。
+            val = sub.astype(np.float32)
+            rk = np.full(sub.shape, np.nan, dtype=np.float32)
+        else:
+            val = np.where(submask, sub, np.nan).astype(np.float32)
+            rk = cs_rank(sub, self.cfg.winsor, submask, self.cfg.min_cross_section)
+
+        if not spec.is_market:
+            df = _to_frame(days, self.codes, val, rk)
+        # ★★ 2026-09-25 对齐契约的**起点年前段**（`pre_days` 在函数开头已拆出）。
+        #
+        #   背景：`align_years()` 只覆盖**整年**早于真实起点的年份，起点年
+        #   「1 月 1 日 → 真实起点」那段原本无人生产，而 `validation.check` 与
+        #   `backfill._year_done` 都要求日期轴从 `align_start` 起完整。实测：
+        #   4 个 align_fill=0.0 的因子在起点年缺 56/79/119/150 天。
+        #   现在把它与正常值一起落盘（同一口径、同一次 upsert）。
+        if pre_days is not None and pre_days.size:
+            fill = np.float32(spec.align_fill)
+            if spec.is_market:
+                _df = pd.DataFrame({"trade_date": pd.Series(int_to_str_vec(pre_days), dtype="string"),
+                                    "value": pd.Series(np.full(pre_days.shape, fill, dtype=np.float32),
+                                                       dtype="float32")})
+            else:
+                _v = np.full((pre_days.size, self.codes.size), fill, dtype=np.float32)
+                _df = _to_frame(pre_days, self.codes, _v,
+                                np.full(_v.shape, np.nan, dtype=np.float32))
+            df = pd.concat([_df, df], ignore_index=True)
+            days = np.concatenate([pre_days, days])
+            log.info("%s year=%d 起点年前段填充 %.1f（%d 天）", spec.name, year,
+                     spec.align_fill, pre_days.size)
+        merged = upsert_year(self.cfg.factor_root(spec), spec.name, year, df,
+                             self.cfg.compression,
+                             prune_after=self._run_end,
+                             # ★ 起点之后才该有行：合并语义会原样保留分区里更早的旧行，
+                             #   起点后移（如 dividend_yield_3y_avg 2012→2013-01-11）后会留下
+                             #   起点之前的 NaN 残留，被 check 的「≥起点」判据抓到。见 store。
+                             # ⚠️ 但**声明了对齐**时不能按真实起点裁 —— 那会把刚补的
+                             #    填充行当场删掉（与 `write_align_partition` 同一个坑）。
+                             prune_before=(spec.align_start_int(self.cfg)
+                                           if spec.align_fill is not None
+                                           else spec.start_int(self.cfg)),
+                             replace_days=days)   # ★ 清掉"本次重算但整列空"的旧行，见 store
+        # 让 manifest 里的 max_date 反映裁剪后的真实末尾
+        merged = merged[merged["trade_date"] <= self._end_str] if self._run_end else merged
+        n_ok = int(np.isfinite(merged["value"].to_numpy()).sum())
+        return {
+            "factor": spec.name, "year": year, "rows": len(df), "nonnull": n_ok,
+            "partition_rows": len(merged),
+            "min_date": str(merged["trade_date"].min()),
+            "max_date": str(merged["trade_date"].max()),
+            # ★ 本任务（因子 × 年）的**实际耗时**（含读盘与写盘）—— 增量效率靠它衡量
+            "seconds": round(time.time() - _t_task, 2),
+        }
+
+    def _finalize(self, spec: FactorSpec, man: Manifest, plan: dict,
+                  results: list[dict], seconds: float) -> dict:
+        """父进程收尾：写 manifest（worker 绝不碰状态文件）。"""
+        stats = {"factor": spec.name, "years": 0, "rows": 0, "nonnull": 0,
+                 "seconds": seconds,          # 整轮墙钟（从 run 开始算）
+                 "task_seconds": 0.0,         # ★ 各任务实际耗时之和（并行时 > seconds）
+                 "task_days": 0}              # ★ 本因子这次真正重算了多少个交易日
+        for r in results:
+            stats["task_seconds"] = round(stats["task_seconds"] + float(r.get("seconds") or 0), 2)
+            if r.get("rows", 0) == 0 and not r.get("min_date"):
+                continue
+            man.mark_partition(r["year"], r["partition_rows"], r["nonnull"],
+                               r["min_date"], r["max_date"])
+            path = (self.cfg.factor_root(spec) if hasattr(self.cfg, "factor_root") else self.cfg.factors_dir) / spec.name / f"year={r['year']}" / "data.parquet"
+            st = path.stat()
+            man.partitions[str(r["year"])]["file_identity"] = [st.st_size, st.st_mtime_ns]
+            stats["years"] += 1
+            stats["rows"] += r["rows"]
+            stats["nonnull"] += r["nonnull"]
+        stats["task_days"] = int(sum(int(np.size(v)) for v in plan.values()))
+
+        # 覆盖区间要按「交易日连续段」记，不能简单取 [min, max]：
+        # 同一年的计划里可能有洞（例如三月有个日期缺口、十二月是回刷窗口），
+        # 取 min/max 会把中间几个月错误地标成"已完成"。
+        #
+        # ★★ 2026-09-25 修「静默零产出」这一族（勘察结论 D3）：
+        #   **覆盖必须按实际产出记，不能按计划记。**
+        #   原来是无条件 `for year, days in plan.items()` —— 只要任务进了计划就被
+        #   标成"已完成"，哪怕它根本没产出。后果有两重：
+        #     ① 一次静默失败被记成成功，日志打印「完成 N/N」、退出码 0；
+        #     ② `missing_ranges` 以后看不到缺口 ⇒ **永不自愈**，账实永久背离。
+        #   现在：先断言"计划里的每个年份都有成功结果"，再只为这些年份记覆盖。
+        #   断言在正常路径下永不触发（任务出错时 `cmd_run` 根本不会走到 `_finalize`），
+        #   所以它是一道**纯守卫**，专门拦"计划了却没产出"。
+        done_years = {r["year"] for r in results if not r.get("error")}
+        missing = sorted(set(plan) - done_years)
+        if missing:
+            raise RuntimeError(
+                f"{spec.name}: 计划了 {sorted(plan)} 年，实际只产出 {sorted(done_years)} 年"
+                f"（缺 {missing}）—— 拒绝把它标成已完成，修好后重跑")
+        for year in sorted(done_years):
+            days = plan.get(year)
+            if days is None:
+                continue
+            for a, b in self._trading_runs(np.sort(days)):
+                man.add_coverage(int_to_str(a), int_to_str(b))
+
+        from .spec import REGISTRY
+        for dep in spec.deps:
+            if dep in REGISTRY:
+                self._wm_cache.pop(dep, None)
+        man.input_watermark = {
+            dep: self.watermark(dep) for dep in spec.deps
+        }
+        man.last_run = {"finished_at": _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        **stats}
+        man.save()
+        return stats
+
+    def st_gate(self) -> dict:
+        """ST 内容闸门 —— 与 `state/universe_st.json` 比对，**内容变了就拦下整轮运行**。
+
+        为什么需要它：`stock_st_info` 参与股票池掩码，却**不在任何因子的 deps 里**
+        （`HISTORY.md` 记了很久的「静默不一致」）—— 上游新增一条池内 ST 记录
+        **不会触发任何重算**，历史值会停在过时口径上，且零报错。
+
+        为什么是「拦」而不是「自动重建」：见 `universe.st_pool_fingerprint` 的第 2 条 ——
+        重建 = 全部 653 个因子重写，还可能与正在跑的模型训练抢共享盘，必须由人拍板。
+
+        为什么「读不到」只告警不拦：冻结池口径下池内本来就没有 ST 事件，
+        读不到**不改变任何结果**；此处拦下来会变成每天必响的假警报。
+        但 `source` 会留在基线文件里，事后可查「那一天到底读到了没有」。
+        """
+        cur = st_pool_fingerprint(self.up, self.codes)
+        p = Path(self.cfg.state_dir) / "universe_st.json"
+        prev = None
+        if p.exists():
+            try:
+                prev = json.loads(p.read_text(encoding="utf-8"))
+            except Exception as exc:                          # noqa: BLE001
+                raise RuntimeError(f"✘ {p} 读不出来，无法核对 ST 内容闸门：{exc!r}") from exc
+        else:
+            p.parent.mkdir(parents=True, exist_ok=True)
+
+        rec = {"note": "ST 内容闸门基线（S-01，2026-09-21）。改动它 = 放行一轮全量重建，"
+                       "必须是有意为之，并同步通知模型侧。",
+               "universe_n": int(self.codes.size), **cur}
+        if prev is None:
+            p.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+            log.info("ST 内容闸门：基线已建立 %s（source=%s · n_events=%s · max_date=%s）",
+                     p, cur["source"], cur["n_events"], cur["max_date"])
+            return cur
+
+        a, b = prev.get("sha1"), cur["sha1"]
+        if a and b and a != b:
+            raise RuntimeError(
+                "✘ ST 内容闸门拦下本轮运行：池内 ST 事件与基线不一致。\n"
+                f"  基线：sha1={a} · n={prev.get('n_events')} · max_date={prev.get('max_date')}\n"
+                f"  现在：sha1={b} · n={cur['n_events']} · max_date={cur['max_date']}\n"
+                "  这会让因子值停在一个已经过时的口径上（stock_st_info 不在任何因子的 deps 里，"
+                "不重算就不会变）。\n"
+                "  处置：① 确认这次变化该不该进历史 —— 该进就 `main.py rebuild` 全量重建，"
+                "重建前先备份、并避开模型侧训练；\n"
+                "        ② 只是厂商补了无关记录 → 手工刷新基线文件（等于显式接受）。\n"
+                f"  基线文件：{p}")
+        if a is None and b is not None:
+            log.warning("⚠️ ST 内容闸门：上一轮读不到 ST（基线 sha1 为空），本轮读到了 "
+                        "（n_events=%s）—— 已更新基线。若之前那几轮的因子值需要复核，"
+                        "请对照 %s 里的时间线。", cur["n_events"], p)
+        elif b is None:
+            log.warning("⚠️ ST 内容闸门：本轮读不到 stock_st_info（source=%s），"
+                        "无法与基线核对 —— 冻结池口径下不改变结果，已记入 %s。", cur["source"], p)
+
+        p.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        return cur
+
+    def delay_gate(self) -> dict:
+        """可用时点契约闸门（S-01）—— 只拦**「声明更松」**的方向。
+
+        因子侧用延迟表的唯一用途是 `spec.register()` 的闸门（依赖了延迟表却没声明
+        `lagged_ok` 的因子会被拒绝注册）。所以：
+          · 声明更严 → 最多误拒一个因子，**不产生未来函数** → 只报告；
+          · 声明更松 → 闸门放行一个实际拿不到数据的因子，它在历史截面上用了未来信息
+            → **必须拦**。
+        差异一旦"已解释"就写进 `conf/delay_contract_ack.json`（显式接受，不是静默放行）。
+        完整口径见 `delay.audit_contract()` 的注释。
+        """
+        from .delay import audit_contract
+        r = audit_contract()
+        if r["authoritative_state"] != "ok":
+            log.warning("⚠️ 可用时点契约：读不到日更侧 registry._DELAY（state=%s），"
+                        "本轮**无法核对**契约一致性 —— 已按「只读因子侧声明」继续，"
+                        "但这条不能当作通过。", r["authoritative_state"])
+            return r
+        if r["unexplained"]:
+            lines = "\n".join(f"    · {x['table']}：{x['why']}" for x in r["unexplained"][:10])
+            raise RuntimeError(
+                "✘ 可用时点契约闸门拦下本轮运行：因子侧声明的延迟**比日更侧更松**。\n"
+                f"{lines}\n"
+                "  后果：依赖这些表的因子可能被放行注册，从而在历史截面上用上当时拿不到的数据。\n"
+                "  处置：① 该加严 → 改 datadownload/conf/frequency.yaml 并同步 registry._DELAY；\n"
+                f"        ② 确认无害 → 写进 {r['ack_file']} 说明理由（显式接受）。")
+        if r["acked"]:
+            log.info("可用时点契约：%d 条差异已显式接受（见 %s）", len(r["acked"]), r["ack_file"])
+        return r
+
+    def _trading_runs(self, days: np.ndarray) -> list[tuple[int, int]]:
+        """把交易日集合切成「日历上连续」的若干段。"""
+        if days.size == 0:
+            return []
+        pos = np.searchsorted(self.cal.days, days)
+        brk = np.flatnonzero(np.diff(pos) != 1)
+        starts = np.concatenate([[0], brk + 1])
+        ends = np.concatenate([brk, [days.size - 1]])
+        return [(int(days[s]), int(days[e])) for s, e in zip(starts, ends)]
+
+    def run(self, spec: FactorSpec, end_i: int | None = None,
+            rebuild: bool = False) -> dict:
+        """单因子串行执行（`--jobs 1` 或只有 1 个任务时走这里）。"""
+        end_i = end_i or today_int()
+        man = Manifest.load(self.cfg.state_dir, spec.name)
+        plan = self.plan(spec, man, end_i, rebuild)
+        if not plan:
+            return {"factor": spec.name, "years": 0, "rows": 0, "nonnull": 0,
+                    "seconds": 0.0, "note": "已是最新，无需重算"}
+        t0 = time.time()
+        results = [self.run_year(spec, y, plan[y]) for y in sorted(plan)]
+        return self._finalize(spec, man, plan, results, time.time() - t0)
+
+    # ---------------------------------------------------------------- 并行执行
+    def prebuild(self, specs: list[FactorSpec], end_i: int,
+                 rebuild: bool = False, jobs: int = 1) -> list[tuple[FactorSpec, Manifest, dict]]:
+        """父进程：规划所有因子，并**提前构建共享状态**（衍生层 / ST 事件）。
+
+        这一步是并行的关键：`fork` 出来的 worker 通过写时复制直接继承这些对象，
+        否则每个 worker 都要自己重读一遍上游财务数据、重建一次衍生层
+        （实测衍生层 ~6s × 10 个 worker，既慢又多读 10 倍磁盘）。
+        """
+        # ★ 2026-09-21（S-01）：先过两道闸门（ST 内容 / 可用时点契约），再规划。
+        #   放在这里而不是 __init__：check / list 这类只读命令不该被闸门拦住。
+        self.st_gate()
+        self.delay_gate()
+        self._run_end = end_i
+        self._end_str = int_to_str(end_i)
+        todo = []
+        for spec in specs:
+            man = Manifest.load(self.cfg.state_dir, spec.name)
+            before = man.recipe
+            plan = self.plan(spec, man, end_i, rebuild)
+            if man.recipe != before:
+                # 指纹变了/全量重建：先把「已清空」落盘。否则中途崩了，
+                # 下次会读到旧 coverage 而以为这段已完成，新旧口径就混在一起了。
+                man.save()
+            if plan:
+                todo.append((spec, man, plan))
+
+        # Propagate rebuilt parent dates to coupling factors in the same run.
+        self._propagate_parent_plans(todo, end_i)
+        if todo:
+            los, his, warms = [], [], []
+            for spec, _, plan in todo:
+                d = np.concatenate(list(plan.values()))
+                los.append(int(d.min()))
+                his.append(int(d.max()))
+                warms.append(spec.warmup_days)
+            # 用「最早的起点 − 最大的 warmup」做上界，保证一次构建覆盖所有任务
+            wlo, whi = minus_days(min(los), max(warms)), max(his)
+            # ★ 按本次任务用到的财务字段取并集，惰性建表。
+            #   ⚠️ 只要**有一个**因子没声明 `fin_fields`，就必须退回「全建」——
+            #      空元组的契约语义是「我全都要」，而不是「我不要字段」。
+            #      按并集硬算会把没声明者的字段悄悄排除掉，表现为
+            #      `KeyError: 'goodwill'` 这种莫名其妙的报错。
+            fin_specs = [s for s, _, _ in todo if any(d in ("stock_income", "stock_balancesheet", "stock_cashflow", "stock_financial_indicator") for d in s.deps)]
+            if any(not s.fin_fields for s in fin_specs):
+                fin = None
+            else:
+                fin = frozenset(f for s in fin_specs for f in s.fin_fields)
+            self._deriv_fields_run = fin          # ★ worker 必须用同一个字段集（见 run_year）
+            self.deriv_for(wlo, whi, fields=fin)
+            if self._st is None:
+                self._st = st_events(self.up, self.codes)
+            # 价格层 / 日内层 / 筹码层 / 耦合 IO 的构造函数都是**零成本**的
+            # （只在第一次 panel() 时才读数据），所以无条件建出来；
+            # 用不到的因子不会触发任何读盘。
+            # ⚠️ 必须在这里建：worker 是 fork 出来的，父进程没建的话
+            #    worker 里 `ctx.chip(...)` 会直接抛「引擎没有预建 ChipLayer」。
+            self.prices_for(wlo, whi)
+            # ★ 派生缓存必须**在父进程里建完**再 fork。
+            #   `ensure()` 是「缺了就当场构建」，如果留给 worker，12 个 worker 会
+            #   同时抢着重建同一份缓存（55 分钟的活干 12 遍，还会互相写坏 manifest）。
+            # ★★ 但年份范围必须按「**真正用到这一层**的因子」算，不能用上面的全局窗口：
+            #   全局窗口带的是所有因子的最大 warmup（本轮 `pegh5` 是 2600 天 → 回到 2018），
+            #   而 pegh5 只吃财报、根本不用日内/筹码层 —— 用全局窗口会白重建
+            #   2018–2024 的派生层（实测：一次 run 在 prebuild 重建 15 个年分区、约 30 分钟，
+            #   还会把「只保留 2026」的裁剪结果又建回来）。
+            # ★★ 2026-09-25：四个层**互相独立**，按层并行构建。
+            #
+            #   依赖关系：intraday / open5 / market_morning 读 `stock_history_5min`
+            #   （板块分钟线由 market_morning 独立聚合），chips 读 `stock_cyq_chips`。
+            #   每个层写**自己的** `data/derived/<层>/_manifest.json` 和各自的
+            #   `year=YYYY/data.parquet` —— 跨层没有任何共享文件，所以这里不需要锁，
+            #   也不会互相写坏 manifest（对比：把 ensure() 留给因子 worker 会 12 个
+            #   进程抢同一份缓存，见上面那段说明）。
+            #
+            #   实测（本机 25 核、数值库单线程）单层单年耗时：
+            #     intraday 63s · chips 82s · open5 39s · market_morning 76s
+            #   2019 块四层串行 260s → 并行 max(...) = 82s；
+            #   2018 块（含 2016–2018 预热）543s → 194s。
+            #
+            #   并行度只在这段生效：此时因子 worker 还没 fork，不存在争 CPU。
+            #   注意 `jobs` 传的是因子相位要用的并行度；这里取 min(jobs, 层数)，
+            #   避免为了 4 个层开出一堆进程。
+            layer_plan = {
+                # 个股日内派生层只消费 stock_history_5min；板块分钟线独立聚合。
+                "intraday": self._layer_years(todo, ("stock_history_5min",)),
+                "chips": self._layer_years(todo, ("stock_cyq_chips",)),
+                "open5": self._layer_years(todo, ("stock_history_5min",)),
+            }
+            closing30_todo = [item for item in todo
+                              if getattr(item[0].fn, "__module__", "") == "factors.closing30"]
+            if closing30_todo:
+                layer_plan["closing30"] = self._layer_years(
+                    closing30_todo, ("stock_history_5min",))
+            chipwall_todo = [item for item in todo
+                             if getattr(item[0].fn, "__module__", "") == "factors.chipwall"]
+            if chipwall_todo:
+                layer_plan["chipwall"] = self._layer_years(
+                    chipwall_todo, ("stock_cyq_chips", "stock_daily"))
+            morning_todo = [item for item in todo
+                            if item[0].is_market and "stock_history_5min" in item[0].deps]
+            if morning_todo:
+                layer_plan["market_morning"] = self._layer_years(morning_todo,
+                                                                 ("stock_history_5min",))
+            active = sorted(n for n, yr in layer_plan.items() if yr[1] >= yr[0])
+            if jobs > 1 and len(active) > 1:
+                import multiprocessing as mp
+                from concurrent.futures import ProcessPoolExecutor, as_completed
+                global _LAYER_WORK
+                _LAYER_WORK = {"eng": self, "ranges": {n: layer_plan[n] for n in active}}
+                ctx = mp.get_context("fork")
+                log.info("派生层并行构建 %d 层（jobs=%d）：%s",
+                         len(active), min(jobs, len(active)), active)
+                with ProcessPoolExecutor(max_workers=min(jobs, len(active)),
+                                         mp_context=ctx) as ex:
+                    futs = {ex.submit(_ensure_layer_task, n): n for n in active}
+                    for fut in as_completed(futs):
+                        name = futs[fut]
+                        try:
+                            fut.result()
+                        except Exception:
+                            log.exception("派生层 %s 构建失败", name)
+                            raise
+                        log.info("派生层 %s 完成", name)
+                # ★★ 必须在**父进程**里把层实例建出来。
+                #   因子 worker 是 fork 的，`ctx.chip(...)` 只认父进程已建好的实例，
+                #   否则直接抛「引擎没有预建 ChipLayer」。上面那 4 个子进程各自建的实例
+                #   只存在于**它们自己**的地址空间（写时复制），父进程看不到 ——
+                #   实测漏了这一步会让 46 个因子失败、整块返回 1。
+                #   构造函数零成本（构造函数里不读数据、不碰磁盘），这里只是补个对象；
+                #   子进程已经把缓存和 manifest 落盘，父进程的实例读 manifest 即认为已就绪。
+                for name in sorted(layer_plan):
+                    self._layer(name)
+            else:
+                for name in active:
+                    self._layer(name).ensure(*layer_plan[name])
+            self.factor_io()
+            # ★ 清掉原始上游表缓存再 fork：见 Upstream.clear_cache 的说明。
+            #   各派生层已经把这些数据"消化"完了，worker 不需要原始表。
+            #   价格层/衍生层里留着的 DataFrame 同样要清 —— fork 是写时复制的，
+            #   但 Python 的引用计数会在**读**对象时改头部字段，进而整页复制。
+            self.up.clear_cache()
+            if self._prices is not None:
+                self._prices.clear_raw()
+        return todo
+
+    def run_parallel(self, tasks: list[tuple[str, int, np.ndarray]],
+                     jobs: int, on_done=None) -> list[dict]:
+        """按 (因子, 年) 并行执行。任务之间写的是不同文件，无冲突。"""
+        import multiprocessing as mp
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+
+        global _WORKER_ENGINE
+        _WORKER_ENGINE = self                       # fork 后子进程直接可见
+        out: list[dict] = []
+        ctx = mp.get_context("fork")
+        with ProcessPoolExecutor(max_workers=jobs, mp_context=ctx) as ex:
+            futs = {ex.submit(_run_year_task, t): t for t in tasks}
+            for fut in as_completed(futs):
+                try:
+                    r = fut.result()
+                except Exception as exc:            # noqa: BLE001
+                    f, y, _ = futs[fut]
+                    log.exception("任务失败 %s %s", f, y)
+                    r = {"factor": f, "year": y, "rows": 0, "nonnull": 0,
+                         "error": str(exc)[:160]}
+                out.append(r)
+                if on_done:
+                    on_done(r)
+        return out
+
+
+def _to_int(s: str) -> int:
+    return int(s[:4]) * 10000 + int(s[5:7]) * 100 + int(s[8:10])
+
+
+# ------------------------------------------------------------------ 并行 worker
+# fork 出来的子进程通过写时复制继承父进程已建好的 Engine（含衍生层与缓存）。
+_WORKER_ENGINE: "Engine | None" = None
+
+# 派生层并行：父进程在 `Engine.prebuild` 里填好，fork 出去的子进程直接可见。
+# 每个子进程只负责**一个层**，写自己的 `data/derived/<层>/` 与自己的 manifest。
+_LAYER_WORK: dict = {}
+
+
+def _ensure_layer_task(name: str) -> str:
+    """子进程：构建单个派生层（见 `Engine.prebuild` 的派生层并行段）。
+
+    只读 `_LAYER_WORK`（fork 时已填好），不返回数据 —— 结果已经原子落盘，
+    父进程不需要回传，也就没有跨进程写 manifest 的问题。
+    """
+    work = _LAYER_WORK
+    work["eng"]._layer(name).ensure(*work["ranges"][name])
+    return name
+
+
+def _run_year_task(task: tuple[str, int, np.ndarray]) -> dict:
+    """worker 入口：只算一个 (因子, 年) 并写盘，不碰 manifest。"""
+    from .spec import get
+    name, year, days = task
+    eng = _WORKER_ENGINE
+    if eng is None:                                 # 理论上不会发生
+        raise RuntimeError("worker 没有继承到 Engine")
+    return eng.run_year(get(name), year, days)
+
+
+def _to_frame(days: np.ndarray, codes: np.ndarray,
+              val: np.ndarray, rk: np.ndarray) -> pd.DataFrame:
+    """把 (T,C) 面板转成落盘长表。
+
+    ★ 空帧必须带**正确的 dtype**。踩过的坑：某因子整年无有效值（例如受上游起点限制
+      的深滞后因子在早年）→ 这里返回一个 0 行的 object-dtype 空表 → `upsert_year`
+      写出一个空的 parquet → 下次 `read_year()` 读回**全 object dtype** →
+      下游 `np.isfinite()` 抛 `TypeError: ufunc 'isfinite' not supported`。
+      报错点离病根十万八千里。所以在源头就把 dtype 定死。
+    """
+    T, C = val.shape
+    if T == 0 or C == 0:
+        return pd.DataFrame({"trade_date": pd.Series(dtype="string"),
+                             "stock_code": pd.Series(dtype="string"),
+                             "value": pd.Series(dtype="float32"),
+                             "rank": pd.Series(dtype="float32")})
+    df = pd.DataFrame({
+        "trade_date": np.repeat(days, C),
+        "stock_code": np.tile(np.asarray(codes, dtype=object), T),
+        "value": val.reshape(-1),
+        "rank": rk.reshape(-1),
+    })
+    # ★★ 2026-09-15 晚（用户拍板）：「**NaN 还是落盘的好**」——
+    #    去掉原先的 `df[df["value"].notna() | df["rank"].notna()]` 过滤，**整块面板都落盘**
+    #    （含 value/rank 全 NaN 的格子）。理由：只写非空行会让
+    #    「这只票当天不在股票池 / 上游没数据 / 算了是 NaN」三种情况在产物里**长得一模一样**，
+    #    消费方无法区分、覆盖率也没法审计。
+    #    代价：行数 = 面板大小（≈3484 只 × 交易日），比原来多 ~20% 行；
+    #    NaN 行压缩率高，体积涨幅远小于行数涨幅。`main.py check` 本来就断言
+    #    `rank ∈ [0,1] ∪ {NaN}`，是这套口径的配套断言。
+    df = df.copy()
+    df["trade_date"] = int_to_str_vec(df["trade_date"].to_numpy())
+    # 定死 dtype，避免空帧 / 全 NaN 帧落盘后读回来变成 object
+    df["trade_date"] = df["trade_date"].astype("string")
+    df["stock_code"] = df["stock_code"].astype("string")
+    df["value"] = df["value"].astype("float32")
+    df["rank"] = df["rank"].astype("float32")
+    return df

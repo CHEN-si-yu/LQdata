@@ -1,0 +1,88 @@
+{
+  "created_at": "2026-09-30 12:47:43",
+  "old": [
+    "V31",
+    "V36",
+    "V38"
+  ],
+  "quality": [
+    "V46",
+    "V47",
+    "V48",
+    "V49"
+  ],
+  "flow": [
+    "V50",
+    "V51",
+    "V52",
+    "V53"
+  ],
+  "normalization": "within-day percentile ranks; no future information; NaNs propagate, no artificial zero-filled predictions",
+  "family_aggregation": "equal mean of within-day member percentile ranks; never select a winning seed",
+  "mixtures": {
+    "old_family": [
+      1,
+      0,
+      0
+    ],
+    "quality_family": [
+      0,
+      1,
+      0
+    ],
+    "flow_family": [
+      0,
+      0,
+      1
+    ],
+    "old_quality_equal": [
+      0.5,
+      0.5,
+      0
+    ],
+    "old_flow_equal": [
+      0.5,
+      0,
+      0.5
+    ],
+    "quality_flow_equal": [
+      0,
+      0.5,
+      0.5
+    ],
+    "three_equal": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "old_half": [
+      0.5,
+      0.25,
+      0.25
+    ],
+    "quality_half": [
+      0.25,
+      0.5,
+      0.25
+    ]
+  },
+  "strategy_grid": {
+    "topn": [
+      5,
+      10,
+      20
+    ],
+    "period": [
+      1,
+      5
+    ],
+    "band": [
+      20,
+      40
+    ],
+    "phase": "all phases"
+  },
+  "validation": "all four train-before-validation blocks; standard test not used for selection; equal sleeves of cash curves are not claimed as executable ensemble",
+  "execution": "single shared100000 account, same fees/slippage/100shares/T+1/capacity; gross/cost/net separately",
+  "decision": "assess seed/phase dispersion, paired net and drawdown; low prediction correlation alone insufficient"
+}

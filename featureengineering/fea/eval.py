@@ -111,9 +111,16 @@ def _deciles(val: np.ndarray, lab: np.ndarray, min_n: int) -> tuple[np.ndarray, 
 
 def evaluate_all(args, cfg) -> int:
     t_start = time.time()
-    specs = [s for s in all_specs() if s.enabled and not s.is_label]
+    specs = [s for s in all_specs() if s.enabled and not s.is_label and not s.is_market]
     if getattr(args, "factors", None):
         want = set(args.factors)
+        # ★ 2026-09-25：用户点名要的因子里若有市场因子/标签，**明说**为什么不算。
+        #   原来直接过滤掉，最后只报「没有可评价的因子产物（先用 main.py run 生成）」
+        #   —— 产物其实在，归因是错的，会把排查引向"是不是没跑过"。
+        skipped = sorted(n for n in want if n not in {s.name for s in specs})
+        if skipped:
+            print(f"⚠ 以下对象不在本工具范围内（IC/RankIC/分层都需要**横截面**，"
+                  f"市场因子每天只有一个标量、标签是目标变量）：{', '.join(skipped)}", flush=True)
         specs = [s for s in specs if s.name in want]
     if getattr(args, "group", None):
         specs = [s for s in specs if s.group in set(args.group)]
@@ -172,7 +179,7 @@ def evaluate_all(args, cfg) -> int:
         # Release per-year raw prices and panel caches; evaluation does not need old years.
         from .prices import PriceLayer
         from .upstream import Upstream
-        px = PriceLayer(Upstream(cfg.upstream), cfg, cal, codes)
+        px = PriceLayer(Upstream(cfg.upstream, cfg.root), cfg, cal, codes)
         px._ensure_loaded(year - 1, year)
         hfq_open = px.panel(panel, "hfq_open")
         from . import mathx as mx

@@ -1,0 +1,186 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-09-30 23:23:08",
+  "mode": "live",
+  "model": "model_train/2026Q3/fold[1, 2, 3, 4] 四折集成",
+  "live_quarter": "2026Q3",
+  "folds": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "eval_window": {
+    "start": "2026-07-01",
+    "end": "2026-09-30",
+    "days": 65,
+    "backtest_start": "2026-07-01",
+    "backtest_end": "2026-09-28",
+    "backtest_days": 64
+  },
+  "split_spans": {
+    "quarter": "2026Q3",
+    "fold": 1,
+    "train": [
+      {
+        "start": "2020-03-12",
+        "end": "2026-05-29",
+        "days": 1506
+      }
+    ],
+    "valid": [
+      {
+        "start": "2018-01-02",
+        "end": "2020-01-03",
+        "days": 489
+      }
+    ],
+    "test": [
+      {
+        "start": "2026-07-01",
+        "end": "2026-09-30",
+        "days": 65
+      }
+    ],
+    "score": [
+      {
+        "start": "2026-07-01",
+        "end": "2026-09-30",
+        "days": 65
+      }
+    ]
+  },
+  "reload_max_abs_err": 0.0,
+  "strategy": "top5_1d",
+  "topn": 5,
+  "period": 1,
+  "band": 40,
+  "account_money": 100000.0,
+  "rank_ic": {
+    "label_ret_10d": {
+      "days": 54,
+      "RankIC": 0.1270548732508591,
+      "Pearson_IC": 0.10072146746678053
+    },
+    "label_ret_1d": {
+      "days": 63,
+      "RankIC": 0.05829067183231399,
+      "Pearson_IC": 0.06387145300478538
+    },
+    "label_ret_20d": {
+      "days": 44,
+      "RankIC": 0.2511192179573625,
+      "Pearson_IC": 0.17064671607534157
+    },
+    "label_ret_3d": {
+      "days": 61,
+      "RankIC": 0.07472799838152176,
+      "Pearson_IC": 0.07111982885463658
+    },
+    "label_ret_5d": {
+      "days": 59,
+      "RankIC": 0.08799428651484323,
+      "Pearson_IC": 0.0769347208939982
+    }
+  },
+  "account": {
+    "gross_annual_pct": 2.6052732395851796,
+    "fee_annual_pct": 4.134155002601937,
+    "net_annual_pct": -1.5288817630167575,
+    "compounded_pct": -3.0135808486219218,
+    "max_drawdown_pct": -35.35020465592999,
+    "trades": 114,
+    "total_fees": 1093.330248622
+  },
+  "ideal_topk": {
+    "daily_mean_pct": -0.4412209280171062,
+    "compounded_pct": -27.826959267377017
+  },
+  "benchmark": {
+    "name": "同窗全市场等权(1d 标签)",
+    "compounded_pct": 1.179845299922011
+  },
+  "anchor": {
+    "text": "22 个无前视干净块（2021Q1–2026Q2）激进 top5_1d +30.4%/年、稳态 top5_5d +37.5%/年；四个近期干净块 V28 +44.7%、V29 +45.4%/年"
+  },
+  "verdict": "model=同档（RankIC_5d +0.0880）；account=-1.53%/年（须与同窗 experiments 参照并读）",
+  "latest": {
+    "signal_day": "2026-09-30",
+    "buy_day": "2026-10-08",
+    "sell_day": "2026-10-09",
+    "strategy": "top5_1d",
+    "holding_days": 1,
+    "picks": [
+      {
+        "rank": 1,
+        "code": "002855.SZ",
+        "name": "捷荣技术",
+        "score": 1.8355169296264648,
+        "code_index": 952
+      },
+      {
+        "rank": 2,
+        "code": "603738.SH",
+        "name": "泰晶科技",
+        "score": 1.612441062927246,
+        "code_index": 2019
+      },
+      {
+        "rank": 3,
+        "code": "000892.SZ",
+        "name": "欢瑞世纪",
+        "score": 1.6007009744644165,
+        "code_index": 253
+      },
+      {
+        "rank": 4,
+        "code": "603330.SH",
+        "name": "天洋新材",
+        "score": 1.57039475440979,
+        "code_index": 1892
+      },
+      {
+        "rank": 5,
+        "code": "603958.SH",
+        "name": "哈森股份",
+        "score": 1.542145013809204,
+        "code_index": 2093
+      },
+      {
+        "rank": 6,
+        "code": "601700.SH",
+        "name": "风范股份",
+        "score": 1.4923970699310303,
+        "code_index": 1708
+      },
+      {
+        "rank": 7,
+        "code": "002596.SZ",
+        "name": "海南瑞泽",
+        "score": 1.4876872301101685,
+        "code_index": 763
+      },
+      {
+        "rank": 8,
+        "code": "603637.SH",
+        "name": "镇海股份",
+        "score": 1.473711371421814,
+        "code_index": 1977
+      },
+      {
+        "rank": 9,
+        "code": "600272.SH",
+        "name": "开开实业",
+        "score": 1.4439072608947754,
+        "code_index": 1174
+      },
+      {
+        "rank": 10,
+        "code": "002655.SZ",
+        "name": "共达电声",
+        "score": 1.4331992864608765,
+        "code_index": 805
+      }
+    ]
+  }
+}

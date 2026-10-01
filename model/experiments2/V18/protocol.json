@@ -1,0 +1,55 @@
+{
+  "version": "V18",
+  "strategy": "monthly LambdaRank daily_rank=1; 100% target weight",
+  "score_source": "experiments2/V11/quarters/<quarter>/predictions.csv",
+  "quarters": [
+    "2020Q1",
+    "2020Q2",
+    "2020Q3",
+    "2020Q4",
+    "2021Q1",
+    "2021Q2",
+    "2021Q3",
+    "2021Q4",
+    "2022Q1",
+    "2022Q2",
+    "2022Q3",
+    "2022Q4",
+    "2023Q1",
+    "2023Q2",
+    "2023Q3",
+    "2023Q4",
+    "2024Q1",
+    "2024Q2",
+    "2024Q3",
+    "2024Q4",
+    "2025Q1",
+    "2025Q2",
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "oos_dates": [
+    "2020-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signals": 78,
+  "model_retrained": false,
+  "portfolio_rule": "One predicted Top1 name; cash account and shared execution model.",
+  "comparators": [
+    "monthly 60-session momentum Top2",
+    "initial equal-weight four-bank hold"
+  ],
+  "execution": "signal at first session close, T+1 open rebalance; mark open positions at last OOS close, same as V11 and comparators.",
+  "costs": {
+    "commission": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer": 1e-05,
+    "sell_stamp": 0.0005,
+    "adverse_slippage": 0.0003,
+    "max_participation": 0.01,
+    "lot_size": 100
+  },
+  "runner_sha256": "38326317f8962fe2e45ba5a7974cef1e30e6efeaf4fff046c93e77733ce27616"
+}

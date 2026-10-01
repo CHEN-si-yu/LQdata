@@ -117,7 +117,9 @@ class Manifest:
                 ) from exc
             try:
                 obj = json.loads(text)
-                raw = obj if isinstance(obj, dict) else {}
+                if not isinstance(obj, dict):
+                    raise ManifestUnreadable(f"manifest must be a JSON object: {p}")
+                raw = obj
             except json.JSONDecodeError as exc:
                 raise ManifestUnreadable(
                     f"manifest 内容坏了：{p}（{exc}）\n"

@@ -61,7 +61,13 @@ FIN_WARMUP = 700
 # `stock_financial_indicator` 的口径：与已注册的 `interest_coverage` 一致
 # （实测 `fin_exp_int_exp` 在 2012/2015 的非零率是 0.00%、2019 才 87% —— 早年是
 #  「未披露」而不是「零」，不写起点会让头七年产出恒为 0/NaN 的假因子）
-IND_START = "2019-05-01"
+# ★★ 2026-09-25：由 "2019-05-01" 改为 None（跟随全局下界 2018-01-01）。
+#
+#   上面那条注释说的是 2012/2015 的情况（非零率 0.00%），**但 2018 年不是这样**：
+#   实测 `stock_income.fin_exp_int_exp` 在 2018 年非空 17630 行、精确 0 占 55.9%
+#   ⇒ **44% 有真实值**。按 2019-05-01 截断会丢掉这些真实观测。
+#   与 factors/quality.py 的 `RD_START` 同一处置：上游支持 ⇒ 放开真算、不填充。
+IND_START = None
 
 NP = "n_income_attr_p"       # 归母净利（Income 表）
 REV = "revenue"              # 营业收入（★ 不用 total_revenue，见 CLAUDE.md 坑 4）
@@ -111,7 +117,7 @@ def _yoy_ratio(ctx, num_ttm: str, den: str, den_mode: str = "point"):
         d4 = ctx.lag_ttm(den, 4)
     r0 = ctx.safe_div(ctx.ttm(num_ttm), d0, 1e6)
     r4 = ctx.safe_div(ctx.lag_ttm(num_ttm, 4), d4, 1e6)
-    return ctx.safe_div(r0, np.abs(r4), 1e-6) - 1.0
+    return ctx.safe_div(r0 - r4, np.abs(r4), 1e-6)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -361,100 +367,12 @@ def ind_int_to_talcap(ctx):
 # 4. per-unit 比率的同比（5 个）—— 参考库 Quality #8 / #41 / #42 / #28 族
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="np_to_inventory_yoy",
-    group="growth",
-    deps=(*_DEP_IS, *_DEP_BS),
-    desc="单位存货创利同比 = (净利_TTM / 存货) 的同比",
-    formula="Ratio = NetProfit_Q / Inventories;  Growth = Ratio_t / Ratio_{t-4} - 1",
-    fin_fields=(NP, INV),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=True,
-    note=("参考库 `因子库.md` 5、Quality #8（per-unit 比率同比族）。"
-          "★ **刻意偏离**：参考库分子用**单季**净利（`NetProfit_Q`），"
-          "本项目的 `fea/deriv.py` **只暴露 TTM**（没有单季访问器，"
-          "见 `factors/DEVELOPING.md` §3.2 的字段表），故用 `n_income_attr_p_TTM`。"
-          "语义从「单季的存货创利效率」变成「**滚动一年的**存货创利效率」，"
-          "少了季节性、也更平滑 —— 在单年 IC 检验里这**是好事**。"
-          "★ 分母 `inventories` **不在** `POSITIVE_ONLY` 里（`fea/deriv.py`）——"
-          "银行/券商没有存货，该字段是精确 0 或 NaN ⇒ 由 `safe_div` 的 1e6 地板"
-          "给 NaN，**这正是期望行为**（金融股不该有这个因子）。"
-          "★ 为什么这是 growth 而不是 quality：它测的是**效率的变化率**，"
-          "而 `inventory_turnover`（在册）测的是**水平**。"),
-))
-def np_to_inventory_yoy(ctx):
-    return _yoy_ratio(ctx, NP, INV, "point")
 
 
-@register(FactorSpec(
-    name="np_to_fixed_assets_yoy",
-    group="growth",
-    deps=(*_DEP_IS, *_DEP_BS),
-    desc="单位固定资产创利同比 = (净利_TTM / 固定资产) 的同比",
-    formula="Ratio = NetProfit_Q / FixedAssets;  Growth = Ratio_t / Ratio_{t-4} - 1",
-    fin_fields=(NP, FA),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=True,
-    note=("参考库 `因子库.md` 5、Quality #41。"
-          "★ 与 `np_to_inventory_yoy` 同族、同偏离（单季→TTM），"
-          "两处**共用同一个地板（1e6 元）**，保证两者的量级可比。"
-          "**为什么固定资产这一支值得单独发**：重资产行业的产能利用率变化"
-          "是盈利周期最直接的度量 —— 单位固定资产创利上升 = 产能被更充分利用"
-          "（或刚做完减值、分母变干净）。"
-          "与已删的 `fixed_asset_turnover`（收入/固定资产的**水平**）不同："
-          "那个是效率水平，本因子是**效率的同比变化**（分子换成净利、取同比）。"),
-))
-def np_to_fixed_assets_yoy(ctx):
-    return _yoy_ratio(ctx, NP, FA, "point")
 
 
-@register(FactorSpec(
-    name="np_to_salary_yoy",
-    group="growth",
-    deps=(*_DEP_IS, *_DEP_CF),
-    desc="单位薪酬创利同比 = (净利_TTM / 支付给职工的现金_TTM) 的同比",
-    formula="Ratio = NetProfit_TTM / StaffBehalfPaid_TTM;  Growth = Ratio_t / Ratio_{t-4} - 1",
-    fin_fields=(NP, PAYROLL),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=True,
-    note=("参考库 `因子库.md` 5、Quality #42。"
-          "★ **本因子无需任何偏离**：参考库原文就是 `NetProfit_TTM / StaffBehalfPaid_TTM`"
-          "（**TTM/TTM**），与 `np_to_inventory_yoy` / `np_to_fixed_assets_yoy`"
-          "那两条「单季→TTM」的偏离不同。"
-          "**经济含义**：每元薪酬产出多少利润 = **人力投入的运营杠杆**。"
-          "这个比率上升可以由两头驱动：收入增长摊薄了固定人力成本"
-          "（经营杠杆释放），或裁员降本。两者的后续走势完全不同，"
-          "但作为「效率改善」的信号方向一致。"
-          "★ `c_paid_to_for_empl` 由现金流量表提供，实测 2012 起 100% 非零。"),
-))
-def np_to_salary_yoy(ctx):
-    return _yoy_ratio(ctx, NP, PAYROLL, "ttm")
 
 
-@register(FactorSpec(
-    name="np_to_deferred_tax_yoy",
-    group="growth",
-    deps=(*_DEP_IS, *_DEP_BS),
-    desc="单位递延所得税资产创利同比 = (净利_TTM / 递延所得税资产) 的同比",
-    formula="Ratio = NetProfit_Q / DeferredTaxAssets;  Growth = Ratio_t / Ratio_{t-4} - 1",
-    fin_fields=(NP, DTA),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=True,
-    note=("参考库 `因子库.md` 5、Quality #28。"
-          "★ 同族偏离（单季→TTM），见 `np_to_inventory_yoy` 的 note。"
-          "**为什么递延所得税资产这一支有独立信息**：递延所得税资产主要是"
-          "**可抵扣暂时性差异与可结转亏损**的累积 —— "
-          "它是「税务当局尚未认可的会计利润」最干净的单科目代理。"
-          "企业只有在**预期未来能盈利**时才会确认这笔资产（否则要计提减值），"
-          "所以它的相对规模变化携带了管理层对自身盈利前景的判断。"
-          "此前**零个因子**用过这个字段。"),
-))
-def np_to_deferred_tax_yoy(ctx):
-    return _yoy_ratio(ctx, NP, DTA, "point")
 
 
 @register(FactorSpec(
@@ -462,31 +380,19 @@ def np_to_deferred_tax_yoy(ctx):
     group="growth",
     deps=_DEP_IS,
     desc="单位经营性费用创利同比 = (净利_TTM / (销售+管理+研发费用)_TTM) 的同比",
-    formula="Opex = sell_exp + admin_exp + rd_exp (TTM)\n"
-            "Ratio = NetProfit_TTM / Opex;  Growth = Ratio_t / Ratio_{t-4} - 1",
+    formula='(current_ratio - same_quarter_last_year_ratio) / abs(same_quarter_last_year_ratio)',
     fin_fields=(NP, "sell_exp", "admin_exp", "rd_exp"),
     start=FIN_START,
     warmup_days=FIN_WARMUP,
     higher_is_better=True,
-    note=("参考库 `因子库.md` 5、Quality #27 的 per-unit 族。"
-          "★★ **刻意偏离：分母不含 `fin_exp`（财务费用）**（这是与前一轮作者的明确决定一致）。"
-          "参考库的「三费」= 销售 + 管理 + **财务**费用，但本项目实测"
-          "`fin_exp` 对 **20%~34% 的公司为负**（利息净收入大于利息支出），"
-          "含它会让分母**跨零**⇒ 比值的符号静默翻转（"
-          "`quality.py` 的排除清单里写明了这一条）。"
-          "本实现改用 **销售 + 管理 + 研发**（三项恒为非负），"
-          "语义从「三费」变成「**经营性费用**」（研发本就该算进经营费用，"
-          "参考库把研发另计是它那一版的口径）。"
-          "★ 与 `opm_ttm` / `opm_npm_spread` 的关系：那两个是**收入为分母**的利润率"
-          "（测定价能力），本因子是**费用为分母**的产出率（测费用效率），"
-          "分母的物理量不同、且本因子取同比。"),
-))
+    note=('同比变化以去年同期绝对值为分母，负基期不变时变化为0，改善时为正。'),
+version=2,))
 def np_to_opex_yoy(ctx):
     opex = ctx.ttm("sell_exp") + ctx.ttm("admin_exp") + ctx.ttm("rd_exp")
     r0 = ctx.safe_div(ctx.ttm(NP), opex, 1e6)
     opex4 = ctx.lag_ttm("sell_exp", 4) + ctx.lag_ttm("admin_exp", 4) + ctx.lag_ttm("rd_exp", 4)
     r4 = ctx.safe_div(ctx.lag_ttm(NP, 4), opex4, 1e6)
-    return ctx.safe_div(r0, np.abs(r4), 1e-6) - 1.0
+    return ctx.safe_div(r0 - r4, np.abs(r4), 1e-6)
 
 
 # ══════════════════════════════════════════════════════════════════════

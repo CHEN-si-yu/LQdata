@@ -1,0 +1,130 @@
+{
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signals": 30,
+  "all_signal_dates_from_v11_monthly_schedule": true,
+  "all_factor_rows_on_signal_dates_available": true,
+  "factor_selected_before_holdout": true,
+  "selected_factor_top20_quarters": 10,
+  "selected_factor_10_of_16_training_quarters": true,
+  "signal_uses_factor_value_on_signal_date": true,
+  "execution_is_next_session_open": true,
+  "positions_marked_to_final_close_without_forced_liquidation": true,
+  "v24_baseline_ledger_compatibility": {
+    "V11 LambdaRank Top2": {
+      "metric_abs_differences_vs_v24": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "daily_max_abs_differences_vs_v24": {
+        "equity_net": 4.9649213906377554e-05,
+        "equity_gross": 4.9906811909750104e-05,
+        "cash": 4.9985885652859e-08,
+        "fees_cumulative": 4.785097189596854e-07,
+        "slippage_cumulative": 3.9700057641312014e-07,
+        "turnover_cumulative": 0.0004646042361855507,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9977955801638885e-12,
+        "drawdown": 4.9713150263031025e-11
+      },
+      "daily_rows_match": 601,
+      "shares_json_exact_match": true,
+      "trade_count_equal": true,
+      "tolerance": 0.001
+    },
+    "60d momentum Top2": {
+      "metric_abs_differences_vs_v24": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "daily_max_abs_differences_vs_v24": {
+        "equity_net": 4.98676672577858e-05,
+        "equity_gross": 4.987750435248017e-05,
+        "cash": 4.3388297399360454e-08,
+        "fees_cumulative": 4.964820163877448e-07,
+        "slippage_cumulative": 3.8978271277301246e-08,
+        "turnover_cumulative": 0.00045753270387649536,
+        "accounting_residual": 3.26629713207609e-21,
+        "daily_return_net": 4.9993637701861715e-12,
+        "drawdown": 4.948530474280233e-11
+      },
+      "daily_rows_match": 601,
+      "shares_json_exact_match": true,
+      "trade_count_equal": true,
+      "tolerance": 0.001
+    },
+    "equal-weight hold": {
+      "metric_abs_differences_vs_v24": {
+        "net_return": 0.0,
+        "fees": 0.0,
+        "slippage_cost": 0.0,
+        "turnover": 0.0,
+        "max_drawdown": 0.0,
+        "annualized_volatility": 0.0,
+        "min_cash": 0.0
+      },
+      "daily_max_abs_differences_vs_v24": {
+        "equity_net": 4.979799268767238e-05,
+        "equity_gross": 4.995721974410117e-05,
+        "cash": 4.801506747753592e-08,
+        "fees_cumulative": 2.000000165480742e-09,
+        "slippage_cumulative": 0.0,
+        "turnover_cumulative": 0.0,
+        "accounting_residual": 1.633148566038045e-21,
+        "daily_return_net": 4.951544382847395e-12,
+        "drawdown": 4.9866888396365994e-11
+      },
+      "daily_rows_match": 601,
+      "shares_json_exact_match": true,
+      "trade_count_equal": true,
+      "tolerance": 0.001
+    }
+  },
+  "strategies": {
+    "V34 id2_close_vs_pm_vwap_20 Top2": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2,
+      "trades": 72,
+      "min_cash": 77.63304206021712
+    },
+    "V11 LambdaRank Top2": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2,
+      "trades": 73,
+      "min_cash": 36.23176302149659
+    },
+    "60d momentum Top2": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "max_positions": 2,
+      "trades": 48,
+      "min_cash": 61.0696464866453
+    },
+    "equal-weight hold": {
+      "cash_nonnegative": true,
+      "blocked_trade_events": 0,
+      "max_abs_accounting_residual": 1.4551915228366852e-11,
+      "max_positions": 4,
+      "trades": 4,
+      "min_cash": 328.2072699519849
+    }
+  },
+  "membership_audit_rows": 30
+}

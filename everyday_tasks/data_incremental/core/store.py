@@ -46,6 +46,13 @@ class StoreReadError(RuntimeError):
     """**已存在的** parquet 读不出来。绝不能把它当成"空表"。"""
 
 
+def row_count(path: Path) -> int:
+    if not path.exists():
+        return 0
+    import pyarrow.parquet as pq
+    return pq.ParquetFile(path).metadata.num_rows
+
+
 def read_parquet(path: Path, *, on_error: str = "raise") -> pd.DataFrame:
     """读分区。`path` 不存在 → 空表（合法，首次落库）。
 
@@ -96,6 +103,12 @@ def _cast_like(new: pd.DataFrame, old: pd.DataFrame) -> pd.DataFrame:
         if want == have:
             continue
         try:
+            if pd.api.types.is_integer_dtype(want):
+                numeric = pd.to_numeric(new[col], errors="coerce")
+                valid = numeric.dropna()
+                if len(valid) and ((valid % 1) != 0).any():
+                    # A newly published decimal must not be silently truncated.
+                    continue
             new[col] = new[col].astype(want)
         except (ValueError, TypeError):
             if pd.api.types.is_integer_dtype(want):

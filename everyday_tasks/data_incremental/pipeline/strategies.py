@@ -29,7 +29,7 @@ import pandas as pd
 
 from .. import paths, registry as R
 from ..core import state, store
-from ..core.client import Client, ApiError, QueryLimitError, FetchRows, extract_list
+from ..core.client import Client, ApiError, QueryLimitError, FetchRows, extract_list, extract_total
 from ..core.progress import fmt_rows
 from . import calendar as cal_mod
 
@@ -48,6 +48,7 @@ class Ctx:
     # ★ 2026-09-19：一次性存量回填模式（`main.py run --report-backfill`）——
     #   把 4 张财报表的**全部**历史报告期都抓一遍（而不是只抓最近 3 期 + ann_date 窗口）。
     report_backfill: bool = False
+    available_hi: dict = field(default_factory=dict)
 
     @property
     def redundancy(self) -> int:
@@ -80,7 +81,16 @@ class Ctx:
         d = int(getattr(ds, "delay_days", 0) or 0)
         if d <= 0:
             return self.T
-        return state.shift_back(self.cal, self.T, d) or self.T
+        fallback = state.shift_back(self.cal, self.T, d) or self.T
+        if self.dry_run:
+            return fallback
+        if ds.name not in self.available_hi:
+            from . import probe
+            n = probe.probe_rows(self.client, ds, self.T, self.cal, page_size=2)
+            base = probe.median_daily_rows(ds.name, ds.date_field, n=5)
+            ratio = float(self.cfg.get("gate", {}).get("publish_ratio", 0.7))
+            self.available_hi[ds.name] = self.T if n and (base <= 0 or n >= base * ratio) else fallback
+        return self.available_hi[ds.name]
 
     def data_window(self, ds: R.DS, n: int | None = None) -> tuple[str, str]:
         """取数窗口：以 `data_hi(ds)` 为**上界**、往前数 n 个交易日。
@@ -151,6 +161,7 @@ class Result:
     #   → 报告里打一条 ℹ️（数据是厂商撤走的，**本地那份照常保留、绝不删**）。
     #   见 `report._judge` 的 vanished 分支与 `README.md` §9 第 7 条「上游撤数」。
     server_counts: dict = field(default_factory=dict)
+    checked_ranges: list = field(default_factory=list)
     # ★ 2026-09-16 新增：尾部窗口下界被锚定到本地末次数据时的实际下界（None = 没锚）。
     #   用途是让「窗口会不会滑过未抓到的期」这件事在日志和报告里可观测。
     anchored_lo: str | None = None
@@ -298,9 +309,22 @@ def _replace_snapshot(ds: R.DS, man: state.Manifest, df: pd.DataFrame, path) -> 
             f"{SNAPSHOT_SHRINK_FLOOR:.0%}（疑似抓残；已保持本地原样，等下轮重试）")
     store.overwrite(path, df, sort_by=ds.sort_by or ds.keys)
     man.mark_partition(0, after, None, None)
+    for key in list(man.suspect):
+        if key.startswith("snapshot_shrink|"):
+            man.suspect.pop(key, None)
     # ★ 行数**减少是预期行为**（成分股调出），所以净增可能为负 —— 统一返回 0，
     #   别让报告把它显示成"负的新增行数"。
     return max(0, after - before)
+
+
+def _queue_ledger(ds, man, df):
+    col = ds.ledger_date_field()
+    if ds.freq == "snapshot" or col not in df:
+        return
+    dates = {str(d)[:10] for d in df[col].dropna().unique()}
+    dates = {d for d in dates if len(d) == 10 and d[4] == "-" and d[7] == "-"}
+    man._extra["pending_ledger_dates"] = sorted(
+        set(man._extra.get("pending_ledger_dates", [])) | dates)
 
 
 def _save(ds: R.DS, man: state.Manifest, df: pd.DataFrame,
@@ -332,7 +356,7 @@ def _save(ds: R.DS, man: state.Manifest, df: pd.DataFrame,
         #   ⚠️ 配套：`_Buf` 对这类表**只在收尾 flush 一次** —— 否则分批替换会丢数据。
         if R.replaces_whole(ds):
             return _replace_snapshot(ds, man, df, path)
-        before = len(store.read_parquet(path))
+        before = store.row_count(path)
         merged = store.upsert(path, df, keys=ds.keys, sort_by=ds.sort_by or ds.keys,
                      date_field=ds.date_field, replace_suffix=replace_suffix)
         mn = mx = None
@@ -340,19 +364,23 @@ def _save(ds: R.DS, man: state.Manifest, df: pd.DataFrame,
             s = merged[ds.date_field].astype(str).str[:10]
             mn, mx = s.min(), s.max()
         man.mark_partition(0, len(merged), mn, mx)
+        _queue_ledger(ds, man, df)
         return max(0, len(merged) - before)
 
     added = 0
     col = ds.date_field
     if col not in df.columns:
         raise ValueError(f"{ds.name}: 数据里没有 date_field={col}，无法按年分区")
+    dates = pd.to_datetime(df[col].astype(str).str[:10], errors="coerce")
+    if dates.isna().any():
+        raise ValueError(f"{ds.name}: invalid partition dates; refusing to silently drop rows")
     df["_y"] = df[col].astype(str).str[:4]
     for y in sorted(df["_y"].unique()):
         if not str(y).isdigit():
             continue
         sub = df[df["_y"] == y].drop(columns=["_y"])
         path = store.partition_path(ds.name, int(y))
-        before = len(store.read_parquet(path))
+        before = store.row_count(path)
         if R.collapses_periods(ds):
             # ★★ 周/月线：**"合并 + 按周期折叠 + 整分区替换"**，不走 upsert。
             #   因为要去重的是"同一期的多行"，而 upsert 只按 keys 去重
@@ -369,10 +397,60 @@ def _save(ds: R.DS, man: state.Manifest, df: pd.DataFrame,
         s = merged[col].astype(str).str[:10] if col in merged.columns else pd.Series(dtype=str)
         man.mark_partition(int(y), len(merged), s.min() if len(s) else None,
                            s.max() if len(s) else None)
+        _queue_ledger(ds, man, sub)
     return added
 
 
 # ================================================================ ① range
+def _source_local_rows(ds, year, a, b):
+    path = store.partition_path(ds.name, year)
+    if not path.exists():
+        return 0
+    if a == f"{year}-01-01" and b == f"{year}-12-31":
+        return store.row_count(path)
+    values = pd.read_parquet(path, columns=[ds.date_field])[ds.date_field].astype(str).str[:10]
+    return int(((values >= a) & (values <= b)).sum())
+
+
+def _reconcile_range_counts(ds, man, ctx, hi):
+    from datetime import date
+    today = date.today().isoformat()
+    checks = man._extra.setdefault("source_year_counts", {})
+    errors = []
+    for year in range(int(ds.start[:4]), int(hi[:4]) + 1):
+        key = str(year)
+        previous = checks.get(key, {})
+        # Compare only the historical prefix. Today's ordinary new rows belong
+        # to the tail and must never trigger a whole-current-year refresh.
+        audit_hi = min(hi, _prev_day(ctx.data_window(ds, ds.window(ctx.redundancy))[0]))
+        a, b = max(ds.start, f"{year}-01-01"), min(audit_hi, f"{year}-12-31")
+        if a > b:
+            continue
+        if (previous.get("checked_on") == today and previous.get("through") == b
+                and previous.get("start_exclusive", False) == ds.start_exclusive):
+            continue
+        try:
+            data = ctx.client.call(ds.path, {**ds.params, ds.start_param: ds.query_start(a), ds.end_param: b,
+                                            "page": 0, "page_size": 1},
+                                   method=ds.method, expect_rows=False)
+            total = extract_total(data)
+            if total is None:
+                raise ApiError("source omitted total")
+            local = _source_local_rows(ds, year, a, b)
+            delta = total - local
+            changed = previous and (previous.get("delta") != delta or previous.get("start_exclusive", False) != ds.start_exclusive)
+            first_mismatch = not previous and delta != 0
+            if delta != 0 and (changed or first_mismatch):
+                man.mark_suspect(f"{a}~{b}|source_count_change")
+                if ctx.runner:
+                    ctx.runner.note(f"   {ds.name} {year}: source={total}, local={local}; reconcile full interval")
+            checks[key] = {"checked_on": today, "from": a, "through": b, "total": total, "local_rows": local, "delta": delta, "start_exclusive": ds.start_exclusive}
+            man.save()
+        except Exception as exc:
+            errors.append(f"{year}: {exc}")
+    return errors
+
+
 def run_range(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     """date 轴：只请求新增的日期区间 + 无条件重抓尾部窗口。
 
@@ -385,6 +463,7 @@ def run_range(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     # 1) coverage 里的历史缺口（一次性回填用；日常通常为空）
     #    ★ 上界同样按 delay 收口：历史缺口的回填也不必去够"按契约还不存在"的那天
     lo, hi = ctx.data_window(ds, ds.window(ctx.redundancy))   # 上界 = T - delay
+    count_errors = [] if ctx.dry_run or not ctx.cfg.get("download", {}).get("source_count_audit", True) else _reconcile_range_counts(ds, man, ctx, hi)
     gaps = _missing_ranges(man, ds.start, hi)
 
     # 2) 尾部窗口：**无条件**重抓（用户要求冗余 5 个交易日）
@@ -413,7 +492,7 @@ def run_range(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
 
     total_added = 0
     buf = _Buf(ds, man, flush_batches=6)
-    bad_all: list[str] = []
+    bad_all: list[str] = [f"source count check failed: {e}" for e in count_errors]
     for (a, b) in gaps:
         # ★★ 2026-09-17：coverage **按 chunk 标**（而不是按整段 gap 标）。
         #    判据 = 「这个 chunk 的**所有 variant**都拿到了一次干净的成功响应」。
@@ -431,7 +510,7 @@ def run_range(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
             #   漏了会直接被服务端 422 拒绝（`period: Field required`）。
             for variant in (ds.variants or [None]):
                 payload = {**ds.params, **(variant or {}),
-                           ds.start_param: ca, ds.end_param: cb}
+                           ds.start_param: ds.query_start(ca), ds.end_param: cb}
                 mm0 = ctx.client.stats.get("total_mismatch", 0)
                 try:
                     rows = ctx.client.fetch_all(ds.path, payload, ds.page_size,
@@ -480,6 +559,7 @@ def run_range(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
             if chunk_ok:
                 man.add_coverage(ca, cb)
                 successful_ranges.append((ca, cb))
+                res.checked_ranges.append((ca, cb))
                 for key, (pa, pb) in pending_ranges.items():
                     if any(sa <= pa and pb <= sb for sa, sb in _merge_ranges(successful_ranges)):
                         man.suspect.pop(key, None)
@@ -491,6 +571,12 @@ def run_range(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
 
     buf.flush()
     total_added = buf.rows
+    if not bad_all:
+        for year, check in man._extra.get("source_year_counts", {}).items():
+            local = _source_local_rows(ds, int(year), check.get("from", f"{year}-01-01"), check["through"])
+            check["local_rows"] = local
+            check["delta"] = check["total"] - local
+        man.save()
     res.rows = total_added
     res.seconds = time.monotonic() - t0
     if bad_all:
@@ -656,15 +742,28 @@ def _parallel_map(fn, items: list, workers: int):
             yield it, rows, err
         return
 
+    from concurrent.futures import wait, FIRST_COMPLETED
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        futs = {ex.submit(fn, it): it for it in items}
-        for fu in as_completed(futs):
-            it = futs[fu]
+        source = iter(items)
+        pending = {}
+        def submit_one():
             try:
-                rows, err = fu.result()
-            except Exception as exc:  # noqa: BLE001
-                rows, err = [], exc
-            yield it, rows, err
+                item = next(source)
+            except StopIteration:
+                return
+            pending[ex.submit(fn, item)] = item
+        for _ in range(workers):
+            submit_one()
+        while pending:
+            done, _ = wait(pending, return_when=FIRST_COMPLETED)
+            for fu in done:
+                item = pending.pop(fu)
+                try:
+                    rows, err = fu.result()
+                except Exception as exc:
+                    rows, err = [], exc
+                yield item, rows, err
+                submit_one()
 
 
 def _filter_rows(rows: list[dict], codes: list[str], code_param: str) -> list[dict]:
@@ -770,7 +869,7 @@ def _anchor_lo(ds: R.DS, man: state.Manifest, lo: str, hi: str) -> str:
     last = str(last)[:10]
     if last >= str(lo)[:10]:
         return lo                       # 本地不落后 → 窗口原样不动
-    return max(last, _minus_days(hi, ANCHOR_MAX_LOOKBACK_DAYS))
+    return max(ds.start, last)
 
 
 def _entity_periods(ds: R.DS, start: str, end: str) -> list[tuple]:
@@ -922,6 +1021,81 @@ def _entity_list_dates(ds: R.DS) -> dict[str, str]:
     return out
 
 
+def _reconcile_entity_counts(ds, man, ctx, codes, hi):
+    """Check current historical prefix and rotate one older year per day.
+
+    Restricted to interfaces whose totals have been validated against their
+    business keys. THS returns duplicate keys and uses its own full sweep.
+    """
+    if ds.name not in {"stock_cyq_chips", "tdx_minute"} or ctx.dry_run:
+        return []
+    if not ctx.cfg.get("download", {}).get("source_count_audit", True):
+        return []
+    from datetime import date
+    from collections import Counter
+    import pyarrow.parquet as pq
+    import pyarrow.compute as pc
+    import pyarrow as pa
+    today = date.today()
+    last_year = int(hi[:4])
+    old_years = list(range(int(ds.start[:4]), last_year))
+    years = [last_year] + ([old_years[today.toordinal() % len(old_years)]] if old_years else [])
+    checks = man._extra.setdefault("entity_count_checks", {})
+    pending = man._extra.setdefault("pending_entity_windows", [])
+    errors = []
+    for year in years:
+        a = max(ds.start, f"{year}-01-01")
+        b = min(f"{year}-12-31", _prev_day(ctx.data_window(ds, ds.window(ctx.redundancy))[0]))
+        if a > b:
+            continue
+        previous = checks.get(str(year), {})
+        if previous.get("checked_on") == today.isoformat() and previous.get("through") == b:
+            continue
+        local = Counter()
+        path = store.partition_path(ds.name, year)
+        if path.exists():
+            for batch in pq.ParquetFile(path).iter_batches(batch_size=250000, columns=[ds.code_param, ds.date_field]):
+                dates = pc.utf8_slice_codeunits(pc.cast(batch.column(1), pa.string()), 0, 10)
+                mask = pc.and_(pc.greater_equal(dates, a), pc.less_equal(dates, b))
+                values = pc.value_counts(pc.filter(batch.column(0), mask)).to_pylist()
+                for value in values:
+                    code = str(value["values"])
+                    if ds.name == "tdx_minute":
+                        code = code.removesuffix(".TDX")
+                    local[code] += value["counts"]
+        deltas = {}
+        def check(group):
+            payload = _entity_payload(ds, group, a, b)
+            payload.update(page=0, page_size=1)
+            total = extract_total(ctx.client.call(ds.path, payload, method=ds.method, expect_rows=False))
+            if total is None:
+                raise ApiError("source omitted entity total")
+            delta = total - sum(local[c] for c in group)
+            if delta == 0:
+                return
+            if len(group) > 1:
+                mid = len(group) // 2
+                check(group[:mid])
+                check(group[mid:])
+                return
+            code = group[0]
+            deltas[code] = delta
+            if previous.get("deltas", {}).get(code) != delta:
+                task = {"codes": [code], "start": a, "end": b}
+                if task not in pending:
+                    pending.append(task)
+                if ctx.runner:
+                    ctx.runner.note(f"   {ds.name} {code} {year}: source-local={delta}; queued historical repair")
+        try:
+            for i in range(0, len(codes), 100):
+                check(codes[i:i + 100])
+            checks[str(year)] = {"checked_on": today.isoformat(), "through": b, "deltas": deltas}
+        except Exception as exc:
+            errors.append(f"entity source count {year}: {exc}")
+        man.save()
+    return errors
+
+
 def run_per_entity(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     """both 轴：**按请求数增长更慢的轴选策略**。
 
@@ -959,6 +1133,7 @@ def run_per_entity(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     lo, hi = ctx.data_window(ds, win)      # 上界 = T - delay（如 index_ths_daily delay=1）
     # ★ 2026-09-16 修「尾部窗口会滑走」：把下界锚到本地最后一期，
     #   否则本地一落后，窗口就随 T 前移、把没抓到的期永久滑出视野。
+    count_errors = _reconcile_entity_counts(ds, man, ctx, codes, hi)
     lo_raw = lo
     lo = _anchor_lo(ds, man, lo, hi)
     if lo != lo_raw:
@@ -974,8 +1149,24 @@ def run_per_entity(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     # ★★ 按日查优化（2026-09-14 实测）：有些 per_entity 接口**同时支持按日期查全部实体**
     #    （`/tdx/daily` 传 trade_date 一次返回 1119 个板块）。
     #    这时 618 个实体只要 **1 个请求/天**，而不是逐个实体 618 个。
+    #
+    # ★★★ 2026-09-23 修（**新实体回填够不着**）：这条捷径原来是**无条件** return 的，
+    #   而 `todo_new`（未完成实体的全量回填）在它**下面** —— 于是对
+    #   `BY_DATE_OVERRIDE` 里的表，"新上的实体补历史"这条路径**结构上永远到不了**。
+    #   实测：`tdx_blocks` 618→1121（厂商补齐了 503 个 `block_type=0` 统计指数），
+    #   同一晚 `tdx_minute` 正常回填了 503 实体（`done.entities` → 1121），
+    #   而 `tdx_daily` **一个都没回填**（`done.entities` 仍停在 618），
+    #   只靠按日查把尾窗补齐 ⇒ 那 503 个板块 2010~2026-09-15 的历史是空的。
+    #   这跟本文件 2026-09-18 记的「4 元组让回填完全失效」是同一族缺陷。
+    #   ⇒ 现在只在**没有待回填实体**时才走捷径；有待回填就走下面通用的实体路径
+    #     （它同时管回填 + 尾窗，代价是尾窗由 6 个请求变成实体数个请求，一次性）。
     if ds.name in BY_DATE_OVERRIDE:
-        return _run_by_date(ds, man, ctx, codes, lo, hi, res)
+        _todo = [c for c in codes if not man.is_done("entities", c)]
+        if not _todo:
+            return _run_by_date(ds, man, ctx, codes, lo, hi, res)
+        if ctx.runner:
+            ctx.runner.note(f"   {ds.name:34} 有 {len(_todo)} 个待回填实体"
+                            f" → 本次**不走**按日查捷径，改走实体路径（回填+尾窗）")
 
     if ctx.dry_run:
         n_batch = max(1, ds.entity_batch)
@@ -994,7 +1185,7 @@ def run_per_entity(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     buf = _Buf(ds, man)
 
     workers = int(ctx.cfg.get("api", {}).get("concurrency", 12))
-    errs: list[str] = []
+    errs: list[str] = list(count_errors)
 
     def _fetch(task: tuple) -> tuple[list[dict], Exception | None]:
         """一个任务 = (实体组, 期起, 期止)。**只抓数据，不碰 buf/manifest**（并发安全）。
@@ -1023,11 +1214,18 @@ def run_per_entity(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
             # A batch that fits a daily tail may exceed 100k rows for a year's
             # new-entity backfill. Split the entity group; never mark a failed
             # group done or retry the same oversized request forever.
-            if len(g) <= 1:
+            if len(g) > 1:
+                mid = len(g) // 2
+                left, le = _fetch((g[:mid], a, b))
+                right, re = _fetch((g[mid:], a, b))
+            elif a and b and a < b and ds.date_step != "month":
+                from datetime import date, timedelta
+                lo_d, hi_d = date.fromisoformat(a), date.fromisoformat(b)
+                mid = lo_d + (hi_d - lo_d) // 2
+                left, le = _fetch((g, a, mid.isoformat()))
+                right, re = _fetch((g, (mid + timedelta(days=1)).isoformat(), b))
+            else:
                 return [], exc
-            mid = len(g) // 2
-            left, le = _fetch((g[:mid], a, b))
-            right, re = _fetch((g[mid:], a, b))
             return FetchRows([*left, *right], complete=not (le or re)), le or re
         except Exception as exc:  # noqa: BLE001
             return [], exc
@@ -1126,7 +1324,12 @@ def run_per_entity(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
             # Remove a pending request only after its rows have been written.
             completed_tasks.append({"codes": g, "start": a, "end": b})
         if rows:
-            frames.append(pd.DataFrame(rows))
+            # Old repair windows must not expand the suffix hash join to an
+            # entire huge year. Commit them through the bounded normal buffer.
+            if _t[1] and _t[1] < lo:
+                buf.add(pd.DataFrame(rows))
+            else:
+                frames.append(pd.DataFrame(rows))
         if ctx.runner and idx % 40 == 0:
             ctx.runner.note(f"   {ds.name:34} 尾部窗口 {lo}~{hi} {idx}/{len(tail_tasks)} 批"
                             f" → {sum(len(f) for f in frames):,} 行")
@@ -1138,6 +1341,7 @@ def run_per_entity(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     #     · 语义正确（漏发/撤数时本地不再被删 —— 用户 2026-09-15 的口径）
     #     · 快 ~18 倍（省掉 5,500 万行分区的 concat+去重+全表排序，实测 51s → 秒级）
     #   仍然**只 flush 一次**（`_Buf` 的阈值抬到无穷）：分多次 flush 会让请求白跑。
+    buf.flush()
     tbuf = _Buf(ds, man, flush_rows=10**9, flush_batches=10**9,
                 replace_suffix=True)
     for f in frames:
@@ -1342,19 +1546,24 @@ def run_per_stock(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
 
     # 四个财报表：按 end_date（报告期）取最近 N 期 + **ann_date 日历日窗口扫描**
     if ds.name in REPORT_PERIOD_TABLES:
-        backfill = bool(getattr(ctx, "report_backfill", False))
+        from datetime import date, timedelta
+        last_sweep = man._extra.get("report_swept_through")
+        sweep_due = not last_sweep or (date.fromisoformat(ctx.T) - date.fromisoformat(last_sweep)).days >= 30
+        backfill = bool(getattr(ctx, "report_backfill", False)) or sweep_due
         periods = (all_report_periods(ds.start, ctx.T) if backfill
                    else recent_report_periods(ctx.T, n=PERIOD_LOOKBACK))
         # ann_date 扫描：只在常规模式下做 —— 回填模式已按 end_date 覆盖全部历史，
         # 再来一遍 ann_date 是纯冗余（回填那次单独跑，不叠日常开销）。
-        ann_days = [] if backfill else ann_scan_days(ctx.T)
+        ann_days = ann_scan_days(ctx.T)
+        checkpoint = man._extra.get("ann_checked_through") or str(man.last_run.get("at", man.last_run.get("finished_at", "")))[:10]
+        if checkpoint and len(checkpoint) == 10 and ds.start <= checkpoint < ann_days[0]:
+            ann_days = cal_mod.calendar_days_between(checkpoint, ann_days[-1])
         # A failed request must not disappear when its date/period leaves the
         # rolling window. Retain and retry it until a complete response is saved.
         periods = sorted(set(periods) | {k.split("|")[1] for k in man.suspect
                          if k.startswith("period|") and k.endswith("|error")}, reverse=True)
-        if not backfill:
-            ann_days = sorted(set(ann_days) | {k.split("|")[1] for k in man.suspect
-                              if k.startswith("ann|") and k.endswith("|error")})
+        ann_days = sorted(set(ann_days) | {k.split("|")[1] for k in man.suspect
+                          if k.startswith("ann|") and k.endswith("|error")})
         if ctx.dry_run:
             res.note = (f"{'★回填：' if backfill else '按报告期查 '}"
                         f"{len(periods)} 个报告期 {periods[:2]}…{periods[-1:]}"
@@ -1423,6 +1632,11 @@ def run_per_stock(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
         buf.flush()
         for key in completed_checks:
             man.suspect.pop(key, None)
+        if not ann_bad and ann_days:
+            man._extra["ann_checked_through"] = max(ann_days)
+        if backfill and res.status == "✔":
+            man._extra["report_swept_through"] = ctx.T
+        man.save()
         res.rows = buf.rows
         res.seconds = time.monotonic() - t0
         if not res.note:
@@ -1615,10 +1829,7 @@ DUMP_BRIDGED = {"stock_history_5min"}
 
 
 def run_one(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
-    if ds.name in DUMP_BRIDGED:
-        from . import dump_bridge
-        return dump_bridge.run(ds, man, ctx)
-    fn = STRATEGIES.get(ds.mode)
+    fn = run_dump if ds.name in DUMP_BRIDGED else STRATEGIES.get(ds.mode)
     if fn is None:
         return Result(ds.name, ds.mode, status="⊘", note=f"未知模式 {ds.mode}")
     t0 = time.monotonic()
@@ -1648,7 +1859,7 @@ def _merge_ranges(ranges: list[tuple[str, str]]) -> list[tuple[str, str]]:
     rs = sorted((a, b) for a, b in ranges if a <= b)
     out = [list(rs[0])]
     for a, b in rs[1:]:
-        if a <= out[-1][1]:
+        if a <= _next_day(out[-1][1]):
             out[-1][1] = max(out[-1][1], b)
         else:
             out.append([a, b])

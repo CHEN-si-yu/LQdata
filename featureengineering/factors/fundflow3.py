@@ -179,35 +179,6 @@ def _ser(x: np.ndarray) -> np.ndarray:
 # 1. 档位 × 价格（3 个）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="large_order_timing_signal",
-    group=GROUP,
-    deps=(FLOW, "stock_daily", "stock_adj_factor"),
-    desc="大单净流入占比 × (1 − 20 日价格位置)：大钱在低位买",
-    formula='big_net = (buy_lg+buy_elg-sell_lg-sell_elg)/_total_amount(mf)\n'
-            'high_20 = adj.rolling(20,10).max(); low_20 = ...\n'
-            'position = (adj-low_20)/(high_20-low_20)\n'
-            'signal = big_net*(1-position)',
-    start=FLOW_START,
-    warmup_days=W20,
-    higher_is_better=True,
-    note=("逐字抄参考库 fund_flow 的 `large_order_timing_signal`。"
-          "★ 参考库用 `_adjusted_close`（**前复权**）算价格位置，本项目**禁止** qfq"
-          "（`fea/spec.py` 的红线）⇒ 改用 `ctx.hfq`（截至当日的后复权），"
-          "数学上等价于「截至当日的复权序列」，且历史值稳定。"
-          "★ 为什么这是一个**交互**而不是两个因子的乘积："
-          "「大单净买入」单独看无法区分「低位吸筹」与「高位接盘」，"
-          "乘上 `1 − 位置` 之后才表达「在大钱**便宜**的时候买」。"
-          "`safe_div` 挡掉 20 日区间为 0（长期一字板）的退化格。"),
-))
-def large_order_timing_signal(ctx):
-    f = _Flow(ctx)
-    bn = f.rate("lg", net=True) + f.rate("elg", net=True)
-    c = np.asarray(ctx.hfq("close"), dtype=np.float64)
-    hi = ctx.roll_max(c, 20, 10)
-    lo = ctx.roll_min(c, 20, 10)
-    pos = ctx.safe_div(c - lo, hi - lo, 1e-12)
-    return bn * (1.0 - pos)
 
 
 @register(FactorSpec(
@@ -279,7 +250,7 @@ def mf_flow_price_absorption_20(ctx):
 @register(FactorSpec(
     name="mf_net_vol_surprise_20",
     group=GROUP,
-    deps=(FLOW,),
+    deps=(FLOW, 'stock_daily'),
     desc="厂商净流入量的 20 日意外度 = (净量 − 20 日均) / 毛量 20 日均",
     formula="ma_20 = net_vol.rolling(20,10).mean()\n"
             "divergence = safe_divide(net_vol, ma_20.abs()+1e-10) - 1.0   # 参考库原式\n"
@@ -311,7 +282,7 @@ def mf_net_vol_surprise_20(ctx):
 @register(FactorSpec(
     name="mf_net_amount_mom5_to_mv",
     group=GROUP,
-    deps=(FLOW, "stock_daily"),
+    deps=(FLOW, "stock_daily", 'stock_finance'),
     desc="厂商净流入额的 5 日变化 / 总市值（无尺度的流量动量）",
     formula='mom = net_mf_amount.diff(5); return cross_sectional_rank(mom)   # 参考库原式\n'
             '本实现：mom * 1e4 / (close * total_share)',
@@ -374,7 +345,7 @@ def mf_order_size_entropy_chg_5d(ctx):
 @register(FactorSpec(
     name="mf_big_mid_net_corr_20",
     group=GROUP,
-    deps=(FLOW,),
+    deps=(FLOW, 'stock_daily'),
     desc="大单净额 与 中单净额 的 20 日滚动相关（机构与中户是否同向）",
     formula="b = (buy_lg+buy_elg-sell_lg-sell_elg); m = (buy_md-sell_md)\n"
             "factor = roll_corr(b, m, 20, 10)",
@@ -401,7 +372,7 @@ def mf_big_mid_net_corr_20(ctx):
 @register(FactorSpec(
     name="mf_tier_flow_agreement_20",
     group=GROUP,
-    deps=(FLOW,),
+    deps=(FLOW, 'stock_daily'),
     desc="「大单与中单同向」频率 − 「中单与小单同向」频率（20 日）",
     formula="agree(a,b) = sign(a)==sign(b); factor = mean(agree(big,mid),20,10) "
             "- mean(agree(mid,small),20,10)",
@@ -438,7 +409,7 @@ def mf_tier_flow_agreement_20(ctx):
 @register(FactorSpec(
     name="mf_elg_lg_split_20",
     group=GROUP,
-    deps=(FLOW,),
+    deps=(FLOW, 'stock_daily'),
     desc="超大单净额占比 − 大单净额占比（20 日均值）：哪一级机构在买",
     formula="e = elg_net/total; l = lg_net/total; factor = mean(e,20,10) - mean(l,20,10)",
     start=FLOW_START,
@@ -470,7 +441,7 @@ def mf_elg_lg_split_20(ctx):
 @register(FactorSpec(
     name="mf_big_order_net_kurt_20",
     group=GROUP,
-    deps=(FLOW,),
+    deps=(FLOW, 'stock_daily'),
     desc="大单净额占比的 20 日峰度（脉冲式建仓 vs 匀速滴灌）",
     formula='x = (mf["buy_lg_amount"]+mf["buy_elg_amount"]'
             '-mf["sell_lg_amount"]-mf["sell_elg_amount"])\n'
@@ -500,7 +471,7 @@ def mf_big_order_net_kurt_20(ctx):
 @register(FactorSpec(
     name="mf_big_order_net_ac1_20",
     group=GROUP,
-    deps=(FLOW,),
+    deps=(FLOW, 'stock_daily'),
     desc="大单净额占比的一阶自相关（20 日）（资金流入的持续性）",
     formula="x = big_net_ratio; factor = roll_corr(x, shift(x,1), 20, 10)",
     start=FLOW_START,
@@ -523,27 +494,3 @@ def mf_big_order_net_ac1_20(ctx):
     return ctx.roll_corr(x, ctx.shift(x, 1), 20, 10)
 
 
-@register(FactorSpec(
-    name="mf_extra_large_sell_pressure",
-    group=GROUP,
-    deps=(FLOW,),
-    desc="超大单**卖出**毛额占八列毛额的比重（顶级资金的派发压力）",
-    formula="total = Σ(buy_*_amount) + Σ(sell_*_amount); "
-            "elg_sell_ratio = sell_elg_amount / total; return cross_sectional_rank(-elg_sell_ratio)",
-    start=FLOW_START,
-    warmup_days=W1,
-    higher_is_better=False,
-    note=("抄参考库 fund_flow 的 `ext_mf_extra_large_sell_pressure`（方向负）。"
-          + _DE + " ★ **只有「卖」这一侧是新的**：已注册的 "
-          "`order_size_concentration` 用买卖**合计**的四档毛额结构，"
-          "`mf_retail_dominance` 是小单（散户）侧，"
-          "`mf_big_order_ratio` 是大单的**净**额 —— "
-          "「超大单的**毛卖出**占全市场成交的比重」此前**没有**因子覆盖。"
-          "它与「超大单净额」（买卖相抵后的差）不是同一个量："
-          "一只股票可以超大单净买入为正、但毛卖出占比同时创高"
-          "（大资金一边大举卖出、一边更大举买入 = 换手激烈的大资金博弈）。"
-          "取值域 [0,1]，分母是当日该股的全部成交额。"),
-))
-def mf_extra_large_sell_pressure(ctx):
-    f = _Flow(ctx)
-    return ctx.safe_div(f.g("sell_amt", "elg"), f.g("tot_amt"), 1e-6)

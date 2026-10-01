@@ -1,0 +1,3714 @@
+{
+  "checked_at": "2026-09-30 16:22:41",
+  "completed_blocks": 16,
+  "planned_blocks": 16,
+  "rows": [
+    {
+      "unit": "V62",
+      "seed": 3253,
+      "quarter": "2025Q3",
+      "fold": 4,
+      "start": "2023-07-21",
+      "end": "2025-04-25",
+      "days": 427,
+      "checkpoint_sha256": "3d2b2247622dd365b0f6601054bf881229e3ba74b160dba25b88cbe9f97678a8",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 902273,
+          "forecast_mean": 0.00039082597859903153,
+          "actual_raw_mean": 0.0003454625860132858,
+          "actual_clipped_mean": 0.00016216608212213442,
+          "clipped_rmse": 0.02907449401932628,
+          "raw_rmse": 0.030681800216903442,
+          "clipped_mae": 0.019842596112743884,
+          "descriptive_calibration_slope": 0.5760965426682232,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 49530,
+              "forecast_mean": -0.006977421634520469,
+              "actual_raw_mean": -0.0007670317337917419,
+              "actual_clipped_mean": -0.0009167079281329057
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 365453,
+              "forecast_mean": -0.0018970723376171535,
+              "actual_raw_mean": -0.001754011899889706,
+              "actual_clipped_mean": -0.001886702186238875
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 190748,
+              "forecast_mean": 0.0007788736113714237,
+              "actual_raw_mean": 0.0004621864008382528,
+              "actual_clipped_mean": 0.00037419860238725055
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 219414,
+              "forecast_mean": 0.00302749455771772,
+              "actual_raw_mean": 0.001603772632521717,
+              "actual_clipped_mean": 0.0015158697424074096
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 77128,
+              "forecast_mean": 0.007502734729754853,
+              "actual_raw_mean": 0.0071394338828421324,
+              "actual_clipped_mean": 0.006187673951014165
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 901910,
+          "forecast_mean": 0.0011729336234829687,
+          "actual_raw_mean": 0.0018429339860432377,
+          "actual_clipped_mean": 0.0012369062929862464,
+          "clipped_rmse": 0.06537314956007664,
+          "raw_rmse": 0.06922419121128573,
+          "clipped_mae": 0.04494423496947257,
+          "descriptive_calibration_slope": 0.5950314688616103,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 272035,
+              "forecast_mean": -0.012767466007573123,
+              "actual_raw_mean": -0.003758694538533364,
+              "actual_clipped_mean": -0.004473883710858061
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 147963,
+              "forecast_mean": -0.002468509050266598,
+              "actual_raw_mean": -0.004805348531066481,
+              "actual_clipped_mean": -0.005187641427812719
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 50383,
+              "forecast_mean": 0.0008131010800111238,
+              "actual_raw_mean": -0.002502808136142126,
+              "actual_clipped_mean": -0.002849125798021805
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 108838,
+              "forecast_mean": 0.0033120846607254603,
+              "actual_raw_mean": -0.00019258852121670724,
+              "actual_clipped_mean": -0.0005724631521728045
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 322691,
+              "forecast_mean": 0.0139293597971807,
+              "actual_raw_mean": 0.010978709591032294,
+              "actual_clipped_mean": 0.010245291465246529
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": -0.2668930947620871,
+          "max_drawdown": -0.5026567217246751,
+          "sharpe": -0.2792751149212592,
+          "trades": 3082,
+          "fees": 26939.228349968616,
+          "fee_drag": 0.2693922834996862,
+          "slippage_drag": 0.13283141718176067,
+          "gross_return_same_positions": 0.13533060591935975,
+          "avg_exposure": 0.9886192309629348,
+          "net_arithmetic_annual_pct": -10.474447061326913
+        },
+        "0.5": {
+          "net_return": 0.4744027667137294,
+          "max_drawdown": -0.3437867242193944,
+          "sharpe": 0.8412467168973421,
+          "trades": 1242,
+          "fees": 14313.187363001438,
+          "fee_drag": 0.14313187363001434,
+          "slippage_drag": 0.083630989689,
+          "gross_return_same_positions": 0.7011656300327438,
+          "avg_exposure": 0.7724020876729978,
+          "net_arithmetic_annual_pct": 27.21657487885183
+        },
+        "1.0": {
+          "net_return": 0.5303534555403544,
+          "max_drawdown": -0.34162019141967537,
+          "sharpe": 0.9099950163483567,
+          "trades": 726,
+          "fees": 8123.3932459650005,
+          "fee_drag": 0.08123393245965006,
+          "slippage_drag": 0.047112611999995155,
+          "gross_return_same_positions": 0.6586999999999996,
+          "avg_exposure": 0.716706209146957,
+          "net_arithmetic_annual_pct": 29.26751402691506
+        },
+        "2.0": {
+          "net_return": 1.8069900330847344,
+          "max_drawdown": -0.3575288421930608,
+          "sharpe": 2.0171997445758234,
+          "trades": 444,
+          "fees": 6359.541491527,
+          "fee_drag": 0.06359541491527,
+          "slippage_drag": 0.037074551999994876,
+          "gross_return_same_positions": 1.9076599999999995,
+          "avg_exposure": 0.6175637835525449,
+          "net_arithmetic_annual_pct": 63.36769921406762
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.3921503453910342,
+          "top5_overlap": 0.01826697892271663,
+          "days": 427
+        },
+        "V36": {
+          "daily_rank_correlation": 0.40053652181685345,
+          "top5_overlap": 0.01686182669789227,
+          "days": 427
+        },
+        "V38": {
+          "daily_rank_correlation": 0.38464135767918367,
+          "top5_overlap": 0.01873536299765808,
+          "days": 427
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.6865611526553487,
+        "V36": 0.7154730011039364,
+        "V38": 0.6636640759045125
+      }
+    },
+    {
+      "unit": "V62",
+      "seed": 3253,
+      "quarter": "2025Q4",
+      "fold": 4,
+      "start": "2023-09-28",
+      "end": "2025-08-01",
+      "days": 444,
+      "checkpoint_sha256": "a8e094b5df168da8701872998ed1bea6d3a3f6ee62bdaf58ca5f96b0e989dd4b",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 938046,
+          "forecast_mean": -0.00013793213952408123,
+          "actual_raw_mean": 0.0007379933762253719,
+          "actual_clipped_mean": 0.000548449677683238,
+          "clipped_rmse": 0.02905757553635094,
+          "raw_rmse": 0.03069710215928771,
+          "clipped_mae": 0.01971466510821856,
+          "descriptive_calibration_slope": 0.42275544149792876,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 60102,
+              "forecast_mean": -0.0068137664970504275,
+              "actual_raw_mean": -0.0003619984780932649,
+              "actual_clipped_mean": -0.0005541481166804299
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 445489,
+              "forecast_mean": -0.0020955689877044602,
+              "actual_raw_mean": -0.0003781469643055595,
+              "actual_clipped_mean": -0.0005178238688722648
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 173644,
+              "forecast_mean": 0.000772164603332332,
+              "actual_raw_mean": 0.0004894159046350783,
+              "actual_clipped_mean": 0.00038329091776053743
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 192173,
+              "forecast_mean": 0.0030106959447961344,
+              "actual_raw_mean": 0.0013152965908598759,
+              "actual_clipped_mean": 0.0012427010469856956
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 66638,
+              "forecast_mean": 0.007518698232792757,
+              "actual_raw_mean": 0.008174618881221188,
+              "actual_clipped_mean": 0.007099425516294325
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 937621,
+          "forecast_mean": -0.00010778611637745765,
+          "actual_raw_mean": 0.0038290665132657137,
+          "actual_clipped_mean": 0.003201174032238825,
+          "clipped_rmse": 0.06587002094941233,
+          "raw_rmse": 0.06981409567905421,
+          "clipped_mae": 0.04521260174637733,
+          "descriptive_calibration_slope": 0.46451278244920463,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 346499,
+              "forecast_mean": -0.012801471779785918,
+              "actual_raw_mean": 0.0013591947499188761,
+              "actual_clipped_mean": 0.0006734528257732896
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 138208,
+              "forecast_mean": -0.002531695629679188,
+              "actual_raw_mean": -0.001554851200423209,
+              "actual_clipped_mean": -0.0019782498309998914
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 44846,
+              "forecast_mean": 0.0008173173246008068,
+              "actual_raw_mean": -0.0010175836216393603,
+              "actual_clipped_mean": -0.0014486953360426087
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 98391,
+              "forecast_mean": 0.0033219566859532153,
+              "actual_raw_mean": 1.2525208463749121e-05,
+              "actual_clipped_mean": -0.00037544610346897946
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 309677,
+              "forecast_mean": 0.013953348749051828,
+              "actual_raw_mean": 0.010909911338590672,
+              "actual_clipped_mean": 0.010150756846177137
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": 0.165720288224116,
+          "max_drawdown": -0.46080951166148654,
+          "sharpe": 0.41312292463634764,
+          "trades": 3226,
+          "fees": 30707.40249154348,
+          "fee_drag": 0.3070740249154344,
+          "slippage_drag": 0.16427753755518992,
+          "gross_return_same_positions": 0.6370718506947404,
+          "avg_exposure": 0.9897810597431769,
+          "net_arithmetic_annual_pct": 14.947743119386933
+        },
+        "0.5": {
+          "net_return": 0.32403016375563864,
+          "max_drawdown": -0.3429656802626547,
+          "sharpe": 0.6454378337578887,
+          "trades": 1112,
+          "fees": 11663.636879501679,
+          "fee_drag": 0.11663636879501658,
+          "slippage_drag": 0.06654083621062051,
+          "gross_return_same_positions": 0.5072073687612757,
+          "avg_exposure": 0.6725808790042598,
+          "net_arithmetic_annual_pct": 20.190113516463807
+        },
+        "1.0": {
+          "net_return": 0.6798257504380087,
+          "max_drawdown": -0.3437819145651745,
+          "sharpe": 1.0798376774659182,
+          "trades": 634,
+          "fees": 7337.495814124023,
+          "fee_drag": 0.07337495814124027,
+          "slippage_drag": 0.04249933201217249,
+          "gross_return_same_positions": 0.7957000405914214,
+          "avg_exposure": 0.6108364084474003,
+          "net_arithmetic_annual_pct": 32.888050830427375
+        },
+        "2.0": {
+          "net_return": 1.096384457857495,
+          "max_drawdown": -0.3509600866834732,
+          "sharpe": 1.5463414094430856,
+          "trades": 392,
+          "fees": 5067.800814251,
+          "fee_drag": 0.05067800814251,
+          "slippage_drag": 0.02951753399999643,
+          "gross_return_same_positions": 1.1765800000000013,
+          "avg_exposure": 0.5066685795422082,
+          "net_arithmetic_annual_pct": 44.42516987560042
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4412924349019604,
+          "top5_overlap": 0.02162162162162162,
+          "days": 444
+        },
+        "V36": {
+          "daily_rank_correlation": 0.4708226385286934,
+          "top5_overlap": 0.023423423423423424,
+          "days": 444
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4702827300490816,
+          "top5_overlap": 0.017117117117117116,
+          "days": 444
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.7027899320983607,
+        "V36": 0.7248651007537423,
+        "V38": 0.668576128774959
+      }
+    },
+    {
+      "unit": "V62",
+      "seed": 3253,
+      "quarter": "2026Q1",
+      "fold": 4,
+      "start": "2023-12-08",
+      "end": "2025-11-03",
+      "days": 459,
+      "checkpoint_sha256": "e10ab4d3c46f3ae8d0234d8e9a12911abc46f07e2ef10a380e38b2d2687cfb20",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 969734,
+          "forecast_mean": -0.0003751948236827556,
+          "actual_raw_mean": 0.0008995941222166005,
+          "actual_clipped_mean": 0.0007076206139206628,
+          "clipped_rmse": 0.02929863280661215,
+          "raw_rmse": 0.0309015254962056,
+          "clipped_mae": 0.019910570353066898,
+          "descriptive_calibration_slope": 0.4131834578618056,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 64923,
+              "forecast_mean": -0.006697225583681049,
+              "actual_raw_mean": -0.0007764029583799694,
+              "actual_clipped_mean": -0.000992244854355043
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 493164,
+              "forecast_mean": -0.0021526506555249246,
+              "actual_raw_mean": 4.717845443635709e-07,
+              "actual_clipped_mean": -0.0001466767011923089
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 169751,
+              "forecast_mean": 0.000767998844941784,
+              "actual_raw_mean": 0.0006894503829514397,
+              "actual_clipped_mean": 0.0005770346085961149
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 180031,
+              "forecast_mean": 0.002930607020109151,
+              "actual_raw_mean": 0.0017058146694320416,
+              "actual_clipped_mean": 0.0016552440989515194
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 61865,
+              "forecast_mean": 0.0076716386153149905,
+              "actual_raw_mean": 0.00805635393063201,
+              "actual_clipped_mean": 0.006902311444980138
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 969293,
+          "forecast_mean": -0.00109378729377904,
+          "actual_raw_mean": 0.0045130890893739185,
+          "actual_clipped_mean": 0.0039000986906268646,
+          "clipped_rmse": 0.0664322491576211,
+          "raw_rmse": 0.07023298447906227,
+          "clipped_mae": 0.04564246148897253,
+          "descriptive_calibration_slope": 0.4186658163751707,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 397066,
+              "forecast_mean": -0.013003652962078772,
+              "actual_raw_mean": 0.0024313397996577834,
+              "actual_clipped_mean": 0.0018003257161077954
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 136989,
+              "forecast_mean": -0.0025493236871845766,
+              "actual_raw_mean": -0.001314137786324717,
+              "actual_clipped_mean": -0.0017624885397050495
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 44784,
+              "forecast_mean": 0.0008164576186720155,
+              "actual_raw_mean": 0.0006898976226499063,
+              "actual_clipped_mean": 0.0002608911234711543
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 99704,
+              "forecast_mean": 0.003318361500900498,
+              "actual_raw_mean": 0.0026729139539825564,
+              "actual_clipped_mean": 0.00225082633788975
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 290750,
+              "forecast_mean": 0.014049593290439002,
+              "actual_raw_mean": 0.011321510325110237,
+              "actual_clipped_mean": 0.010561759706417512
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": 0.21059941224147138,
+          "max_drawdown": -0.4532327811135757,
+          "sharpe": 0.45928694409546034,
+          "trades": 3236,
+          "fees": 31684.577157878182,
+          "fee_drag": 0.3168457715787819,
+          "slippage_drag": 0.17106300245586448,
+          "gross_return_same_positions": 0.698508186276118,
+          "avg_exposure": 0.9897270989292367,
+          "net_arithmetic_annual_pct": 16.81689769875146
+        },
+        "0.5": {
+          "net_return": 0.3043054206833211,
+          "max_drawdown": -0.34021513500209843,
+          "sharpe": 0.6146634703136958,
+          "trades": 1038,
+          "fees": 10983.331393342312,
+          "fee_drag": 0.10983331393342309,
+          "slippage_drag": 0.06282076785073361,
+          "gross_return_same_positions": 0.47695950246747776,
+          "avg_exposure": 0.621284461248675,
+          "net_arithmetic_annual_pct": 18.570885216194544
+        },
+        "1.0": {
+          "net_return": 0.6644647970532931,
+          "max_drawdown": -0.3329152444361948,
+          "sharpe": 1.0393323218321155,
+          "trades": 606,
+          "fees": 7233.868729809706,
+          "fee_drag": 0.072338687298097,
+          "slippage_drag": 0.04179245278113607,
+          "gross_return_same_positions": 0.7785959371325264,
+          "avg_exposure": 0.564917005291709,
+          "net_arithmetic_annual_pct": 31.401216992059165
+        },
+        "2.0": {
+          "net_return": 1.101574647266924,
+          "max_drawdown": -0.3291440576276282,
+          "sharpe": 1.5142112909789347,
+          "trades": 342,
+          "fees": 4649.947873308,
+          "fee_drag": 0.046499478733080024,
+          "slippage_drag": 0.02706587399999689,
+          "gross_return_same_positions": 1.1751400000000007,
+          "avg_exposure": 0.4428446874173354,
+          "net_arithmetic_annual_pct": 43.16898655154778
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.44437856268775133,
+          "top5_overlap": 0.017429193899782137,
+          "days": 459
+        },
+        "V36": {
+          "daily_rank_correlation": 0.44159734949355334,
+          "top5_overlap": 0.015250544662309368,
+          "days": 459
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4220296670353415,
+          "top5_overlap": 0.01568627450980392,
+          "days": 459
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.664960704566794,
+        "V36": 0.6800188678923426,
+        "V38": 0.6778081744441163
+      }
+    },
+    {
+      "unit": "V62",
+      "seed": 3253,
+      "quarter": "2026Q2",
+      "fold": 4,
+      "start": "2024-02-07",
+      "end": "2026-01-22",
+      "days": 473,
+      "checkpoint_sha256": "9c78f2409718f2885c7664910b27196f053a8b95fed844024bf3fcddf5c560a3",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 999209,
+          "forecast_mean": -0.0002577434358353466,
+          "actual_raw_mean": 0.001600203764350148,
+          "actual_clipped_mean": 0.0013795476142853778,
+          "clipped_rmse": 0.028542312419619457,
+          "raw_rmse": 0.03013216114699925,
+          "clipped_mae": 0.019341691115455223,
+          "descriptive_calibration_slope": 0.4845073005297031,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 58481,
+              "forecast_mean": -0.006631011920405651,
+              "actual_raw_mean": -0.0027097581281630536,
+              "actual_clipped_mean": -0.002921670847580761
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 508826,
+              "forecast_mean": -0.002060785205456913,
+              "actual_raw_mean": 0.0006920978367499454,
+              "actual_clipped_mean": 0.0005252318235233276
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 183052,
+              "forecast_mean": 0.0007654277223337759,
+              "actual_raw_mean": 0.0013548149617177803,
+              "actual_clipped_mean": 0.0012092597738429757
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 185922,
+              "forecast_mean": 0.0028971061310539372,
+              "actual_raw_mean": 0.0034829395835217674,
+              "actual_clipped_mean": 0.003351445868685559
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 62928,
+              "forecast_mean": 0.007946874185815677,
+              "actual_raw_mean": 0.008099626760164406,
+              "actual_clipped_mean": 0.006954012175891607
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 998697,
+          "forecast_mean": -0.0015512086301046075,
+          "actual_raw_mean": 0.007121719450186914,
+          "actual_clipped_mean": 0.006464070346918634,
+          "clipped_rmse": 0.06400426174623647,
+          "raw_rmse": 0.06807118204325857,
+          "clipped_mae": 0.04379947232789551,
+          "descriptive_calibration_slope": 0.44968843241573636,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 412711,
+              "forecast_mean": -0.012770366337079966,
+              "actual_raw_mean": 0.003423228366496239,
+              "actual_clipped_mean": 0.0027359332588539464
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 157950,
+              "forecast_mean": -0.002552875645500562,
+              "actual_raw_mean": 0.0035479781842095745,
+              "actual_clipped_mean": 0.0030737849861604046
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 50120,
+              "forecast_mean": 0.0008132474817218911,
+              "actual_raw_mean": 0.005303887085307365,
+              "actual_clipped_mean": 0.004871195325094824
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 106141,
+              "forecast_mean": 0.003297635969688761,
+              "actual_raw_mean": 0.007524145230215002,
+              "actual_clipped_mean": 0.007031190660242711
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 271775,
+              "forecast_mean": 0.013738333625415164,
+              "actual_raw_mean": 0.014993217086143068,
+              "actual_clipped_mean": 0.014168159896734865
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": 1.365407410085722,
+          "max_drawdown": -0.2844555005085294,
+          "sharpe": 1.4626608293188927,
+          "trades": 3340,
+          "fees": 54305.82372164496,
+          "fee_drag": 0.5430582372164493,
+          "slippage_drag": 0.31916313863574675,
+          "gross_return_same_positions": 2.2276287859379185,
+          "avg_exposure": 0.9928995174267281,
+          "net_arithmetic_annual_pct": 49.79852821198027
+        },
+        "0.5": {
+          "net_return": 0.7445087111168041,
+          "max_drawdown": -0.29639445200645176,
+          "sharpe": 1.162813621900402,
+          "trades": 1016,
+          "fees": 13832.06791839786,
+          "fee_drag": 0.13832067918397856,
+          "slippage_drag": 0.08120827129847068,
+          "gross_return_same_positions": 0.9640376615992534,
+          "avg_exposure": 0.6480705051110092,
+          "net_arithmetic_annual_pct": 32.27089689827934
+        },
+        "1.0": {
+          "net_return": 1.5825324030789618,
+          "max_drawdown": -0.29669323793731783,
+          "sharpe": 1.94448625701233,
+          "trades": 568,
+          "fees": 9953.413867529323,
+          "fee_drag": 0.09953413867529322,
+          "slippage_drag": 0.058300916237389935,
+          "gross_return_same_positions": 1.740367457991645,
+          "avg_exposure": 0.5933258592414332,
+          "net_arithmetic_annual_pct": 52.04626703969133
+        },
+        "2.0": {
+          "net_return": 2.333220103050045,
+          "max_drawdown": -0.16450108391485685,
+          "sharpe": 2.5003172420611404,
+          "trades": 310,
+          "fees": 6504.938894996,
+          "fee_drag": 0.06504938894996,
+          "slippage_drag": 0.03791050799999623,
+          "gross_return_same_positions": 2.436180000000001,
+          "avg_exposure": 0.4693434423037126,
+          "net_arithmetic_annual_pct": 64.87023906943759
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4466576563728011,
+          "top5_overlap": 0.019450317124735727,
+          "days": 473
+        },
+        "V36": {
+          "daily_rank_correlation": 0.4495578142831251,
+          "top5_overlap": 0.015644820295983086,
+          "days": 473
+        },
+        "V38": {
+          "daily_rank_correlation": 0.46940517272409493,
+          "top5_overlap": 0.023255813953488372,
+          "days": 473
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.595234082928911,
+        "V36": 0.61387868071927,
+        "V38": 0.6469920511063291
+      }
+    },
+    {
+      "unit": "V63",
+      "seed": 4253,
+      "quarter": "2025Q3",
+      "fold": 4,
+      "start": "2023-07-21",
+      "end": "2025-04-25",
+      "days": 427,
+      "checkpoint_sha256": "e40a8dc30cd99296b3657fcb792aeb0fdedf14048074cb488375871c4bb972be",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 902273,
+          "forecast_mean": 0.0003672978484752456,
+          "actual_raw_mean": 0.0003454625860132858,
+          "actual_clipped_mean": 0.00016216608212213442,
+          "clipped_rmse": 0.02906545449747514,
+          "raw_rmse": 0.030673029516123048,
+          "clipped_mae": 0.019835247940122158,
+          "descriptive_calibration_slope": 0.5988454986215648,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 46984,
+              "forecast_mean": -0.00700855328543137,
+              "actual_raw_mean": -0.0023217539289003856,
+              "actual_clipped_mean": -0.00244995781483431
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 372250,
+              "forecast_mean": -0.0018672589459537813,
+              "actual_raw_mean": -0.0014749099259014444,
+              "actual_clipped_mean": -0.0016147560670916816
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 192427,
+              "forecast_mean": 0.0007897797398631717,
+              "actual_raw_mean": 0.0005372775556153984,
+              "actual_clipped_mean": 0.00044882246511069706
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 218533,
+              "forecast_mean": 0.0029957289140707197,
+              "actual_raw_mean": 0.0014344874423150395,
+              "actual_clipped_mean": 0.0013543958416636502
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 72079,
+              "forecast_mean": 0.007618576409911914,
+              "actual_raw_mean": 0.007671478765748652,
+              "actual_clipped_mean": 0.006661775196680028
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 901910,
+          "forecast_mean": 0.0011217234284564954,
+          "actual_raw_mean": 0.0018429339860432377,
+          "actual_clipped_mean": 0.0012369062929862464,
+          "clipped_rmse": 0.06541138179514322,
+          "raw_rmse": 0.0692596810453557,
+          "clipped_mae": 0.04496767223817578,
+          "descriptive_calibration_slope": 0.5773164959110433,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 274347,
+              "forecast_mean": -0.012928290578891336,
+              "actual_raw_mean": -0.003588292053598573,
+              "actual_clipped_mean": -0.004286591156428843
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 147195,
+              "forecast_mean": -0.002466973808501577,
+              "actual_raw_mean": -0.005038811089546131,
+              "actual_clipped_mean": -0.005427517458933845
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 50168,
+              "forecast_mean": 0.0008175254623131853,
+              "actual_raw_mean": -0.002863120684547673,
+              "actual_clipped_mean": -0.0032442788084873263
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 109535,
+              "forecast_mean": 0.0033203921689474503,
+              "actual_raw_mean": 0.00039481386326890443,
+              "actual_clipped_mean": -1.5382511057538214e-06
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 320665,
+              "forecast_mean": 0.014086179498634718,
+              "actual_raw_mean": 0.010879505564049194,
+              "actual_clipped_mean": 0.010145860891169407
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": -0.24088779848487774,
+          "max_drawdown": -0.5100389491995017,
+          "sharpe": -0.22915201204617253,
+          "trades": 2922,
+          "fees": 26042.285788301306,
+          "fee_drag": 0.26042285788301284,
+          "slippage_drag": 0.13146652247454815,
+          "gross_return_same_positions": 0.1510015818726831,
+          "avg_exposure": 0.9883701294865825,
+          "net_arithmetic_annual_pct": -8.553030041709276
+        },
+        "0.5": {
+          "net_return": 0.24903868386564532,
+          "max_drawdown": -0.3874909665207983,
+          "sharpe": 0.5516042210777236,
+          "trades": 1138,
+          "fees": 12445.075408089273,
+          "fee_drag": 0.12445075408089282,
+          "slippage_drag": 0.07199359891104921,
+          "gross_return_same_positions": 0.4454830368575873,
+          "avg_exposure": 0.767554229367494,
+          "net_arithmetic_annual_pct": 17.817882049558587
+        },
+        "1.0": {
+          "net_return": 0.5883063402214053,
+          "max_drawdown": -0.3472223022847677,
+          "sharpe": 0.9894334181078013,
+          "trades": 680,
+          "fees": 7659.96477786,
+          "fee_drag": 0.07659964777859993,
+          "slippage_drag": 0.04439401199999531,
+          "gross_return_same_positions": 0.7093000000000005,
+          "avg_exposure": 0.7016004845327268,
+          "net_arithmetic_annual_pct": 31.139328880930574
+        },
+        "2.0": {
+          "net_return": 0.9032453048492413,
+          "max_drawdown": -0.3799629819962417,
+          "sharpe": 1.368379821624551,
+          "trades": 444,
+          "fees": 5698.9473338262505,
+          "fee_drag": 0.05698947333826248,
+          "slippage_drag": 0.03324382758172667,
+          "gross_return_same_positions": 0.9934786057692304,
+          "avg_exposure": 0.6064381563718682,
+          "net_arithmetic_annual_pct": 40.88559145630659
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4073887723100116,
+          "top5_overlap": 0.0224824355971897,
+          "days": 427
+        },
+        "V36": {
+          "daily_rank_correlation": 0.41440085190643866,
+          "top5_overlap": 0.020140515222482436,
+          "days": 427
+        },
+        "V38": {
+          "daily_rank_correlation": 0.40851526126979254,
+          "top5_overlap": 0.01873536299765808,
+          "days": 427
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.6736257187760618,
+        "V36": 0.7060547623511201,
+        "V38": 0.6611899044047205
+      }
+    },
+    {
+      "unit": "V63",
+      "seed": 4253,
+      "quarter": "2025Q4",
+      "fold": 4,
+      "start": "2023-09-28",
+      "end": "2025-08-01",
+      "days": 444,
+      "checkpoint_sha256": "a89d27c59afcf8f757103c49a42bca611327a8828d95e039f24c5ffa1f8af940",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 938046,
+          "forecast_mean": -0.00014989862410344707,
+          "actual_raw_mean": 0.0007379933762253719,
+          "actual_clipped_mean": 0.000548449677683238,
+          "clipped_rmse": 0.029049603084234377,
+          "raw_rmse": 0.03068918194796366,
+          "clipped_mae": 0.019706964493221416,
+          "descriptive_calibration_slope": 0.4407485131282078,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 57769,
+              "forecast_mean": -0.0068258729487941676,
+              "actual_raw_mean": -0.0013479337829185362,
+              "actual_clipped_mean": -0.00152905993892125
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 451945,
+              "forecast_mean": -0.002075948648721613,
+              "actual_raw_mean": -0.0002383562415927725,
+              "actual_clipped_mean": -0.0003833803621439043
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 175200,
+              "forecast_mean": 0.0007807699884318579,
+              "actual_raw_mean": 0.0007398781625450171,
+              "actual_clipped_mean": 0.000628538003586672
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 188236,
+              "forecast_mean": 0.0029839428262833662,
+              "actual_raw_mean": 0.0010775460634768988,
+              "actual_clipped_mean": 0.0010207665992995958
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 64896,
+              "forecast_mean": 0.007603708978336113,
+              "actual_raw_mean": 0.008404290218568896,
+              "actual_clipped_mean": 0.007300993095392248
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 937621,
+          "forecast_mean": -0.00017661915450156127,
+          "actual_raw_mean": 0.0038290665132657137,
+          "actual_clipped_mean": 0.003201174032238825,
+          "clipped_rmse": 0.06591248382924188,
+          "raw_rmse": 0.0698535440814936,
+          "clipped_mae": 0.045238191347980766,
+          "descriptive_calibration_slope": 0.451276907225963,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 349754,
+              "forecast_mean": -0.012948431139895005,
+              "actual_raw_mean": 0.0014483792706447487,
+              "actual_clipped_mean": 0.0007727883868772436
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 136729,
+              "forecast_mean": -0.0025255835331517433,
+              "actual_raw_mean": -0.0018109097783072616,
+              "actual_clipped_mean": -0.002253783773069191
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 44714,
+              "forecast_mean": 0.0008175212067249107,
+              "actual_raw_mean": -0.0009580540561366036,
+              "actual_clipped_mean": -0.0013732536739329104
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 98753,
+              "forecast_mean": 0.0033184166649895194,
+              "actual_raw_mean": 0.0009184630688271755,
+              "actual_clipped_mean": 0.0005029695376448253
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 307671,
+              "forecast_mean": 0.014119712366095688,
+              "actual_raw_mean": 0.010671717706634696,
+              "actual_clipped_mean": 0.00991674120521957
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": -0.07961884837910771,
+          "max_drawdown": -0.4922012883810801,
+          "sharpe": 0.05935768091282046,
+          "trades": 3028,
+          "fees": 27208.69885434238,
+          "fee_drag": 0.272086988543424,
+          "slippage_drag": 0.13888555010706582,
+          "gross_return_same_positions": 0.3313536902713823,
+          "avg_exposure": 0.9889235418280122,
+          "net_arithmetic_annual_pct": 2.158178297981216
+        },
+        "0.5": {
+          "net_return": 0.1748187349859085,
+          "max_drawdown": -0.42319999462759195,
+          "sharpe": 0.4361889567160716,
+          "trades": 1030,
+          "fees": 10412.869203083628,
+          "fee_drag": 0.1041286920308363,
+          "slippage_drag": 0.05863096151655314,
+          "gross_return_same_positions": 0.3375783885332979,
+          "avg_exposure": 0.660826889190345,
+          "net_arithmetic_annual_pct": 13.806364066266063
+        },
+        "1.0": {
+          "net_return": 0.45292273692885354,
+          "max_drawdown": -0.3424144960246127,
+          "sharpe": 0.8254850397570631,
+          "trades": 592,
+          "fees": 6650.088270338049,
+          "fee_drag": 0.06650088270338046,
+          "slippage_drag": 0.03845856065408207,
+          "gross_return_same_positions": 0.5578821802863161,
+          "avg_exposure": 0.6049064245037471,
+          "net_arithmetic_annual_pct": 24.9016096243259
+        },
+        "2.0": {
+          "net_return": 0.4669080095242022,
+          "max_drawdown": -0.3756786542202132,
+          "sharpe": 0.8737956409744841,
+          "trades": 346,
+          "fees": 3861.91184758,
+          "fee_drag": 0.038619118475800025,
+          "slippage_drag": 0.02237287199999786,
+          "gross_return_same_positions": 0.5279,
+          "avg_exposure": 0.48777578933218724,
+          "net_arithmetic_annual_pct": 24.91645133417069
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4605274614849193,
+          "top5_overlap": 0.02252252252252252,
+          "days": 444
+        },
+        "V36": {
+          "daily_rank_correlation": 0.4894198147119622,
+          "top5_overlap": 0.024324324324324326,
+          "days": 444
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4909457654563368,
+          "top5_overlap": 0.019819819819819822,
+          "days": 444
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.7383870175173622,
+        "V36": 0.7321188392181007,
+        "V38": 0.680260468169161
+      }
+    },
+    {
+      "unit": "V64",
+      "seed": 5253,
+      "quarter": "2025Q3",
+      "fold": 4,
+      "start": "2023-07-21",
+      "end": "2025-04-25",
+      "days": 427,
+      "checkpoint_sha256": "bb2d9c1bb3759612481550b811ff990c9bb2a78e3aa3e0571d17195652c7896f",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 902273,
+          "forecast_mean": 0.00039273483299342256,
+          "actual_raw_mean": 0.0003454625860132858,
+          "actual_clipped_mean": 0.00016216608212213442,
+          "clipped_rmse": 0.029064319146458902,
+          "raw_rmse": 0.030670629901259065,
+          "clipped_mae": 0.019835894691335832,
+          "descriptive_calibration_slope": 0.602986868261083,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 44458,
+              "forecast_mean": -0.006881161585862101,
+              "actual_raw_mean": -0.0017408688488565517,
+              "actual_clipped_mean": -0.0019038056839205306
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 376460,
+              "forecast_mean": -0.0018519827168207038,
+              "actual_raw_mean": -0.0014699435237504638,
+              "actual_clipped_mean": -0.0016019756579343709
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 193908,
+              "forecast_mean": 0.0007781208977485496,
+              "actual_raw_mean": -3.109727452186254e-05,
+              "actual_clipped_mean": -0.00010406517093899926
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 212768,
+              "forecast_mean": 0.0030090716093289847,
+              "actual_raw_mean": 0.001849466818392664,
+              "actual_clipped_mean": 0.0017507264333917003
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 74679,
+              "forecast_mean": 0.007583873861644085,
+              "actual_raw_mean": 0.007431737227276002,
+              "actual_clipped_mean": 0.0064505113095093825
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 901910,
+          "forecast_mean": 0.0011659941717173674,
+          "actual_raw_mean": 0.0018429339860432377,
+          "actual_clipped_mean": 0.0012369062929862464,
+          "clipped_rmse": 0.06540844372670157,
+          "raw_rmse": 0.06925662328019969,
+          "clipped_mae": 0.044969236862161775,
+          "descriptive_calibration_slope": 0.5797381656839393,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 275784,
+              "forecast_mean": -0.01272329844491131,
+              "actual_raw_mean": -0.0036597743302317865,
+              "actual_clipped_mean": -0.004355550681150554
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 146495,
+              "forecast_mean": -0.002476527177474704,
+              "actual_raw_mean": -0.005194164337742292,
+              "actual_clipped_mean": -0.005580249921517883
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 49234,
+              "forecast_mean": 0.0008132761298366054,
+              "actual_raw_mean": -0.0027503768160056087,
+              "actual_clipped_mean": -0.0031157811019619157
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 108163,
+              "forecast_mean": 0.0033155563963479526,
+              "actual_raw_mean": 3.225399835067929e-06,
+              "actual_clipped_mean": -0.0004067966460389614
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 322234,
+              "forecast_mean": 0.014041477395726799,
+              "actual_raw_mean": 0.01107099214587944,
+              "actual_clipped_mean": 0.010339227916389694
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": -0.5501754749856327,
+          "max_drawdown": -0.6660845360211852,
+          "sharpe": -0.9999333201635789,
+          "trades": 3252,
+          "fees": 25982.4826117882,
+          "fee_drag": 0.2598248261178824,
+          "slippage_drag": 0.11212002881397092,
+          "gross_return_same_positions": -0.17823062005377943,
+          "avg_exposure": 0.9845027726471909,
+          "net_arithmetic_annual_pct": -37.86833519756268
+        },
+        "0.5": {
+          "net_return": 0.11677324841743442,
+          "max_drawdown": -0.38580538334801273,
+          "sharpe": 0.3557754057171347,
+          "trades": 1258,
+          "fees": 12712.793708470455,
+          "fee_drag": 0.1271279370847046,
+          "slippage_drag": 0.07165680539726231,
+          "gross_return_same_positions": 0.3155579908994013,
+          "avg_exposure": 0.763338492800685,
+          "net_arithmetic_annual_pct": 11.675239792210132
+        },
+        "1.0": {
+          "net_return": 0.18192663313602542,
+          "max_drawdown": -0.3673798919656003,
+          "sharpe": 0.4570147527551991,
+          "trades": 706,
+          "fees": 7239.4155641356465,
+          "fee_drag": 0.07239415564135647,
+          "slippage_drag": 0.04084830872924788,
+          "gross_return_same_positions": 0.2951690975066297,
+          "avg_exposure": 0.713818096993555,
+          "net_arithmetic_annual_pct": 14.599535782665384
+        },
+        "2.0": {
+          "net_return": 0.8706314946326226,
+          "max_drawdown": -0.3080022704000007,
+          "sharpe": 1.3604556579509333,
+          "trades": 448,
+          "fees": 5566.565836738,
+          "fee_drag": 0.05566565836738005,
+          "slippage_drag": 0.03249284699999653,
+          "gross_return_same_positions": 0.9587899999999991,
+          "avg_exposure": 0.6139321683811197,
+          "net_arithmetic_annual_pct": 39.68896807505289
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4067322916656956,
+          "top5_overlap": 0.0224824355971897,
+          "days": 427
+        },
+        "V36": {
+          "daily_rank_correlation": 0.41455647230446235,
+          "top5_overlap": 0.01920374707259953,
+          "days": 427
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4051715202309006,
+          "top5_overlap": 0.02107728337236534,
+          "days": 427
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.6800383106753453,
+        "V36": 0.7086865005101145,
+        "V38": 0.6534651050019847
+      }
+    },
+    {
+      "unit": "V65",
+      "seed": 6253,
+      "quarter": "2025Q3",
+      "fold": 4,
+      "start": "2023-07-21",
+      "end": "2025-04-25",
+      "days": 427,
+      "checkpoint_sha256": "26460e1d325c353ec14bc99ad448382dd00f8239865cf3bee8bb0949389246dc",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 902273,
+          "forecast_mean": 0.00043944832854904593,
+          "actual_raw_mean": 0.0003454625860132858,
+          "actual_clipped_mean": 0.00016216608212213442,
+          "clipped_rmse": 0.029077156185618264,
+          "raw_rmse": 0.030683459472238286,
+          "clipped_mae": 0.019839747546391985,
+          "descriptive_calibration_slope": 0.571388275425378,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 45959,
+              "forecast_mean": -0.006955234272269613,
+              "actual_raw_mean": -0.0007405624476285664,
+              "actual_clipped_mean": -0.0009052396707434841
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 367127,
+              "forecast_mean": -0.0018700721747328716,
+              "actual_raw_mean": -0.0017535877159233796,
+              "actual_clipped_mean": -0.001884532774413011
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 192821,
+              "forecast_mean": 0.0007810091849567899,
+              "actual_raw_mean": 0.0003769430757642017,
+              "actual_clipped_mean": 0.00028742191467236107
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 218603,
+              "forecast_mean": 0.0030243218758358977,
+              "actual_raw_mean": 0.0016351892068962011,
+              "actual_clipped_mean": 0.0015470882841203744
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 77763,
+              "forecast_mean": 0.007599901674079182,
+              "actual_raw_mean": 0.00719348100995679,
+              "actual_clipped_mean": 0.006251890103668895
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 901910,
+          "forecast_mean": 0.0013024865184583351,
+          "actual_raw_mean": 0.0018429339860432377,
+          "actual_clipped_mean": 0.0012369062929862464,
+          "clipped_rmse": 0.06539623166496289,
+          "raw_rmse": 0.06924284504742644,
+          "clipped_mae": 0.04496462579189771,
+          "descriptive_calibration_slope": 0.5842790619498759,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 271889,
+              "forecast_mean": -0.012722487562684084,
+              "actual_raw_mean": -0.0037304057291530504,
+              "actual_clipped_mean": -0.004425393173764818
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 145689,
+              "forecast_mean": -0.0024753484213764303,
+              "actual_raw_mean": -0.005118752477575484,
+              "actual_clipped_mean": -0.005516079992857937
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 49632,
+              "forecast_mean": 0.0008128982643616869,
+              "actual_raw_mean": -0.003018438228890496,
+              "actual_clipped_mean": -0.0033663959390273323
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 108192,
+              "forecast_mean": 0.0033208205434666744,
+              "actual_raw_mean": -7.332785380497678e-05,
+              "actual_clipped_mean": -0.0004876958137418063
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 326508,
+              "forecast_mean": 0.01407263861853227,
+              "actual_raw_mean": 0.010964225739297676,
+              "actual_clipped_mean": 0.01023641627811449
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": -0.23334240641153348,
+          "max_drawdown": -0.5338649430898599,
+          "sharpe": -0.20477963951010741,
+          "trades": 2828,
+          "fees": 25176.509901042544,
+          "fee_drag": 0.25176509901042515,
+          "slippage_drag": 0.1263243441109989,
+          "gross_return_same_positions": 0.14474703670989064,
+          "avg_exposure": 0.9898492432789516,
+          "net_arithmetic_annual_pct": -7.767872468948407
+        },
+        "0.5": {
+          "net_return": 0.6690755452993538,
+          "max_drawdown": -0.3810183340939044,
+          "sharpe": 1.0274558811534134,
+          "trades": 1150,
+          "fees": 14671.064921931418,
+          "fee_drag": 0.14671064921931418,
+          "slippage_drag": 0.08595251961423028,
+          "gross_return_same_positions": 0.9017387141328983,
+          "avg_exposure": 0.7810460259160199,
+          "net_arithmetic_annual_pct": 34.70282421900749
+        },
+        "1.0": {
+          "net_return": 0.6878617799277915,
+          "max_drawdown": -0.386107275902727,
+          "sharpe": 1.0798860314961531,
+          "trades": 684,
+          "fees": 8748.465554395852,
+          "fee_drag": 0.08748465554395854,
+          "slippage_drag": 0.051199213694744505,
+          "gross_return_same_positions": 0.8265456491664946,
+          "avg_exposure": 0.7294579945590558,
+          "net_arithmetic_annual_pct": 34.827654676097374
+        },
+        "2.0": {
+          "net_return": 1.331709464229227,
+          "max_drawdown": -0.38841916718219394,
+          "sharpe": 1.6585241468872944,
+          "trades": 418,
+          "fees": 5830.181062277752,
+          "fee_drag": 0.058301810622777527,
+          "slippage_drag": 0.03400496887311385,
+          "gross_return_same_positions": 1.4240162437251187,
+          "avg_exposure": 0.6355280643069626,
+          "net_arithmetic_annual_pct": 53.00987875292515
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4175691696948734,
+          "top5_overlap": 0.019672131147540985,
+          "days": 427
+        },
+        "V36": {
+          "daily_rank_correlation": 0.42727796244886845,
+          "top5_overlap": 0.01826697892271663,
+          "days": 427
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4175709140093524,
+          "top5_overlap": 0.019203747072599534,
+          "days": 427
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.6617583693704464,
+        "V36": 0.6971043117999404,
+        "V38": 0.6405729021094284
+      }
+    },
+    {
+      "unit": "V63",
+      "seed": 4253,
+      "quarter": "2026Q1",
+      "fold": 4,
+      "start": "2023-12-08",
+      "end": "2025-11-03",
+      "days": 459,
+      "checkpoint_sha256": "a955878551732991b26d440b140638ae296424b85df449ea09c81f2a1ea87829",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 969734,
+          "forecast_mean": -0.00039531670069754805,
+          "actual_raw_mean": 0.0008995941222166005,
+          "actual_clipped_mean": 0.0007076206139206628,
+          "clipped_rmse": 0.029290819780181214,
+          "raw_rmse": 0.03089373373199208,
+          "clipped_mae": 0.019901815156826524,
+          "descriptive_calibration_slope": 0.43290791129084,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 63236,
+              "forecast_mean": -0.006701211031287502,
+              "actual_raw_mean": -0.0017755838384423699,
+              "actual_clipped_mean": -0.001985107721759919
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 501067,
+              "forecast_mean": -0.0021373759074411946,
+              "actual_raw_mean": 9.601153406546931e-05,
+              "actual_clipped_mean": -5.3639599213539416e-05
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 170175,
+              "forecast_mean": 0.0007694462934435449,
+              "actual_raw_mean": 0.0010330837566569356,
+              "actual_clipped_mean": 0.0009195459888065272
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 174156,
+              "forecast_mean": 0.002907022994281926,
+              "actual_raw_mean": 0.0014835530842534298,
+              "actual_clipped_mean": 0.001441013150583009
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 61100,
+              "forecast_mean": 0.007760364150166597,
+              "actual_raw_mean": 0.008222011711152498,
+              "actual_clipped_mean": 0.007056730744255248
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 969293,
+          "forecast_mean": -0.0011817108058653927,
+          "actual_raw_mean": 0.0045130890893739185,
+          "actual_clipped_mean": 0.0039000986906268646,
+          "clipped_rmse": 0.0664888395385624,
+          "raw_rmse": 0.07028636089753736,
+          "clipped_mae": 0.04568080441572508,
+          "descriptive_calibration_slope": 0.4039481800080451,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 402216,
+              "forecast_mean": -0.013199179368482888,
+              "actual_raw_mean": 0.0024764531185584187,
+              "actual_clipped_mean": 0.0018509575347601904
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 134145,
+              "forecast_mean": -0.0025359348732257596,
+              "actual_raw_mean": -0.0012308013219231083,
+              "actual_clipped_mean": -0.0016895760005002213
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 44759,
+              "forecast_mean": 0.0008161053681579791,
+              "actual_raw_mean": 0.0007660547704723935,
+              "actual_clipped_mean": 0.0003465980050348782
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 98836,
+              "forecast_mean": 0.0033127074407596144,
+              "actual_raw_mean": 0.0032071186341211593,
+              "actual_clipped_mean": 0.00278378762221685
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 289337,
+              "forecast_mean": 0.014307666449519413,
+              "actual_raw_mean": 0.011033071524582829,
+              "actual_clipped_mean": 0.010271240744816607
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": -0.18877681304523908,
+          "max_drawdown": -0.48004314323906794,
+          "sharpe": -0.11710857279701652,
+          "trades": 3080,
+          "fees": 27800.153662786714,
+          "fee_drag": 0.27800153662786714,
+          "slippage_drag": 0.14255131681210276,
+          "gross_return_same_positions": 0.23177604039473088,
+          "avg_exposure": 0.9892792122437882,
+          "net_arithmetic_annual_pct": -4.275373662609613
+        },
+        "0.5": {
+          "net_return": 0.0883991183636832,
+          "max_drawdown": -0.39110994943147614,
+          "sharpe": 0.2996905878769943,
+          "trades": 1016,
+          "fees": 10092.04261066397,
+          "fee_drag": 0.10092042610663965,
+          "slippage_drag": 0.05642714600713738,
+          "gross_return_same_positions": 0.24574669047746012,
+          "avg_exposure": 0.6128708616463653,
+          "net_arithmetic_annual_pct": 9.251007310367537
+        },
+        "1.0": {
+          "net_return": 0.5674083704454571,
+          "max_drawdown": -0.3461050329519637,
+          "sharpe": 0.9463766896430276,
+          "trades": 594,
+          "fees": 6924.190871162772,
+          "fee_drag": 0.0692419087116277,
+          "slippage_drag": 0.039956414007945806,
+          "gross_return_same_positions": 0.6766066931650307,
+          "avg_exposure": 0.5570565461278044,
+          "net_arithmetic_annual_pct": 28.095185172606474
+        },
+        "2.0": {
+          "net_return": 0.6316740514711003,
+          "max_drawdown": -0.380036151130984,
+          "sharpe": 1.0628619715215217,
+          "trades": 336,
+          "fees": 4119.912287982897,
+          "fee_drag": 0.041199122879828964,
+          "slippage_drag": 0.023956214816747468,
+          "gross_return_same_positions": 0.6968293891676769,
+          "avg_exposure": 0.4334858390831128,
+          "net_arithmetic_annual_pct": 29.683107706506533
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4626744302097607,
+          "top5_overlap": 0.020479302832244004,
+          "days": 459
+        },
+        "V36": {
+          "daily_rank_correlation": 0.4617804623450609,
+          "top5_overlap": 0.0196078431372549,
+          "days": 459
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4476821045858748,
+          "top5_overlap": 0.016557734204793027,
+          "days": 459
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.6519847384044416,
+        "V36": 0.6741137356286193,
+        "V38": 0.6723303175707358
+      }
+    },
+    {
+      "unit": "V63",
+      "seed": 4253,
+      "quarter": "2026Q2",
+      "fold": 4,
+      "start": "2024-02-07",
+      "end": "2026-01-22",
+      "days": 473,
+      "checkpoint_sha256": "a2dc20c14fed750ea10994789adaf5e6ec3882ca9270e641b67e2df34255bde1",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 999209,
+          "forecast_mean": -0.00029692000848363117,
+          "actual_raw_mean": 0.001600203764350148,
+          "actual_clipped_mean": 0.0013795476142853778,
+          "clipped_rmse": 0.028534101134111613,
+          "raw_rmse": 0.03012416652864372,
+          "clipped_mae": 0.01932978121225689,
+          "descriptive_calibration_slope": 0.5096438655753877,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 58024,
+              "forecast_mean": -0.006647192813432561,
+              "actual_raw_mean": -0.003240460563566608,
+              "actual_clipped_mean": -0.0034479914142444643
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 516653,
+              "forecast_mean": -0.0020441709729110582,
+              "actual_raw_mean": 0.0007034848262855498,
+              "actual_clipped_mean": 0.0005332718166668923
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 185654,
+              "forecast_mean": 0.0007660391771774683,
+              "actual_raw_mean": 0.0014609223900437394,
+              "actual_clipped_mean": 0.0013188828000486779
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 177523,
+              "forecast_mean": 0.0028724735600998666,
+              "actual_raw_mean": 0.00363401940485423,
+              "actual_clipped_mean": 0.003508335445566389
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 61355,
+              "forecast_mean": 0.008035046459258297,
+              "actual_raw_mean": 0.008265941304684376,
+              "actual_clipped_mean": 0.007095429245907905
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 998697,
+          "forecast_mean": -0.0016906087710209124,
+          "actual_raw_mean": 0.007121719450186914,
+          "actual_clipped_mean": 0.006464070346918634,
+          "clipped_rmse": 0.06403160892632112,
+          "raw_rmse": 0.06809661014426713,
+          "clipped_mae": 0.04382129154457243,
+          "descriptive_calibration_slope": 0.4474388170739622,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 419124,
+              "forecast_mean": -0.012920482362002628,
+              "actual_raw_mean": 0.003366179708716748,
+              "actual_clipped_mean": 0.0026844155504535477
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 156067,
+              "forecast_mean": -0.0025414607784833916,
+              "actual_raw_mean": 0.0034362620514938077,
+              "actual_clipped_mean": 0.002965602109468695
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 50027,
+              "forecast_mean": 0.0008150978466633223,
+              "actual_raw_mean": 0.005731601312180328,
+              "actual_clipped_mean": 0.005267266604061591
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 104585,
+              "forecast_mean": 0.00328671291070518,
+              "actual_raw_mean": 0.008210894789039724,
+              "actual_clipped_mean": 0.007740503666261124
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 268894,
+              "forecast_mean": 0.013905102870551807,
+              "actual_raw_mean": 0.014949514624946902,
+              "actual_clipped_mean": 0.014112125719921407
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": 0.6922560656270544,
+          "max_drawdown": -0.24148768953851973,
+          "sharpe": 0.9713166632317081,
+          "trades": 3166,
+          "fees": 48950.76654494481,
+          "fee_drag": 0.48950766544944774,
+          "slippage_drag": 0.2877704682597706,
+          "gross_return_same_positions": 1.4695341993362732,
+          "avg_exposure": 0.9918606688678063,
+          "net_arithmetic_annual_pct": 32.47011279459947
+        },
+        "0.5": {
+          "net_return": 0.8131939644268946,
+          "max_drawdown": -0.37280816123333127,
+          "sharpe": 1.2165157730345808,
+          "trades": 998,
+          "fees": 14334.200793168251,
+          "fee_drag": 0.1433420079316827,
+          "slippage_drag": 0.08409783414194152,
+          "gross_return_same_positions": 1.040633806500519,
+          "avg_exposure": 0.6326730644317955,
+          "net_arithmetic_annual_pct": 34.38140903631721
+        },
+        "1.0": {
+          "net_return": 2.115996390475896,
+          "max_drawdown": -0.272387505945874,
+          "sharpe": 2.28868142160765,
+          "trades": 540,
+          "fees": 10922.906735924471,
+          "fee_drag": 0.10922906735924473,
+          "slippage_drag": 0.06392379877697651,
+          "gross_return_same_positions": 2.289149256612118,
+          "avg_exposure": 0.5715152454278085,
+          "net_arithmetic_annual_pct": 61.70306319369991
+        },
+        "2.0": {
+          "net_return": 1.2550305514314903,
+          "max_drawdown": -0.22987184876536892,
+          "sharpe": 1.821554987805092,
+          "trades": 294,
+          "fees": 4920.1726464530975,
+          "fee_drag": 0.04920172646453096,
+          "slippage_drag": 0.028748952369076323,
+          "gross_return_same_positions": 1.3329812302650978,
+          "avg_exposure": 0.4494419102833314,
+          "net_arithmetic_annual_pct": 44.50475832981177
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4643779917211971,
+          "top5_overlap": 0.021564482029598306,
+          "days": 473
+        },
+        "V36": {
+          "daily_rank_correlation": 0.466547994774668,
+          "top5_overlap": 0.01437632135306554,
+          "days": 473
+        },
+        "V38": {
+          "daily_rank_correlation": 0.48567849863317963,
+          "top5_overlap": 0.026215644820295987,
+          "days": 473
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.59749563760953,
+        "V36": 0.6122593208550366,
+        "V38": 0.6226479197394159
+      }
+    },
+    {
+      "unit": "V64",
+      "seed": 5253,
+      "quarter": "2025Q4",
+      "fold": 4,
+      "start": "2023-09-28",
+      "end": "2025-08-01",
+      "days": 444,
+      "checkpoint_sha256": "1f95878c15220fd85fa8cb51c49172e9f5e664d972424d0598202b18aec9f3c9",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 938046,
+          "forecast_mean": -0.00010344037058762387,
+          "actual_raw_mean": 0.0007379933762253719,
+          "actual_clipped_mean": 0.000548449677683238,
+          "clipped_rmse": 0.029049289251902862,
+          "raw_rmse": 0.03068791665691521,
+          "clipped_mae": 0.019709890697977413,
+          "descriptive_calibration_slope": 0.43821498617427135,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 55203,
+              "forecast_mean": -0.00672056234334382,
+              "actual_raw_mean": -0.0007522572534534788,
+              "actual_clipped_mean": -0.0009532540636127626
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 452783,
+              "forecast_mean": -0.0020517423814599063,
+              "actual_raw_mean": -0.00023066215476433993,
+              "actual_clipped_mean": -0.0003725654591369155
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 175008,
+              "forecast_mean": 0.0007743205428954788,
+              "actual_raw_mean": -4.442848004527896e-05,
+              "actual_clipped_mean": -0.00013776239407287217
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 188966,
+              "forecast_mean": 0.002991343653453528,
+              "actual_raw_mean": 0.0016555823859368646,
+              "actual_clipped_mean": 0.0015811428089019016
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 66086,
+              "forecast_mean": 0.0075989303859573904,
+              "actual_raw_mean": 0.008067745853472419,
+              "actual_clipped_mean": 0.006977455221151296
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 937621,
+          "forecast_mean": -9.248741620759759e-05,
+          "actual_raw_mean": 0.0038290665132657137,
+          "actual_clipped_mean": 0.003201174032238825,
+          "clipped_rmse": 0.06589951619441071,
+          "raw_rmse": 0.06984132634721543,
+          "clipped_mae": 0.04522974651336232,
+          "descriptive_calibration_slope": 0.4536889896756688,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 348361,
+              "forecast_mean": -0.012772531303399878,
+              "actual_raw_mean": 0.001396285211977342,
+              "actual_clipped_mean": 0.0007144982345968564
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 137766,
+              "forecast_mean": -0.002548366619817187,
+              "actual_raw_mean": -0.0017248327071068474,
+              "actual_clipped_mean": -0.0021492384193137664
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 44235,
+              "forecast_mean": 0.000814265175893603,
+              "actual_raw_mean": -0.0013838832014931403,
+              "actual_clipped_mean": -0.0017986121221687508
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 97741,
+              "forecast_mean": 0.003323558123313076,
+              "actual_raw_mean": 4.685558297090203e-05,
+              "actual_clipped_mean": -0.0003651196201582677
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 309518,
+              "forecast_mean": 0.014063624716078027,
+              "actual_raw_mean": 0.010978558678704451,
+              "actual_clipped_mean": 0.010222104762477818
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": -0.3238113437049698,
+          "max_drawdown": -0.5693581491003323,
+          "sharpe": -0.38791829488134333,
+          "trades": 3330,
+          "fees": 27604.076508818544,
+          "fee_drag": 0.2760407650881856,
+          "slippage_drag": 0.1261591945847752,
+          "gross_return_same_positions": 0.07838861596799096,
+          "avg_exposure": 0.9869373262563749,
+          "net_arithmetic_annual_pct": -14.337213052939138
+        },
+        "0.5": {
+          "net_return": 0.13235869647423848,
+          "max_drawdown": -0.3788590862641479,
+          "sharpe": 0.37345660109908974,
+          "trades": 1114,
+          "fees": 10678.973196376914,
+          "fee_drag": 0.10678973196376901,
+          "slippage_drag": 0.05814771484297768,
+          "gross_return_same_positions": 0.2972961432809851,
+          "avg_exposure": 0.6688238569474061,
+          "net_arithmetic_annual_pct": 11.85387312926643
+        },
+        "1.0": {
+          "net_return": 0.22788135482802563,
+          "max_drawdown": -0.371972665429409,
+          "sharpe": 0.5177464359905726,
+          "trades": 618,
+          "fees": 6073.825535685607,
+          "fee_drag": 0.06073825535685609,
+          "slippage_drag": 0.03338533348309682,
+          "gross_return_same_positions": 0.3220049436679786,
+          "avg_exposure": 0.6095147959523876,
+          "net_arithmetic_annual_pct": 15.984427517777199
+        },
+        "2.0": {
+          "net_return": 0.5008992971349033,
+          "max_drawdown": -0.3454804741058939,
+          "sharpe": 0.921971509563506,
+          "trades": 370,
+          "fees": 4082.5980014986444,
+          "fee_drag": 0.04082598001498641,
+          "slippage_drag": 0.023510884848596925,
+          "gross_return_same_positions": 0.5652361619984867,
+          "avg_exposure": 0.5126438252261734,
+          "net_arithmetic_annual_pct": 26.14546914820277
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.45721038770437245,
+          "top5_overlap": 0.023873873873873876,
+          "days": 444
+        },
+        "V36": {
+          "daily_rank_correlation": 0.48857354815973203,
+          "top5_overlap": 0.02927927927927928,
+          "days": 444
+        },
+        "V38": {
+          "daily_rank_correlation": 0.48854018856876574,
+          "top5_overlap": 0.02027027027027027,
+          "days": 444
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.7176030092361417,
+        "V36": 0.7441957350506614,
+        "V38": 0.6857400138931384
+      }
+    },
+    {
+      "unit": "V64",
+      "seed": 5253,
+      "quarter": "2026Q1",
+      "fold": 4,
+      "start": "2023-12-08",
+      "end": "2025-11-03",
+      "days": 459,
+      "checkpoint_sha256": "f22bf2bd296767b0edf2128c3c8c1e80c70735250847d96000cda89b245617da",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 969734,
+          "forecast_mean": -0.00032287103137680124,
+          "actual_raw_mean": 0.0008995941222166005,
+          "actual_clipped_mean": 0.0007076206139206628,
+          "clipped_rmse": 0.029289407185269,
+          "raw_rmse": 0.030891284576907978,
+          "clipped_mae": 0.01990559624114425,
+          "descriptive_calibration_slope": 0.4291784054250701,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 59558,
+              "forecast_mean": -0.006617494802304027,
+              "actual_raw_mean": -0.0012732960960225978,
+              "actual_clipped_mean": -0.0014959232998109197
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 497232,
+              "forecast_mean": -0.0021193497274074836,
+              "actual_raw_mean": 9.585543398105122e-05,
+              "actual_clipped_mean": -5.0259679915116465e-05
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 172577,
+              "forecast_mean": 0.0007688315993447566,
+              "actual_raw_mean": 0.00029210445926511195,
+              "actual_clipped_mean": 0.00018008740805150196
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 178037,
+              "forecast_mean": 0.0029131773365558764,
+              "actual_raw_mean": 0.0019984943608366236,
+              "actual_clipped_mean": 0.001946480908881995
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 62330,
+              "forecast_mean": 0.007757071040658295,
+              "actual_raw_mean": 0.0079307417690418,
+              "actual_clipped_mean": 0.006781070484189065
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 969293,
+          "forecast_mean": -0.0010924843085058757,
+          "actual_raw_mean": 0.0045130890893739185,
+          "actual_clipped_mean": 0.0039000986906268646,
+          "clipped_rmse": 0.06646564079569718,
+          "raw_rmse": 0.07026407225542594,
+          "clipped_mae": 0.045661420232211446,
+          "descriptive_calibration_slope": 0.40776838986637964,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 400025,
+              "forecast_mean": -0.013003634244723212,
+              "actual_raw_mean": 0.002445889919627277,
+              "actual_clipped_mean": 0.0018170542105640137
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 136039,
+              "forecast_mean": -0.0025523763287389582,
+              "actual_raw_mean": -0.0013768405587437948,
+              "actual_clipped_mean": -0.0018178546001774737
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 44364,
+              "forecast_mean": 0.0008164426826036588,
+              "actual_raw_mean": 0.0008141792141565792,
+              "actual_clipped_mean": 0.00037154274136744876
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 98436,
+              "forecast_mean": 0.0033163008350546525,
+              "actual_raw_mean": 0.002668144598919894,
+              "actual_clipped_mean": 0.0022586533041887213
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 290429,
+              "forecast_mean": 0.014211390966865115,
+              "actual_raw_mean": 0.011309582830855173,
+              "actual_clipped_mean": 0.01054286745702844
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": -0.03737680186832626,
+          "max_drawdown": -0.5139329946297355,
+          "sharpe": 0.13355061079931238,
+          "trades": 3426,
+          "fees": 29952.66320835698,
+          "fee_drag": 0.2995266320835705,
+          "slippage_drag": 0.1476082434220742,
+          "gross_return_same_positions": 0.40975807363731853,
+          "avg_exposure": 0.9882154144567614,
+          "net_arithmetic_annual_pct": 4.954587123486607
+        },
+        "0.5": {
+          "net_return": 0.4178227098619711,
+          "max_drawdown": -0.37757364287513684,
+          "sharpe": 0.7395123779439736,
+          "trades": 1088,
+          "fees": 11458.103447788251,
+          "fee_drag": 0.11458103447788254,
+          "slippage_drag": 0.06415316907401722,
+          "gross_return_same_positions": 0.5965569134138708,
+          "avg_exposure": 0.6165401411071316,
+          "net_arithmetic_annual_pct": 23.45131520879967
+        },
+        "1.0": {
+          "net_return": 0.28536009589594014,
+          "max_drawdown": -0.3519659912369424,
+          "sharpe": 0.5931991981917714,
+          "trades": 608,
+          "fees": 6417.79528913861,
+          "fee_drag": 0.06417795289138606,
+          "slippage_drag": 0.03625523198422737,
+          "gross_return_same_positions": 0.3857932807715536,
+          "avg_exposure": 0.5591170159253686,
+          "net_arithmetic_annual_pct": 17.719426097440465
+        },
+        "2.0": {
+          "net_return": 0.5052383427352942,
+          "max_drawdown": -0.338613430183901,
+          "sharpe": 0.9068062492088294,
+          "trades": 338,
+          "fees": 3830.3822579160374,
+          "fee_drag": 0.03830382257916035,
+          "slippage_drag": 0.021934402970483314,
+          "gross_return_same_positions": 0.5654765682849379,
+          "avg_exposure": 0.45187803451833236,
+          "net_arithmetic_annual_pct": 25.515982323990304
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.45721118285973594,
+          "top5_overlap": 0.02178649237472767,
+          "days": 459
+        },
+        "V36": {
+          "daily_rank_correlation": 0.45499578267910795,
+          "top5_overlap": 0.0196078431372549,
+          "days": 459
+        },
+        "V38": {
+          "daily_rank_correlation": 0.44171538913739955,
+          "top5_overlap": 0.0187363834422658,
+          "days": 459
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.6572874025307757,
+        "V36": 0.6776945967941248,
+        "V38": 0.6681090376242725
+      }
+    },
+    {
+      "unit": "V64",
+      "seed": 5253,
+      "quarter": "2026Q2",
+      "fold": 4,
+      "start": "2024-02-07",
+      "end": "2026-01-22",
+      "days": 473,
+      "checkpoint_sha256": "1a0ff45dda77c196644d094906cf83b1c6d064b5edef5abbd3e5d4a816a223e4",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 999209,
+          "forecast_mean": -0.0001927448102545587,
+          "actual_raw_mean": 0.001600203764350148,
+          "actual_clipped_mean": 0.0013795476142853778,
+          "clipped_rmse": 0.028536178036136062,
+          "raw_rmse": 0.030124816775067002,
+          "clipped_mae": 0.01933770870316896,
+          "descriptive_calibration_slope": 0.49030661454814894,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 53694,
+              "forecast_mean": -0.006562289082422552,
+              "actual_raw_mean": -0.003097331555273637,
+              "actual_clipped_mean": -0.003318085265959934
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 509185,
+              "forecast_mean": -0.0020271135739019885,
+              "actual_raw_mean": 0.0007435427548639528,
+              "actual_clipped_mean": 0.0005761338605480756
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 186485,
+              "forecast_mean": 0.0007652625340511436,
+              "actual_raw_mean": 0.0010444015860828209,
+              "actual_clipped_mean": 0.0009079017343668913
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 186151,
+              "forecast_mean": 0.00288440712911746,
+              "actual_raw_mean": 0.003655078475568781,
+              "actual_clipped_mean": 0.0035179575192415408
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 63694,
+              "forecast_mean": 0.008043045983206603,
+              "actual_raw_mean": 0.008030325666149857,
+              "actual_clipped_mean": 0.006893546919835731
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 998697,
+          "forecast_mean": -0.0015241766435835245,
+          "actual_raw_mean": 0.007121719450186914,
+          "actual_clipped_mean": 0.006464070346918634,
+          "clipped_rmse": 0.06403169700894311,
+          "raw_rmse": 0.06809600894812343,
+          "clipped_mae": 0.04381879138460291,
+          "descriptive_calibration_slope": 0.43859647249302813,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 415121,
+              "forecast_mean": -0.0127620136584769,
+              "actual_raw_mean": 0.00348760737677332,
+              "actual_clipped_mean": 0.0028015046291252213
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 156109,
+              "forecast_mean": -0.002557957210498267,
+              "actual_raw_mean": 0.003370290257985493,
+              "actual_clipped_mean": 0.0029157374401281282
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 49653,
+              "forecast_mean": 0.0008072869465770692,
+              "actual_raw_mean": 0.0053623140337776655,
+              "actual_clipped_mean": 0.0049249968194294965
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 104985,
+              "forecast_mean": 0.0032950844399910638,
+              "actual_raw_mean": 0.00776919795669227,
+              "actual_clipped_mean": 0.007268615389279818
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 272829,
+              "forecast_mean": 0.01388741927722667,
+              "actual_raw_mean": 0.014868741665304804,
+              "actual_clipped_mean": 0.014037638778685082
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": 1.599327525672639,
+          "max_drawdown": -0.22870892770793683,
+          "sharpe": 1.5949778551310398,
+          "trades": 3488,
+          "fees": 55497.57280845154,
+          "fee_drag": 0.5549757280845158,
+          "slippage_drag": 0.3261291457198071,
+          "gross_return_same_positions": 2.4804323994769617,
+          "avg_exposure": 0.991393141102733,
+          "net_arithmetic_annual_pct": 54.71416264653763
+        },
+        "0.5": {
+          "net_return": 1.5447810190109421,
+          "max_drawdown": -0.20186908276718707,
+          "sharpe": 1.7856016943178012,
+          "trades": 1078,
+          "fees": 18962.470238546128,
+          "fee_drag": 0.18962470238546136,
+          "slippage_drag": 0.11128757798980222,
+          "gross_return_same_positions": 1.8456932993862054,
+          "avg_exposure": 0.6534998151495757,
+          "net_arithmetic_annual_pct": 51.9465578954363
+        },
+        "1.0": {
+          "net_return": 1.5093796083938336,
+          "max_drawdown": -0.2680107839582698,
+          "sharpe": 1.8076692844262336,
+          "trades": 542,
+          "fees": 9444.71662515705,
+          "fee_drag": 0.09444716625157036,
+          "slippage_drag": 0.05531997802579535,
+          "gross_return_same_positions": 1.6591467526711994,
+          "avg_exposure": 0.5904411651550907,
+          "net_arithmetic_annual_pct": 50.97749369679191
+        },
+        "2.0": {
+          "net_return": 1.3155525752189972,
+          "max_drawdown": -0.25502388212587823,
+          "sharpe": 1.8251094078917216,
+          "trades": 302,
+          "fees": 5069.8236327935665,
+          "fee_drag": 0.05069823632793567,
+          "slippage_drag": 0.02962022731165398,
+          "gross_return_same_positions": 1.3958710388585867,
+          "avg_exposure": 0.47760297851214273,
+          "net_arithmetic_annual_pct": 46.059192388491645
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.45986034620630717,
+          "top5_overlap": 0.021987315010570826,
+          "days": 473
+        },
+        "V36": {
+          "daily_rank_correlation": 0.4615514867093438,
+          "top5_overlap": 0.017336152219873148,
+          "days": 473
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4864590929113461,
+          "top5_overlap": 0.029175475687103596,
+          "days": 473
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.6031228997622152,
+        "V36": 0.6166055837380067,
+        "V38": 0.648855536526131
+      }
+    },
+    {
+      "unit": "V65",
+      "seed": 6253,
+      "quarter": "2025Q4",
+      "fold": 4,
+      "start": "2023-09-28",
+      "end": "2025-08-01",
+      "days": 444,
+      "checkpoint_sha256": "4f68014c8a86776d8034dde7e8ce4637706729129e5976d7d4085119d645c15a",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 938046,
+          "forecast_mean": -5.569657322722461e-05,
+          "actual_raw_mean": 0.0007379933762253719,
+          "actual_clipped_mean": 0.000548449677683238,
+          "clipped_rmse": 0.02905892001252843,
+          "raw_rmse": 0.030697394912752383,
+          "clipped_mae": 0.01971064398238634,
+          "descriptive_calibration_slope": 0.4153760482701308,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 55072,
+              "forecast_mean": -0.006760844516590614,
+              "actual_raw_mean": -0.00021820082933039854,
+              "actual_clipped_mean": -0.00042646543613553557
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 446672,
+              "forecast_mean": -0.0020593478905108365,
+              "actual_raw_mean": -0.0004093426951580326,
+              "actual_clipped_mean": -0.0005519441900804962
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 174563,
+              "forecast_mean": 0.0007718744590848753,
+              "actual_raw_mean": 0.00044493581619857984,
+              "actual_clipped_mean": 0.0003489384893657665
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 192246,
+              "forecast_mean": 0.0029971720787259756,
+              "actual_raw_mean": 0.0013254572760567906,
+              "actual_clipped_mean": 0.0012538532005464762
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 69493,
+              "forecast_mean": 0.007612353154856497,
+              "actual_raw_mean": 0.007981339424450392,
+              "actual_clipped_mean": 0.006943653809896362
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 937621,
+          "forecast_mean": -5.4139857873520205e-06,
+          "actual_raw_mean": 0.0038290665132657137,
+          "actual_clipped_mean": 0.003201174032238825,
+          "clipped_rmse": 0.06589779829617474,
+          "raw_rmse": 0.0698373708863909,
+          "clipped_mae": 0.045232796298980193,
+          "descriptive_calibration_slope": 0.4529398224643861,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 347006,
+              "forecast_mean": -0.012769717311672198,
+              "actual_raw_mean": 0.0013937128391926581,
+              "actual_clipped_mean": 0.0007244071484418546
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 136068,
+              "forecast_mean": -0.0025386306416790823,
+              "actual_raw_mean": -0.0018085888416733574,
+              "actual_clipped_mean": -0.0022683471311118353
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 44118,
+              "forecast_mean": 0.000817987893714721,
+              "actual_raw_mean": -0.0018140750788603474,
+              "actual_clipped_mean": -0.002195185010910901
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 97451,
+              "forecast_mean": 0.003325012300751998,
+              "actual_raw_mean": 0.0001795923373776413,
+              "actual_clipped_mean": -0.0002353262791026384
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 312978,
+              "forecast_mean": 0.014094936031359074,
+              "actual_raw_mean": 0.010911979224501423,
+              "actual_clipped_mean": 0.010155805779645566
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": -0.035110571465944096,
+          "max_drawdown": -0.5047918761942891,
+          "sharpe": 0.13101017614881777,
+          "trades": 2960,
+          "fees": 26648.356907098856,
+          "fee_drag": 0.26648356907098864,
+          "slippage_drag": 0.13607092917801936,
+          "gross_return_same_positions": 0.3674439267830638,
+          "avg_exposure": 0.9883742680862152,
+          "net_arithmetic_annual_pct": 4.782194036228814
+        },
+        "0.5": {
+          "net_return": 0.3762024072636885,
+          "max_drawdown": -0.377751384284003,
+          "sharpe": 0.7137049632291814,
+          "trades": 1006,
+          "fees": 10832.94864073696,
+          "fee_drag": 0.10832948640736954,
+          "slippage_drag": 0.0620407778014348,
+          "gross_return_same_positions": 0.5465726714724928,
+          "avg_exposure": 0.6880223019661597,
+          "net_arithmetic_annual_pct": 22.259844245187907
+        },
+        "1.0": {
+          "net_return": 0.5995994743751405,
+          "max_drawdown": -0.3644494665807517,
+          "sharpe": 0.9857647589587125,
+          "trades": 594,
+          "fees": 7086.278961902789,
+          "fee_drag": 0.07086278961902792,
+          "slippage_drag": 0.04128432797758736,
+          "gross_return_same_positions": 0.7117465919717558,
+          "avg_exposure": 0.631091484108527,
+          "net_arithmetic_annual_pct": 30.311283563173774
+        },
+        "2.0": {
+          "net_return": 0.66234875268064,
+          "max_drawdown": -0.38163368048472,
+          "sharpe": 1.0969794535010138,
+          "trades": 352,
+          "fees": 4159.5450042299435,
+          "fee_drag": 0.04159545004229946,
+          "slippage_drag": 0.024141073582889003,
+          "gross_return_same_positions": 0.7280852763058283,
+          "avg_exposure": 0.5368004143628564,
+          "net_arithmetic_annual_pct": 31.87520755349988
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4706662939869466,
+          "top5_overlap": 0.02252252252252252,
+          "days": 444
+        },
+        "V36": {
+          "daily_rank_correlation": 0.49982479165954996,
+          "top5_overlap": 0.027477477477477474,
+          "days": 444
+        },
+        "V38": {
+          "daily_rank_correlation": 0.5025533712276483,
+          "top5_overlap": 0.019819819819819822,
+          "days": 444
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.7244553073362144,
+        "V36": 0.7371366676678432,
+        "V38": 0.6864194957201833
+      }
+    },
+    {
+      "unit": "V65",
+      "seed": 6253,
+      "quarter": "2026Q1",
+      "fold": 4,
+      "start": "2023-12-08",
+      "end": "2025-11-03",
+      "days": 459,
+      "checkpoint_sha256": "ee16addcd284e6568e42902d7fdc31087e4bb16da6a7a56c3dae0bbd5e8bf43a",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 969734,
+          "forecast_mean": -0.00027788834565371567,
+          "actual_raw_mean": 0.0008995941222166005,
+          "actual_clipped_mean": 0.0007076206139206628,
+          "clipped_rmse": 0.029298374683845427,
+          "raw_rmse": 0.03090022721060828,
+          "clipped_mae": 0.01990606625394819,
+          "descriptive_calibration_slope": 0.4060835024532799,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 59768,
+              "forecast_mean": -0.0066572012810896435,
+              "actual_raw_mean": -0.0006858640192076571,
+              "actual_clipped_mean": -0.0009396057323349599
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 492029,
+              "forecast_mean": -0.002113018901465811,
+              "actual_raw_mean": -4.061169918887732e-05,
+              "actual_clipped_mean": -0.00018352900171242042
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 172155,
+              "forecast_mean": 0.0007677045737157658,
+              "actual_raw_mean": 0.0006126643717901907,
+              "actual_clipped_mean": 0.000499194122952221
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 180537,
+              "forecast_mean": 0.002932602932462647,
+              "actual_raw_mean": 0.0017866341068433426,
+              "actual_clipped_mean": 0.0017351199629309338
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 65245,
+              "forecast_mean": 0.007762570154759455,
+              "actual_raw_mean": 0.007744885650717807,
+              "actual_clipped_mean": 0.006643751981439112
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 969293,
+          "forecast_mean": -0.0010075657034164483,
+          "actual_raw_mean": 0.0045130890893739185,
+          "actual_clipped_mean": 0.0039000986906268646,
+          "clipped_rmse": 0.0664682147965449,
+          "raw_rmse": 0.07026489160206466,
+          "clipped_mae": 0.04567087445370165,
+          "descriptive_calibration_slope": 0.4050872472502246,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 398300,
+              "forecast_mean": -0.013015066687641522,
+              "actual_raw_mean": 0.0025010466386053425,
+              "actual_clipped_mean": 0.0018793267856138341
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 133877,
+              "forecast_mean": -0.002550488119421227,
+              "actual_raw_mean": -0.0015946128876234264,
+              "actual_clipped_mean": -0.0020565518110601715
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 44233,
+              "forecast_mean": 0.0008178363217290313,
+              "actual_raw_mean": -0.00014693605150618434,
+              "actual_clipped_mean": -0.0005154669399550633
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 99461,
+              "forecast_mean": 0.003322910086396399,
+              "actual_raw_mean": 0.002778173994812682,
+              "actual_clipped_mean": 0.002326714672733994
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 293422,
+              "forecast_mean": 0.014252684059707936,
+              "actual_raw_mean": 0.011321578595928647,
+              "actual_clipped_mean": 0.010559912921741842
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": 0.19010060915108196,
+          "max_drawdown": -0.5104014353743545,
+          "sharpe": 0.433782034348685,
+          "trades": 3010,
+          "fees": 28665.155409136594,
+          "fee_drag": 0.2866515540913656,
+          "slippage_drag": 0.15128802005497163,
+          "gross_return_same_positions": 0.628040183297419,
+          "avg_exposure": 0.9886058417570824,
+          "net_arithmetic_annual_pct": 16.168472271234144
+        },
+        "0.5": {
+          "net_return": 0.28970932344739797,
+          "max_drawdown": -0.39302490969055304,
+          "sharpe": 0.5821632301687975,
+          "trades": 972,
+          "fees": 10284.09810783351,
+          "fee_drag": 0.10284098107833516,
+          "slippage_drag": 0.058277618376865487,
+          "gross_return_same_positions": 0.4508279229025989,
+          "avg_exposure": 0.6382148947885528,
+          "net_arithmetic_annual_pct": 18.413380482492368
+        },
+        "1.0": {
+          "net_return": 0.6370222495607105,
+          "max_drawdown": -0.3514492756334775,
+          "sharpe": 1.0088511537970564,
+          "trades": 538,
+          "fees": 6633.924469293373,
+          "fee_drag": 0.0663392446929337,
+          "slippage_drag": 0.038539176201132556,
+          "gross_return_same_positions": 0.7419006704547768,
+          "avg_exposure": 0.5688793916662703,
+          "net_arithmetic_annual_pct": 30.537466415144753
+        },
+        "2.0": {
+          "net_return": 0.9019773839008265,
+          "max_drawdown": -0.3540594594758275,
+          "sharpe": 1.3156171482029217,
+          "trades": 326,
+          "fees": 4273.369314820727,
+          "fee_drag": 0.042733693148207276,
+          "slippage_drag": 0.024819099052827823,
+          "gross_return_same_positions": 0.9695301761018615,
+          "avg_exposure": 0.45835441012867445,
+          "net_arithmetic_annual_pct": 38.02925397581426
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.47832169084039755,
+          "top5_overlap": 0.022657952069716776,
+          "days": 459
+        },
+        "V36": {
+          "daily_rank_correlation": 0.4762127946890471,
+          "top5_overlap": 0.020915032679738564,
+          "days": 459
+        },
+        "V38": {
+          "daily_rank_correlation": 0.4546367511120633,
+          "top5_overlap": 0.015250544662309368,
+          "days": 459
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.6573992329751015,
+        "V36": 0.6736447024090059,
+        "V38": 0.670324123694642
+      }
+    },
+    {
+      "unit": "V65",
+      "seed": 6253,
+      "quarter": "2026Q2",
+      "fold": 4,
+      "start": "2024-02-07",
+      "end": "2026-01-22",
+      "days": 473,
+      "checkpoint_sha256": "e892c681986543a64ef08dda0d69e3f553978ada6ca15532ead3836dba33e3db",
+      "cpu_reload_max_error": 0.0,
+      "calibration": {
+        "1": {
+          "observations": 999209,
+          "forecast_mean": -0.00012943639016071293,
+          "actual_raw_mean": 0.001600203764350148,
+          "actual_clipped_mean": 0.0013795476142853778,
+          "clipped_rmse": 0.028536953124602034,
+          "raw_rmse": 0.030125610453795464,
+          "clipped_mae": 0.019334205556585042,
+          "descriptive_calibration_slope": 0.48059912086248635,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 51938,
+              "forecast_mean": -0.0066021589068716345,
+              "actual_raw_mean": -0.003073260314592863,
+              "actual_clipped_mean": -0.0033060756325955305
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 503569,
+              "forecast_mean": -0.0020208289520919323,
+              "actual_raw_mean": 0.0006576708035271029,
+              "actual_clipped_mean": 0.000490053932439828
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 188004,
+              "forecast_mean": 0.0007649788157674045,
+              "actual_raw_mean": 0.0012204668841449605,
+              "actual_clipped_mean": 0.0010839200068032023
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 188157,
+              "forecast_mean": 0.0028939348027967626,
+              "actual_raw_mean": 0.0035239393951410933,
+              "actual_clipped_mean": 0.0033865170044248298
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 67541,
+              "forecast_mean": 0.008037526390423887,
+              "actual_raw_mean": 0.007919157958457526,
+              "actual_clipped_mean": 0.0068464074068024005
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        },
+        "5": {
+          "observations": 998697,
+          "forecast_mean": -0.0014392315232515873,
+          "actual_raw_mean": 0.007121719450186914,
+          "actual_clipped_mean": 0.006464070346918634,
+          "clipped_rmse": 0.06402253765484645,
+          "raw_rmse": 0.0680859496575339,
+          "clipped_mae": 0.04381866188479076,
+          "descriptive_calibration_slope": 0.4384318470468712,
+          "bins": [
+            {
+              "forecast_interval": [
+                null,
+                -0.005
+              ],
+              "observations": 413315,
+              "forecast_mean": -0.01275855546566549,
+              "actual_raw_mean": 0.0034568930622192184,
+              "actual_clipped_mean": 0.002776234128578377
+            },
+            {
+              "forecast_interval": [
+                -0.005,
+                0.0
+              ],
+              "observations": 154582,
+              "forecast_mean": -0.0025497511374806786,
+              "actual_raw_mean": 0.0032186251288268543,
+              "actual_clipped_mean": 0.002751133135917984
+            },
+            {
+              "forecast_interval": [
+                0.0,
+                0.00162
+              ],
+              "observations": 48987,
+              "forecast_mean": 0.0008131482873383373,
+              "actual_raw_mean": 0.00506889894435417,
+              "actual_clipped_mean": 0.004644119812471854
+            },
+            {
+              "forecast_interval": [
+                0.00162,
+                0.005
+              ],
+              "observations": 105458,
+              "forecast_mean": 0.003293542873708194,
+              "actual_raw_mean": 0.00758846903967267,
+              "actual_clipped_mean": 0.007069561485662622
+            },
+            {
+              "forecast_interval": [
+                0.005,
+                null
+              ],
+              "observations": 276355,
+              "forecast_mean": 0.013905764826116473,
+              "actual_raw_mean": 0.014971821257060638,
+              "actual_clipped_mean": 0.014147996162827471
+            }
+          ],
+          "aggregation": "all eligible stock-date forecasts; bins descriptive, not independent samples or cash positions"
+        }
+      },
+      "accounts": {
+        "0.0": {
+          "net_return": 2.124512539057414,
+          "max_drawdown": -0.2132266877536747,
+          "sharpe": 1.8542936270958879,
+          "trades": 3102,
+          "fees": 66472.23329497153,
+          "fee_drag": 0.6647223329497158,
+          "slippage_drag": 0.3906020750840836,
+          "gross_return_same_positions": 3.1798369470912133,
+          "avg_exposure": 0.9933537226273798,
+          "net_arithmetic_annual_pct": 64.21713218841526
+        },
+        "0.5": {
+          "net_return": 1.2487207335869703,
+          "max_drawdown": -0.1822402164942124,
+          "sharpe": 1.543608003264221,
+          "trades": 978,
+          "fees": 16507.097259771035,
+          "fee_drag": 0.16507097259771056,
+          "slippage_drag": 0.09689163100114558,
+          "gross_return_same_positions": 1.5106833371858266,
+          "avg_exposure": 0.6708176086588215,
+          "net_arithmetic_annual_pct": 45.775862785788725
+        },
+        "1.0": {
+          "net_return": 1.559701743541749,
+          "max_drawdown": -0.2485780381756756,
+          "sharpe": 1.8316638450518783,
+          "trades": 530,
+          "fees": 10385.767905170102,
+          "fee_drag": 0.1038576790517009,
+          "slippage_drag": 0.0608470999567596,
+          "gross_return_same_positions": 1.724406522550209,
+          "avg_exposure": 0.6012667648591383,
+          "net_arithmetic_annual_pct": 52.03484592864424
+        },
+        "2.0": {
+          "net_return": 2.0821792761404194,
+          "max_drawdown": -0.17857920066144883,
+          "sharpe": 2.3541342441129047,
+          "trades": 290,
+          "fees": 6245.038331741795,
+          "fee_drag": 0.062450383317417965,
+          "slippage_drag": 0.03641916264662734,
+          "gross_return_same_positions": 2.181048822104465,
+          "avg_exposure": 0.4911385197847766,
+          "net_arithmetic_annual_pct": 60.82961283882757
+        }
+      },
+      "correlation_vs_reference": {
+        "V31": {
+          "daily_rank_correlation": 0.4773968093605911,
+          "top5_overlap": 0.016913319238900635,
+          "days": 473
+        },
+        "V36": {
+          "daily_rank_correlation": 0.48100151632678156,
+          "top5_overlap": 0.01564482029598309,
+          "days": 473
+        },
+        "V38": {
+          "daily_rank_correlation": 0.5015864819723233,
+          "top5_overlap": 0.024101479915433405,
+          "days": 473
+        }
+      },
+      "cash_return_correlation_vs_reference": {
+        "V31": 0.6071606724009124,
+        "V36": 0.6236995445411081,
+        "V38": 0.6677782709270267
+      }
+    }
+  ],
+  "summary": {
+    "2025Q3": {
+      "windows": [
+        [
+          "2023-07-21",
+          "2025-04-25"
+        ],
+        [
+          "2023-07-21",
+          "2025-04-25"
+        ],
+        [
+          "2023-07-21",
+          "2025-04-25"
+        ],
+        [
+          "2023-07-21",
+          "2025-04-25"
+        ]
+      ],
+      "gates": {
+        "0.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": -32.28246936610328,
+          "net_return_sample_std_pp": 15.22470098740954,
+          "max_drawdown_mean_pct": -55.316128750880544,
+          "avg_exposure_mean": 0.987835344093915,
+          "fee_drag_mean_pp": 26.035126662775163,
+          "net_delta_vs_no_gate_mean_pp": 0.0
+        },
+        "0.5": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 37.732256107404076,
+          "net_return_sample_std_pp": 24.419054555057937,
+          "max_drawdown_mean_pct": -37.452535204552746,
+          "avg_exposure_mean": 0.7710852089392991,
+          "fee_drag_mean_pp": 13.535530350373149,
+          "net_delta_vs_no_gate_mean_pp": 70.01472547350735
+        },
+        "1.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 49.711205220639414,
+          "net_return_sample_std_pp": 21.996112996203596,
+          "max_drawdown_mean_pct": -36.058241539319255,
+          "avg_exposure_mean": 0.7153956963080736,
+          "fee_drag_mean_pp": 7.942809785589125,
+          "net_delta_vs_no_gate_mean_pp": 81.9936745867427
+        },
+        "2.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 122.81440741989564,
+          "net_return_sample_std_pp": 43.93794445972075,
+          "max_drawdown_mean_pct": -35.84783154428743,
+          "avg_exposure_mean": 0.6183655431531239,
+          "fee_drag_mean_pp": 5.863808931092251,
+          "net_delta_vs_no_gate_mean_pp": 155.09687678599892
+        }
+      }
+    },
+    "2025Q4": {
+      "windows": [
+        [
+          "2023-09-28",
+          "2025-08-01"
+        ],
+        [
+          "2023-09-28",
+          "2025-08-01"
+        ],
+        [
+          "2023-09-28",
+          "2025-08-01"
+        ],
+        [
+          "2023-09-28",
+          "2025-08-01"
+        ]
+      ],
+      "gates": {
+        "0.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": -6.82051188314764,
+          "net_return_sample_std_pp": 20.106479929591476,
+          "max_drawdown_mean_pct": -50.6790206334297,
+          "avg_exposure_mean": 0.9885040489784448,
+          "fee_drag_mean_pp": 28.042133690450818,
+          "net_delta_vs_no_gate_mean_pp": 0.0
+        },
+        "0.5": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 25.185250061986853,
+          "net_return_sample_std_pp": 11.674114472485629,
+          "max_drawdown_mean_pct": -38.069403635959944,
+          "avg_exposure_mean": 0.6725634817770427,
+          "fee_drag_mean_pp": 10.897106979924786,
+          "net_delta_vs_no_gate_mean_pp": 32.005761945134495
+        },
+        "1.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 49.005732914250714,
+          "net_return_sample_std_pp": 19.84328221756474,
+          "max_drawdown_mean_pct": -35.565463564998694,
+          "avg_exposure_mean": 0.6140872782530155,
+          "fee_drag_mean_pp": 6.786922145512619,
+          "net_delta_vs_no_gate_mean_pp": 55.826244797398346
+        },
+        "2.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 68.16351292993102,
+          "net_return_sample_std_pp": 28.934532244224297,
+          "max_drawdown_mean_pct": -36.343822387357505,
+          "avg_exposure_mean": 0.5109721521158563,
+          "fee_drag_mean_pp": 4.292963916889898,
+          "net_delta_vs_no_gate_mean_pp": 74.98402481307865
+        }
+      }
+    },
+    "2026Q1": {
+      "windows": [
+        [
+          "2023-12-08",
+          "2025-11-03"
+        ],
+        [
+          "2023-12-08",
+          "2025-11-03"
+        ],
+        [
+          "2023-12-08",
+          "2025-11-03"
+        ],
+        [
+          "2023-12-08",
+          "2025-11-03"
+        ]
+      ],
+      "gates": {
+        "0.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 4.3636601619747,
+          "net_return_sample_std_pp": 19.140485233644146,
+          "max_drawdown_mean_pct": -48.94025885891834,
+          "avg_exposure_mean": 0.9889568918467172,
+          "fee_drag_mean_pp": 29.52563735953963,
+          "net_delta_vs_no_gate_mean_pp": 0.0
+        },
+        "0.5": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 27.505914308909333,
+          "net_return_sample_std_pp": 13.69834215831173,
+          "max_drawdown_mean_pct": -37.548090924981615,
+          "avg_exposure_mean": 0.6222275896976812,
+          "fee_drag_mean_pp": 10.70439388990701,
+          "net_delta_vs_no_gate_mean_pp": 23.142254146934633
+        },
+        "1.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 53.856387823885015,
+          "net_return_sample_std_pp": 17.36752259871732,
+          "max_drawdown_mean_pct": -34.56088860646446,
+          "avg_exposure_mean": 0.5624924897527881,
+          "fee_drag_mean_pp": 6.802444839851112,
+          "net_delta_vs_no_gate_mean_pp": 49.49272766191032
+        },
+        "2.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 78.51161063435362,
+          "net_return_sample_std_pp": 26.812844750324924,
+          "max_drawdown_mean_pct": -35.046327460458514,
+          "avg_exposure_mean": 0.4466407427868638,
+          "fee_drag_mean_pp": 4.2184029335069155,
+          "net_delta_vs_no_gate_mean_pp": 74.14795047237892
+        }
+      }
+    },
+    "2026Q2": {
+      "windows": [
+        [
+          "2024-02-07",
+          "2026-01-22"
+        ],
+        [
+          "2024-02-07",
+          "2026-01-22"
+        ],
+        [
+          "2024-02-07",
+          "2026-01-22"
+        ],
+        [
+          "2024-02-07",
+          "2026-01-22"
+        ]
+      ],
+      "gates": {
+        "0.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 144.53758851107074,
+          "net_return_sample_std_pp": 59.400115652596455,
+          "max_drawdown_mean_pct": -24.19697013771652,
+          "avg_exposure_mean": 0.9923767625061618,
+          "fee_drag_mean_pp": 56.30659909250322,
+          "net_delta_vs_no_gate_mean_pp": 0.0
+        },
+        "0.5": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 108.78011070354027,
+          "net_return_sample_std_pp": 37.77055811192139,
+          "max_drawdown_mean_pct": -26.332797812529563,
+          "avg_exposure_mean": 0.6512652483378004,
+          "fee_drag_mean_pp": 15.90895905247083,
+          "net_delta_vs_no_gate_mean_pp": -35.75747780753046
+        },
+        "1.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 169.190253637261,
+          "net_return_sample_std_pp": 28.43759788307864,
+          "max_drawdown_mean_pct": -27.14173915042843,
+          "avg_exposure_mean": 0.5891372586708676,
+          "fee_drag_mean_pp": 10.176701283445231,
+          "net_delta_vs_no_gate_mean_pp": 24.65266512619028
+        },
+        "2.0": {
+          "seeds": [
+            3253,
+            4253,
+            5253,
+            6253
+          ],
+          "completed_seeds": 4,
+          "net_return_mean_pct": 174.64956264602378,
+          "net_return_sample_std_pp": 54.28870224636409,
+          "max_drawdown_mean_pct": -20.699400386688822,
+          "avg_exposure_mean": 0.47188171272099083,
+          "fee_drag_mean_pp": 5.684993376496115,
+          "net_delta_vs_no_gate_mean_pp": 30.11197413495305
+        }
+      }
+    }
+  },
+  "interpretation": "selected-stage validation diagnostics, overlapping windows; every seed retained; no formal test selection; prediction calibration is not trade execution profit"
+}

@@ -1,0 +1,42 @@
+{
+  "version": "V40",
+  "frozen_at": "2026-09-27T18:41:54+08:00",
+  "hypothesis": "Equal average ranks of the frozen V34 factor id2_close_vs_pm_vwap_20 and 60-trading-session adjusted-close momentum may improve the common four-bank holdout ranking.",
+  "factor_feature": "id2_close_vs_pm_vwap_20",
+  "factor_semantics": "zscore_win1_99_v1",
+  "momentum_sessions": 60,
+  "momentum_formula": "adj_close[t] / adj_close[t-60] - 1",
+  "factor_rank_weight": 0.5,
+  "momentum_rank_weight": 0.5,
+  "rank_direction": "higher factor value and higher momentum return rank better; rank 1 is best; ties broken by stock code",
+  "composite_rule": "mean of the two component cross-sectional ranks",
+  "top_n": 2,
+  "portfolio_rule": "equal-weight selected Top2; monthly shared V11 first-session signal close; execute next trading session open",
+  "holdout_dates": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "expected_monthly_signals": 30,
+  "execution": "V11 corrected shared-cash ledger, including T+1 open, 1% participation cap, 100-share lots, commission 0.025% with CNY5 minimum, transfer fee 0.001%, sell stamp duty 0.05%, adverse slippage 0.03%, limit-price blocks, corporate-action adjusted shares and full-exit odd-lot handling; final close mark without forced liquidation",
+  "comparators": [
+    "V34 id2_close_vs_pm_vwap_20 Top2",
+    "V26 mf_tier_flow_agreement_20 Top2",
+    "60d momentum Top2",
+    "V11 LambdaRank Top2",
+    "equal-weight hold"
+  ],
+  "no_weight_sweep": true,
+  "no_retraining": true,
+  "no_holdout_based_rule_changes": true,
+  "run_script_sha256": "1a307e5cfd7bd214d1c9dfaed57445976ad63f60ee4818eccaa437c251e0156f",
+  "pre_run_shared_memory": {
+    "captured_at": "2026-09-27T18:41:54+08:00",
+    "total_gib": 440.28,
+    "available_gib": 354.15,
+    "used_as_total_minus_available_gib": 86.13,
+    "used_fraction": 0.1956,
+    "start_condition_under_180_gib_and_50_percent": true
+  },
+  "memory_hard_limit_gib": 180,
+  "process_controls": "single V40 runner process, numerical threads=1, PYTHONDONTWRITEBYTECODE=1; RLIMIT_AS hard limit=180 GiB; child peak RSS recorded with getrusage(RUSAGE_CHILDREN)"
+}

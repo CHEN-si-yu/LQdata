@@ -1,0 +1,186 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-09-30 23:21:48",
+  "mode": "live",
+  "model": "model_train/2026Q3/fold[1, 2, 3, 4] 四折集成",
+  "live_quarter": "2026Q3",
+  "folds": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "eval_window": {
+    "start": "2026-07-01",
+    "end": "2026-09-30",
+    "days": 65,
+    "backtest_start": "2026-07-01",
+    "backtest_end": "2026-09-28",
+    "backtest_days": 64
+  },
+  "split_spans": {
+    "quarter": "2026Q3",
+    "fold": 1,
+    "train": [
+      {
+        "start": "2020-03-12",
+        "end": "2026-05-29",
+        "days": 1506
+      }
+    ],
+    "valid": [
+      {
+        "start": "2018-01-02",
+        "end": "2020-01-03",
+        "days": 489
+      }
+    ],
+    "test": [
+      {
+        "start": "2026-07-01",
+        "end": "2026-09-30",
+        "days": 65
+      }
+    ],
+    "score": [
+      {
+        "start": "2026-07-01",
+        "end": "2026-09-30",
+        "days": 65
+      }
+    ]
+  },
+  "reload_max_abs_err": 0.0,
+  "strategy": "top5_1d",
+  "topn": 5,
+  "period": 1,
+  "band": 40,
+  "account_money": 100000.0,
+  "rank_ic": {
+    "label_ret_10d": {
+      "days": 54,
+      "RankIC": 0.12047488529401768,
+      "Pearson_IC": 0.10612721867392366
+    },
+    "label_ret_1d": {
+      "days": 63,
+      "RankIC": 0.04571792203275602,
+      "Pearson_IC": 0.06040817875725723
+    },
+    "label_ret_20d": {
+      "days": 44,
+      "RankIC": 0.2505658383492262,
+      "Pearson_IC": 0.18688588376289655
+    },
+    "label_ret_3d": {
+      "days": 61,
+      "RankIC": 0.059872141293829347,
+      "Pearson_IC": 0.06897690480432052
+    },
+    "label_ret_5d": {
+      "days": 59,
+      "RankIC": 0.07637001216961964,
+      "Pearson_IC": 0.07655977589736256
+    }
+  },
+  "account": {
+    "gross_annual_pct": 16.709734036190067,
+    "fee_annual_pct": 3.8963720300597813,
+    "net_annual_pct": 12.813362006130285,
+    "compounded_pct": 2.306198904447032,
+    "max_drawdown_pct": -22.238717168298162,
+    "trades": 102,
+    "total_fees": 1030.445495553
+  },
+  "ideal_topk": {
+    "daily_mean_pct": 0.008957933230588657,
+    "compounded_pct": -2.9872510845803446
+  },
+  "benchmark": {
+    "name": "同窗全市场等权(1d 标签)",
+    "compounded_pct": 1.179845299922011
+  },
+  "anchor": {
+    "text": "22 个无前视干净块（2021Q1–2026Q2）激进 top5_1d +30.4%/年、稳态 top5_5d +37.5%/年；四个近期干净块 V28 +44.7%、V29 +45.4%/年"
+  },
+  "verdict": "model=同档（RankIC_5d +0.0764）；account=+12.81%/年（须与同窗 experiments 参照并读）",
+  "latest": {
+    "signal_day": "2026-09-30",
+    "buy_day": "2026-10-08",
+    "sell_day": "2026-10-09",
+    "strategy": "top5_1d",
+    "holding_days": 1,
+    "picks": [
+      {
+        "rank": 1,
+        "code": "000892.SZ",
+        "name": "欢瑞世纪",
+        "score": 1.7704427242279053,
+        "code_index": 253
+      },
+      {
+        "rank": 2,
+        "code": "002855.SZ",
+        "name": "捷荣技术",
+        "score": 1.6118698120117188,
+        "code_index": 952
+      },
+      {
+        "rank": 3,
+        "code": "002775.SZ",
+        "name": "文科股份",
+        "score": 1.4990450143814087,
+        "code_index": 887
+      },
+      {
+        "rank": 4,
+        "code": "603958.SH",
+        "name": "哈森股份",
+        "score": 1.3286536931991577,
+        "code_index": 2093
+      },
+      {
+        "rank": 5,
+        "code": "002437.SZ",
+        "name": "誉衡药业",
+        "score": 1.3082739114761353,
+        "code_index": 641
+      },
+      {
+        "rank": 6,
+        "code": "002596.SZ",
+        "name": "海南瑞泽",
+        "score": 1.3002681732177734,
+        "code_index": 763
+      },
+      {
+        "rank": 7,
+        "code": "000545.SZ",
+        "name": "金浦钛业",
+        "score": 1.2883909940719604,
+        "code_index": 95
+      },
+      {
+        "rank": 8,
+        "code": "002875.SZ",
+        "name": "安奈儿",
+        "score": 1.287704586982727,
+        "code_index": 968
+      },
+      {
+        "rank": 9,
+        "code": "603103.SH",
+        "name": "横店影视",
+        "score": 1.2600406408309937,
+        "code_index": 1811
+      },
+      {
+        "rank": 10,
+        "code": "600076.SH",
+        "name": "康欣新材",
+        "score": 1.2491731643676758,
+        "code_index": 1063
+      }
+    ]
+  }
+}

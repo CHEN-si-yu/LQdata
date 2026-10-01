@@ -1,0 +1,113 @@
+{
+  "version": "V27",
+  "protocol_file": "PROTOCOL.md",
+  "frozen_before_training": true,
+  "feature_selection_source": "V24 protocol frozen through 2023Q4; no holdout-driven changes",
+  "selected_features": [
+    "mf_tier_flow_agreement_20",
+    "rel_mom_ind_3d",
+    "rel_mom_ind_5d",
+    "gap_down_recover_freq_20d"
+  ],
+  "factor_semantics": "zscore_win1_99_v1",
+  "holdout_quarters": [
+    "2024Q1",
+    "2024Q2",
+    "2024Q3",
+    "2024Q4",
+    "2025Q1",
+    "2025Q2",
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "holdout_dates": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signal_dates": [
+    "2024-01-02",
+    "2024-02-01",
+    "2024-03-01",
+    "2024-04-01",
+    "2024-05-06",
+    "2024-06-03",
+    "2024-07-01",
+    "2024-08-01",
+    "2024-09-02",
+    "2024-10-08",
+    "2024-11-01",
+    "2024-12-02",
+    "2025-01-02",
+    "2025-02-05",
+    "2025-03-03",
+    "2025-04-01",
+    "2025-05-06",
+    "2025-06-03",
+    "2025-07-01",
+    "2025-08-01",
+    "2025-09-01",
+    "2025-10-09",
+    "2025-11-03",
+    "2025-12-01",
+    "2026-01-05",
+    "2026-02-02",
+    "2026-03-02",
+    "2026-04-01",
+    "2026-05-06",
+    "2026-06-01"
+  ],
+  "training": "per-quarter retrain on all pre-quarter dates with five trading-session purge; 5d forward labels",
+  "model_recipe": {
+    "name": "V27-V24-four-factor-LambdaRank",
+    "objective": "lambdarank",
+    "label": "within-date ascending rank of label_ret_5d (integer relevance 0..3; ties share rank)",
+    "factor_features": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "asset_one_hot_features": [
+      "asset_0",
+      "asset_1",
+      "asset_2",
+      "asset_3"
+    ],
+    "n_estimators": 180,
+    "learning_rate": 0.03,
+    "num_leaves": 7,
+    "max_depth": 3,
+    "min_child_samples": 80,
+    "feature_fraction": 0.8,
+    "bagging_fraction": 0.8,
+    "bagging_freq": 1,
+    "reg_alpha": 2.0,
+    "reg_lambda": 20.0,
+    "label_gain": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "seed": 17,
+    "threads_per_worker": 1,
+    "early_stopping": false,
+    "sample_weight": null
+  },
+  "max_cpu_workers": 4,
+  "worker_threads": 1,
+  "gpu": false,
+  "allocation": "monthly first trading-day close score; Top2 equal-weight; execute next session open",
+  "cash_ledger": "V11 corrected account-level cash/corporate-action/participation/odd-lot engine",
+  "comparisons": [
+    "V24 fixed-rank Top2",
+    "V11 LambdaRank Top2",
+    "V11 60d momentum Top2",
+    "equal-weight hold"
+  ],
+  "no_parameter_sweep": true,
+  "no_early_stopping": true,
+  "no_2020_2023_prediction_models": true
+}

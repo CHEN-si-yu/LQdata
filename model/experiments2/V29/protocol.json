@@ -1,0 +1,553 @@
+{
+  "version": "V29",
+  "hypothesis": "Updating the stable-factor shortlist using only completed prior walk-forward training-fold importance may adapt better than freezing one 2023Q4 shortlist.",
+  "window": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signal_dates": [
+    "2024-01-02",
+    "2024-02-01",
+    "2024-03-01",
+    "2024-04-01",
+    "2024-05-06",
+    "2024-06-03",
+    "2024-07-01",
+    "2024-08-01",
+    "2024-09-02",
+    "2024-10-08",
+    "2024-11-01",
+    "2024-12-02",
+    "2025-01-02",
+    "2025-02-05",
+    "2025-03-03",
+    "2025-04-01",
+    "2025-05-06",
+    "2025-06-03",
+    "2025-07-01",
+    "2025-08-01",
+    "2025-09-01",
+    "2025-10-09",
+    "2025-11-03",
+    "2025-12-01",
+    "2026-01-05",
+    "2026-02-02",
+    "2026-03-02",
+    "2026-04-01",
+    "2026-05-06",
+    "2026-06-01"
+  ],
+  "selection_rule": "For each signal quarter, use only V11 result.json importance folds through the immediately prior quarter; rank features by top-20 occurrence count, then mean normalized gain, then name; freeze the first four for that quarter.",
+  "top_n_gain_list": 20,
+  "top_k_features": 4,
+  "selection_by_quarter": {
+    "2024Q1": {
+      "cutoff": "2023Q4",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "gap_down_recover_freq_20d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 16,
+          "mean_normalized_gain_when_top20": 0.07313518998683682
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 16,
+          "mean_normalized_gain_when_top20": 0.0672872268065498
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 16,
+          "mean_normalized_gain_when_top20": 0.06289147292479422
+        },
+        "gap_down_recover_freq_20d": {
+          "top20_quarters": 15,
+          "mean_normalized_gain_when_top20": 0.07330035921476682
+        }
+      }
+    },
+    "2024Q2": {
+      "cutoff": "2024Q1",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4",
+        "2024Q1"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "gap_down_recover_freq_20d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 17,
+          "mean_normalized_gain_when_top20": 0.07301260932361205
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 17,
+          "mean_normalized_gain_when_top20": 0.06612899551684252
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 17,
+          "mean_normalized_gain_when_top20": 0.06357490599355993
+        },
+        "gap_down_recover_freq_20d": {
+          "top20_quarters": 16,
+          "mean_normalized_gain_when_top20": 0.07113297699719803
+        }
+      }
+    },
+    "2024Q3": {
+      "cutoff": "2024Q2",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4",
+        "2024Q1",
+        "2024Q2"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "gap_down_recover_freq_20d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 18,
+          "mean_normalized_gain_when_top20": 0.07313993173954293
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 18,
+          "mean_normalized_gain_when_top20": 0.06566273737620991
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 18,
+          "mean_normalized_gain_when_top20": 0.06359863429485234
+        },
+        "gap_down_recover_freq_20d": {
+          "top20_quarters": 17,
+          "mean_normalized_gain_when_top20": 0.06924341796158634
+        }
+      }
+    },
+    "2024Q4": {
+      "cutoff": "2024Q3",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4",
+        "2024Q1",
+        "2024Q2",
+        "2024Q3"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "gap_down_recover_freq_20d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 19,
+          "mean_normalized_gain_when_top20": 0.0723912337542946
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 19,
+          "mean_normalized_gain_when_top20": 0.06545865897310683
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 19,
+          "mean_normalized_gain_when_top20": 0.064556503055282
+        },
+        "gap_down_recover_freq_20d": {
+          "top20_quarters": 18,
+          "mean_normalized_gain_when_top20": 0.06840101540626323
+        }
+      }
+    },
+    "2025Q1": {
+      "cutoff": "2024Q4",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4",
+        "2024Q1",
+        "2024Q2",
+        "2024Q3",
+        "2024Q4"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "gap_down_recover_freq_20d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 20,
+          "mean_normalized_gain_when_top20": 0.07265044813008026
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 20,
+          "mean_normalized_gain_when_top20": 0.06542938539730114
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 20,
+          "mean_normalized_gain_when_top20": 0.06407847342599844
+        },
+        "gap_down_recover_freq_20d": {
+          "top20_quarters": 18,
+          "mean_normalized_gain_when_top20": 0.06840101540626323
+        }
+      }
+    },
+    "2025Q2": {
+      "cutoff": "2025Q1",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4",
+        "2024Q1",
+        "2024Q2",
+        "2024Q3",
+        "2024Q4",
+        "2025Q1"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "gap_down_recover_freq_20d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 21,
+          "mean_normalized_gain_when_top20": 0.07274777652885202
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 21,
+          "mean_normalized_gain_when_top20": 0.06526991129552003
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 21,
+          "mean_normalized_gain_when_top20": 0.06326730788725425
+        },
+        "gap_down_recover_freq_20d": {
+          "top20_quarters": 18,
+          "mean_normalized_gain_when_top20": 0.06840101540626323
+        }
+      }
+    },
+    "2025Q3": {
+      "cutoff": "2025Q2",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4",
+        "2024Q1",
+        "2024Q2",
+        "2024Q3",
+        "2024Q4",
+        "2025Q1",
+        "2025Q2"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "gap_down_recover_freq_20d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 22,
+          "mean_normalized_gain_when_top20": 0.07233428626321356
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 22,
+          "mean_normalized_gain_when_top20": 0.06482513745593013
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 22,
+          "mean_normalized_gain_when_top20": 0.06227688559493183
+        },
+        "gap_down_recover_freq_20d": {
+          "top20_quarters": 18,
+          "mean_normalized_gain_when_top20": 0.06840101540626323
+        }
+      }
+    },
+    "2025Q4": {
+      "cutoff": "2025Q3",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4",
+        "2024Q1",
+        "2024Q2",
+        "2024Q3",
+        "2024Q4",
+        "2025Q1",
+        "2025Q2",
+        "2025Q3"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "gap_down_recover_freq_20d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 23,
+          "mean_normalized_gain_when_top20": 0.07102130969769091
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 23,
+          "mean_normalized_gain_when_top20": 0.064785901353098
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 23,
+          "mean_normalized_gain_when_top20": 0.06198394253965819
+        },
+        "gap_down_recover_freq_20d": {
+          "top20_quarters": 19,
+          "mean_normalized_gain_when_top20": 0.06761864436614186
+        }
+      }
+    },
+    "2026Q1": {
+      "cutoff": "2025Q4",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4",
+        "2024Q1",
+        "2024Q2",
+        "2024Q3",
+        "2024Q4",
+        "2025Q1",
+        "2025Q2",
+        "2025Q3",
+        "2025Q4"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "gap_down_recover_freq_20d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 24,
+          "mean_normalized_gain_when_top20": 0.07077745412496282
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 24,
+          "mean_normalized_gain_when_top20": 0.06473168452607307
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 24,
+          "mean_normalized_gain_when_top20": 0.06138315249073592
+        },
+        "gap_down_recover_freq_20d": {
+          "top20_quarters": 19,
+          "mean_normalized_gain_when_top20": 0.06761864436614186
+        }
+      }
+    },
+    "2026Q2": {
+      "cutoff": "2026Q1",
+      "importance_quarters": [
+        "2020Q1",
+        "2020Q2",
+        "2020Q3",
+        "2020Q4",
+        "2021Q1",
+        "2021Q2",
+        "2021Q3",
+        "2021Q4",
+        "2022Q1",
+        "2022Q2",
+        "2022Q3",
+        "2022Q4",
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+        "2023Q4",
+        "2024Q1",
+        "2024Q2",
+        "2024Q3",
+        "2024Q4",
+        "2025Q1",
+        "2025Q2",
+        "2025Q3",
+        "2025Q4",
+        "2026Q1"
+      ],
+      "features": [
+        "mf_tier_flow_agreement_20",
+        "rel_mom_ind_3d",
+        "rel_mom_ind_5d",
+        "rel_mom_ind_250d"
+      ],
+      "statistics": {
+        "mf_tier_flow_agreement_20": {
+          "top20_quarters": 25,
+          "mean_normalized_gain_when_top20": 0.07084545187095628
+        },
+        "rel_mom_ind_3d": {
+          "top20_quarters": 25,
+          "mean_normalized_gain_when_top20": 0.0636410985244465
+        },
+        "rel_mom_ind_5d": {
+          "top20_quarters": 25,
+          "mean_normalized_gain_when_top20": 0.060803428056733916
+        },
+        "rel_mom_ind_250d": {
+          "top20_quarters": 20,
+          "mean_normalized_gain_when_top20": 0.06163533915718415
+        }
+      }
+    }
+  },
+  "portfolio": "Equal-weight top two banks by average cross-sectional ordinal rank of the quarter's four frozen positive-direction features.",
+  "execution": "V11 final corrected cash-account ledger; next-session open after close signal, 1% cap, lot and cost rules, corporate-action shares and odd-lot handling.",
+  "comparisons": [
+    "V24 frozen feature consensus",
+    "V11 LambdaRank Top2",
+    "60d momentum Top2",
+    "equal-weight hold"
+  ],
+  "no_retraining": true,
+  "no_parameter_sweep": true,
+  "feature_information_cutoff_precedes_signal_quarter": true,
+  "factor_semantics": "zscore_win1_99_v1",
+  "source_script_sha256": "1f7b1a8c5d31227c1aca24e9d9bfbd8675716360b5fbdcda26fed16ba7d6765f"
+}

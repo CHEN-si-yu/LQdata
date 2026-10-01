@@ -1,0 +1,24 @@
+{
+  "objective": "fixed no-retraining monthly four-bank relative momentum Top1",
+  "prespecified_rule": "month first trading day close; 60-session adjusted price return; Top1; next session open",
+  "baselines": [
+    "same-ledger monthly Top2",
+    "same-ledger four-bank equal-weight hold"
+  ],
+  "official_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "extended_window": [
+    "2023-01-03",
+    "2026-09-24"
+  ],
+  "lookback_sessions": 60,
+  "no_training": true,
+  "no_parameter_sweep": true,
+  "data_snapshot_built_at": "2026-09-27 14:19:24",
+  "panel_loader": "/root/autodl-fs/model/experiments2/V1/model.py",
+  "account_engine": "embedded account_engine.py",
+  "source_sha256": "7ef3eb8fad1d83403ac18513619b3ff652fa0c0af12b007bcb0429c79c8e5d9e",
+  "created_at": "2026-09-27 17:31:49"
+}

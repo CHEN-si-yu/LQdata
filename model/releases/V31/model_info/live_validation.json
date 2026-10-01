@@ -1,0 +1,186 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-09-30 23:20:25",
+  "mode": "live",
+  "model": "model_train/2026Q3/fold[1, 2, 3, 4] 四折集成",
+  "live_quarter": "2026Q3",
+  "folds": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "eval_window": {
+    "start": "2026-07-01",
+    "end": "2026-09-30",
+    "days": 65,
+    "backtest_start": "2026-07-01",
+    "backtest_end": "2026-09-28",
+    "backtest_days": 64
+  },
+  "split_spans": {
+    "quarter": "2026Q3",
+    "fold": 1,
+    "train": [
+      {
+        "start": "2020-03-12",
+        "end": "2026-05-29",
+        "days": 1506
+      }
+    ],
+    "valid": [
+      {
+        "start": "2018-01-02",
+        "end": "2020-01-03",
+        "days": 489
+      }
+    ],
+    "test": [
+      {
+        "start": "2026-07-01",
+        "end": "2026-09-30",
+        "days": 65
+      }
+    ],
+    "score": [
+      {
+        "start": "2026-07-01",
+        "end": "2026-09-30",
+        "days": 65
+      }
+    ]
+  },
+  "reload_max_abs_err": 0.0,
+  "strategy": "top5_1d",
+  "topn": 5,
+  "period": 1,
+  "band": 40,
+  "account_money": 100000.0,
+  "rank_ic": {
+    "label_ret_10d": {
+      "days": 54,
+      "RankIC": 0.12002425445131723,
+      "Pearson_IC": 0.10463380710502111
+    },
+    "label_ret_1d": {
+      "days": 63,
+      "RankIC": 0.05084236947703433,
+      "Pearson_IC": 0.06558934532050566
+    },
+    "label_ret_20d": {
+      "days": 44,
+      "RankIC": 0.24446304985575776,
+      "Pearson_IC": 0.1769769168784551
+    },
+    "label_ret_3d": {
+      "days": 61,
+      "RankIC": 0.06461585147712282,
+      "Pearson_IC": 0.07368416916885004
+    },
+    "label_ret_5d": {
+      "days": 59,
+      "RankIC": 0.07977935513862756,
+      "Pearson_IC": 0.07967153750259215
+    }
+  },
+  "account": {
+    "gross_annual_pct": -29.422879355142236,
+    "fee_annual_pct": 4.046063047289656,
+    "net_annual_pct": -33.46894240243189,
+    "compounded_pct": -9.709884302588945,
+    "max_drawdown_pct": -30.965412513741985,
+    "trades": 114,
+    "total_fees": 1070.033202589
+  },
+  "ideal_topk": {
+    "daily_mean_pct": 0.23452751576689396,
+    "compounded_pct": 12.25236499099931
+  },
+  "benchmark": {
+    "name": "同窗全市场等权(1d 标签)",
+    "compounded_pct": 1.179845299922011
+  },
+  "anchor": {
+    "text": "22 个无前视干净块（2021Q1–2026Q2）激进 top5_1d +30.4%/年、稳态 top5_5d +37.5%/年；四个近期干净块 V28 +44.7%、V29 +45.4%/年"
+  },
+  "verdict": "model=同档（RankIC_5d +0.0798）；account=-33.47%/年（须与同窗 experiments 参照并读）",
+  "latest": {
+    "signal_day": "2026-09-30",
+    "buy_day": "2026-10-08",
+    "sell_day": "2026-10-09",
+    "strategy": "top5_1d",
+    "holding_days": 1,
+    "picks": [
+      {
+        "rank": 1,
+        "code": "000545.SZ",
+        "name": "金浦钛业",
+        "score": 1.5627827644348145,
+        "code_index": 95
+      },
+      {
+        "rank": 2,
+        "code": "002855.SZ",
+        "name": "捷荣技术",
+        "score": 1.5085031986236572,
+        "code_index": 952
+      },
+      {
+        "rank": 3,
+        "code": "000892.SZ",
+        "name": "欢瑞世纪",
+        "score": 1.46375572681427,
+        "code_index": 253
+      },
+      {
+        "rank": 4,
+        "code": "603738.SH",
+        "name": "泰晶科技",
+        "score": 1.4208005666732788,
+        "code_index": 2019
+      },
+      {
+        "rank": 5,
+        "code": "603958.SH",
+        "name": "哈森股份",
+        "score": 1.4045217037200928,
+        "code_index": 2093
+      },
+      {
+        "rank": 6,
+        "code": "600076.SH",
+        "name": "康欣新材",
+        "score": 1.3487043380737305,
+        "code_index": 1063
+      },
+      {
+        "rank": 7,
+        "code": "601700.SH",
+        "name": "风范股份",
+        "score": 1.3279880285263062,
+        "code_index": 1708
+      },
+      {
+        "rank": 8,
+        "code": "002775.SZ",
+        "name": "文科股份",
+        "score": 1.2969576120376587,
+        "code_index": 887
+      },
+      {
+        "rank": 9,
+        "code": "002437.SZ",
+        "name": "誉衡药业",
+        "score": 1.295634388923645,
+        "code_index": 641
+      },
+      {
+        "rank": 10,
+        "code": "600880.SH",
+        "name": "博瑞传播",
+        "score": 1.2879160642623901,
+        "code_index": 1545
+      }
+    ]
+  }
+}

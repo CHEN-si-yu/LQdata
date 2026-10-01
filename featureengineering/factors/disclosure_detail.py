@@ -69,7 +69,9 @@ def seal_turnover_strength_20(ctx):return _seal(ctx,'sealed_turnover_ratio',True
     warmup_days=60,start='2018-01-01',note=SEAL_NOTE))
 def seal_float_strength_20(ctx):return _seal(ctx,'sealed_flow_ratio')
 
+
 @register(FactorSpec(name='seal_reopen_pressure_20',group='disclosure_detail',deps=(LU,),
     desc='20 日涨停事件平均对数开板次数',formula='event_mean(log1p(open_count),20)',
     warmup_days=60,start='2018-01-01',higher_is_better=False,note=SEAL_NOTE))
 def seal_reopen_pressure_20(ctx):return _seal(ctx,'open_count',True)
+

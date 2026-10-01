@@ -1,0 +1,36 @@
+{
+  "experiment": "V25 single-factor rel_mom_ind_250d strict holdout Top2",
+  "decision_rule": "At the first available trading session of each month, rank four banks by rel_mom_ind_250d from the signal-date daily factor row; select the top two equally; submit target weights at the next trading session open.",
+  "factor_choice_basis": "V11's saved feature_gain ranking during 2020Q1-2023Q4: rel_mom_ind_250d entered top20 in 13 of 16 quarter fits. The factor/rule was fixed before inspecting 2024-2026 holdout returns.",
+  "holdout": {
+    "start": "2024-01-02",
+    "end": "2026-06-30",
+    "signal_count": 30
+  },
+  "single_factor_only": "rel_mom_ind_250d",
+  "ties": "stock_code ascending",
+  "execution_and_ledger": "V11 final cash/trade/split-factor/odd-lot engine; T+1 open; shared cash; sell before buy; no forced liquidation at lifecycle end.",
+  "controls": {
+    "training": false,
+    "parameter_sweep": false,
+    "gpu": false,
+    "oos_rule_changes": false
+  },
+  "benchmarks": [
+    "60d momentum Top2",
+    "V11 LambdaRank Top2",
+    "equal-weight hold"
+  ],
+  "prices_and_costs": {
+    "initial_cash": 100000.0,
+    "lot_size": 100,
+    "commission": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer_fee": 1e-05,
+    "sell_stamp_duty": 0.0005,
+    "adverse_slippage": 0.0003,
+    "max_participation": 0.01
+  },
+  "frequency_tables": "Quarter/annual returns cover only the same signal-window lifecycle; there is no appended exit-only day in this window.",
+  "artifacts": "daily_equity.csv, strategy-specific daily/trades, trades.csv, quarterly_returns.csv, annual_returns.csv, feature_selection_audit.csv, signal_audit.csv, audit.json, cache_manifest.json."
+}

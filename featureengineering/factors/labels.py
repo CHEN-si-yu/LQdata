@@ -55,7 +55,9 @@ def _make_label(h: int):
             return np.full(raw.shape, np.nan)
         last_row = int(idx[-1])
         rows = np.arange(raw.shape[0]) + (h + 1)          # 卖出行号
-        return np.where((rows <= last_row)[:, None], raw, np.nan)
+        # 个股买卖两端均须真实成交，不能用停牌前的开盘价假设能成交。
+        valid = (mx.shift(traded.astype(float), -1) == 1) & (mx.shift(traded.astype(float), -(h+1)) == 1)
+        return np.where((rows <= last_row)[:, None] & valid, raw, np.nan)
     return _fn
 
 
@@ -71,7 +73,7 @@ for _h in HORIZONS:
         forward_days=_h + 1,
         is_label=True,
         higher_is_better=True,
-        version=2,
+        version=3,
         note="★ 这是**标签不是因子**：引擎跳过了 winsor 与截面 rank（rank 列恒为 NaN），"
              "value 即未来收益。复权开盘价 = 未复权开盘价 × 当日累计 adj_factor"
              "（后复权锚定，PIT 安全）。"

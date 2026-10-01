@@ -1,0 +1,125 @@
+{
+  "holdout_window": {
+    "start": "2024-01-02",
+    "end": "2026-06-30",
+    "daily_rows_per_strategy": 601
+  },
+  "same_lifecycle": [
+    {
+      "strategy": "60d momentum Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "V11 LambdaRank Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "V25 rel_mom_ind_250d Top2",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    },
+    {
+      "strategy": "equal-weight hold",
+      "min": "2024-01-02",
+      "max": "2026-06-30",
+      "count": 601
+    }
+  ],
+  "signal_count": 30,
+  "signal_dates": [
+    "2024-01-02",
+    "2024-02-01",
+    "2024-03-01",
+    "2024-04-01",
+    "2024-05-06",
+    "2024-06-03",
+    "2024-07-01",
+    "2024-08-01",
+    "2024-09-02",
+    "2024-10-08",
+    "2024-11-01",
+    "2024-12-02",
+    "2025-01-02",
+    "2025-02-05",
+    "2025-03-03",
+    "2025-04-01",
+    "2025-05-06",
+    "2025-06-03",
+    "2025-07-01",
+    "2025-08-01",
+    "2025-09-01",
+    "2025-10-09",
+    "2025-11-03",
+    "2025-12-01",
+    "2026-01-05",
+    "2026-02-02",
+    "2026-03-02",
+    "2026-04-01",
+    "2026-05-06",
+    "2026-06-01"
+  ],
+  "factor": "rel_mom_ind_250d",
+  "factor_values_complete": true,
+  "feature_selection_precommitted_from_v11_training_period_only": {
+    "quarter_span": "2020Q1-2023Q4",
+    "quarter_count": 16,
+    "top20_count": 13,
+    "rule": "The factor was selected solely because it appeared among V11's saved top 20 gain features in 13/16 training-window quarterly fits; no 2024-2026 holdout return was used to choose the factor or rule."
+  },
+  "causality": {
+    "factor_input": "daily rel_mom_ind_250d values keyed to the monthly signal-date row (signal-date close snapshot)",
+    "ranking": "descending among the same four banks; ties broken by stock_code ascending",
+    "execution": "next trading session open (T+1)",
+    "uses_post_signal_data": false,
+    "signal_rows_with_t1_execution": 120
+  },
+  "ledger_checks": {
+    "V25 rel_mom_ind_250d Top2": {
+      "same_cash_engine": "V11 analysis.py simulate() unchanged",
+      "blocked_trade_events": 0,
+      "min_cash": 9.59170868316869,
+      "all_daily_cash_nonnegative": true,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "ending_cash": 173.00241450501971,
+      "ending_shares_json": "{\"601288.SH\": 13434.2782, \"601939.SH\": 8700.0}"
+    },
+    "60d momentum Top2": {
+      "same_cash_engine": "V11 analysis.py simulate() unchanged",
+      "blocked_trade_events": 0,
+      "min_cash": 61.0696464866453,
+      "all_daily_cash_nonnegative": true,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "ending_cash": 184.0280234584418,
+      "ending_shares_json": "{\"601939.SH\": 9400.0, \"601988.SH\": 15905.997}"
+    },
+    "V11 LambdaRank Top2": {
+      "same_cash_engine": "V11 analysis.py simulate() unchanged",
+      "blocked_trade_events": 0,
+      "min_cash": 36.23176302149659,
+      "all_daily_cash_nonnegative": true,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "ending_cash": 479.7809147711232,
+      "ending_shares_json": "{\"601288.SH\": 14263.4767, \"601988.SH\": 15600.0}"
+    },
+    "equal-weight hold": {
+      "same_cash_engine": "V11 analysis.py simulate() unchanged",
+      "blocked_trade_events": 0,
+      "min_cash": 328.2072699519849,
+      "all_daily_cash_nonnegative": true,
+      "max_abs_accounting_residual": 1.4551915228366852e-11,
+      "ending_cash": 328.2072699519849,
+      "ending_shares_json": "{\"601288.SH\": 7762.7958, \"601398.SH\": 5940.9302, \"601939.SH\": 4285.5747, \"601988.SH\": 6944.43}"
+    }
+  },
+  "period_tables": {
+    "quarter_rows": 40,
+    "annual_rows": 12,
+    "quarterly_excludes_no_lifecycle_days": true
+  },
+  "factor_signal_file_sha256": "95d33c5e8db03244151186686d9e380c094d541e3bf5e1dae0a495db917bd632"
+}

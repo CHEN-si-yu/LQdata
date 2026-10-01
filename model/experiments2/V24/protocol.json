@@ -1,0 +1,99 @@
+{
+  "version": "V24",
+  "hypothesis": "A small consensus of factors repeatedly important in 2020Q1-2023Q4 V11 walk-forward training folds can rank banks in the unseen 2024Q1-2026Q2 holdout.",
+  "factor_selection": {
+    "cutoff_quarter": "2023Q4",
+    "importance_quarters": [
+      "2020Q1",
+      "2020Q2",
+      "2020Q3",
+      "2020Q4",
+      "2021Q1",
+      "2021Q2",
+      "2021Q3",
+      "2021Q4",
+      "2022Q1",
+      "2022Q2",
+      "2022Q3",
+      "2022Q4",
+      "2023Q1",
+      "2023Q2",
+      "2023Q3",
+      "2023Q4"
+    ],
+    "rule": "Across the 16 V11 quarterly result files through 2023Q4, rank features by count in each fold's top-20 gain list; tie-break by mean gain normalized within that top-20 list, then feature name; freeze the first four.",
+    "selected_features": [
+      "mf_tier_flow_agreement_20",
+      "rel_mom_ind_3d",
+      "rel_mom_ind_5d",
+      "gap_down_recover_freq_20d"
+    ],
+    "selection_statistics": {
+      "mf_tier_flow_agreement_20": {
+        "top20_quarters": 16,
+        "mean_normalized_gain_when_top20": 0.07313518998683682
+      },
+      "rel_mom_ind_3d": {
+        "top20_quarters": 16,
+        "mean_normalized_gain_when_top20": 0.0672872268065498
+      },
+      "rel_mom_ind_5d": {
+        "top20_quarters": 16,
+        "mean_normalized_gain_when_top20": 0.06289147292479422
+      },
+      "gap_down_recover_freq_20d": {
+        "top20_quarters": 15,
+        "mean_normalized_gain_when_top20": 0.07330035921476682
+      }
+    },
+    "direction": "Use the harmonized positive direction declared by zscore_win1_99_v1."
+  },
+  "portfolio_rule": "At each shared V11 monthly signal close, rank each selected feature cross-sectionally among the four banks, average ordinal ranks with equal weight, and equal-weight the two lowest average-rank banks. Execute at the next trading session open.",
+  "holdout_dates": [
+    "2024-01-02",
+    "2026-06-30"
+  ],
+  "monthly_signal_dates": [
+    "2024-01-02",
+    "2024-02-01",
+    "2024-03-01",
+    "2024-04-01",
+    "2024-05-06",
+    "2024-06-03",
+    "2024-07-01",
+    "2024-08-01",
+    "2024-09-02",
+    "2024-10-08",
+    "2024-11-01",
+    "2024-12-02",
+    "2025-01-02",
+    "2025-02-05",
+    "2025-03-03",
+    "2025-04-01",
+    "2025-05-06",
+    "2025-06-03",
+    "2025-07-01",
+    "2025-08-01",
+    "2025-09-01",
+    "2025-10-09",
+    "2025-11-03",
+    "2025-12-01",
+    "2026-01-05",
+    "2026-02-02",
+    "2026-03-02",
+    "2026-04-01",
+    "2026-05-06",
+    "2026-06-01"
+  ],
+  "execution": "V11 corrected shared-cash ledger; T+1 open, 1% participation cap, ordinary 100-share lots, fees, adverse slippage, limit-price blocks, corporate-action adjusted shares, full-exit odd-lot handling.",
+  "comparisons": [
+    "V11 LambdaRank Top2",
+    "60d momentum Top2",
+    "equal-weight hold"
+  ],
+  "no_retraining": true,
+  "no_parameter_sweep": true,
+  "no_future_features": true,
+  "factor_semantics": "zscore_win1_99_v1",
+  "source_script_sha256": "a2e6e8f2782a48aaf197877cb31e350cbffb5705d10b5ce274584718df9de809"
+}

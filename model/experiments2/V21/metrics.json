@@ -1,0 +1,1250 @@
+{
+  "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+  "model": "V11 cached cross-sectional LightGBM LambdaRank scores, blended with fixed 60-session momentum",
+  "quarters_included": [
+    "2020Q1",
+    "2020Q2",
+    "2020Q3",
+    "2020Q4",
+    "2021Q1",
+    "2021Q2",
+    "2021Q3",
+    "2021Q4",
+    "2022Q1",
+    "2022Q2",
+    "2022Q3",
+    "2022Q4",
+    "2023Q1",
+    "2023Q2",
+    "2023Q3",
+    "2023Q4",
+    "2024Q1",
+    "2024Q2",
+    "2024Q3",
+    "2024Q4",
+    "2025Q1",
+    "2025Q2",
+    "2025Q3",
+    "2025Q4",
+    "2026Q1",
+    "2026Q2"
+  ],
+  "n_quarters": 26,
+  "test_dates": [
+    "2020-01-02",
+    "2026-06-30"
+  ],
+  "signal_count": 78,
+  "execution": "monthly close signal; next-session open execution; one account per strategy; shared cash; corrected V11 full-exit and split-adjusted odd-lot ledger",
+  "allocation": {
+    "ranker_top1": 0.5,
+    "momentum_top2_each": 0.25,
+    "overlap": "add component weights"
+  },
+  "costs": {
+    "commission": 0.00025,
+    "minimum_commission": 5.0,
+    "transfer": 1e-05,
+    "sell_stamp": 0.0005,
+    "adverse_slippage": 0.0003,
+    "max_participation": 0.01,
+    "lot_size": 100
+  },
+  "metrics": {
+    "V21 50% Ranker Top1 + 50% 60d Top2": {
+      "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+      "start": "2020-01-02",
+      "end": "2026-06-30",
+      "days": 1571,
+      "net_return": 1.2728407764028584,
+      "gross_return_same_fills": 1.346497343306026,
+      "annualized_net_return": 0.1408609974677404,
+      "annualized_volatility": 0.16804702459163637,
+      "max_drawdown": -0.18681883434169833,
+      "fees": 4683.42834543033,
+      "slippage_cost": 2682.228344886886,
+      "total_trading_cost": 7365.656690317217,
+      "turnover": 8940761.149622956,
+      "trades": 199,
+      "blocked_trade_events": 0,
+      "min_cash": 17.492932639681385,
+      "max_positions": 3,
+      "max_abs_accounting_residual": 2.9103830456733704e-11,
+      "vs_V18_LambdaRank_Top1": {
+        "net_return_difference_pp": -6.539661321897761,
+        "drawdown_difference_pp": 1.9977408137604402
+      },
+      "vs_V11_LambdaRank_Top2": {
+        "net_return_difference_pp": 12.398368870132703,
+        "drawdown_difference_pp": -0.6176074913768814
+      },
+      "vs_60d_momentum_Top2": {
+        "net_return_difference_pp": 9.719288548716554,
+        "drawdown_difference_pp": -1.2750089669810838
+      },
+      "vs_equal_weight_hold": {
+        "net_return_difference_pp": 25.11102914495611,
+        "drawdown_difference_pp": -3.2032664962752144
+      }
+    },
+    "V18 LambdaRank Top1": {
+      "strategy": "V18 LambdaRank Top1",
+      "start": "2020-01-02",
+      "end": "2026-06-30",
+      "days": 1571,
+      "net_return": 1.338237389621836,
+      "gross_return_same_fills": 1.4625349951683275,
+      "annualized_net_return": 0.14606736223612393,
+      "annualized_volatility": 0.1764069229913558,
+      "max_drawdown": -0.20679624247930273,
+      "fees": 7817.627004794901,
+      "slippage_cost": 4612.133549855049,
+      "total_trading_cost": 12429.76055464995,
+      "turnover": 15373778.499516828,
+      "trades": 107,
+      "blocked_trade_events": 0,
+      "min_cash": 9.2223331300047,
+      "max_positions": 1,
+      "max_abs_accounting_residual": 0.0
+    },
+    "V11 LambdaRank Top2": {
+      "strategy": "V11 LambdaRank Top2",
+      "start": "2020-01-02",
+      "end": "2026-06-30",
+      "days": 1571,
+      "net_return": 1.1488570877015314,
+      "gross_return_same_fills": 1.228077217051609,
+      "annualized_net_return": 0.13063515010178572,
+      "annualized_volatility": 0.16624180326210194,
+      "max_drawdown": -0.1806427594279295,
+      "fees": 5044.9125112355505,
+      "slippage_cost": 2877.1004237726133,
+      "total_trading_cost": 7922.012935008164,
+      "turnover": 9590334.745908707,
+      "trades": 190,
+      "blocked_trade_events": 0,
+      "min_cash": 13.84519483369968,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "60d momentum Top2": {
+      "strategy": "60d momentum Top2",
+      "start": "2020-01-02",
+      "end": "2026-06-30",
+      "days": 1571,
+      "net_return": 1.1756478909156929,
+      "gross_return_same_fills": 1.2182734440776506,
+      "annualized_net_return": 0.13288596709222356,
+      "annualized_volatility": 0.16974411653921065,
+      "max_drawdown": -0.1740687446718875,
+      "fees": 2773.1163840880376,
+      "slippage_cost": 1489.4389321079361,
+      "total_trading_cost": 4262.555316195974,
+      "turnover": 4964796.440359789,
+      "trades": 140,
+      "blocked_trade_events": 0,
+      "min_cash": 9.126485533386585,
+      "max_positions": 2,
+      "max_abs_accounting_residual": 2.9103830456733704e-11
+    },
+    "equal-weight hold": {
+      "strategy": "equal-weight hold",
+      "start": "2020-01-02",
+      "end": "2026-06-30",
+      "days": 1571,
+      "net_return": 1.0217304849532973,
+      "gross_return_same_fills": 1.0222849957779774,
+      "annualized_net_return": 0.11962220769643639,
+      "annualized_volatility": 0.1598501855230107,
+      "max_drawdown": -0.15478616937894618,
+      "fees": 25.749282468,
+      "slippage_cost": 29.7018,
+      "total_trading_cost": 55.451082467999996,
+      "turnover": 99006.0,
+      "trades": 4,
+      "blocked_trade_events": 0,
+      "min_cash": 938.5489175319963,
+      "max_positions": 4,
+      "max_abs_accounting_residual": 0.0
+    }
+  },
+  "audit": {
+    "quarter_count": 26,
+    "signal_count": 78,
+    "hybrid_weight_sum_min": 1.0,
+    "hybrid_weight_sum_max": 1.0,
+    "hybrid_max_target_weight": 0.75,
+    "months_with_ranker_momentum_overlap": 37,
+    "target_weight_sum_max_abs_error": 0.0,
+    "daily_rows": 7855,
+    "trade_rows": 640,
+    "negative_cash_daily_rows": 0,
+    "negative_equity_daily_rows": 0,
+    "max_abs_accounting_residual": 2.9103830456733704e-11,
+    "max_positions_by_strategy": {
+      "V21 50% Ranker Top1 + 50% 60d Top2": 3,
+      "V18 LambdaRank Top1": 1,
+      "V11 LambdaRank Top2": 2,
+      "60d momentum Top2": 2,
+      "equal-weight hold": 4
+    },
+    "min_cash_by_strategy": {
+      "V21 50% Ranker Top1 + 50% 60d Top2": 17.492932639681385,
+      "V18 LambdaRank Top1": 9.2223331300047,
+      "V11 LambdaRank Top2": 13.84519483369968,
+      "60d momentum Top2": 9.126485533386585,
+      "equal-weight hold": 938.5489175319963
+    },
+    "blocked_events_by_strategy": {
+      "V21 50% Ranker Top1 + 50% 60d Top2": 0,
+      "V18 LambdaRank Top1": 0,
+      "V11 LambdaRank Top2": 0,
+      "60d momentum Top2": 0,
+      "equal-weight hold": 0
+    }
+  },
+  "reference_checks": {
+    "V11:V11 LambdaRank Top2": {
+      "net_return_abs_difference": 0.0,
+      "max_drawdown_abs_difference": 0.0,
+      "reference_net_return": 1.1488570877015314,
+      "recomputed_net_return": 1.1488570877015314
+    },
+    "V11:60d momentum Top2": {
+      "net_return_abs_difference": 0.0,
+      "max_drawdown_abs_difference": 0.0,
+      "reference_net_return": 1.1756478909156929,
+      "recomputed_net_return": 1.1756478909156929
+    },
+    "V11:equal-weight hold": {
+      "net_return_abs_difference": 0.0,
+      "max_drawdown_abs_difference": 0.0,
+      "reference_net_return": 1.0217304849532973,
+      "recomputed_net_return": 1.0217304849532973
+    },
+    "V18:V18 LambdaRank Top1": {
+      "net_return_abs_difference": 0.0,
+      "max_drawdown_abs_difference": 0.0,
+      "reference_net_return": 1.338237389621836,
+      "recomputed_net_return": 1.338237389621836
+    }
+  },
+  "annual_returns": {
+    "V21 50% Ranker Top1 + 50% 60d Top2": [
+      {
+        "period": "2020",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.06255133063361995,
+        "gross_return_same_fills": -0.054899080915249976
+      },
+      {
+        "period": "2021",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.006775348435905548,
+        "gross_return_same_fills": 0.0016690851157357134
+      },
+      {
+        "period": "2022",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.03690703054598132,
+        "gross_return_same_fills": 0.0464868787132946
+      },
+      {
+        "period": "2023",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.30175213917562504,
+        "gross_return_same_fills": 0.3033355346438502
+      },
+      {
+        "period": "2024",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.46151912094783065,
+        "gross_return_same_fills": 0.458895742058802
+      },
+      {
+        "period": "2025",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.3622964730490872,
+        "gross_return_same_fills": 0.3647425192874627
+      },
+      {
+        "period": "2026",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.09169904186778821,
+        "gross_return_same_fills": -0.08724838843757055
+      }
+    ],
+    "V18 LambdaRank Top1": [
+      {
+        "period": "2020",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.016565196240659885,
+        "gross_return_same_fills": -0.007100000000000106
+      },
+      {
+        "period": "2021",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.009509274964710768,
+        "gross_return_same_fills": 0.0018220484440141238
+      },
+      {
+        "period": "2022",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.04291524762450738,
+        "gross_return_same_fills": 0.05815685441983853
+      },
+      {
+        "period": "2023",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.29793262930920594,
+        "gross_return_same_fills": 0.301487036791122
+      },
+      {
+        "period": "2024",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.5046983993084306,
+        "gross_return_same_fills": 0.5010166959208753
+      },
+      {
+        "period": "2025",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.402408176861182,
+        "gross_return_same_fills": 0.4096945524576552
+      },
+      {
+        "period": "2026",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.15963578238297782,
+        "gross_return_same_fills": -0.15045600580629315
+      }
+    ],
+    "V11 LambdaRank Top2": [
+      {
+        "period": "2020",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.08687177961454773,
+        "gross_return_same_fills": -0.07837610422678665
+      },
+      {
+        "period": "2021",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.012549733763679072,
+        "gross_return_same_fills": -0.002510475002255874
+      },
+      {
+        "period": "2022",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06611265621444007,
+        "gross_return_same_fills": 0.07655132608940574
+      },
+      {
+        "period": "2023",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.26006805608712935,
+        "gross_return_same_fills": 0.2634409787125094
+      },
+      {
+        "period": "2024",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.4999880139607862,
+        "gross_return_same_fills": 0.49308149397644363
+      },
+      {
+        "period": "2025",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.31920263778109415,
+        "gross_return_same_fills": 0.3212210284707886
+      },
+      {
+        "period": "2026",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.10347142517727814,
+        "gross_return_same_fills": -0.09672606443550891
+      }
+    ],
+    "60d momentum Top2": [
+      {
+        "period": "2020",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.10718802338799283,
+        "gross_return_same_fills": -0.10131207337338621
+      },
+      {
+        "period": "2021",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.007176017968466675,
+        "gross_return_same_fills": 0.0007335239531058857
+      },
+      {
+        "period": "2022",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.029456328878828986,
+        "gross_return_same_fills": 0.03462971803727455
+      },
+      {
+        "period": "2023",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.30462675018686225,
+        "gross_return_same_fills": 0.30399199520336406
+      },
+      {
+        "period": "2024",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.4153256412927704,
+        "gross_return_same_fills": 0.41553925318634244
+      },
+      {
+        "period": "2025",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.3167929396043805,
+        "gross_return_same_fills": 0.3154999364113933
+      },
+      {
+        "period": "2026",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.019408165854741144,
+        "gross_return_same_fills": -0.018217917813068807
+      }
+    ],
+    "equal-weight hold": [
+      {
+        "period": "2020",
+        "strategy": "equal-weight hold",
+        "net_return": -0.10917164149138803,
+        "gross_return_same_fills": -0.10861713066670797
+      },
+      {
+        "period": "2021",
+        "strategy": "equal-weight hold",
+        "net_return": -0.005348778267581511,
+        "gross_return_same_fills": -0.0053454509033812325
+      },
+      {
+        "period": "2022",
+        "strategy": "equal-weight hold",
+        "net_return": 0.04969519660122579,
+        "gross_return_same_fills": 0.04966411610924082
+      },
+      {
+        "period": "2023",
+        "strategy": "equal-weight hold",
+        "net_return": 0.27066707179065874,
+        "gross_return_same_fills": 0.27050579994892376
+      },
+      {
+        "period": "2024",
+        "strategy": "equal-weight hold",
+        "net_return": 0.4819243731459175,
+        "gross_return_same_fills": 0.4816983643402686
+      },
+      {
+        "period": "2025",
+        "strategy": "equal-weight hold",
+        "net_return": 0.24876183098043714,
+        "gross_return_same_fills": 0.24868309551259626
+      },
+      {
+        "period": "2026",
+        "strategy": "equal-weight hold",
+        "net_return": -0.07560462672726798,
+        "gross_return_same_fills": -0.07558546287523848
+      }
+    ]
+  },
+  "quarter_returns": {
+    "V21 50% Ranker Top1 + 50% 60d Top2": [
+      {
+        "period": "2020Q1",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.10403887332939998,
+        "gross_return_same_fills": -0.10165999999999997
+      },
+      {
+        "period": "2020Q2",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.003764080360296407,
+        "gross_return_same_fills": -0.002448961417725992
+      },
+      {
+        "period": "2020Q3",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.011366882870081807,
+        "gross_return_same_fills": -0.008502110066786361
+      },
+      {
+        "period": "2020Q4",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.0623337500557255,
+        "gross_return_same_fills": 0.06367886088521368
+      },
+      {
+        "period": "2021Q1",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.11057331271947746,
+        "gross_return_same_fills": 0.11156242014677975
+      },
+      {
+        "period": "2021Q2",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.061535066854288334,
+        "gross_return_same_fills": -0.059489995615665814
+      },
+      {
+        "period": "2021Q3",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.03796817076399561,
+        "gross_return_same_fills": -0.03482012610885499
+      },
+      {
+        "period": "2021Q4",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.009412675273915316,
+        "gross_return_same_fills": -0.007298364031204763
+      },
+      {
+        "period": "2022Q1",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.047055513585314346,
+        "gross_return_same_fills": 0.04956173048077406
+      },
+      {
+        "period": "2022Q2",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.03042433076256945,
+        "gross_return_same_fills": -0.02751617530243644
+      },
+      {
+        "period": "2022Q3",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.003968362332000264,
+        "gross_return_same_fills": -0.0010930453935141804
+      },
+      {
+        "period": "2022Q4",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.02545184066757189,
+        "gross_return_same_fills": 0.026404097693930817
+      },
+      {
+        "period": "2023Q1",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.0568263496394088,
+        "gross_return_same_fills": 0.05814523381407666
+      },
+      {
+        "period": "2023Q2",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.144683095380856,
+        "gross_return_same_fills": 0.14343734384341067
+      },
+      {
+        "period": "2023Q3",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.061293984159592085,
+        "gross_return_same_fills": 0.061513087555669976
+      },
+      {
+        "period": "2023Q4",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.013920013113140506,
+        "gross_return_same_fills": 0.014783112312078739
+      },
+      {
+        "period": "2024Q1",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.07873644572999039,
+        "gross_return_same_fills": 0.07793086013999351
+      },
+      {
+        "period": "2024Q2",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.08749601581322142,
+        "gross_return_same_fills": 0.08646603419103838
+      },
+      {
+        "period": "2024Q3",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.12195652694616799,
+        "gross_return_same_fills": 0.12182503300460401
+      },
+      {
+        "period": "2024Q4",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.11041532207197258,
+        "gross_return_same_fills": 0.11043226095018
+      },
+      {
+        "period": "2025Q1",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.02847426521258667,
+        "gross_return_same_fills": 0.030088809629581936
+      },
+      {
+        "period": "2025Q2",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.0838242035094825,
+        "gross_return_same_fills": 0.0836061165967299
+      },
+      {
+        "period": "2025Q3",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.056226020030397894,
+        "gross_return_same_fills": 0.05775816304783543
+      },
+      {
+        "period": "2025Q4",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": 0.15707762572905204,
+        "gross_return_same_fills": 0.15589455992044576
+      },
+      {
+        "period": "2026Q1",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.06808140075703661,
+        "gross_return_same_fills": -0.06586313159170598
+      },
+      {
+        "period": "2026Q2",
+        "strategy": "V21 50% Ranker Top1 + 50% 60d Top2",
+        "net_return": -0.02534303009934258,
+        "gross_return_same_fills": -0.022893065854796668
+      }
+    ],
+    "V18 LambdaRank Top1": [
+      {
+        "period": "2020Q1",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.11744873357579999,
+        "gross_return_same_fills": -0.11395
+      },
+      {
+        "period": "2020Q2",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.0006834436724608706,
+        "gross_return_same_fills": 0.0009254556740589948
+      },
+      {
+        "period": "2020Q3",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.003508980235208181,
+        "gross_return_same_fills": -0.0002593390237578541
+      },
+      {
+        "period": "2020Q4",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.11899761134406339,
+        "gross_return_same_fills": 0.11984570964540286
+      },
+      {
+        "period": "2021Q1",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.08195533668635568,
+        "gross_return_same_fills": 0.0844411157318703
+      },
+      {
+        "period": "2021Q2",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.047370022230793674,
+        "gross_return_same_fills": -0.04528477466938463
+      },
+      {
+        "period": "2021Q3",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.041045480628208786,
+        "gross_return_same_fills": -0.03745443743009913
+      },
+      {
+        "period": "2021Q4",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.002117913683909123,
+        "gross_return_same_fills": 0.005285609304027883
+      },
+      {
+        "period": "2022Q1",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.043929108577061005,
+        "gross_return_same_fills": 0.04785318585156606
+      },
+      {
+        "period": "2022Q2",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.025312334392633806,
+        "gross_return_same_fills": -0.021577092383853413
+      },
+      {
+        "period": "2022Q3",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.005814439472986543,
+        "gross_return_same_fills": -0.0009715909199770056
+      },
+      {
+        "period": "2022Q4",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.030967768689636355,
+        "gross_return_same_fills": 0.033106659053034004
+      },
+      {
+        "period": "2023Q1",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.04995627014571391,
+        "gross_return_same_fills": 0.05292818636003482
+      },
+      {
+        "period": "2023Q2",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.14367524171330337,
+        "gross_return_same_fills": 0.14338634607005996
+      },
+      {
+        "period": "2023Q3",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.06901186783300295,
+        "gross_return_same_fills": 0.06962879684854362
+      },
+      {
+        "period": "2023Q4",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.01110368416548524,
+        "gross_return_same_fills": 0.010683106947174226
+      },
+      {
+        "period": "2024Q1",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.07001709719585025,
+        "gross_return_same_fills": 0.06905659233718286
+      },
+      {
+        "period": "2024Q2",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.09164591415140877,
+        "gross_return_same_fills": 0.089855960725159
+      },
+      {
+        "period": "2024Q3",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.12978540227795654,
+        "gross_return_same_fills": 0.13019676152206205
+      },
+      {
+        "period": "2024Q4",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.14019987553238722,
+        "gross_return_same_fills": 0.1398866429380654
+      },
+      {
+        "period": "2025Q1",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.035012889610301245,
+        "gross_return_same_fills": 0.03840308340626408
+      },
+      {
+        "period": "2025Q2",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.0692646845493119,
+        "gross_return_same_fills": 0.07134243981700106
+      },
+      {
+        "period": "2025Q3",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.057716448631021766,
+        "gross_return_same_fills": 0.06046408437347828
+      },
+      {
+        "period": "2025Q4",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": 0.19804793662807363,
+        "gross_return_same_fills": 0.1949088527268732
+      },
+      {
+        "period": "2026Q1",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.12736971376354034,
+        "gross_return_same_fills": -0.12226177163306784
+      },
+      {
+        "period": "2026Q2",
+        "strategy": "V18 LambdaRank Top1",
+        "net_return": -0.036975646076412017,
+        "gross_return_same_fills": -0.03212146088895074
+      }
+    ],
+    "V11 LambdaRank Top2": [
+      {
+        "period": "2020Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.1276884541855099,
+        "gross_return_same_fills": -0.12636000000000003
+      },
+      {
+        "period": "2020Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.00521487374762708,
+        "gross_return_same_fills": -0.003594157776658613
+      },
+      {
+        "period": "2020Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.014085283270095172,
+        "gross_return_same_fills": -0.010816891702224773
+      },
+      {
+        "period": "2020Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06731229311821729,
+        "gross_return_same_fills": 0.07030673816706079
+      },
+      {
+        "period": "2021Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.0775268440729453,
+        "gross_return_same_fills": 0.07850712138541693
+      },
+      {
+        "period": "2021Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.04646158016956703,
+        "gross_return_same_fills": -0.04439736381827286
+      },
+      {
+        "period": "2021Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.03364776803776137,
+        "gross_return_same_fills": -0.03001296498484196
+      },
+      {
+        "period": "2021Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.005480088840247643,
+        "gross_return_same_fills": -0.0022033121311894055
+      },
+      {
+        "period": "2022Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06336774848996662,
+        "gross_return_same_fills": 0.06463542029888814
+      },
+      {
+        "period": "2022Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.003283513695150786,
+        "gross_return_same_fills": 1.0217320548289166e-05
+      },
+      {
+        "period": "2022Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.020046962057509332,
+        "gross_return_same_fills": -0.01725755765352277
+      },
+      {
+        "period": "2022Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.026461605683597123,
+        "gross_return_same_fills": 0.028939120050637257
+      },
+      {
+        "period": "2023Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.05934007676787956,
+        "gross_return_same_fills": 0.060787042933628355
+      },
+      {
+        "period": "2023Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.11923378801028583,
+        "gross_return_same_fills": 0.11823678289408157
+      },
+      {
+        "period": "2023Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.04592705051588264,
+        "gross_return_same_fills": 0.04623819560384179
+      },
+      {
+        "period": "2023Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.016099860213530715,
+        "gross_return_same_fills": 0.018034293088220466
+      },
+      {
+        "period": "2024Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.09284734249858051,
+        "gross_return_same_fills": 0.0925297927971962
+      },
+      {
+        "period": "2024Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.07987668819317206,
+        "gross_return_same_fills": 0.0790660511410004
+      },
+      {
+        "period": "2024Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.1280796008501286,
+        "gross_return_same_fills": 0.12517605969714674
+      },
+      {
+        "period": "2024Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.1267157788305897,
+        "gross_return_same_fills": 0.1255938496419582
+      },
+      {
+        "period": "2025Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.022595304010490702,
+        "gross_return_same_fills": 0.024377692589608424
+      },
+      {
+        "period": "2025Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06476009093326973,
+        "gross_return_same_fills": 0.06535187825632427
+      },
+      {
+        "period": "2025Q3",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.06189268816453808,
+        "gross_return_same_fills": 0.06349956268849821
+      },
+      {
+        "period": "2025Q4",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": 0.14097288060161084,
+        "gross_return_same_fills": 0.13837401359101786
+      },
+      {
+        "period": "2026Q1",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.06563212288558706,
+        "gross_return_same_fills": -0.06227269408977387
+      },
+      {
+        "period": "2026Q2",
+        "strategy": "V11 LambdaRank Top2",
+        "net_return": -0.04049722086824015,
+        "gross_return_same_fills": -0.036741353406886335
+      }
+    ],
+    "60d momentum Top2": [
+      {
+        "period": "2020Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.09080219310379001,
+        "gross_return_same_fills": -0.08947000000000005
+      },
+      {
+        "period": "2020Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.007023600692196652,
+        "gross_return_same_fills": -0.006205177204485324
+      },
+      {
+        "period": "2020Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.019244085220521234,
+        "gross_return_same_fills": -0.016678535688031793
+      },
+      {
+        "period": "2020Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.008327856942142775,
+        "gross_return_same_fills": 0.01000238341482329
+      },
+      {
+        "period": "2021Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.13956706665746732,
+        "gross_return_same_fills": 0.138893939411177
+      },
+      {
+        "period": "2021Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.07550173225421719,
+        "gross_return_same_fills": -0.07347022303001516
+      },
+      {
+        "period": "2021Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.035075629992118995,
+        "gross_return_same_fills": -0.0324125478318501
+      },
+      {
+        "period": "2021Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.0233634067193621,
+        "gross_return_same_fills": -0.019865767629111186
+      },
+      {
+        "period": "2022Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.05016176247571824,
+        "gross_return_same_fills": 0.05118157179847915
+      },
+      {
+        "period": "2022Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.03581204129100923,
+        "gross_return_same_fills": -0.033542169363910634
+      },
+      {
+        "period": "2022Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.0031680108025570197,
+        "gross_return_same_fills": -0.0013265284075745232
+      },
+      {
+        "period": "2022Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.019924576626910273,
+        "gross_return_same_fills": 0.019766608285208154
+      },
+      {
+        "period": "2023Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.06278286022521518,
+        "gross_return_same_fills": 0.06320242723954927
+      },
+      {
+        "period": "2023Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.1457635269188391,
+        "gross_return_same_fills": 0.14300080438547313
+      },
+      {
+        "period": "2023Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.053722280817392276,
+        "gross_return_same_fills": 0.05306707191654425
+      },
+      {
+        "period": "2023Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.016764982818164187,
+        "gross_return_same_fills": 0.018958266195548745
+      },
+      {
+        "period": "2024Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.08814071339797769,
+        "gross_return_same_fills": 0.08747659167190092
+      },
+      {
+        "period": "2024Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.08296873893886691,
+        "gross_return_same_fills": 0.08226222811367467
+      },
+      {
+        "period": "2024Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.11344484126032017,
+        "gross_return_same_fills": 0.1131427142246304
+      },
+      {
+        "period": "2024Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.07866524774485484,
+        "gross_return_same_fills": 0.08048477087251849
+      },
+      {
+        "period": "2025Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.021047180110950636,
+        "gross_return_same_fills": 0.021419962229948464
+      },
+      {
+        "period": "2025Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.09561206115321674,
+        "gross_return_same_fills": 0.0953677069497556
+      },
+      {
+        "period": "2025Q3",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.054157286840423424,
+        "gross_return_same_fills": 0.05406139200024085
+      },
+      {
+        "period": "2025Q4",
+        "strategy": "60d momentum Top2",
+        "net_return": 0.11663043097431647,
+        "gross_return_same_fills": 0.115477078725442
+      },
+      {
+        "period": "2026Q1",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.005860462485638429,
+        "gross_return_same_fills": -0.005015671892695139
+      },
+      {
+        "period": "2026Q2",
+        "strategy": "60d momentum Top2",
+        "net_return": -0.013627567215539926,
+        "gross_return_same_fills": -0.013268797856833991
+      }
+    ],
+    "equal-weight hold": [
+      {
+        "period": "2020Q1",
+        "strategy": "equal-weight hold",
+        "net_return": -0.10832451082468009,
+        "gross_return_same_fills": -0.10777000000000003
+      },
+      {
+        "period": "2020Q2",
+        "strategy": "equal-weight hold",
+        "net_return": 0.0037031189596470337,
+        "gross_return_same_fills": 0.0037008175132169363
+      },
+      {
+        "period": "2020Q3",
+        "strategy": "equal-weight hold",
+        "net_return": -0.009272557931208625,
+        "gross_return_same_fills": -0.009266816390026578
+      },
+      {
+        "period": "2020Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.004679958111210691,
+        "gross_return_same_fills": 0.004677033189909752
+      },
+      {
+        "period": "2021Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.10318540665746068,
+        "gross_return_same_fills": 0.1031212171526934
+      },
+      {
+        "period": "2021Q2",
+        "strategy": "equal-weight hold",
+        "net_return": -0.05981454489840232,
+        "gross_return_same_fills": -0.05978081389115519
+      },
+      {
+        "period": "2021Q3",
+        "strategy": "equal-weight hold",
+        "net_return": -0.035073843984653186,
+        "gross_return_same_fills": -0.035052807325814395
+      },
+      {
+        "period": "2021Q4",
+        "strategy": "equal-weight hold",
+        "net_return": -0.006164043911147665,
+        "gross_return_same_fills": -0.00616021252808574
+      },
+      {
+        "period": "2022Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.05572135141739554,
+        "gross_return_same_fills": 0.055686502032855856
+      },
+      {
+        "period": "2022Q2",
+        "strategy": "equal-weight hold",
+        "net_return": -0.014766312657018554,
+        "gross_return_same_fills": -0.01475756462099398
+      },
+      {
+        "period": "2022Q3",
+        "strategy": "equal-weight hold",
+        "net_return": -0.005476350189615231,
+        "gross_return_same_fills": -0.005473057228475686
+      },
+      {
+        "period": "2022Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.014751114116462016,
+        "gross_return_same_fills": 0.014742195373174338
+      },
+      {
+        "period": "2023Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.05569592298703929,
+        "gross_return_same_fills": 0.05566273762755758
+      },
+      {
+        "period": "2023Q2",
+        "strategy": "equal-weight hold",
+        "net_return": 0.1082815750098336,
+        "gross_return_same_fills": 0.10822045935168467
+      },
+      {
+        "period": "2023Q3",
+        "strategy": "equal-weight hold",
+        "net_return": 0.052679964822190284,
+        "gross_return_same_fills": 0.05265313503416125
+      },
+      {
+        "period": "2023Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.03168344310597093,
+        "gross_return_same_fills": 0.031668113928642994
+      },
+      {
+        "period": "2024Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.10665161971788018,
+        "gross_return_same_fills": 0.106601603145704
+      },
+      {
+        "period": "2024Q2",
+        "strategy": "equal-weight hold",
+        "net_return": 0.0720629214872881,
+        "gross_return_same_fills": 0.07203238162749837
+      },
+      {
+        "period": "2024Q3",
+        "strategy": "equal-weight hold",
+        "net_return": 0.1258514887422033,
+        "gross_return_same_fills": 0.12580173730538835
+      },
+      {
+        "period": "2024Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.10946532843895063,
+        "gross_return_same_fills": 0.10942689033647834
+      },
+      {
+        "period": "2025Q1",
+        "strategy": "equal-weight hold",
+        "net_return": 0.01919699357686433,
+        "gross_return_same_fills": 0.019190917547175834
+      },
+      {
+        "period": "2025Q2",
+        "strategy": "equal-weight hold",
+        "net_return": 0.0859431167335083,
+        "gross_return_same_fills": 0.08591642712384928
+      },
+      {
+        "period": "2025Q3",
+        "strategy": "equal-weight hold",
+        "net_return": -0.0016952334146870252,
+        "gross_return_same_fills": -0.001694748612886543
+      },
+      {
+        "period": "2025Q4",
+        "strategy": "equal-weight hold",
+        "net_return": 0.13018947951886406,
+        "gross_return_same_fills": 0.13015218480710034
+      },
+      {
+        "period": "2026Q1",
+        "strategy": "equal-weight hold",
+        "net_return": -0.03578574788152045,
+        "gross_return_same_fills": -0.035776677103621646
+      },
+      {
+        "period": "2026Q2",
+        "strategy": "equal-weight hold",
+        "net_return": -0.04129671259085965,
+        "gross_return_same_fills": -0.04128585652962358
+      }
+    ]
+  },
+  "limitations": [
+    "Mark-to-market at adjusted share quantity and raw close; open positions are not liquidated at test end.",
+    "The tested universe contains four bank stocks; these results do not establish stable alpha."
+  ]
+}

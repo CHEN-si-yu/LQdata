@@ -1,0 +1,643 @@
+{
+  "unit": "experiments2/V13 membership-change-only equal-weight monthly momentum",
+  "built_at": "2026-09-27 17:51:25",
+  "snapshot_built_at": "2026-09-27 14:19:24",
+  "snapshot_last_day": "2026-09-24",
+  "universe": [
+    "601288.SH",
+    "601398.SH",
+    "601939.SH",
+    "601988.SH"
+  ],
+  "protocol": {
+    "signal": "first observed trading session of each calendar month at close",
+    "factor": "adjusted close(T)/adjusted close(T-60 trading sessions)-1; fixed Top2",
+    "execution": "T+1 open; equal-value targets only when Top2 membership changes; otherwise preserve share counts; shared cash ledger copied from V4; 100-share lots, capacity, price locks, fees and slippage",
+    "official_signal_window": [
+      "2025-07-01",
+      "2026-06-30"
+    ],
+    "official_session_count": 242,
+    "official_forced_exit": "2026-07-01",
+    "extended_signal_window": [
+      "2023-01-03",
+      "2026-09-24"
+    ],
+    "extended_forced_exit": "2026-09-24",
+    "no_training": true,
+    "no_parameter_sweep": true,
+    "matched_return_interpretation": "same realized holdings path without fees; net-minus-matched is execution friction, not selection alpha",
+    "engine_copy": "V13/account_engine.py copied from V4/account_engine.py"
+  },
+  "official": {
+    "v13": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": 0.11680369069834562,
+        "annualized_return": 0.1162960935357944,
+        "max_drawdown": -0.17595524168553633,
+        "matched_benchmark_return": 0.12142712522193122,
+        "matched_cumulative_excess": -0.004623434523585601,
+        "avg_exposure": 0.9868204716737289,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 111680.36906983456,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.1360952680318399,
+            "matched_return": 0.13862699938817968,
+            "daily_matched_excess": -0.0025317313563397725
+          },
+          "2026": {
+            "strategy_net_return": -0.01698059826172449,
+            "matched_return": -0.015105802141956781,
+            "daily_matched_excess": -0.0018747961197677077
+          }
+        }
+      },
+      "audit": {
+        "mark_days_including_exit_execution": 243,
+        "signal_window_session_count": 242,
+        "monthly_signal_count": 12,
+        "membership_change_count": 4,
+        "scheduled_rebalance_events": 4,
+        "cash_min": 409.52234710985067,
+        "ending_cash": 111680.36906983456,
+        "ending_positions": 0,
+        "maximum_simultaneous_holdings": 2,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 13,
+        "fees": 287.1130063759199,
+        "buy_notional": 259785.91239999997,
+        "sell_notional": 271753.3944762104,
+        "gross_traded_notional": 531539.3068762104,
+        "minimum_cash_nonnegative": true,
+        "final_liquidation_complete": true,
+        "max_abs_equity_cash_mark_residual": 1.4551915228366852e-11,
+        "forced_exit_date": "2026-07-01",
+        "matched_method": "previous execution-day shares x previous-open to current-open adjusted return, compounded without fees"
+      },
+      "quarterly": [
+        {
+          "period": "2025Q3",
+          "days": 66,
+          "net_return": 0.023223209589603888,
+          "matched_return": 0.024654151914936584,
+          "matched_friction": -0.0014309423253326958
+        },
+        {
+          "period": "2025Q4",
+          "days": 60,
+          "net_return": 0.11031029924302382,
+          "matched_return": 0.11123055253349912,
+          "matched_friction": -0.0009202532904752925
+        },
+        {
+          "period": "2026Q1",
+          "days": 56,
+          "net_return": -0.017499508701369848,
+          "matched_return": -0.016665093225081473,
+          "matched_friction": -0.0008344154762883749
+        },
+        {
+          "period": "2026Q2",
+          "days": 60,
+          "net_return": 0.019967849021015782,
+          "matched_return": 0.01996784902101645,
+          "matched_friction": -6.661338147750939e-16
+        }
+      ],
+      "ending_return_on_exit_day": 0.11680369069834562,
+      "ending_return_at_last_signal_window_mark": 0.13850255480543128,
+      "performance_days_including_exit_open": 243,
+      "comparison": {
+        "net_gain_vs_same_ledger_monthly_reweighted_v4_pp": 0.09675151717019048,
+        "net_gain_vs_first_top2_hold_pp": 8.095002870106871,
+        "net_gain_vs_four_bank_equal_hold_pp": 10.057962757431959,
+        "trades_avoided_vs_monthly_v4": 6,
+        "gross_notional_avoided_vs_monthly_v4": 15545.398319277563,
+        "fees_avoided_vs_monthly_v4": 35.46923644765093
+      }
+    },
+    "same_ledger_monthly_reweighted_v4": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": 0.11583617552664371,
+        "annualized_return": 0.11533299612529535,
+        "max_drawdown": -0.17361043254181552,
+        "matched_benchmark_return": 0.12086764280396056,
+        "matched_cumulative_excess": -0.005031467277316848,
+        "avg_exposure": 0.9873526601540118,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 111583.61755266436,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.13453465790659158,
+            "matched_return": 0.13736822562563544,
+            "daily_matched_excess": -0.0028335677190438613
+          },
+          "2026": {
+            "strategy_net_return": -0.01648119098842671,
+            "matched_return": -0.014507687528019675,
+            "daily_matched_excess": -0.0019735034604070334
+          }
+        }
+      },
+      "audit": {
+        "trade_count": 19,
+        "fees": 322.5822428235708,
+        "buy_notional": 267589.25269999995,
+        "sell_notional": 279495.45249548793,
+        "gross_traded_notional": 547084.705195488,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "ending_positions": 0
+      },
+      "quarterly": [
+        {
+          "period": "2025Q3",
+          "days": 66,
+          "net_return": 0.024883319857003983,
+          "matched_return": 0.026451905912068252,
+          "matched_friction": -0.0015685860550642694
+        },
+        {
+          "period": "2025Q4",
+          "days": 60,
+          "net_return": 0.10698909419746161,
+          "matched_return": 0.1080579801885706,
+          "matched_friction": -0.001068885991108992
+        },
+        {
+          "period": "2026Q1",
+          "days": 56,
+          "net_return": -0.016988978508989394,
+          "matched_return": -0.016156086143197523,
+          "matched_friction": -0.0008328923657918708
+        },
+        {
+          "period": "2026Q2",
+          "days": 60,
+          "net_return": 0.019958316648902574,
+          "matched_return": 0.0200587752752881,
+          "matched_friction": -0.0001004586263855245
+        }
+      ]
+    },
+    "first_selected_top2_hold": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": 0.03585366199727691,
+        "annualized_return": 0.03570351297192054,
+        "max_drawdown": -0.1776915007667107,
+        "matched_benchmark_return": 0.03752239066547225,
+        "matched_cumulative_excess": -0.0016687286681953406,
+        "avg_exposure": 0.985655579598805,
+        "average_holdings": 1.9835390946502058,
+        "ending_equity": 103585.3661997277,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.1411090183615351,
+            "matched_return": 0.14174385424488323,
+            "daily_matched_excess": -0.0006348358833481171
+          },
+          "2026": {
+            "strategy_net_return": -0.09223952722360285,
+            "matched_return": -0.09128270162517371,
+            "daily_matched_excess": -0.0009568255984291341
+          }
+        }
+      },
+      "audit": {
+        "trade_count": 4,
+        "fees": 104.09588964392242,
+        "buy_notional": 99305.78279999999,
+        "sell_notional": 102995.24488937159,
+        "gross_traded_notional": 202301.02768937158,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "ending_positions": 0
+      },
+      "quarterly": [
+        {
+          "period": "2025Q3",
+          "days": 66,
+          "net_return": 0.005993846085564414,
+          "matched_return": 0.006553513025047142,
+          "matched_friction": -0.000559666939482728
+        },
+        {
+          "period": "2025Q4",
+          "days": 60,
+          "net_return": 0.13431013798118063,
+          "matched_return": 0.1343101379811804,
+          "matched_friction": 2.220446049250313e-16
+        },
+        {
+          "period": "2026Q1",
+          "days": 56,
+          "net_return": -0.06763049210975036,
+          "matched_return": -0.06763049210974936,
+          "matched_friction": -9.992007221626409e-16
+        },
+        {
+          "period": "2026Q2",
+          "days": 60,
+          "net_return": -0.004028972035286071,
+          "matched_return": -0.004028972035284739,
+          "matched_friction": -1.3322676295501878e-15
+        }
+      ]
+    },
+    "four_bank_equal_weight_hold": {
+      "stats": {
+        "days": 243,
+        "cumulative_net_return": 0.016224063124026022,
+        "annualized_return": 0.016156760960971406,
+        "max_drawdown": -0.15119064253391168,
+        "matched_benchmark_return": 0.017845624128968174,
+        "matched_cumulative_excess": -0.0016215610049421514,
+        "avg_exposure": 0.9764779741364771,
+        "average_holdings": 3.9670781893004117,
+        "ending_equity": 101622.4063124026,
+        "yearly": {
+          "2025": {
+            "strategy_net_return": 0.08883113643818707,
+            "matched_return": 0.08943112526831754,
+            "daily_matched_excess": -0.0005999888301304601
+          },
+          "2026": {
+            "strategy_net_return": -0.06668350204575901,
+            "matched_return": -0.06570906547370559,
+            "daily_matched_excess": -0.0009744365720534276
+          }
+        }
+      },
+      "audit": {
+        "trade_count": 8,
+        "fees": 101.63900403249067,
+        "buy_notional": 98361.4996,
+        "sell_notional": 100085.5449164351,
+        "gross_traded_notional": 198447.0445164351,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "ending_positions": 0
+      },
+      "quarterly": [
+        {
+          "period": "2025Q3",
+          "days": 66,
+          "net_return": -0.02484678574901844,
+          "matched_return": -0.024309437930209787,
+          "matched_friction": -0.0005373478188086533
+        },
+        {
+          "period": "2025Q4",
+          "days": 60,
+          "net_return": 0.11657442187125722,
+          "matched_return": 0.11657442187125744,
+          "matched_friction": -2.220446049250313e-16
+        },
+        {
+          "period": "2026Q1",
+          "days": 56,
+          "net_return": -0.0425942664663288,
+          "matched_return": -0.042594266466329245,
+          "matched_friction": 4.440892098500626e-16
+        },
+        {
+          "period": "2026Q2",
+          "days": 60,
+          "net_return": -0.005308758244600975,
+          "matched_return": -0.005308758244600531,
+          "matched_friction": -4.440892098500626e-16
+        }
+      ]
+    }
+  },
+  "extended": {
+    "v13": {
+      "stats": {
+        "days": 905,
+        "cumulative_net_return": 1.6762447523647226,
+        "annualized_return": 0.30113339549313567,
+        "max_drawdown": -0.17618637398854498,
+        "matched_benchmark_return": 1.7253248894275388,
+        "matched_cumulative_excess": -0.04908013706281622,
+        "avg_exposure": 0.9953043048033063,
+        "average_holdings": 1.9955801104972375,
+        "ending_equity": 267624.47523647227,
+        "yearly": {
+          "2023": {
+            "strategy_net_return": 0.3020217784579011,
+            "matched_return": 0.30712583229646895,
+            "daily_matched_excess": -0.005104053838567824
+          },
+          "2024": {
+            "strategy_net_return": 0.4261216851328322,
+            "matched_return": 0.4355879874661073,
+            "daily_matched_excess": -0.009466302333275056
+          },
+          "2025": {
+            "strategy_net_return": 0.29816904914945597,
+            "matched_return": 0.30352130549486134,
+            "daily_matched_excess": -0.005352256345405371
+          },
+          "2026": {
+            "strategy_net_return": 0.11024735185821055,
+            "matched_return": 0.11417378369637521,
+            "daily_matched_excess": -0.003926431838164657
+          }
+        }
+      },
+      "audit": {
+        "mark_days_including_exit_execution": 905,
+        "signal_window_session_count": 905,
+        "monthly_signal_count": 45,
+        "membership_change_count": 20,
+        "scheduled_rebalance_events": 20,
+        "cash_min": 62.149277403295855,
+        "ending_cash": 267624.47523647227,
+        "ending_positions": 0,
+        "maximum_simultaneous_holdings": 2,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "trade_count": 59,
+        "fees": 2105.9390870018406,
+        "buy_notional": 1873497.8808000004,
+        "sell_notional": 2043228.295123474,
+        "gross_traded_notional": 3916726.175923474,
+        "minimum_cash_nonnegative": true,
+        "final_liquidation_complete": true,
+        "max_abs_equity_cash_mark_residual": 5.820766091346741e-11,
+        "forced_exit_date": "2026-09-24",
+        "matched_method": "previous execution-day shares x previous-open to current-open adjusted return, compounded without fees"
+      },
+      "yearly": [
+        {
+          "period": "2023",
+          "days": 242,
+          "net_return": 0.3020217784579011,
+          "matched_return": 0.30712583229646895,
+          "matched_friction": -0.005104053838567824
+        },
+        {
+          "period": "2024",
+          "days": 242,
+          "net_return": 0.4261216851328322,
+          "matched_return": 0.4355879874661073,
+          "matched_friction": -0.009466302333275056
+        },
+        {
+          "period": "2025",
+          "days": 243,
+          "net_return": 0.29816904914945597,
+          "matched_return": 0.30352130549486134,
+          "matched_friction": -0.005352256345405371
+        },
+        {
+          "period": "2026",
+          "days": 178,
+          "net_return": 0.11024735185821055,
+          "matched_return": 0.11417378369637521,
+          "matched_friction": -0.003926431838164657
+        }
+      ],
+      "comparison": {
+        "net_gain_vs_same_ledger_monthly_reweighted_v4_pp": 0.3733030490558953,
+        "net_gain_vs_first_top2_hold_pp": 24.230250785598486,
+        "net_gain_vs_four_bank_equal_hold_pp": 18.070352057926886,
+        "trades_avoided_vs_monthly_v4": 28,
+        "gross_notional_avoided_vs_monthly_v4": 47162.20733784605,
+        "fees_avoided_vs_monthly_v4": 155.30058690176293
+      }
+    },
+    "same_ledger_monthly_reweighted_v4": {
+      "stats": {
+        "days": 905,
+        "cumulative_net_return": 1.6725117218741636,
+        "annualized_return": 0.30064783165012465,
+        "max_drawdown": -0.17352887856613208,
+        "matched_benchmark_return": 1.7243262942279753,
+        "matched_cumulative_excess": -0.051814572353811705,
+        "avg_exposure": 0.994697561689338,
+        "average_holdings": 1.9955801104972375,
+        "ending_equity": 267251.17218741635,
+        "yearly": {
+          "2023": {
+            "strategy_net_return": 0.30170521543753437,
+            "matched_return": 0.3073785435445018,
+            "daily_matched_excess": -0.005673328106967412
+          },
+          "2024": {
+            "strategy_net_return": 0.42603694038137796,
+            "matched_return": 0.43578189258365496,
+            "daily_matched_excess": -0.009744952202277002
+          },
+          "2025": {
+            "strategy_net_return": 0.2967431371122804,
+            "matched_return": 0.30241318132847184,
+            "daily_matched_excess": -0.005670044216191439
+          },
+          "2026": {
+            "strategy_net_return": 0.11025372744342099,
+            "matched_return": 0.11434716906029174,
+            "daily_matched_excess": -0.004093441616870752
+          }
+        }
+      },
+      "audit": {
+        "trade_count": 87,
+        "fees": 2261.2396739036035,
+        "buy_notional": 1897187.9857000003,
+        "sell_notional": 2066700.3975613196,
+        "gross_traded_notional": 3963888.38326132,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "ending_positions": 0
+      },
+      "yearly": [
+        {
+          "period": "2023",
+          "days": 242,
+          "net_return": 0.30170521543753437,
+          "matched_return": 0.3073785435445018,
+          "matched_friction": -0.005673328106967412
+        },
+        {
+          "period": "2024",
+          "days": 242,
+          "net_return": 0.42603694038137796,
+          "matched_return": 0.43578189258365496,
+          "matched_friction": -0.009744952202277002
+        },
+        {
+          "period": "2025",
+          "days": 243,
+          "net_return": 0.2967431371122804,
+          "matched_return": 0.30241318132847184,
+          "matched_friction": -0.005670044216191439
+        },
+        {
+          "period": "2026",
+          "days": 178,
+          "net_return": 0.11025372744342099,
+          "matched_return": 0.11434716906029174,
+          "matched_friction": -0.004093441616870752
+        }
+      ]
+    },
+    "first_selected_top2_hold": {
+      "stats": {
+        "days": 905,
+        "cumulative_net_return": 1.4339422445087378,
+        "annualized_return": 0.2685297193210183,
+        "max_drawdown": -0.16746309440798512,
+        "matched_benchmark_return": 1.4378775866476992,
+        "matched_cumulative_excess": -0.003935342138961406,
+        "avg_exposure": 0.9947853205180922,
+        "average_holdings": 1.9955801104972375,
+        "ending_equity": 243394.2244508738,
+        "yearly": {
+          "2023": {
+            "strategy_net_return": 0.27926184584607405,
+            "matched_return": 0.2799749464970924,
+            "daily_matched_excess": -0.0007131006510183724
+          },
+          "2024": {
+            "strategy_net_return": 0.4447983098814505,
+            "matched_return": 0.44479830988145164,
+            "daily_matched_excess": -1.1102230246251565e-15
+          },
+          "2025": {
+            "strategy_net_return": 0.10501219036025256,
+            "matched_return": 0.10501219036024945,
+            "daily_matched_excess": 3.1086244689504383e-15
+          },
+          "2026": {
+            "strategy_net_return": 0.1917263095570214,
+            "matched_return": 0.19298815432533578,
+            "daily_matched_excess": -0.0012618447683143685
+          }
+        }
+      },
+      "audit": {
+        "trade_count": 4,
+        "fees": 210.63156900710948,
+        "buy_notional": 99501.8416,
+        "sell_notional": 243106.6976198809,
+        "gross_traded_notional": 342608.5392198809,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "ending_positions": 0
+      },
+      "yearly": [
+        {
+          "period": "2023",
+          "days": 242,
+          "net_return": 0.27926184584607405,
+          "matched_return": 0.2799749464970924,
+          "matched_friction": -0.0007131006510183724
+        },
+        {
+          "period": "2024",
+          "days": 242,
+          "net_return": 0.4447983098814505,
+          "matched_return": 0.44479830988145164,
+          "matched_friction": -1.1102230246251565e-15
+        },
+        {
+          "period": "2025",
+          "days": 243,
+          "net_return": 0.10501219036025256,
+          "matched_return": 0.10501219036024945,
+          "matched_friction": 3.1086244689504383e-15
+        },
+        {
+          "period": "2026",
+          "days": 178,
+          "net_return": 0.1917263095570214,
+          "matched_return": 0.19298815432533578,
+          "matched_friction": -0.0012618447683143685
+        }
+      ]
+    },
+    "four_bank_equal_weight_hold": {
+      "stats": {
+        "days": 905,
+        "cumulative_net_return": 1.4955412317854537,
+        "annualized_return": 0.27703608919713263,
+        "max_drawdown": -0.15494783399395506,
+        "matched_benchmark_return": 1.4995720616503552,
+        "matched_cumulative_excess": -0.004030829864901442,
+        "avg_exposure": 0.9937940783610498,
+        "average_holdings": 3.991160220994475,
+        "ending_equity": 249554.1231785454,
+        "yearly": {
+          "2023": {
+            "strategy_net_return": 0.266345992275842,
+            "matched_return": 0.26705067195164545,
+            "daily_matched_excess": -0.0007046796758034546
+          },
+          "2024": {
+            "strategy_net_return": 0.49289150302528895,
+            "matched_return": 0.4928915030252905,
+            "daily_matched_excess": -1.5543122344752192e-15
+          },
+          "2025": {
+            "strategy_net_return": 0.2352447691243551,
+            "matched_return": 0.235244769124354,
+            "daily_matched_excess": 1.1102230246251565e-15
+          },
+          "2026": {
+            "strategy_net_return": 0.06863919712469269,
+            "matched_return": 0.0697699850893021,
+            "daily_matched_excess": -0.0011307879646094143
+          }
+        }
+      },
+      "audit": {
+        "trade_count": 8,
+        "fees": 215.1410265959074,
+        "buy_notional": 99329.79,
+        "sell_notional": 249099.0542051413,
+        "gross_traded_notional": 348428.8442051413,
+        "blocked_entries": 0,
+        "blocked_exits": 0,
+        "ending_positions": 0
+      },
+      "yearly": [
+        {
+          "period": "2023",
+          "days": 242,
+          "net_return": 0.266345992275842,
+          "matched_return": 0.26705067195164545,
+          "matched_friction": -0.0007046796758034546
+        },
+        {
+          "period": "2024",
+          "days": 242,
+          "net_return": 0.49289150302528895,
+          "matched_return": 0.4928915030252905,
+          "matched_friction": -1.5543122344752192e-15
+        },
+        {
+          "period": "2025",
+          "days": 243,
+          "net_return": 0.2352447691243551,
+          "matched_return": 0.235244769124354,
+          "matched_friction": 1.1102230246251565e-15
+        },
+        {
+          "period": "2026",
+          "days": 178,
+          "net_return": 0.06863919712469269,
+          "matched_return": 0.0697699850893021,
+          "matched_friction": -0.0011307879646094143
+        }
+      ]
+    }
+  },
+  "runner_sha256": "81384da20beee9f4f4032f9675ec96cc3d30dd2b72a33280eb2acd54b6c3172c",
+  "runtime_seconds": 37.06807851791382
+}
