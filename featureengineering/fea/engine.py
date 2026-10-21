@@ -42,7 +42,7 @@ from .config import Config
 from .context import FactorContext
 from .dates import Calendar, int_to_str, int_to_str_vec, today_int
 from .deriv import Derivative, load_vintages, financial_dependency
-from .manifest import Manifest
+from .manifest import Manifest, _atomic_json
 from .panel import Panel, cs_rank
 from .resources import numeric_env_fingerprint, set_guard_factor
 from .spec import FactorSpec
@@ -82,6 +82,34 @@ def _day_in_coverage(cov, day: int) -> bool:
     """
     s = int_to_str(int(day))
     return any(str(a) <= s <= str(b) for a, b in cov)
+
+
+def partition_content_sha256(frame: pd.DataFrame, *, already_sorted=False) -> str:
+    """Canonical output content, independent of row groups and compression.
+
+    Float32 value/rank bits are preserved; Parquet-null NaNs are canonicalized.
+    Identical footers are deliberately insufficient evidence of equality.
+    """
+    import hashlib
+    columns = ["trade_date", "value"] if "stock_code" not in frame.columns else [
+        "trade_date", "stock_code", "value", "rank"]
+    if set(frame.columns) != set(columns):
+        raise ValueError(f"非法因子分区列：{list(frame.columns)}")
+    keys = [column for column in ("trade_date", "stock_code") if column in columns]
+    ordered = frame if already_sorted else frame.sort_values(keys, kind="stable")
+    h = hashlib.sha256()
+    h.update(b"factor-partition-v1\0")
+    h.update(len(ordered).to_bytes(8, "little"))
+    for column in columns:
+        h.update(column.encode("ascii") + b"\0")
+        if column in keys:
+            h.update("\n".join(ordered[column].astype(str)).encode("utf-8"))
+        else:
+            values = ordered[column].to_numpy(dtype="<f4", na_value=np.nan).copy()
+            values[np.isnan(values)] = np.float32(np.nan)
+            h.update(values.tobytes())
+        h.update(b"\0")
+    return h.hexdigest()
 
 
 def _file_changed(key, old, new):
@@ -144,6 +172,7 @@ class Engine:
         #     正常应为空；非空就必须能说明是哪条显式路径放行的。
         self.identity_refreshed: list[dict] = []
         self.history_recompute: list[dict] = []
+        self.output_repairs: list[dict] = []
         # 本次运行的右端点（YYYYMMDD）+ 其字符串形式；用于裁剪分区里的陈旧尾行
         self._run_end: int | None = None
         self._end_str: str = "9999-12-31"
@@ -164,9 +193,17 @@ class Engine:
         # 年分区），而它在每个因子收尾时都会被调用。不缓存的话 10 个因子 × 2 个依赖
         # = 几百次重复的文件读，在共享盘上是实打实的秒级开销。
         self._wm_cache: dict[str, dict] = {}
+        # ★★ 2026-10-03 并行执行器：切片 worker 一律 `state_writes=False` ——
+        #   它**不写任何 state/**（manifest / ST 基线）。台账由 coordinator 单写者提交
+        #   （`fea/executor.py`），否则两个年块各自 load→改→save 整份 manifest
+        #   必然互相丢更新（写面审计 2026-10-03；engine.py:617 注释里的实测事故）。
+        self.state_writes: bool = True
         # ★ 股票池/截面口径也属于「因子定义」的一部分：改了 exclude_st、
         #   板块白名单或 winsor 分位，历史因子值就会变，必须触发全量重建。
         #   否则改了配置却因为「日期已覆盖」而不重算，新旧口径会混在一个面板里。
+        if cfg.raw.get("_production_only"):
+            self.universe_fp = ""
+            return
         self.universe_fp = "|".join([
             "mb=" + ",".join(cfg.board_prefixes),
             f"st={int(cfg.exclude_st)}",
@@ -186,6 +223,9 @@ class Engine:
         ])
 
     def _recipe(self, spec: FactorSpec) -> str:
+        kernel_version = getattr(self.cfg, "raw", {}).get("compute", {}).get("kernel_version", 1)
+        if isinstance(kernel_version, bool) or not isinstance(kernel_version, int) or kernel_version < 1:
+            raise ValueError("compute.kernel_version 必须是正整数")
         from .spec import REGISTRY
         suffix = "||financial-vintages=v3" if financial_dependency(spec, REGISTRY) else ""
         def uses_price(s, seen=None):
@@ -204,6 +244,11 @@ class Engine:
         from .spec import LAGGED_DATASETS
         delays={d:LAGGED_DATASETS[d] for d in spec.deps if d in LAGGED_DATASETS}
         if delays: suffix += "||delays=" + json.dumps(delays,sort_keys=True)
+        # Version 1 preserves every pre-refactor recipe byte for byte. A
+        # reviewed change to shared numerical kernels increments this explicit
+        # contract and invalidates all affected historical output semantics.
+        if kernel_version > 1:
+            suffix += f"||common-kernels=v{kernel_version}"
         return f"{spec.recipe(self.cfg)}||{self.universe_fp}{suffix}"
 
     def _layer_years(self, todo, dep_names: tuple) -> tuple[int, int]:
@@ -416,49 +461,44 @@ class Engine:
         return max(floor, int(self.cal.days[max(0, pos-spec.forward_days)]))
 
     def _partition_matches_record(self, path: Path, meta: dict) -> bool:
-        """分区文件是否仍**满足台账记录的内容** —— 只读 Parquet footer，不读全量。
-
-        ★★ 2026-09-30 新增。用途见 `plan()` 里的 L1a：身份不符时**先验内容再定损坏**。
-
-        为什么必须验内容而不能只比 `[size, mtime_ns]`（§11.2 的教训，当时只写进了文档）：
-        分区被**逐字节重写**（只有 mtime 变）会被判成损坏 ⇒ 计划整年重建。
-        而"文件已写、台账未记"（并行年块被内存护栏掐断、或切片 worker 各写各的
-        manifest 造成丢失更新）产生**完全相同**的症状。
-        代价实测（2026-09-30）：550 个因子的 `year=2026` 全被误判，181 天 × 550
-        = 99550 个任务里 **97% 逐格零变化**，② 从 ~7 min 涨到 12.1 min。
-
-        判据（都取自 footer）：行数与台账一致，且（若统计可用）日期上下界一致。
-        统计不可用时不据此判损坏 —— 宁可漏报也不误判（误判的代价是整年重建）。
-        """
+        'Verify canonical value/rank content against its persisted SHA256 baseline. Matching footer counts alone cannot prove content equality.'
         try:
             import pyarrow.parquet as pq
             pf = pq.ParquetFile(path)
             md = pf.metadata
         except Exception:                                      # noqa: BLE001
             return False                                       # 打不开 = 真损坏
+        # A legacy record without a content baseline cannot prove that an
+        # identity-changing file still contains the same factor values.
+        if not meta.get("content_sha256"):
+            return False
         rec = meta.get("rows")
         if rec is None or int(md.num_rows) != int(rec):
             return False
         lo_d, hi_d = meta.get("min_date"), meta.get("max_date")
         if not lo_d or not hi_d:
-            return True
+            return False
         try:
             names = pf.schema_arrow.names
             if "trade_date" not in names:
-                return True
+                return False
             ci = names.index("trade_date")
             ranges = []
             for i in range(md.num_row_groups):
                 s = md.row_group(i).column(ci).statistics
                 if s is None or not s.has_min_max or s.min is None:
-                    return True                                # 统计不可用 ⇒ 不据此判损坏
+                    break
                 ranges.append((str(s.min)[:10], str(s.max)[:10]))
-            if not ranges:
+            if len(ranges) == md.num_row_groups and ranges:
+                if (min(r[0] for r in ranges) != str(lo_d)[:10]
+                        or max(r[1] for r in ranges) != str(hi_d)[:10]):
+                    return False
+            frame = pf.read().to_pandas()
+            if frame.empty or str(frame["trade_date"].min()) != lo_d or str(frame["trade_date"].max()) != hi_d:
                 return False
-            return (min(r[0] for r in ranges) == str(lo_d)[:10]
-                    and max(r[1] for r in ranges) == str(hi_d)[:10])
+            return partition_content_sha256(frame) == meta["content_sha256"]
         except Exception:                                      # noqa: BLE001
-            return True
+            return False
 
     def _frozen_span(self, spec: FactorSpec, dep: str, source: str, lo: int,
                      freeze: int, end_i: int) -> tuple[int, int] | None:
@@ -511,6 +551,10 @@ class Engine:
             self.identity_refreshed = []
         if getattr(self, "history_recompute", None) is None:
             self.history_recompute = []
+        if getattr(self, "output_repairs", None) is None:
+            self.output_repairs = []
+        if getattr(self, "coverage_healed", None) is None:
+            self.coverage_healed = []
         start_i = spec.start_int(self.cfg)
         # ★★ `default_start` 同时是**计算范围的下界**（2026-09-15 加，实测踩过）。
         #   `FactorSpec.start` 的语义是「该因子受上游数据起点限制，不能早于这一天」,
@@ -527,6 +571,10 @@ class Engine:
         if self.override_start:
             start_i = max(start_i, int(self.override_start))
         recipe = self._recipe(spec)
+        # Output recovery is distinct from upstream revision. It must restore
+        # physically missing/corrupt historical partitions even when their
+        # old manifest coverage falls behind the frozen historical boundary.
+        recovery_years: set[int] = set()
         # ★★ 对齐区间的过滤下界：**不能**用 `start_i`（那是真实值起点）。
         #   `plan.json`（父进程写给切片 worker 的显式计划）里已经包含了对齐年份的
         #   交易日，若这里按真实起点过滤，会把它们整段滤掉 —— 实测后果：26 个晚起点
@@ -549,11 +597,17 @@ class Engine:
             spans = [(lo_i, end_i)]
         else:
             spans = [(lo_i, end_i)] if getattr(self, "force_refresh", False) else []
-            # L1a 输出日期缺口（下界用 lo_i：对齐区间的缺口也要能被发现）
-            for a, b in man.missing_ranges(int_to_str(lo_i), int_to_str(end_i)):
-                spans.append((_to_int(a), _to_int(b)))
             # A manifest cannot certify a partition that was deleted or changed externally.
+            # ★★ 2026-10-06：分区体检**先于**缺口计算，且健康分区把台账"补回"（coverage heal）——
+            #   2026-10-05 事故：全库 rebuild 的 coverage 清空被中断后，已算好、文件完好的
+            #   年份因台账缺口被**每次日常运行**重排（CPU 空烧、内存护栏反复降档）。
+            #   判据与修复动作延续原有语义（身份一致 / 内容核对一致 ⇒ 健康）；新增的只是：
+            #   健康分区记录的 [min_date, max_date] 属于"已产出且未被外部改动"的证据，
+            #   写回 coverage 后再算缺口 ⇒ 已验证分区不再进计划（"自动跳过已生成数据"的硬保证）。
+            #   显式 `--refresh` 分支不做此回填（那是一次"区间内全部重算"的承诺，提前写
+            #   coverage 会与"刷新未完成"混淆）。
             refreshed: list[dict] = []
+            healed: list[dict] = []
             for year, meta in man.partitions.items():
                 lo = max(lo_i, int(year) * 10000 + 101)
                 hi = min(end_i, int(year) * 10000 + 1231)
@@ -562,6 +616,7 @@ class Engine:
                 path = (self.cfg.factor_root(spec) if hasattr(self.cfg, "factor_root") else self.cfg.factors_dir) / spec.name / f"year={year}" / "data.parquet"
                 if not path.exists():
                     damaged = True
+                    repair_reason = "missing_output"
                 else:
                     expected = meta.get("file_identity")
                     st = path.stat()
@@ -582,13 +637,41 @@ class Engine:
                             damaged = False
                         else:
                             damaged = True
+                            repair_reason = ("content_changed_or_unreadable" if meta.get("content_sha256")
+                                             else "identity_changed_without_content_baseline")
                 if damaged:
+                    recovery_years.add(int(year))
+                    self.output_repairs.append({"factor": spec.name, "year": int(year),
+                                                "reason": repair_reason, "start": lo, "end": hi})
                     spans.append((lo, hi))
                     log.warning("%s output partition %s missing/changed; rebuilding its requested interval", spec.name, year)
+                elif not getattr(self, "force_refresh", False):
+                    # ★★ 2026-10-06 健康分区 ⇒ 台账回填（coverage heal）。判据与修复动作延续
+                    #   原有语义（身份一致 / 内容核对一致 ⇒ 健康）；新增的是把分区记录的
+                    #   [min_date, max_date] 当作"已产出且未被外部改动"的证据写回 coverage。
+                    #   区间按**任务轴**裁剪（_start_floor..end_i），不按本次窗口 lo_i 裁剪：
+                    #   窗口只是一次请求的范围，而"分区已验证"是关于台账的事实。
+                    a, b = meta.get("min_date"), meta.get("max_date")
+                    if a and b:
+                        ha = max(_to_int(str(a)), int(getattr(self, "_start_floor", 0) or 0))
+                        hb = min(_to_int(str(b)), end_i)
+                        if ha <= hb:
+                            before = [tuple(x) for x in man.coverage]
+                            man.add_coverage(int_to_str(ha), int_to_str(hb))
+                            if [tuple(x) for x in man.coverage] != before:
+                                healed.append({"factor": spec.name, "year": int(year),
+                                               "span": [int_to_str(ha), int_to_str(hb)]})
             if refreshed:
                 log.info("%s：%d 个分区的台账身份已刷新（内容与台账一致，未重建）",
                          spec.name, len(refreshed))
                 self.identity_refreshed.extend(refreshed)
+            if healed:
+                log.info("%s：%d 个分区的 coverage 已从**已验证分区**回填（未重算）",
+                         spec.name, len(healed))
+                self.coverage_healed.extend(healed)
+            # L1a 输出日期缺口（下界用 lo_i：对齐区间的缺口也要能被发现；在 heal 之后计算）
+            for a, b in man.missing_ranges(int_to_str(lo_i), int_to_str(end_i)):
+                spans.append((_to_int(a), _to_int(b)))
             # L1b 最近 N 天回刷（上游当天数据可能还没定稿）
             rev = minus_days(end_i, self.cfg.revision_days)
             rev = self._rewind_forward_dependency(spec, rev, start_i)
@@ -723,6 +806,8 @@ class Engine:
             blocked = []
             for y in sorted(per_year):
                 ds = per_year[y]
+                if y in recovery_years:
+                    continue
                 old = [int(d) for d in ds if int(d) < floor_i and _day_in_coverage(cov, int(d))]
                 if not old:
                     continue
@@ -805,6 +890,48 @@ class Engine:
                  else spec.start_int(self.cfg))
         return max(floor, self._start_floor, year * 10000 + 101)
 
+    def _upsert_output(self, spec, year, frame, compression, **kwargs):
+        """An unreadable old file can be replaced only by a complete year axis.
+
+        Preserve the old path until correctly computed output atomically takes
+        its place. Partial requests cannot silently discard unavailable rows.
+        """
+        root = self.cfg.factor_root(spec)
+        try:
+            return upsert_year(root, spec.name, year, frame, compression, **kwargs)
+        except Exception:
+            from .store import read_year, year_path, _assert_schema, _atomic_write
+            path = year_path(root, spec.name, year)
+            if not path.exists():
+                raise
+            try:
+                read_year(root, spec.name, year)
+            except Exception as old_error:
+                floor = spec.align_start_int(self.cfg) if spec.align_fill is not None else spec.start_int(self.cfg)
+                expected = self.cal.between(max(year * 10000 + 101, floor),
+                                            min(year * 10000 + 1231, self._run_end or year * 10000 + 1231))
+                requested = np.unique(np.asarray(kwargs.get("replace_days", []), dtype=np.int32))
+                if not expected.size or not np.array_equal(requested, expected):
+                    raise RuntimeError(f"{spec.name}/{year} 旧分区无法读取；需要无日期限制的 main.py 恢复完整年轴") from old_error
+                _assert_schema(frame)
+                keys = ["trade_date"] if spec.is_market else ["trade_date", "stock_code"]
+                expected_dates = list(int_to_str_vec(expected))
+                width = 1 if spec.is_market else len(self.codes)
+                if (frame.duplicated(keys).any() or sorted(frame.trade_date.unique()) != expected_dates
+                        or not frame.groupby("trade_date", observed=True).size().eq(width).all()
+                        or (not spec.is_market and not frame.stock_code.isin(self.codes).all())):
+                    raise RuntimeError("拒绝用不完整的输出覆盖无法读取的年分区") from old_error
+                merged = frame.sort_values(keys, kind="stable").reset_index(drop=True)
+                _atomic_write(merged, path, compression)
+                LAST_WRITE.clear()
+                LAST_WRITE.update({"factor": spec.name, "year": int(year), "identical": False,
+                                   "unreadable_old": True, "rows_old": None, "rows_new": len(merged),
+                                   "nonnull_old": None, "nonnull_new": int(np.isfinite(merged.value).sum())})
+                return merged
+            # The old file was readable: the failure came from another guard
+            # or write error and must remain visible.
+            raise
+
     def write_align_partition(self, spec: FactorSpec, year: int, days: np.ndarray) -> dict:
         """写「对齐区间」的填充分区：**不做任何计算**。
 
@@ -826,7 +953,7 @@ class Engine:
             val = np.full((days.size, self.codes.size), fill, dtype=np.float32)
             rk = np.full(val.shape, np.nan, dtype=np.float32)
             df = _to_frame(days, self.codes, val, rk)
-        merged = upsert_year(self.cfg.factor_root(spec), spec.name, year, df,
+        merged = self._upsert_output(spec, year, df,
                              self.cfg.compression,
                              prune_after=self._run_end,
                              # ★★ 对齐区间**就在起点之前**，绝不能按起点裁剪 ——
@@ -842,6 +969,8 @@ class Engine:
                 "partition_rows": len(merged),
                 "min_date": str(merged["trade_date"].min()),
                 "max_date": str(merged["trade_date"].max()),
+                "content_sha256": (None if self.cfg.raw.get("_production_only") else
+                                   partition_content_sha256(merged, already_sorted=True)),
                 "seconds": 0.0, "aligned_fill": True}
 
     def run_year(self, spec: FactorSpec, year: int, days: np.ndarray) -> dict:
@@ -947,7 +1076,9 @@ class Engine:
         import os
         trace_root = os.environ.get("FEA_AUDIT_TRACE")
         if trace_root:
-            trace_path = Path(trace_root)
+            trace_path = (self.cfg.root / trace_root).resolve()
+            if not trace_path.is_relative_to(self.cfg.root.resolve()):
+                raise ValueError("FEA_AUDIT_TRACE 必须在本次项目运行目录内")
             trace_path.mkdir(parents=True, exist_ok=True)
             record = {"factor": spec.name, "year": year, "accessed": sorted(ctx.accessed),
                       "declared": list(spec.deps), "undeclared": sorted(ctx.accessed - set(spec.deps)),
@@ -1008,7 +1139,7 @@ class Engine:
             days = np.concatenate([pre_days, days])
             log.info("%s year=%d 起点年前段填充 %.1f（%d 天）", spec.name, year,
                      spec.align_fill, pre_days.size)
-        merged = upsert_year(self.cfg.factor_root(spec), spec.name, year, df,
+        merged = self._upsert_output(spec, year, df,
                              self.cfg.compression,
                              prune_after=self._run_end,
                              # ★ 起点之后才该有行：合并语义会原样保留分区里更早的旧行，
@@ -1031,6 +1162,8 @@ class Engine:
             "partition_rows": len(merged),
             "min_date": str(merged["trade_date"].min()),
             "max_date": str(merged["trade_date"].max()),
+            "content_sha256": (None if self.cfg.raw.get("_production_only") else
+                               partition_content_sha256(merged, already_sorted=True)),
             "write": write_stat,
             # ★ 本任务（因子 × 年）的**实际耗时**（含读盘与写盘）—— 增量效率靠它衡量
             "seconds": round(time.time() - _t_task, 2),
@@ -1058,6 +1191,10 @@ class Engine:
             path = (self.cfg.factor_root(spec) if hasattr(self.cfg, "factor_root") else self.cfg.factors_dir) / spec.name / f"year={r['year']}" / "data.parquet"
             st = path.stat()
             man.partitions[str(r["year"])]["file_identity"] = [st.st_size, st.st_mtime_ns]
+            if r.get("content_sha256"):
+                man.partitions[str(r["year"])]["content_sha256"] = r["content_sha256"]
+            else:
+                man.partitions[str(r["year"])]["content_sha256"] = partition_content_sha256(pd.read_parquet(path))
             stats["years"] += 1
             stats["rows"] += r["rows"]
             stats["nonnull"] += r["nonnull"]
@@ -1102,61 +1239,196 @@ class Engine:
         return stats
 
     def st_gate(self) -> dict:
-        """ST 内容闸门 —— 与 `state/universe_st.json` 比对，**内容变了就拦下整轮运行**。
+        """保护已发布及已写入日期的 ST 内容，只放行可证明的未来新增事件。
 
-        为什么需要它：`stock_st_info` 参与股票池掩码，却**不在任何因子的 deps 里**
-        （`HISTORY.md` 记了很久的「静默不一致」）—— 上游新增一条池内 ST 记录
-        **不会触发任何重算**，历史值会停在过时口径上，且零报错。
-
-        为什么是「拦」而不是「自动重建」：见 `universe.st_pool_fingerprint` 的第 2 条 ——
-        重建 = 全部 653 个因子重写，还可能与正在跑的模型训练抢共享盘，必须由人拍板。
-
-        为什么「读不到」只告警不拦：冻结池口径下池内本来就没有 ST 事件，
-        读不到**不改变任何结果**；此处拦下来会变成每天必响的假警报。
-        但 `source` 会留在基线文件里，事后可查「那一天到底读到了没有」。
+        ST 不在因子 deps 中，旧日期变化仍须显式审核。固定股票轴上的未来
+        ST 事件只改变尚未覆盖日期的掩码；核对原始字符串前缀不变后可正常日更。
+        研究沙箱保留原闸门，由研究运行器独立处理可见范围推进。
         """
         cur = st_pool_fingerprint(self.up, self.codes)
+        if cur["source"] == "unavailable":
+            raise RuntimeError("✘ ST 内容闸门：stock_st_info 读取失败，不能证明股票池掩码不变："
+                               + str(cur.get("error")))
         p = Path(self.cfg.state_dir) / "universe_st.json"
         prev = None
         if p.exists():
             try:
                 prev = json.loads(p.read_text(encoding="utf-8"))
+                if not isinstance(prev, dict):
+                    raise ValueError("已有 ST 基线必须是 JSON 对象，不能当作首次 bootstrap")
             except Exception as exc:                          # noqa: BLE001
                 raise RuntimeError(f"✘ {p} 读不出来，无法核对 ST 内容闸门：{exc!r}") from exc
         else:
             p.parent.mkdir(parents=True, exist_ok=True)
 
-        rec = {"note": "ST 内容闸门基线（S-01，2026-09-21）。改动它 = 放行一轮全量重建，"
-                       "必须是有意为之，并同步通知模型侧。",
+        rec = {"note": "ST 内容闸门基线。已覆盖日期的事件变更须显式审核；"
+                       "可证明的未覆盖日期新增记录在 accepted_forward_events。",
                "universe_n": int(self.codes.size), **cur}
         if prev is None:
-            p.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+            self._write_st_baseline(p, rec)
             log.info("ST 内容闸门：基线已建立 %s（source=%s · n_events=%s · max_date=%s）",
                      p, cur["source"], cur["n_events"], cur["max_date"])
             return cur
 
-        a, b = prev.get("sha1"), cur["sha1"]
+        def known_empty(record):
+            return (record.get("source") in ("ok", "empty") and record.get("error") is None and
+                    isinstance(record.get("n_events"), int) and record["n_events"] == 0 and
+                    not isinstance(record.get("n_events"), bool) and
+                    record.get("max_date") is None and
+                    ((record.get("source") == "empty" and record.get("sha1") is None) or
+                     record.get("sha1") == "pool-empty"))
+
+        def valid_sha(sha):
+            return (isinstance(sha, str) and len(sha) == 40 and
+                    all(c in "0123456789abcdef" for c in sha))
+
+        # A real readable empty table is the same zero-event evidence as a
+        # populated table with no pool records; an unavailable source is not.
+        a = "pool-empty" if known_empty(prev) else prev.get("sha1")
+        b = "pool-empty" if known_empty(cur) else cur["sha1"]
+        if (prev.get("source") == "unavailable" and prev.get("sha1") is None and
+                isinstance(cur.get("n_events"), int) and cur["n_events"] > 0):
+            raise RuntimeError("✘ ST 内容闸门：旧基线读取失败且无指纹，不能自动接受非零池内事件；"
+                               "无法证明已覆盖日期的 ST 前缀未变")
+        if not known_empty(prev) and not valid_sha(a):
+            raise RuntimeError("✘ ST 内容闸门：旧基线缺失或非法 SHA，不能证明已覆盖日期的 ST 前缀未变；"
+                               "拒绝自动覆盖已有基线")
+        if "accepted_forward_events" in prev:
+            # Keep the last proof when later annual workers see the same SHA.
+            rec["accepted_forward_events"] = prev["accepted_forward_events"]
         if a and b and a != b:
-            raise RuntimeError(
-                "✘ ST 内容闸门拦下本轮运行：池内 ST 事件与基线不一致。\n"
-                f"  基线：sha1={a} · n={prev.get('n_events')} · max_date={prev.get('max_date')}\n"
-                f"  现在：sha1={b} · n={cur['n_events']} · max_date={cur['max_date']}\n"
-                "  这会让因子值停在一个已经过时的口径上（stock_st_info 不在任何因子的 deps 里，"
-                "不重算就不会变）。\n"
-                "  处置：① 确认这次变化该不该进历史 —— 该进就 `main.py rebuild` 全量重建，"
-                "重建前先备份、并避开模型侧训练；\n"
-                "        ② 只是厂商补了无关记录 → 手工刷新基线文件（等于显式接受）。\n"
-                f"  基线文件：{p}")
+            proof = None
+            proof_error = "仅生产可验证未覆盖日期的新增事件"
+            if not self.cfg.raw.get("_sandbox") and self.up.audit_cutoff is None:
+                try:
+                    import hashlib
+
+                    def date(value):
+                        text = str(value)
+                        parsed = _dt.date.fromisoformat(text[:10])
+                        if parsed.isoformat() != text[:10]:
+                            raise ValueError(f"非法日期：{value!r}")
+                        return parsed.isoformat()
+
+                    def readable(record):
+                        n = record.get("n_events")
+                        sha = record.get("sha1")
+                        return known_empty(record) or (record.get("source") == "ok" and record.get("error") is None and
+                                isinstance(n, int) and not isinstance(n, bool) and n > 0 and
+                                valid_sha(sha))
+
+                    if not readable(prev) or not readable(cur):
+                        raise ValueError("旧/新 ST 指纹不是可证明的可读基线")
+                    if prev.get("universe_n") != int(self.codes.size):
+                        raise ValueError("旧基线的股票轴不一致")
+
+                    pointer = json.loads((p.parent / "current_release.json").read_text(encoding="utf-8"))
+                    published_until = date(pointer["cutoff"])
+                    release_path = (self.cfg.root / pointer["path"]).resolve()
+                    if not release_path.is_relative_to(self.cfg.root.resolve()):
+                        raise ValueError("发布清单路径越出项目")
+                    release = json.loads(release_path.read_text(encoding="utf-8"))
+                    payload = {k: v for k, v in release.items() if k != "release_id"}
+                    identity = hashlib.sha256(json.dumps(
+                        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                        allow_nan=False).encode()).hexdigest()
+                    if (release["release_id"] != pointer["release_id"] or
+                            identity != pointer["release_id"] or date(release["cutoff"]) != published_until):
+                        raise ValueError("无法核验已完成发布的身份/截止")
+                    if release.get("stock_count") not in (None, int(self.codes.size)):
+                        raise ValueError("已发布股票轴不一致")
+
+                    protected_until = published_until
+                    covered_manifests = 0
+                    for state_path in sorted(p.parent.glob("*.json")):
+                        if not state_path.resolve().is_relative_to(self.cfg.root.resolve()):
+                            raise ValueError(f"状态文件越出项目：{state_path.name}")
+                        state = json.loads(state_path.read_text(encoding="utf-8"))
+                        if not isinstance(state, dict):
+                            raise ValueError(f"无法识别状态文件：{state_path.name}")
+                        if "coverage" not in state:
+                            if "recipe" in state or "partitions" in state:
+                                raise ValueError(f"台账缺少 coverage：{state_path.name}")
+                            continue
+                        if not isinstance(state["coverage"], list):
+                            raise ValueError(f"非法 coverage：{state_path.name}")
+                        for span in state["coverage"]:
+                            if not isinstance(span, (list, tuple)) or len(span) != 2:
+                                raise ValueError(f"非法 coverage 区间：{state_path.name}")
+                            lo, hi = map(date, span)
+                            if lo > hi:
+                                raise ValueError(f"倒序 coverage 区间：{state_path.name}")
+                            protected_until = max(protected_until, hi)
+                        covered_manifests += 1
+
+                    if prev["n_events"] and date(prev["max_date"]) > protected_until:
+                        raise ValueError("旧整体基线含保护截止之后的事件，不能证明旧前缀")
+                    st = self.up.read("stock_st_info", columns=["stock_code", "trade_date"])
+                    sub = st.loc[st["stock_code"].astype(str).isin(
+                        set(np.asarray(self.codes, dtype=str).tolist()))]
+                    dates = sub["trade_date"].astype(str).map(date)
+                    old = sub.loc[dates <= protected_until]
+                    keys = (old["stock_code"].astype(str) + "|" + old["trade_date"].astype(str)).sort_values()
+                    prefix_sha1 = (hashlib.sha1("\n".join(keys.tolist()).encode()).hexdigest()
+                                   if len(old) else "pool-empty")
+                    if prefix_sha1 != a or len(old) != prev["n_events"]:
+                        raise ValueError("保护截止及以前的 ST 原始键/重复行已变化")
+                    suffix = dates[dates > protected_until]
+                    if len(suffix) == 0 or len(sub) != cur["n_events"]:
+                        raise ValueError("无法证明变化仅含未覆盖日期的新增事件")
+                    proof = dict(method="raw-string-prefix-v1", checked_at=_dt.datetime.now().isoformat(),
+                                 release_id=pointer["release_id"], published_cutoff=published_until,
+                                 protected_cutoff=protected_until, covered_manifests=covered_manifests,
+                                 previous_sha1=a, previous_n_events=prev["n_events"],
+                                 previous_record_sha1=prev.get("sha1"),
+                                 prefix_sha1=prefix_sha1, prefix_n_events=len(old),
+                                 current_sha1=b, current_n_events=cur["n_events"],
+                                 added_n_events=len(suffix), added_min_date=str(suffix.min()),
+                                 added_max_date=str(suffix.max()))
+                except Exception as exc:  # No incomplete evidence may authorize history changes.
+                    proof_error = str(exc)
+            if proof is None:
+                raise RuntimeError(
+                    "✘ ST 内容闸门拦下本轮运行：池内 ST 事件与基线不一致。\n"
+                    f"  基线：sha1={a} · n={prev.get('n_events')} · max_date={prev.get('max_date')}\n"
+                    f"  现在：sha1={b} · n={cur['n_events']} · max_date={cur['max_date']}\n"
+                    "  这会让因子值停在一个已经过时的口径上（stock_st_info 不在任何因子的 deps 里，"
+                    "不重算就不会变）。\n"
+                    "  处置：① 确认这次变化应进入历史后，用 `main.py rebuild` 显式重建；\n"
+                    "        ② 只是厂商补了无关记录 → 手工刷新基线文件（等于显式接受）。\n"
+                    f"  未覆盖日期新增证明未通过：{proof_error}\n"
+                    f"  基线文件：{p}")
+            rec["accepted_forward_events"] = proof
+            log.info("ST 内容闸门：已核对保护截止 %s 以前原始事件不变，接受 %s 条未覆盖日期新增事件 [%s→%s]（release=%s）",
+                     proof["protected_cutoff"], proof["added_n_events"], proof["added_min_date"],
+                     proof["added_max_date"], proof["release_id"])
         if a is None and b is not None:
             log.warning("⚠️ ST 内容闸门：上一轮读不到 ST（基线 sha1 为空），本轮读到了 "
                         "（n_events=%s）—— 已更新基线。若之前那几轮的因子值需要复核，"
                         "请对照 %s 里的时间线。", cur["n_events"], p)
         elif b is None:
-            log.warning("⚠️ ST 内容闸门：本轮读不到 stock_st_info（source=%s），"
-                        "无法与基线核对 —— 冻结池口径下不改变结果，已记入 %s。", cur["source"], p)
+            log.warning("⚠️ ST 内容闸门：本轮没有可核验指纹（source=%s），已记入 %s。", cur["source"], p)
 
-        p.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        self._write_st_baseline(p, rec)
         return cur
+
+    @staticmethod
+    def _write_st_baseline(p: Path, rec: dict) -> None:
+        """原子写 ST 基线；内容与现有一致则**跳过写盘**（幂等）。
+
+        ★★ 2026-10-03（并行执行器前置修复）：原来两处都是 `p.write_text(...)` ——
+          非原子、且每一轮 prebuild 都无条件重写。多路年份流下两个块同时写会互相
+          截断；读侧（`st_gate` 开头）对不可读基线是**硬失败**，一个写一半被杀就会
+          永久阻塞之后所有运行。改成 `_atomic_json`（PID 临时名 + os.replace）后，
+          读侧永远看到完整文件；内容相同不重写，也让基线文件的 mtime 只在真正
+          变化时才动（历史不可变的观测更干净）。
+        """
+        try:
+            if p.exists() and json.loads(p.read_text(encoding="utf-8")) == rec:
+                return
+        except Exception:                                     # noqa: BLE001
+            pass
+        _atomic_json(rec, p)
 
     def delay_gate(self) -> dict:
         """可用时点契约闸门（S-01）—— 只拦**「声明更松」**的方向。
@@ -1170,7 +1442,9 @@ class Engine:
         完整口径见 `delay.audit_contract()` 的注释。
         """
         from .delay import audit_contract
-        r = audit_contract()
+        r = audit_contract(project_root=getattr(self.cfg, "contract_root", self.cfg.root),
+                           contract_path=self.cfg.input_contract_path("frequency", "conf/frequency.yaml"),
+                           history_path=self.cfg.input_contract_path("delay_history", "state/delay_history.json"))
         if r["authoritative_state"] != "ok":
             log.warning("⚠️ 可用时点契约：读不到日更侧 registry._DELAY（state=%s），"
                         "本轮**无法核对**契约一致性 —— 已按「只读因子侧声明」继续，"
@@ -1179,11 +1453,10 @@ class Engine:
         if r["unexplained"]:
             lines = "\n".join(f"    · {x['table']}：{x['why']}" for x in r["unexplained"][:10])
             raise RuntimeError(
-                "✘ 可用时点契约闸门拦下本轮运行：因子侧声明的延迟**比日更侧更松**。\n"
+                "✘ 项目内可用时点契约需要复核。\n"
                 f"{lines}\n"
                 "  后果：依赖这些表的因子可能被放行注册，从而在历史截面上用上当时拿不到的数据。\n"
-                "  处置：① 该加严 → 改 datadownload/conf/frequency.yaml 并同步 registry._DELAY；\n"
-                f"        ② 确认无害 → 写进 {r['ack_file']} 说明理由（显式接受）。")
+                f"  处置：在 {r['authoritative_source']} 更新已核实的可得时点契约。")
         if r["acked"]:
             log.info("可用时点契约：%d 条差异已显式接受（见 %s）", len(r["acked"]), r["ack_file"])
         return r
@@ -1222,7 +1495,13 @@ class Engine:
         """
         # ★ 2026-09-21（S-01）：先过两道闸门（ST 内容 / 可用时点契约），再规划。
         #   放在这里而不是 __init__：check / list 这类只读命令不该被闸门拦住。
-        self.st_gate()
+        # ★★ 2026-10-03 并行执行器：切片 worker（state_writes=False）**不跑 ST 闸门的
+        #   写盘路径** —— ST 基线由 driver 单点核对/写入（见 `st_gate` 的原子写），
+        #   多块并发重写同一份 `state/universe_st.json` 会互相截断（写面审计）。
+        #   `delay_gate` 本就只读，照跑。
+        #   （单测常用 `object.__new__(Engine)` 构造，不跑 __init__ ⇒ getattr 兜底）
+        if getattr(self, "state_writes", True):
+            self.st_gate()
         self.delay_gate()
         self._run_end = end_i
         self._end_str = int_to_str(end_i)
@@ -1231,9 +1510,10 @@ class Engine:
             man = Manifest.load(self.cfg.state_dir, spec.name)
             before = man.recipe
             plan = self.plan(spec, man, end_i, rebuild)
-            if man.recipe != before:
+            if man.recipe != before and getattr(self, "state_writes", True):
                 # 指纹变了/全量重建：先把「已清空」落盘。否则中途崩了，
                 # 下次会读到旧 coverage 而以为这段已完成，新旧口径就混在一起了。
+                # （state_writes=False 时由 driver/coordinator 负责落盘，worker 不碰。）
                 man.save()
             if plan:
                 todo.append((spec, man, plan))
@@ -1272,81 +1552,7 @@ class Engine:
             # ★ 派生缓存必须**在父进程里建完**再 fork。
             #   `ensure()` 是「缺了就当场构建」，如果留给 worker，12 个 worker 会
             #   同时抢着重建同一份缓存（55 分钟的活干 12 遍，还会互相写坏 manifest）。
-            # ★★ 但年份范围必须按「**真正用到这一层**的因子」算，不能用上面的全局窗口：
-            #   全局窗口带的是所有因子的最大 warmup（本轮 `pegh5` 是 2600 天 → 回到 2018），
-            #   而 pegh5 只吃财报、根本不用日内/筹码层 —— 用全局窗口会白重建
-            #   2018–2024 的派生层（实测：一次 run 在 prebuild 重建 15 个年分区、约 30 分钟，
-            #   还会把「只保留 2026」的裁剪结果又建回来）。
-            # ★★ 2026-09-25：四个层**互相独立**，按层并行构建。
-            #
-            #   依赖关系：intraday / open5 / market_morning 读 `stock_history_5min`
-            #   （板块分钟线由 market_morning 独立聚合），chips 读 `stock_cyq_chips`。
-            #   每个层写**自己的** `data/derived/<层>/_manifest.json` 和各自的
-            #   `year=YYYY/data.parquet` —— 跨层没有任何共享文件，所以这里不需要锁，
-            #   也不会互相写坏 manifest（对比：把 ensure() 留给因子 worker 会 12 个
-            #   进程抢同一份缓存，见上面那段说明）。
-            #
-            #   实测（本机 25 核、数值库单线程）单层单年耗时：
-            #     intraday 63s · chips 82s · open5 39s · market_morning 76s
-            #   2019 块四层串行 260s → 并行 max(...) = 82s；
-            #   2018 块（含 2016–2018 预热）543s → 194s。
-            #
-            #   并行度只在这段生效：此时因子 worker 还没 fork，不存在争 CPU。
-            #   注意 `jobs` 传的是因子相位要用的并行度；这里取 min(jobs, 层数)，
-            #   避免为了 4 个层开出一堆进程。
-            layer_plan = {
-                # 个股日内派生层只消费 stock_history_5min；板块分钟线独立聚合。
-                "intraday": self._layer_years(todo, ("stock_history_5min",)),
-                "chips": self._layer_years(todo, ("stock_cyq_chips",)),
-                "open5": self._layer_years(todo, ("stock_history_5min",)),
-            }
-            closing30_todo = [item for item in todo
-                              if getattr(item[0].fn, "__module__", "") == "factors.closing30"]
-            if closing30_todo:
-                layer_plan["closing30"] = self._layer_years(
-                    closing30_todo, ("stock_history_5min",))
-            chipwall_todo = [item for item in todo
-                             if getattr(item[0].fn, "__module__", "") == "factors.chipwall"]
-            if chipwall_todo:
-                layer_plan["chipwall"] = self._layer_years(
-                    chipwall_todo, ("stock_cyq_chips", "stock_daily"))
-            morning_todo = [item for item in todo
-                            if item[0].is_market and "stock_history_5min" in item[0].deps]
-            if morning_todo:
-                layer_plan["market_morning"] = self._layer_years(morning_todo,
-                                                                 ("stock_history_5min",))
-            active = sorted(n for n, yr in layer_plan.items() if yr[1] >= yr[0])
-            if jobs > 1 and len(active) > 1:
-                import multiprocessing as mp
-                from concurrent.futures import ProcessPoolExecutor, as_completed
-                global _LAYER_WORK
-                _LAYER_WORK = {"eng": self, "ranges": {n: layer_plan[n] for n in active}}
-                ctx = mp.get_context("fork")
-                log.info("派生层并行构建 %d 层（jobs=%d）：%s",
-                         len(active), min(jobs, len(active)), active)
-                with ProcessPoolExecutor(max_workers=min(jobs, len(active)),
-                                         mp_context=ctx) as ex:
-                    futs = {ex.submit(_ensure_layer_task, n): n for n in active}
-                    for fut in as_completed(futs):
-                        name = futs[fut]
-                        try:
-                            fut.result()
-                        except Exception:
-                            log.exception("派生层 %s 构建失败", name)
-                            raise
-                        log.info("派生层 %s 完成", name)
-                # ★★ 必须在**父进程**里把层实例建出来。
-                #   因子 worker 是 fork 的，`ctx.chip(...)` 只认父进程已建好的实例，
-                #   否则直接抛「引擎没有预建 ChipLayer」。上面那 4 个子进程各自建的实例
-                #   只存在于**它们自己**的地址空间（写时复制），父进程看不到 ——
-                #   实测漏了这一步会让 46 个因子失败、整块返回 1。
-                #   构造函数零成本（构造函数里不读数据、不碰磁盘），这里只是补个对象；
-                #   子进程已经把缓存和 manifest 落盘，父进程的实例读 manifest 即认为已就绪。
-                for name in sorted(layer_plan):
-                    self._layer(name)
-            else:
-                for name in active:
-                    self._layer(name).ensure(*layer_plan[name])
+            self.build_derived_layers(todo, jobs)
             self.factor_io()
             # ★ 清掉原始上游表缓存再 fork：见 Upstream.clear_cache 的说明。
             #   各派生层已经把这些数据"消化"完了，worker 不需要原始表。
@@ -1356,6 +1562,86 @@ class Engine:
             if self._prices is not None:
                 self._prices.clear_raw()
         return todo
+
+    def build_derived_layers(self, todo, jobs: int = 1) -> list[str]:
+        """预建派生层（intraday / chips / open5 / closing30 / chipwall / market_morning）。
+
+        年份范围必须按「**真正用到这一层**的因子」算，不能用所有因子的全局窗口：
+        全局窗口带的是最大 warmup（`pegh5` 2600 天 → 回到 2018），而它根本不用
+        日内/筹码层 —— 用全局窗口会白重建 2018–2024 的派生层（实测一次 run 重建
+        15 个年分区、约 30 分钟）。
+
+        并行纪律（2026-10-03 写面审计）：
+          · **层间**零共享文件（每层各自的 `data/derived/<层>/_manifest.json` 与
+            年分区），所以层间可以并行；
+          · **层内**（同层不同年份）的 manifest 是整份 load→save，多个年块进程
+            同时建同一层的不同年份会互相丢 `years` 条目 ⇒ 昂贵层年分区白重建。
+            所以多路年份流的执行器必须在**派发年块之前**由单一进程把层建好
+            （`fea/executor.py` 的 driver 侧），切片 worker 里的 `ensure()` 只是
+            确认已新鲜（毫秒级）。
+
+        返回实际处理（构建或确认新鲜）的层名列表。
+        """
+        layer_plan = {
+            # 个股日内派生层只消费 stock_history_5min；板块分钟线独立聚合。
+            "intraday": self._layer_years(todo, ("stock_history_5min",)),
+            "chips": self._layer_years(todo, ("stock_cyq_chips",)),
+            "open5": self._layer_years(todo, ("stock_history_5min",)),
+        }
+        closing30_todo = [item for item in todo
+                          if getattr(item[0].fn, "__module__", "") == "factors.closing30"]
+        if closing30_todo:
+            layer_plan["closing30"] = self._layer_years(
+                closing30_todo, ("stock_history_5min",))
+        chipwall_todo = [item for item in todo
+                         if getattr(item[0].fn, "__module__", "") == "factors.chipwall"]
+        if chipwall_todo:
+            layer_plan["chipwall"] = self._layer_years(
+                chipwall_todo, ("stock_cyq_chips", "stock_daily"))
+        morning_todo = [item for item in todo
+                        if item[0].is_market and "stock_history_5min" in item[0].deps]
+        if morning_todo:
+            layer_plan["market_morning"] = self._layer_years(morning_todo,
+                                                             ("stock_history_5min",))
+        active = sorted(n for n, yr in layer_plan.items() if yr[1] >= yr[0])
+        if not active:
+            return []
+        # ★★ 2026-09-25：四层**互相独立**，按层并行构建。
+        #   实测（25 核、数值库单线程）单层单年：intraday 63s · chips 82s ·
+        #   open5 39s · market_morning 76s；2019 块四层串行 260s → 并行 82s。
+        #   并行度只在这段生效：此时因子 worker 还没 fork，不争 CPU。
+        if jobs > 1 and len(active) > 1:
+            import multiprocessing as mp
+            from concurrent.futures import ProcessPoolExecutor, as_completed
+            global _LAYER_WORK
+            _LAYER_WORK = {"eng": self, "ranges": {n: layer_plan[n] for n in active}}
+            ctx = mp.get_context("fork")
+            log.info("派生层并行构建 %d 层（jobs=%d）：%s",
+                     len(active), min(jobs, len(active)), active)
+            with ProcessPoolExecutor(max_workers=min(jobs, len(active)),
+                                     mp_context=ctx) as ex:
+                futs = {ex.submit(_ensure_layer_task, n): n for n in active}
+                for fut in as_completed(futs):
+                    name = futs[fut]
+                    try:
+                        fut.result()
+                    except Exception:
+                        log.exception("派生层 %s 构建失败", name)
+                        raise
+                    log.info("派生层 %s 完成", name)
+            # ★★ 必须在**父进程**里把层实例建出来。
+            #   因子 worker 是 fork 的，`ctx.chip(...)` 只认父进程已建好的实例，
+            #   否则直接抛「引擎没有预建 ChipLayer」。上面那几个子进程各自建的实例
+            #   只存在于**它们自己**的地址空间（写时复制），父进程看不到 ——
+            #   实测漏了这一步会让 46 个因子失败、整块返回 1。
+            #   构造函数零成本（不读数据、不碰磁盘），这里只是补个对象；
+            #   子进程已经把缓存和 manifest 落盘，父进程的实例读 manifest 即认为已就绪。
+            for name in sorted(layer_plan):
+                self._layer(name)
+        else:
+            for name in active:
+                self._layer(name).ensure(*layer_plan[name])
+        return active
 
     def run_parallel(self, tasks: list[tuple[str, int, np.ndarray]],
                      jobs: int, on_done=None) -> list[dict]:

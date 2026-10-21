@@ -1,0 +1,16 @@
+name: r4i_ini_cond_w20_v1
+family_id: r4i_seat_closeout_v1
+implementation: research.families.r4i_seat_v1:build
+parameters: {signal: inst_net_intensity_cond, window: 20}
+units: 无量纲比率——上榜日 r = 机构专用席位净买额合计 / 当日 stock_daily.amount（元/元），value = r 在 20 日窗口的 DecayLinear 加权均值（权重 20..1 归一）。
+availability: 席位明细仅用 trade_date <= T（stock_dragon_tiger 延迟 0 日）；成交额用 T 日（含）及以前 stock_daily.amount；机构判定沿用 R3-A 冻结规则。
+missing_policy: 非上榜日不参与窗口（贡献 0，不是 0 值样本）；窗口内（含 T）无任何有效上榜日 → NaN；上榜日 amount 缺失或 ≤0 → 该日无效；池外 → NaN。
+spec:
+  group: research_seat
+  desc: Lead 预登记机制 2：机构专用席位净买强度（占当日成交额比）的 20 日衰减均值，仅上榜样本、NaN 原生。
+  formula: r = sum(inst net_buy_amount)(t) / amount(t); value = decay_linear(r, 20, min_count=1)
+  deps: [stock_dragon_tiger, stock_daily]
+  warmup_days: 420
+  higher_is_better: true
+  version: 1
+  note: 只用 net_buy_amount（权威净额），绝不用 buy−sell（2018 年约 94% 行买卖列整块互换）；上榜但无机构席位 → r=0（有效样本，不是缺失）。

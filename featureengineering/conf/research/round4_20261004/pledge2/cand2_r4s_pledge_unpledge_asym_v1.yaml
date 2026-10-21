@@ -1,0 +1,16 @@
+name: r4s_pledge_unpledge_asym_v1
+family_id: r4s_pledge_v2_v2
+implementation: research.families.r4s_pledge_v2_v1:build
+parameters: {signal: pledge_unpledge_asym}
+units: 无量纲比值，取值 [−1, +1]（增质幅度占总变差的比例再居中）。
+availability: 周频快照 stock_pledge_stat；end_date 仅为截止日、无发布时刻；本模块进程内声明 end_date 为可得日期列（AGENTS.md F.1 绕行，已用 Upstream._audit_frame 实测截断生效）；as-of 只前向填充，整体保守滞后 15 个交易日（> 实测供应商滞后 12–13 个交易日）；lag<13 的口径被禁。
+missing_policy: zero 主口径：(股票×周) 稠密网格缺席记 0（实测缺席⇒无存续质押）；网格到日频为 as-of 前向填充；窗口内无任何变动（U+D=0）记 NaN。
+spec:
+  group: research_pledge
+  desc: 增质幅度 vs 解质幅度的路径不对称：对滞后可得水平 P 的逐日差分在 65 交易日窗口内分解 U=Σmax(d,0)、D=Σmax(−d,0)，取 (U−D)/(U+D)。值越高 = 增质主导，预期未来收益越低。
+  formula: "(U-D)/(U+D), U=roll_sum(max(dP,0),65), D=roll_sum(max(-dP,0),65), dP=P(t)-P(t-1), U+D=0 -> NaN"
+  deps: [stock_pledge_stat]
+  warmup_days: 400
+  higher_is_better: false
+  version: 1
+  note: 事前登记 W=65 交易日（13 周）；窗口敏感性 W=20 只作执行者侧同代码复算（pledge_unpledge_asym_m），不登记、不改方向；总变差归一使本构念与一阶净变化不同（净变化被幅度归一抵消）；严禁 lag5 前视口径。

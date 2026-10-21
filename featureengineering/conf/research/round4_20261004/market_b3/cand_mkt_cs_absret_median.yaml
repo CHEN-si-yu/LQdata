@@ -1,0 +1,18 @@
+name: r4o_mkt_cs_absret_median_v1
+family_id: r4o_market_b3_v1
+implementation: research.families.r4o_market_b3_v1:build
+parameters: {signal: mkt_cs_absret_median}
+units: 无量纲（|收益率|小数）；池内 |日收益| 的截面中位数（日频原值、不做平滑）。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily / stock_adj_factor，delay=0）；无未来数据。
+missing_policy: 停牌（无真实成交）与缺测不计入分母；有效票 < 100 的日 → NaN；不零填充、不前向填充。
+spec:
+  group: market
+  desc: "|日收益| 截面中位数（绿卡描述量，无方向）"
+  formula: "r=单日后复权收益(停牌NaN)；value=median(|r|) over 有效票"
+  deps: [stock_daily, stock_adj_factor]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  is_market: true
+  note: "绿卡通道预登记（无方向承诺）；收益率（标准变换）取绝对值为横截面半矩型量（绿卡列举项「横截面半矩」的稳健中心口径），中位数为直接观测统计量；与生产 mkt_dispersion（std 口径）、mkt_am_range_mean（振幅口径）为波动族不同对象，M4 记录相关；固定2115只主板池；有效样本分母，缺测/停牌不计，少于100只为NaN；市场标量不做截面rank；缺失保持NaN；未做收益有效性承诺。"

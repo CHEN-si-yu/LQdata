@@ -1,0 +1,25 @@
+idea_id: r4b_intraday_shape_v1
+hypothesis: 日内成交与价格的「形状」——成交在当日 48 根 5min bar 上的集中度、价格路径的来回度、
+  成交的日内位置（尾盘份额）、上涨 bar 的放量程度、以及收盘在日内区间中的位置——携带日频
+  波动水平与短期反转之外的横截面预期收益信息。
+mechanism: |
+  1) 成交集中度（HHI）：日内成交量份额越集中（少数 bar 承载大部分成交），说明流动性供给
+     薄弱、博弈化程度高，预期收益越低（false）；
+  2) 路径无效率：1 − |当日净收益| / Σ|bar 收益| 度量价格路径的来回程度（噪音路径），
+     越高说明当日行情中噪音/来回博弈占比越高，预期收益越低（false）；
+  3) 尾盘成交额份额：尾盘 14:30–15:00 成交额占比越高，收盘时段博弈/调仓驱动越强，
+     预期收益越低（false）；
+  4) 上涨 bar 成交量占比：上涨 bar 放量（主动买盘承接）对应未来收益更高（true）；
+  5) 收盘位置 CLV：(close − low) / (high − low) 越高表示收盘位于日内高位、承接强，
+     预期收益更高（true）。
+expected_direction: intraday_volume_hhi_20=false；intraday_path_inefficiency_20=false；
+  close30_volume_share_20=false；upbar_volume_share_20=true；close_location_value_20=true。
+target_horizons: [1, 5]
+falsifiable: 与 idt_rv_daily / id2_parkinson_vol / idt_vol_stability / r3b_intraday_rv_skewness_v2 /
+  close30_ret / idt_overnight_minus_intraday 任一 |rho|>0.9，或 declared RankIC 分年同号 <7/9，
+  或 G7 控制后不显著，或覆盖实测不足（<60% 交易日有效票 ≥100），则不支持本假设。
+fields: [stock_history_5min.stock_code, stock_history_5min.trade_time, stock_history_5min.open,
+  stock_history_5min.close, stock_history_5min.vol, stock_history_5min.amount,
+  stock_daily.high, stock_daily.low, stock_daily.close]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

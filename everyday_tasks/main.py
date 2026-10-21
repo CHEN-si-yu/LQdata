@@ -240,26 +240,6 @@ def cmd_run(args, cfg: dict) -> int:
     except OSError:
         pass
 
-    # ★★ 2026-09-19：名单同步放在**主体之前**，这样厂商新上的指数当轮就能被抓到 ——
-    #   新增的代码不在 `done.entities` 里，`run_per_entity` 会走 `todo_new` 路径
-    #   给它**全量回填历史**（不是只抓当天）。放主体之后就得等第二天。
-    from data_incremental.pipeline import roster as roster_mod
-    maintain_roster = not only or roster_mod.THS_DS in only
-    rinfo = (roster_mod.sync(cfg, client, write=not args.dry_run) if maintain_roster
-             else {"ok": True, "skipped": True, "added": 0})
-    if not rinfo.get("ok"):
-        runner.note(f"⓪ 名单同步跳过：{rinfo.get('note')}")
-    elif rinfo.get("added"):
-        runner.note(f"⓪ 名单同步：厂商新增 {rinfo['added']} 只 THS 指数"
-                    f"（{', '.join(rinfo.get('sample') or [])} …）"
-                    f"，已写进固化名单，本轮起自动抓取并全量回填历史")
-    else:
-        runner.note(f"⓪ 名单同步：厂商 {rinfo.get('vendor')} 只 / 固化名单 "
-                    f"{rinfo.get('roster')} 只，无新增")
-    if rinfo.get("warn"):
-        runner.note(f"   ⚠️ {rinfo['warn']}")
-
-    sweep_info = None
     try:
         rep = runner_mod.run(cfg, runner, client,
                              dry_run=args.dry_run,
@@ -268,36 +248,10 @@ def cmd_run(args, cfg: dict) -> int:
                              as_of=getattr(args, "as_of", None),
                              report_backfill=getattr(args, "report_backfill", False),
                              persist_report=False)
-        # ★ 名单完整性 sweep：日更只补尾部窗口（约 6 个交易日），**更早的洞永不自愈**。
-        #   故每 SWEEP_EVERY_DAYS 天做一次全历史刷新兜底。失败不影响当日增量（已入库）。
-        ths_ran = any(row.get("name") == roster_mod.THS_DS
-                      for group in rep.get("groups", {}).values() for row in group)
-        if not args.dry_run and maintain_roster and ths_ran:
-            try:
-                if getattr(args, "sweep_now", False):
-                    runner.note("   --sweep-now：强制执行名单完整性 sweep（忽略周期）")
-                    sweep_info = roster_mod.sweep(cfg, client, runner)
-                else:
-                    sweep_info = roster_mod.sweep_if_due(cfg, client, runner)
-            except Exception as exc:              # noqa: BLE001
-                runner.note(f"   ⚠️ 名单 sweep 失败（不影响当日增量）：{str(exc)[:90]}")
-                sweep_info = {"ok": False, "note": str(exc)[:90]}
     finally:
         client.close()
 
-    rep["roster_sync"] = rinfo
-    rep["roster_sweep"] = sweep_info
-    extra_alerts = []
-    if not rinfo.get("ok"):
-        extra_alerts.append(f"⚠️ 名单同步未完成：{rinfo.get('note')}")
-    if rinfo.get("warn"):
-        extra_alerts.append(f"⚠️ 名单同步：{rinfo['warn']}")
-    if sweep_info and not sweep_info.get("ok"):
-        extra_alerts.append(f"⚠️ 名单全历史补查未完成：{sweep_info.get('note')}")
-    if not args.dry_run:
-        rep.setdefault("alerts", []).extend(extra_alerts)
-        rep.setdefault("alerts_actionable", []).extend(extra_alerts)
-    # Include calendar/gate/roster requests and maintenance work in the final report.
+    # Include calendar/gate requests and maintenance work in the final report.
     rep["requests"] = client.stats.get("requests", rep.get("requests", 0))
     rep["retries"] = client.stats.get("retries", rep.get("retries", 0))
     rep["empty_retries"] = client.stats.get("empty_retries", rep.get("empty_retries", 0))
@@ -318,18 +272,6 @@ def cmd_run(args, cfg: dict) -> int:
 
     if cfg.get("viz", {}).get("summary", True):
         print(viz.render_summary(rep))
-    # 名单相关的结果独立打印：它们不属于某张表的增量，混进汇总表反而看不清
-    if rinfo.get("ok") and rinfo.get("added"):
-        print(f"  ⓪ 名单同步：新增 {rinfo['added']} 只 THS 指数已进固化名单"
-              f"（本轮已自动回填其历史）")
-    if sweep_info:
-        if sweep_info.get("ok"):
-            print(f"  ⓪ 名单 sweep（全历史刷新）：{sweep_info['codes']} 只 / "
-                  f"取回 {sweep_info['fetched']:,} 行 / **补齐 {sweep_info['added']:,} 行**"
-                  + (f" / {sweep_info['failed']} 批失败（下轮自动重试）"
-                     if sweep_info.get("failed") else ""))
-        else:
-            print(f"  ⚠️ 名单 sweep 未完成：{sweep_info.get('note')}")
     if getattr(args, "html", False) and not args.dry_run:
         p = viz.write_html(rep)
         print(f"  HTML 报告：{p}")
@@ -698,8 +640,6 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--report-backfill", action="store_true",
                    help="一次性存量回填：把 4 张财报表(21-24)的**全部**历史报告期抓一遍"
                         "（常规轮次只抓最近 3 期 + ann_date 窗口；见 README §9.11）")
-    r.add_argument("--sweep-now", action="store_true",
-                   help="强制做一次名单完整性 sweep（忽略 30 天周期；约 40 个请求 / 10 分钟）")
     r.add_argument("--force", action="store_true", help="忽略单实例保护")
     r.add_argument("-v", "--verbose", action="store_true", help="详细日志")
     r.set_defaults(fn=cmd_run)

@@ -1,0 +1,28 @@
+# 机制1 窗口变体：最近 4 次公告的提前天数均值（持续性）。
+{
+  "name": "r2d_earliness_mean4_v1",
+  "family_id": "r2_disclosure_family_v1",
+  "implementation": "research.families.r2_disclosure_v1:disclosure_timing",
+  "parameters": {"signal": "earliness_mean4"},
+  "units": "日历日（4 次公告提前天数的简单均值）。",
+  "availability": "与 earliness_last 相同的 avail 定义与 asof 铺设；均值按公告顺序 (avail 升序) 取最近 4 次已公告报告期，因此任一时刻只用当时已可读的公告。",
+  "missing_policy": "同 earliness_last；rolling(4, min_periods=1) 只在该股已公告次数不足 4 时用可得次数求均值，不补 0。",
+  "closest_existing_baselines": ["forecast_type_score", "forecast_profit_midpoint_change"],
+  "semantic_difference": "同一机制的去噪/持续性表达，检验单期噪声是否主导。",
+  "source_fields": ["stock_income.ann_date", "stock_income.f_ann_date", "stock_income.end_date",
+                    "stock_balancesheet.ann_date", "stock_balancesheet.f_ann_date", "stock_balancesheet.end_date",
+                    "stock_cashflow.ann_date", "stock_cashflow.f_ann_date", "stock_cashflow.end_date",
+                    "stock_financial_indicator.ann_date", "stock_financial_indicator.end_date"],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r2_disclosure",
+    "desc": "最近 4 次定期报告相对法定截止日提前天数的均值",
+    "formula": "mean of the last 4 announcement earliness values, ordered by availability day, placed at each announcement availability day and asof-filled",
+    "deps": ["stock_income", "stock_balancesheet", "stock_cashflow", "stock_financial_indicator"],
+    "start": null,
+    "warmup_days": 400,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R2-I4 机制1 的窗口变体（4 次公告，非 4 个交易日）；方向事前冻结。"
+  }
+}

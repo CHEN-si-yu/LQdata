@@ -1,0 +1,42 @@
+name: r9f_breadth_tailskew_x_turnover_v1
+family_id: r9f_breadth_shape_v1
+implementation: research.families.r9f_breadth_shape_v1:build
+parameters: {signal: breadth_tailskew_x_turnover}
+units: 无量纲（有符号 z252 状态 × 换手率 20 日标准差（百分点）），股票级 (T, C)。
+availability: >
+  T 日收盘后可用：状态取 stock_market_distribution_history 当日 **15:00** 那一行（生产
+  mkt_full_flat_ratio 同口径），腿用 ≤T 的日线；z252 只用 ≤T 的历史值；T 日取值用于 T+1
+  开盘起的标签，无前视。截断自证见 .../f_market_breadth_shape/probe_truncation.txt。
+missing_policy: >
+  状态在 15:00 行缺失或 z252 历史不足 120 个有效值 → 全横截面 NaN；个股停牌/未上市/
+  换手率缺失 → 该格 NaN；换手率波动窗口有效值 < 10 → 该格 NaN。不零填充、不前向填充。
+spec:
+  group: research_breadth_shape
+  desc: >
+    市场宽度分布**尾桶不对称**状态（全市场 15:00 的 (up_over_10+up_7_to_10−down_over_10−down_7_to_10)/total，
+    z252(min120)）× 个股换手率 20 日标准差。上尾占优的投机情绪期，高换手波动个股更易被推离
+    基本面并回吐，故交互项对未来 1/5 日收益偏负（higher_is_better=false）。
+  formula: >
+    total = up_count+down_count+flat_count（全市场口径）；tail = (up_over_10 + up_7_to_10 − down_over_10 − down_7_to_10)/total
+    at 15:00；state = (tail − roll_mean252(tail))/(roll_std252(tail, ddof=0))，min_count=120；
+    to_vol = sqrt(roll_mean(turnover²,20,10) − roll_mean(turnover,20,10)²)；
+    value = state × to_vol
+  deps: [stock_market_distribution_history, stock_daily, stock_finance]
+  start: '2018-01-01'
+  warmup_days: 700
+  higher_is_better: false
+  version: 1
+  note: >
+    ★ 已删 breadth 族 10 个 bw_*（含 bw_beta_60 / bw_breadthvol_response_20 / bw_intraday_beta_20 /
+    bw_session_follow_20 / bw_capture_asym_20 / bw_tail_comove_60 / bw_overnight_lag_beta_20 /
+    bw_beta_asym_20 / bw_beta_change_20 / bw_weak_breadth_ret_20）与在库 bw_strength_sensitivity_20
+    都是「个股自身对上涨家数份额或其变化的 20–60 日滚动敏感度」；本因子不是敏感度——
+    状态是**当日整市场 11 个收益桶的形状矩**，腿是该股**自身**的换手波动，两者相乘做状态条件化。
+    已删 field_markets 族 9 个用的是分钟振幅/量集中/加权压力与指数层，未使用收益桶形状。
+    在库触及本表的仅 mkt_full_flat_ratio（平盘占比、无方向市场标量）与 bw_strength_sensitivity_20。
+    尾部腿用 **≥7% 分桶（7–10、>10）+ 全市场约 4,770 只**，与 mkt_strong_up_ratio 的
+    **≥5% 阈值 + 2,115 只冻结池**口径不同。
+    ★ 结构性披露：任何 (T,) 标量状态 × 单一 (T,C) 腿的交互，其**当日截面秩恒等于该腿的秩**
+    （只差当日符号），因此与 turnover_std_20 的当日截面 |rho| ≡ 1 是构造属性、不是发现；
+    候选的全部增量信息在符号/尺度的时间序列上（RankIC 日均检验状态是否调制该腿）。
+    环境指纹: python 3.14.7 / numpy 2.5.3 / 数值指纹 7c7d05c7564f。

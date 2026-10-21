@@ -1,0 +1,16 @@
+name: r4s_pledge_release_streak_v1
+family_id: r4s_pledge_v2_v1
+implementation: research.families.r4s_pledge_v2_v1:build
+parameters: {signal: pledge_release_streak}
+units: 连续严格递减的周数（整数计数 0..13）。
+availability: 周频快照 stock_pledge_stat；end_date 仅为截止日、无发布时刻；本模块进程内声明 end_date 为可得日期列（AGENTS.md F.1 绕行，已用 Upstream._audit_frame 实测截断生效）；as-of 只前向填充，整体保守滞后 15 个交易日（> 实测供应商滞后 12–13 个交易日）；lag<13 的口径被禁。
+missing_policy: zero 主口径：(股票×周) 稠密网格缺席记 0，逐周判定连续严格递减（正质押→0 记一次解押）；到日频 as-of 前向填充。
+spec:
+  group: research_pledge
+  desc: 连续解押期数（解押持续性）：截至最近一条报告、质押比例连续严格递减（L_w < L_{w−1}）的周数，上限 13 周。值越高 = 解押持续、风险逐步解除，预期未来收益越高。
+  formula: "streak_w = streak_{w-1}+1 if L_w < L_{w-1} else 0; capped at 13; L = weekly level (%), absence=0 in zero caliber"
+  deps: [stock_pledge_stat]
+  warmup_days: 400
+  higher_is_better: true
+  version: 1
+  note: 事前登记 cap=13 周（1 季）；strict 递减无幅度阈值；NaN 口径（报告序列上更新）只作执行者侧同代码复算（pledge_release_streak_nan），不登记；warmup 400 日历天 ≈ 55 周 > cap+asof 需要；严禁 lag5 前视口径。

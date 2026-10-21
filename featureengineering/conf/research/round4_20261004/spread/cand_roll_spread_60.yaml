@@ -1,0 +1,16 @@
+name: r4f_roll_spread_60_v1
+family_id: r4f_spread_micro_v1
+implementation: research.families.r4f_spread_micro_v1:build
+parameters: {signal: roll_spread_60}
+units: 价格为后复权价（元），r 为价格层简单收益（无量纲）；因子值 = 2·sqrt(max(−cov,0))，量纲为收益率（小数）。与金额类非流动性因子不同源。
+availability: 只用信号日收盘及以前的日线（adj_factor 取截至当日累计值）经 PriceLayer 后复权；不读前复权；stock_daily/stock_adj_factor 不在可得性滞后名单，无需 lagged_ok。
+missing_policy: 窗口（60 交易日）内有效收益配对 <45（75%）为 NaN；t 或 t−1 非真实成交不入配对；价格层 |单日收益|>60% 置 NaN；协方差 ≥0 取 0.0（未检出价差边界）；不零填充。
+spec:
+  group: research_spread_micro
+  desc: 未验证候选：Roll(1984) 有效价差 60 日滚动估计（窗口稳健性变体）。
+  formula: 2*sqrt(max(-cov(r_t, r_{t-1}), 0))；cov 为尾部 60 个有效配对的总体协方差（ddof=0），min_count=45
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 150
+  higher_is_better: true
+  version: 1
+  note: 窗口为预登记变体；研究候选，不进生产；无未来有效性证明。

@@ -107,9 +107,7 @@ _USAGE = {
     "stock_market_distribution_history": "全市场涨跌分布：市场宽度 / 情绪指标",
     "index_daily": "基准与相对强弱：指数收益、Beta 估计、择时信号",
     "index_history": "指数分钟级：日内动量、隔夜跳空、高频波动",
-    "index_ths_daily": "同花顺板块指数日线：板块轮动与相对强弱",
-    # index_ths_sector_categories / index_ths_constituent_stocks / tdx_block_stocks
-    # 已于 2026-09-19 彻底删除（快照表，无历史版本，回测必然前视）
+    # tdx_block_stocks 已于 2026-09-19 彻底删除（快照表，无历史版本，回测必然前视）
     "tdx_blocks": "TDX 板块字典：板块归属映射",
     "tdx_daily": "板块日线：板块动量/轮动",
     "tdx_minute": "板块分钟线：日内板块强度",

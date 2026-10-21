@@ -1,0 +1,70 @@
+{
+  "name": "r7m_disclosed_earnings_change_dispersion_v1",
+  "family_id": "r7m_income_dispersion_v1",
+  "implementation": "research.families.r7m_income_dispersion_v1:build",
+  "parameters": {
+    "signal": "disclosed_earnings_change_dispersion"
+  },
+  "units": "dimensionless IQR; profit and revenue company-total yuan; asinh scale=1",
+  "availability": "PIT=max(ann,f_ann,end) with at least one known announcement. Whole-row last same-PIT duplicate; all publications/revisions release strictly on first panel trading date>PIT. Earliest retained version is not reconstruction of missing original vintage.",
+  "missing_policy": "q advances on income first-retained PIT releases for >=1692 fixed-pool companies; signal also requires >=1692 finite strict single-quarter YoY legs with old same-quarter revenue>1e6. Invalid new frontier/revision overwrites NaN, never q fallback. Real zero/negative net income retained. report-end age 0..550 calendar days. Q1=YTD, other quarters=YTD(q)-YTD(q-1).",
+  "statistical_review_contract": {
+    "primary_horizons": [
+      1,
+      5
+    ],
+    "primary_direction": true,
+    "direction_strength": "weak risk-compensation prior, not proved 1/5-day prediction",
+    "baseline_controls": [
+      "mkt_idx_csi300_momentum20",
+      "mkt_idx_csi300_volatility20",
+      "mkt_dispersion",
+      "mkt_up_ratio",
+      "mkt_margin_breadth",
+      "mkt_am_dispersion"
+    ],
+    "additional_controls_main": [
+      "raw_change_median",
+      "improvement_breadth",
+      "sales_growth_median",
+      "sales_growth_iqr",
+      "net_margin_median",
+      "net_margin_iqr",
+      "external_current_sue_median",
+      "external_current_sue_iqr",
+      "disclosure_fraction",
+      "valid_fraction",
+      "report_age_days",
+      "frontier_age_days",
+      "report_quarter_Q2_Q3_Q4_dummies"
+    ],
+    "additional_controls_alternative": "Replace raw_change_median by asinh_change_median in a separately reported diagnostic. Never jointly include both as independent information. Even-sample medians need not transform identically; ranks may be near equivalent. Report rank deficiency honestly; do not drop controls to rescue a result.",
+    "hac_lags": [
+      19,
+      63
+    ],
+    "preregistered_decision": "If standard M5 supports a horizon, M6 baseline and additional-control specifications must each report HAC19 and HAC63 and require declared positive t>=2 at that same supported horizon under both lags. No opposite-horizon rescue.",
+    "effective_states": "Report true distinct report periods, finite days per report and each-period contribution. Repeated held daily rows do not create independent quarterly news.",
+    "no_candidate_variant": true,
+    "registered_before_real_returns": true,
+    "market_target_contract": "official fixed-pool market labels and Lead market M5/M6 contract; not stock cross-sectional base8 FM"
+  },
+  "resource_budget_bytes": 3000000000,
+  "spec": {
+    "group": "research_market_financial_information",
+    "is_market": true,
+    "deps": [
+      "stock_income"
+    ],
+    "fin_fields": [
+      "n_income",
+      "revenue"
+    ],
+    "warmup_days": 1100,
+    "higher_is_better": true,
+    "version": 1,
+    "formula": "linear Q75(asinh([S(n_income,q)-S(n_income,q-4)]/S(revenue,q-4)))-linear Q25(same); one global disclosed q, no stockwise latest-q mixing; asinh dimensionless scale=1",
+    "desc": "Cross-company operating earnings differentiation may reflect uncertainty/resource reallocation and a persistent risk premium; weak positive future 1/5-day prior. Aggregate annual contemporaneous and price-leading literature is not predictive evidence.",
+    "note": "q advances on income first-retained PIT releases for >=1692 fixed-pool companies; signal also requires >=1692 finite strict single-quarter YoY legs with old same-quarter revenue>1e6. Invalid new frontier/revision overwrites NaN, never q fallback. Real zero/negative net income retained. report-end age 0..550 calendar days. Q1=YTD, other quarters=YTD(q)-YTD(q-1). No traded-day company selection, full official market date grid; float64 computation/float32 Store. Main extra center control raw median; asinh median substitute only. HAC63 additional decision and true-quarter contribution required."
+  }
+}

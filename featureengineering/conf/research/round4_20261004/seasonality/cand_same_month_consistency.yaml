@@ -1,0 +1,16 @@
+name: r4j_same_month_consistency_v1
+family_id: r4j_seasonality_v1
+implementation: research.families.r4j_seasonality_v1:build
+parameters: {signal: same_month_consistency}
+units: 正收益占比（0..1 无量纲，分母 = 有限历史同月样本个数）。
+availability: 同 same_month_mean_ret：t 所在日历月 (Y,m) 的值只由 (Y−1,m)…(Y−6,m) 决定，当月内为常数、不回填本月收益。
+missing_policy: 有限历史同月样本 < 2 时为 NaN；严格 R>0 记为 1（R=0 不算正）；样本为 NaN 时不参与分母；不零填充。
+spec:
+  group: research_seasonality
+  desc: U10 机制 2：同月历史月收益为正的比例（min 2），检验同月方向的一致性而非强度。
+  formula: "value(t in (Y,m)) = count(R[(Y-j),m] > 0, j=1..6) / count(finite samples), count>=2"
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 2300
+  higher_is_better: true
+  version: 1
+  note: 一致性口径预登记：严格正（R=0 不算正）；与机制 1 是同一信息轴的不同统计量（强度 vs 方向一致性），两两相关性在 report.md 报告。

@@ -2,18 +2,18 @@
 """外科补缺 —— 只补指定日期的数据，不重跑整个数据集。
 
 为什么需要它：`audit.py` 查出来的缺口，用常规手段补代价可能极大。
-最极端的例子是 `index_ths_daily`（`per_entity` 模式）：
-它的续传粒度是**实体**（`done.entities`，1676 条），**没有按日期的完成标记**。
-所以想补 2 天缺失，常规做法只有"清空全部实体标记重跑" = 33,520 次请求 / 约 2 小时。
+最典型的例子是 `per_entity` 模式的表：
+它的续传粒度是**实体**（`done.entities`），**没有按日期的完成标记**。
+所以想补 2 天缺失，常规做法只有"清空全部实体标记重跑"，代价极大。
 而真相是那 2 天上游明明有数据（实测 09-08 有 1879 行、09-09 有 1871 行），
 只是当时服务端偶发返回空（QUANT_PLATFORM.md §7 约束 5）被当成了正常。
 本脚本直接拉那几天、走**引擎自己的 `store.upsert`** 合并进年分区 —— 2 次请求搞定。
 
     # 先看要补什么（默认 dry-run，不发写操作）
-    python scripts/fill_gap.py -d index_ths_daily --dates 2026-09-08,2026-09-09
+    python scripts/fill_gap.py -d tdx_minute --dates 2026-09-08,2026-09-09
 
     # 确认后真补
-    python scripts/fill_gap.py -d index_ths_daily --dates 2026-09-08,2026-09-09 --apply
+    python scripts/fill_gap.py -d tdx_minute --dates 2026-09-08,2026-09-09 --apply
 
     # 从 audit.py 的结果自动取缺口（按数据集）
     python scripts/fill_gap.py -d index_daily --from-audit /tmp/audit3.json --apply

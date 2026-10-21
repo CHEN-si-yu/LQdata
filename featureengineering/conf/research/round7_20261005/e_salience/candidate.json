@@ -1,0 +1,31 @@
+{
+  "name": "r7e_context_salience20_v1",
+  "family_id": "r7e_context_salience_v1",
+  "implementation": "research.families.r7e_context_salience_v1:build",
+  "parameters": {
+    "signal": "context_salience20",
+    "window": 20,
+    "min_valid": 15,
+    "theta": 0.1,
+    "delta": 0.7,
+    "market_min": 100
+  },
+  "units": "decimal one-day return expectation distortion;1%=0.01;theta0.10 is10percentage points",
+  "availability": "T signal uses completed T close data only. Exact consecutive exchange-day endpoints both eligible/traded and unique raw finite positive close/adjustment. Market is same-day eligible fixed2115 equal-weight return,N>=100,including self. No future qualification screen. Daily/adj contractdelay0; actual historical arrival/vintage unverified.",
+  "missing_policy": "No raw/source/value ffill or missing-to-zero; either invalid endpoint=>rNaN, including resumption firstday. abs(r)>60% invalid by equivalent gross[0.4,1.6] guard. Complete20 date positions,>=15 paired valid r/market and current paired valid; otherwiseNaN. Missing sigma not ranked/weighted; descending average ties; all tied sigma=>exact0. Duplicate within-pool date/stock keys raise. Full ordered2115 and contiguous trading axis required.",
+  "resource_note": "Only raw daily4columns and adj3columns, year-projected; no financial or5min source. Row-local20x20 tie comparisons bounded in memory. control_components(ctx) exposes strict_MAX20,strict_MIN20,DSV20; DSV additionally requires sum(r^2)>1e-12.",
+  "statistical_controls": "Unchanged base8 + published R4 idio_MAX20 + published ret_skew20 + momentum20 + same strict-return/control-mask MAX20 and MIN20 + DSV20=sum(min(r,0)^2)/sum(r^2),den>1e-12 + beta60 + existing R4 standardized coskew60. Formal average-tie rank/FM; full common-finite sample counts; no dropping controls to rescue rank deficiency.",
+  "spec": {
+    "group": "research_behavioral_price",
+    "desc": "Investors may overweight realized return states that stand out against same-day market alternatives; a salience-weighted expectation above the ordinary historical mean may imply overvaluation and lower subsequent returns. Weak negative prior only.",
+    "formula": "r=C_t*A_t/(C_prev*A_prev)-1 with exact traded/eligible endpoints; m=EW_pool(r),N>=100;sigma=abs(r-m)/(abs(r)+abs(m)+.10);k=descending average-tie rank over valid20TDstates;w=.70^(k-1)/sum(.70^(k-1));F=sum(w*r)-mean(r),n>=15,current valid",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "warmup_days": 80,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "Single frozen weak negative hypothesis;decimal units. Float64 calculation,Storefloat32. Core outcome remains official1/5day open-to-open labels. Unchanged base8 + published R4 idio_MAX20 + published ret_skew20 + momentum20 + same strict-return/control-mask MAX20 and MIN20 + DSV20=sum(min(r,0)^2)/sum(r^2),den>1e-12 + beta60 + existing R4 standardized coskew60. Formal average-tie rank/FM; full common-finite sample counts; no dropping controls to rescue rank deficiency."
+  }
+}

@@ -1,0 +1,16 @@
+name: r3b_intraday_rv_daily_v2
+family_id: r3_intraday_moments_v2
+implementation: research.families.r3_intraday_moments_v2:build
+parameters: {signal: rv_daily}
+units: 收益为 5min bar 的简单收益（未复权收盘价比，仅日内）；因子值 = sum(r^2)，量纲为收益平方。
+availability: 只用信号日 15:00 收盘前的当日 5min bar；不跨日、无未来数据；fea/delay.py 实测 stock_history_5min 不在可得性滞后名单，无需位移。
+missing_policy: 当日可用 bar 收益 < 40 个、或 RV<=0 时为 NaN；停牌/无该日分区为 NaN；不零填充。
+spec:
+  group: research_intraday
+  desc: 朴素基线（非假设）：日内已实现方差 RV，同族已有 idt_rv_daily 的直译版本。
+  formula: sum(r^2)，r 为段内 bar 收益并剔除午休跨段收益
+  deps: [stock_history_5min]
+  warmup_days: 1
+  higher_is_better: false
+  version: 1
+  note: 基线方向按低波动异象登记为 false；它的作用是证明其余四个候选的新增信息不来自 RV 本身。

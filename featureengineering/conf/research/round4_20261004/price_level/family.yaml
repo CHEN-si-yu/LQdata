@@ -1,0 +1,16 @@
+family_id: r4r_price_level_v1
+idea_id: r4r_price_level_v1
+trial_budget: 4
+baseline: 朴素对照 = log_mv（规模共线主对照）、ep_ttm（估值）、vol_120（波动）、turnover_std_20（换手稳定度）的正式因子值同口径 IC 复算；另对全库正式因子做逐日截面秩相关筛查（含 top-10）。
+allowed_variants:
+  - {signal: log_price_level}
+  - {signal: price_granularity}
+  - {signal: log_price_level_ma60}
+  - {signal: price_granularity_ma60}
+note: |
+  预登记集合 = 2 个机制（log_price_level、price_granularity，均登记 true）+ 2 个 60 日平均价
+  变体（两机制各一版），共 4 个，恰好用满预算；不额外搜索窗口/口径。
+  ★ 构造披露：在共同有效格上，price_granularity = 100·tick/P 与 log_price_level = ln(P) 是
+  严格单调互逆关系（tick 恒为 0.01 元），两候选的 raw 秩相关恒为 −1；ma60 对同理。
+  该镜像结构是构造使然（预登记如此），不是搜索出来的；报告按镜像对照解读，两个方向互为验证。
+  ma60 窗口内有效价 <48（80%）→ NaN；停牌日不贡献价格（skip，不沿用）。口径细节见模块 docstring。

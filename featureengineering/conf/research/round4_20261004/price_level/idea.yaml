@@ -1,0 +1,17 @@
+idea_id: r4r_price_level_v1
+hypothesis: 名义股价水平与「最小报价单位占价比」（报价网格颗粒度）携带截面预期收益信息；低价股与高价股在未来收益上存在系统性差异，且该差异不全是规模（log_mv）的投影，也区别于既有动量/波动/估值类表达。
+mechanism: |
+  1) 价格水平：当日名义收盘价的对数。低价股常伴随强投机属性、高换手与较贵的估值（"高价≠贵"），
+     方向登记 true（价格越高 → 未来收益越高）——该方向由数据裁决，事前不翻转；
+  2) 颗粒度：最小报价单位（0.01 元）占名义价比 = 1/price 归一化。报价网格越粗（低价股），
+     离散报价与博弈成分越大；与机制 1 同轴，两候选构成同一测量轴的两侧符号对照（构造上互为镜像，
+     报告须披露该结构）；
+  3) 变体（≤2）：60 日平均价口径（降低单日收盘噪声），两个机制各一版。
+  ★ 口径事前定死：价格水平一律用原始名义价（未复权，px_raw），不用后复权价——跨股票同一
+    名义 CNY 尺度可比、PIT 天然不变、符合 fea/spec.py 红线的「价格水平类用未复权价」指引。
+expected_direction: log_price_level=true；price_granularity=true；两个 60 日平均价变体同向 true。方向与集合在看任何结果前固定，不得结果后修改。
+target_horizons: [1, 5]
+falsifiable: 与 log_mv 的逐日截面秩相关 |rho|>0.9（规模代理，直接不支持）；或 declared RankIC 分年同号 <7/9；或 G7 控制（含 log_mv）后不显著。
+fields: [stock_daily.close, stock_daily.vol]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

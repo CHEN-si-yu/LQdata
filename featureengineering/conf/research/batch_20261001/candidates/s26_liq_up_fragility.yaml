@@ -1,0 +1,41 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "name": "s26_liq_up_fragility_v1",
+  "family_id": "s26_impact_family_v1",
+  "implementation": "research.families.selection_20261001_v1:build",
+  "parameters": {
+    "signal": "upside_impact_fragility"
+  },
+  "units": "stock_daily的OHLC、vol、amount保留供应商原始尺度；本信号仅使用同字段时序比值、对数创新/标准化或同表同尺度比值，单位相消，不做跨表金额/成交量换算；不据字段名或跨表比例认定物理单位。",
+  "availability": "日终信号，仅T日及以前原始记录；拟合/历史基线均止于T-1，原始可见日期由审计cutoff控制。固定池偏离使用ctx.universe的当日有效样本，含ST屏蔽。",
+  "missing_policy": "当日不成交或实际必需源字段缺行/非法值为NaN；不前向填充资金流，不用未来标签有效性筛股票。成交额和池偏离的历史基线取T-1以前60日、至少48个有效样本；上涨侧冲击基线再取过去60日、至少12个上涨有效样本。未上涨且前层基线完整时为0；上涨但侧样本不足为NaN。完整依赖先60交易日成交额基线、再60交易日冲击基线，需120个历史交易日。实际本地交易日历显示180日历预热存在不足边界；工程预热改240日历，最少有效样本与收益方向不变。用于lag/rolling的HFQ价格和成交额先按当日真实成交及OHLC/量额有效性屏蔽；收益/开盘缺口还要求前一交易日有效HFQ收盘，不把无效正价作为上一日观察。",
+  "closest_existing_baselines": [
+    "amihud_daily_5",
+    "amihud_asymmetry_20"
+  ],
+  "semantic_difference": "检验低相对成交支持的上冲相对自身上涨历史是否异常；与下跌失衡属于不同活动日期和机制。",
+  "source_fields": [
+    "stock_daily.open",
+    "stock_daily.high",
+    "stock_daily.low",
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_daily.amount",
+    "stock_adj_factor.adj_factor"
+  ],
+  "pre_registered_direction": "lower_is_better",
+  "spec": {
+    "group": "s26_impact",
+    "desc": "上涨侧的脆弱价格冲击",
+    "formula": "z_past_upside60(log(abs(pool_relative_return)+1e-6)-log(amount/prior60_mean_amount)), active only relative_return>0",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": null,
+    "warmup_days": 240,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "selection_20261001_v1；冲击为log(|池偏离收益|+1e-6)-log(当日成交额/过去均值)；侧创新clip±8。池偏离为固定池当日有效样本等权去均值，不是行业或完整beta中性。所有方向事前冻结，候选注册不等于生产批准。完整依赖先60交易日成交额基线、再60交易日冲击基线，需120个历史交易日。实际本地交易日历显示180日历预热存在不足边界；工程预热改240日历，最少有效样本与收益方向不变。"
+  }
+}

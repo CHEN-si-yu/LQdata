@@ -1,0 +1,23 @@
+name: r2own_v2_per_capita_value_v1
+family_id: r2_ownership_family_v2
+implementation: research.families.r2_ownership_v2:build
+parameters: {signal: per_capita_value_level}
+units: circ_mv 为上游 stock_finance 原始元；holder_num 为户；比值取自然对数后无量纲（同表内对数差）。不做跨表单位换算，不按字段名推断物理单位。
+availability: 唯一可用时点 = stock_holder_number.ann_date（公告日）。end_date 只用于判断哪一期更新，绝不作为可见日期。ann_date 当日起视为可见（与生产因子 holder_number_chg 同口径：T 日收盘出信号、T+1 开盘买）。circ_mv 为 T 日收盘后已知的 stock_finance 日频值。
+missing_policy: holder_num<=0 视为无效（池内实测 8222 行取值为 0，且 (0,100) 内无取值）；circ_mv 缺失或非正为 NaN；从未披露过任何一期 -> NaN，不用 0 填充、不前向填充成交。完整输入下不产生人造 0。
+closest_existing_baselines: [holder_number_chg, log_mv, turnover_std_20, chip_concentration]
+semantic_difference: 机制1a；方向事前固定 higher_is_better=true。与 log_mv/circ_mv 的相关性必须实测报告，超过 0.9 需给出新增信息论证。
+source_fields:
+  - stock_holder_number.ann_date
+  - stock_holder_number.end_date
+  - stock_holder_number.holder_num
+  - stock_finance.circ_mv
+spec:
+  group: r2_ownership
+  desc: R2-I3 机制1a：户均持股市值水平（当日流通市值 / 最新披露股东户数）
+  formula: value(T) = log(circ_mv(T)) - log(holder_num_asof_ann(T))；as-of 只用 ann_date
+  deps: [stock_holder_number, stock_finance]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: v2 修正日期差单位（YYYYMMDD 相减 -> 真实日历天），机制/窗口/方向/阈值与 v1 完全相同；机制1a；方向事前固定 higher_is_better=true。与 log_mv/circ_mv 的相关性必须实测报告，超过 0.9 需给出新增信息论证。

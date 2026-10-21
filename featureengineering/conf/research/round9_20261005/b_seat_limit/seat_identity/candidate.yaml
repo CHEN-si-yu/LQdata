@@ -1,0 +1,51 @@
+name: r9b_seat_identity_breadth_w60_v1
+family_id: r9b_seat_identity_v1
+implementation: research.families.r9b_seat_identity_v1:build
+parameters: {signal: seat_identity_breadth, window: 60}
+units: >
+  无量纲比率 ∈ (0, 1] = 窗口（60 交易日，含 T）内该股「可识别席位的不同身份个数」/
+  「可识别席位记录数（按 (交易日, 股票, 席位) 去重后）」。取值 1 = 窗口内每个席位只出现一次
+  （极度分散）；越接近 0 = 少数席位反复出现。无金额、无单位。
+availability: >
+  只读 stock_dragon_tiger 中 trade_date <= T 的行，且不做交易日位移。依据：
+  conf/frequency.yaml 对该表声明 delay_days: 0；fea/delay.py 只把 delay>0 的表放进
+  LAGGED_DATASETS（故框架守卫不含该表是契约结果）；项目 state/delay_history.json 不存在
+  （project root 与上游 datadownload 均无），无 delay_obs 观测可引用；已删因子
+  dragon_tiger_org_net_20 的原定义备注记录 2026-09-15 晚实测当天可得（T=2026-09-15
+  21:14，delay_obs=0）并显式去掉了 v2 的 lag_grid(...,1)，top_list_net_rate_20 同一处理。
+  ⇒ 与两个最新生产对象一致，主口径不位移。报告同时给出 lag=1 的离线敏感性
+  （把输出整体下移一个交易日，等价于输入整体滞后一天）。
+missing_policy: >
+  NaN 原生主口径：窗口（含 T）内没有任何**可识别席位**记录 → NaN（不是 0）。
+  窗口内有记录 → distinct/obs ∈ (0,1]。池外（universe 掩码）→ NaN。不做填充、不外推。
+  零填充对照口径（并列报告，不单独立主张）：把「窗口内无可识别席位记录」的格记 0（含义
+  = 没有持续对手方 / 未达上榜标准），由同一因子值离线加掩码复算；两种口径必须同号，
+  符号翻转即判不稳健、不得准入（BRIEF §8.5）。
+spec:
+  group: research_seat
+  desc: >
+    R9-B B-new-1（席位身份宽度）：窗口内可识别席位的不同身份个数 / 可识别席位记录数。
+    登记方向 higher_is_better=false —— 身份越分散（没有持续具名对手方）预期未来收益越低；
+    true/false 由下层按 signed 使用，rank 始终是「值大在前」。
+  formula: >
+    rec = stock_dragon_tiger[code in pool, day in panel] 按 (row, code, normalize_seat(org_name))
+    drop_duplicates；匿名名（机构类 + 含「股通」）整体剔除。
+    obs[t] = #{rec : t-59 <= day <= t}；distinct[t] = #{(code,key) : 该对在 [t-59, t] 内至少出现一次}
+    （对各次出现区间 [d, d+59] 取并集后落成差分数组 + cumsum）。
+    value = distinct / obs，obs = 0 → NaN；再套 universe 掩码与 isfinite 掩码。
+  deps: [stock_dragon_tiger]
+  fin_fields: []
+  warmup_days: 200
+  higher_is_better: false
+  version: 1
+  note: >
+    去重论证：dragon_tiger_org_net_20（已删）= 机构专用净买额 20 日/成交额 20 日，金额水平，
+    本因子零金额且显式排除机构专用；s26_structure_side_hhi_v1（库内，t=+12.21/+7.29）=
+    stock_main_fund_flow 四档委托规模在买/卖侧的 HHI 之差，度量「多大的单」，本因子度量
+    「多少个可识别的谁」，输入表与对象都不同；R3-A r3seat_*（14 个候选 + 2 个 family）
+    **从未执行**（artifacts/research/runs 的 200 个 run 目录 0 个 seat、ledger 0 条、
+    evaluations 0 个 ⇒ 无 IC、无试验消耗），其 seat_concentration 是金额 HHI、
+    seat_persistence 是「跨全历史是否出现过」的全局 cumcount、seat_novelty 是全局首次出现
+    占比，均与本因子的窗口内身份集合大小不同；R4-I r4i_seat_closeout_v1（唯一评价过的席位
+    单元，4/4 不晋级）全部是净额类机制。不使用任何金额列 ⇒ 与 2018 年买卖列整块互换、
+    以及 net_buy_amount 符号争议无关。

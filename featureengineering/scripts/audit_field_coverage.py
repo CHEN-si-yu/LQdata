@@ -8,6 +8,10 @@ import argparse
 import csv
 import json
 import sys
+if __package__:
+    from ._project_paths import project_output
+else:
+    from _project_paths import project_output
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 import pyarrow.parquet as pq
@@ -16,10 +20,13 @@ from fea.config import load
 from fea.spec import REGISTRY
 from fea.field_expansion import CATALOG
 from factors.field_events import SOURCE_FIELDS as EVENTS
-from factors.field_markets import SOURCE_FIELDS as MARKETS
+try:
+    from factors.field_markets import SOURCE_FIELDS as MARKETS
+except ImportError:  # 该家族已于 2026-10-03 清理删除
+    MARKETS = {}
 
 def audit(output):
-    output=Path(output);output.mkdir(parents=True,exist_ok=True)
+    output=project_output(output);output.mkdir(parents=True,exist_ok=True)
     baseline=json.loads((ROOT/'conf/field_coverage_baseline.json').read_text(encoding='utf8'))
     exclusions=json.loads((ROOT/'conf/field_exclusions.json').read_text(encoding='utf8'))
     refs={}
@@ -57,7 +64,7 @@ def audit(output):
     (output/'field_coverage.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf8')
     md=['# 上游字段覆盖台账','',result['method']+'。所有未接入字段均在CSV中列出具体原因。',
         '',f"总字段 {totals['total']}；沿用旧口径的分析字段 {totals['analytic']}；此前已使用 {totals['existing']}；本批新增使用 {totals['newly_used']}。",
-        '', '旧681分母包含ths_code、board_name等少量标识；本次保留分母以便对比，不把标识当新数值信号。',
+        '', '旧681分母包含少量标识字段（如 board_name）；本次保留分母以便对比，不把标识当新数值信号。',
         '', '| 数据集 | 分析字段 | 此前使用 | 本批新增 | 暂不接入 |','|:--|--:|--:|--:|--:|']
     md += [f"| {s['dataset']} | {s['analytic']} | {s['existing']} | {s['newly_used']} | {s['deferred']} |" for s in summary]
     md += ['', '精确字段、因子名称及原因见同目录 FIELD_COVERAGE.csv。覆盖率不代表因子有效性、收益或彼此独立。']
@@ -65,5 +72,5 @@ def audit(output):
     print(json.dumps(totals,ensure_ascii=False));return result
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--output',required=True)
+    parser=argparse.ArgumentParser();parser.add_argument('--output',default='artifacts/audits/field_coverage',help='项目内报告目录')
     audit(parser.parse_args().output)

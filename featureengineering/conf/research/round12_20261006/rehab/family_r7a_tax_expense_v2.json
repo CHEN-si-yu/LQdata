@@ -1,0 +1,15 @@
+{
+ "allowed_variants": [
+  {
+   "signal": "tax_expense_seasonal_change"
+  }
+ ],
+ "baseline": "base8 + all-net-income single-quarter YoY / assets(q-4), prior effective tax rate, cash tax burden, SUE/sue_accel, R4 accrual q/TTM, qf_roa_yoy_change, asset YoY growth and net share supply. Separate explanatory regression substitutes pre-tax YoY for after-tax YoY; never both same-scale profit controls in one tax regression. Tax/P/NI accounting identity limits original information claims.。R12 康复：v2 身份重建，冻结控制与门槛依 doc/因子准入政策_v2_20261006.md（base8 绑定）。",
+ "family_id": "r7a_tax_expense_v2",
+ "idea_id": "r7a_tax_expense_v1",
+ "initial_single_task_budget_bytes": 3000000000,
+ "resource_estimate_not_measured": true,
+ "trial_budget": 1,
+ "variants": "none",
+ "rehab_note": "；【2026-10-06 R12 康复登记】原 v1 记录已 retired（终态不可逆）。依 rec12 复审裁决（artifacts/research/round12_20261006/verdicts/reconsideration_v1.md）与平台规则「恢复应建立新的研究记录」，以 v2 重新登记：实现模块与参数与 v1 完全一致（未改数值口径），仅生命周期身份为新记录；新 run/eval/verify 将按现行代码同源重建。"
+}

@@ -1,0 +1,73 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-10-02 12:43:22",
+  "score_source": "training_predictions",
+  "reads_model_train": true,
+  "loads_model_weights": true,
+  "strategies": [
+    "top5_5d",
+    "top1_1d"
+  ],
+  "strategy_rows": 2,
+  "quarterly_rows": 8,
+  "evaluation_days": 242,
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 644339,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 639937,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 635558,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 624824,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 603712,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "quarterly_returns_compound": true,
+  "date_axis_matches_price_axis": true,
+  "realized": {
+    "top5_5d": {
+      "return_value": 0.3001135580636838,
+      "max_drawdown": -0.18997288570961335,
+      "sharpe": 1.160804173621997,
+      "trades": 170,
+      "total_fees": 2311.627966982747,
+      "gross_return_same_positions": 0.33677200933631046,
+      "fee_drag": 0.023116279669827464,
+      "slippage_drag": 0.0135421716027991,
+      "avg_exposure": 0.6495391528107339,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    },
+    "top1_1d": {
+      "return_value": 0.1647131324936566,
+      "max_drawdown": -0.3737418853875927,
+      "sharpe": 0.5564595926770547,
+      "trades": 392,
+      "total_fees": 24270.757250636,
+      "gross_return_same_positions": 0.5501299999999993,
+      "fee_drag": 0.24270757250636013,
+      "slippage_drag": 0.1427092949999828,
+      "avg_exposure": 0.9932013656242752,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    }
+  }
+}

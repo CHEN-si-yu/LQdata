@@ -1,0 +1,19 @@
+{
+  "idea_id": "mkta26_breadth_daily_idea_v1",
+  "hypothesis": "固定池收盘横截面结构量（涨跌家数、离散度、均线位置、新高新低、成交集中度、非流动性）对未来 1/5 日等权市场收益存在可检验的（方向逐项预登记的）关系；其中透明描述量可作为市场状态上下文使用。",
+  "mechanism": "宽度类量刻画当日市场参与结构与风险结构（扩散度、极端度、位置与集中度）；预测方向与先验强度按因子在 freeze 方向表逐项预登记，不依据事后结果调整。",
+  "expected_direction": "逐因子预登记（freeze 方向表：+1/-1/0），不依据事后结果翻转",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "若主期限 HAC 95% 区间含 0、分年同号不足、或对既有市场因子增量不显著（或符号相反），则该因子的信号主张被证伪；绿卡描述量不声称预测性。",
+  "fields": [
+    "stock_daily.open",
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_daily.amount",
+    "stock_adj_factor.adj_factor"
+  ],
+  "registration_note": "本文件为 2026-10-03 市场因子复审的**追溯登记**（既有正式因子的逐值审计别名），非事前研究登记；方向与先验强度的预登记见 freeze 方向表，检验为回顾性筛选，不构成未触碰留出样本上的结论（retrospective_screening;historical_selection_is_not_untouched_holdout）。"
+}

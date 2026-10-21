@@ -1,0 +1,18 @@
+# R2-I4 事前登记：披露择时与信息节奏。方向与机制在计算前冻结，不依据事后IC修改。
+{
+  "idea_id": "r2_disclosure_idea_v1",
+  "hypothesis": "定期报告的披露时点（相对法定截止日、相对同报告期同业）与预告-正式报告的信息节奏，携带盈余公告择时信息，可改善固定2115股下一开盘1/5日排序。",
+  "mechanism": "只用日期字段：stock_income/stock_balancesheet/stock_cashflow 的 ann_date/f_ann_date/end_date，stock_financial_indicator 的 ann_date/end_date，stock_forecast 的 ann_date/first_ann_date/end_date/type。四个固定机制：相对法定截止日的提前天数；同报告期内全池公告序分位；预告修正方向；预告与正式报告的间隔。",
+  "expected_direction": "四个机制均预先登记为 higher_is_better=true（披露越早/相对同业越早/上修/预告相对正式报告越早，预期随后收益越高）；不依据事后IC翻转。",
+  "target_horizons": [1, 5],
+  "falsifiable": "若1/5日评价分年度同号少于7/9年，或与现有 forecast_type_score / forecast_profit_midpoint_change 的 |rho| 大于0.9，或信号只来自少于5%截面，或与既有正式因子 |rho| 超过0.95，则不支持本假设。",
+  "fields": [
+    "stock_income.ann_date", "stock_income.f_ann_date", "stock_income.end_date",
+    "stock_balancesheet.ann_date", "stock_balancesheet.f_ann_date", "stock_balancesheet.end_date",
+    "stock_cashflow.ann_date", "stock_cashflow.f_ann_date", "stock_cashflow.end_date",
+    "stock_financial_indicator.ann_date", "stock_financial_indicator.end_date",
+    "stock_forecast.ann_date", "stock_forecast.first_ann_date", "stock_forecast.end_date", "stock_forecast.type"
+  ],
+  "origin": "round2_20261002_R2-I4",
+  "status": "unvalidated_hypothesis"
+}

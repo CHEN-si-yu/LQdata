@@ -1,0 +1,19 @@
+family_id: r9e_forecast_timing_v1
+idea_id: r9e_forecast_timing_v1
+trial_budget: 1
+baseline: >
+  朴素对照 = 生产因子 momentum_120、short_term_reversal_5、vol_120、turnover_std_20
+  （披露时点若只是「近期动量的代理」会在这里显形）；定向相关对照 =
+  r4a_forecast_landing_gap_v3_*（在库，同源表的最接近因子）、roe_ttm、bp。
+  不把模型贡献视为已完成。
+allowed_variants:
+  - {signal: peer_lateness}
+parameters_frozen: true
+search_policy: >
+  唯一机制、唯一候选、无参数变体；不扩窗口、不改 min_periods、不新增类型分组维度；
+  登记后不看结果改方向或口径。trial_budget=1 反映「机制已同源、无变体额度」。
+registration_note: >
+  本族为 Round 9 单元 E 的事前研究登记（非追溯登记）。登记的机制在上游任务书里原为
+  「预告类型分类」与「区间宽度」，两者经 §8.8 重蹈检查确认为已删因子
+  （forecast_type_score / forecast_profit_range_uncertainty）的同构念，已放弃；
+  最终登记的唯一机制是「同类同伴相对披露时点」，其差异化论证写在实现模块 docstring。

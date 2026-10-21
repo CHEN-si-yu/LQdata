@@ -1,0 +1,51 @@
+name: r9a_sec_own_rv_beta_v1
+family_id: r9_sec_intraday_family_v1
+implementation: research.families.r9a_sec_intraday_v1:build
+parameters: {signal: sec_own_rv_beta, window: 60, min_count: 54}
+units: >-
+  无量纲（回归系数）。板块日内 RV 是当日 5 分钟对数收益的平方和开方，单位与日收益同量纲；
+  beta = Cov_60(r_i, RV_s)/Var_60(RV_s)。
+availability: >-
+  tdx_minute 声明 delay_days=0，bar 时间戳覆盖 09:35..15:00，即 T 日全部 bar 在 T 日收盘时
+  已完整落地；T 日因子值只使用 T 日及以前的 tdx_minute 与 T 日及以前的个股收益，T+1 开盘交易，
+  无未来位移、无向后填充。截断自证见 tools/prove_truncation_tdx.py（实测 cutoff=20240628 下
+  2024 分区 592 万行 -> 292 万行，day>cutoff 的行 0 保留、day<=cutoff 的行 0 丢失，非 no-op）。
+  stock_list 是 audit 白名单的 contract 数据集（不参与截断），其 date_field 声明的 trade_date
+  在 parquet schema 中并不存在，但由于 mode="contract" 不会触发 ValueError —— 已实测。
+missing_policy: >-
+  逐 (board, day) 聚合，缺则该板块日 RV = NaN，绝不前向填充。行业无法解析到 board 的个股
+  （实测 0 只）整列为 NaN。滚动窗口要求 60 日中至少 54 日同时有 r_i 与 RV_s，否则 NaN；
+  个股停牌日 r_i 缺失会消耗窗口配额，因此长期停牌股的覆盖率会下降（如实报告）。
+  每日首根 bar 无前收盘被丢弃；RV 由 47 个收益计算。close<=0 或非有限的 bar 一律丢弃。
+  beta 只做 Var>1e-12 保护，不做零填充、不做截面填充。
+closest_existing_baselines: [vol_120, idio_vol_60]
+source_fields:
+  - tdx_minute.board_code
+  - tdx_minute.board_name
+  - tdx_minute.trade_time
+  - tdx_minute.close
+  - stock_list.stock_code
+  - stock_list.industry
+  - stock_daily.close
+spec:
+  group: r9_sector_intraday
+  desc: >-
+    个股对其**自身行业板块**日内已实现波动率（tdx_minute 5 分钟线）的 60 日滚动 beta。
+    higher_is_better=false：对行业日内波动暴露越高，下一期收益越低（低风险异象）。
+  formula: >-
+    RV_s(t)=sqrt(sum_m log(c_{s,m,t}/c_{s,m-1,t})^2) over the 48 five-minute bars (first bar
+    dropped); beta_i(t)=Cov_60(r_i, RV_s(i))/Var_60(RV_s(i)), s(i) from
+    stock_list.industry == tdx_minute.board_name
+  deps: [tdx_minute, stock_list, stock_daily]
+  warmup_days: 200
+  higher_is_better: false
+  version: 1
+  note: >-
+    去重论证（显式）：doc/因子清理记录_20261003.md L1602/1609/1616 是三个已删除的
+    field_markets 因子 — corr60(ret_clean_hfq, cross_index_median(tdx_minute.amplitude |
+    volume_concentration | weighted_pressure))。它们是**个股级**滚动暴露（不是 Lead 简报
+    所称的市场级因子），回归量为全板块中位数。本候选差异有二：(a) 回归量是**个股自身行业**的
+    状态，截面异质，衡量行业特异信息冲击暴露而非全市场日内波动暴露；(b) 状态量是日内已实现
+    波动率，不是 amplitude / volume_concentration / weighted_pressure。与 vol_120 /
+    idio_vol_60 的差异：那两个是收益自身二阶矩，本因子是**对行业波动状态的回归系数**，
+    不随个股自身波动幅度单调（分子分母同时缩放）。tdx_minute 在 177 因子正式库零引用。

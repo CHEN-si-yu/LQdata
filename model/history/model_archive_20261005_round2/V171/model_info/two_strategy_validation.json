@@ -1,0 +1,73 @@
+{
+  "run_name": "retrain_20261005",
+  "checked_at": "2026-10-05 10:34:12",
+  "score_source": "training_predictions",
+  "reads_model_train": true,
+  "loads_model_weights": true,
+  "strategies": [
+    "top5_5d",
+    "top1_1d"
+  ],
+  "strategy_rows": 2,
+  "quarterly_rows": 8,
+  "evaluation_days": 242,
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 644339,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 639937,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 635558,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 624824,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 603712,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "quarterly_returns_compound": true,
+  "date_axis_matches_price_axis": true,
+  "realized": {
+    "top5_5d": {
+      "return_value": 0.349574088194021,
+      "max_drawdown": -0.15290991686552957,
+      "sharpe": 1.567262825311396,
+      "trades": 126,
+      "total_fees": 1578.715880598,
+      "gross_return_same_positions": 0.37459,
+      "fee_drag": 0.01578715880598001,
+      "slippage_drag": 0.009228752999998943,
+      "avg_exposure": 0.4738751487562522,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    },
+    "top1_1d": {
+      "return_value": 0.04228405343241226,
+      "max_drawdown": -0.3189058008391814,
+      "sharpe": 0.29680760335944584,
+      "trades": 340,
+      "total_fees": 20500.803538724293,
+      "gross_return_same_positions": 0.3678487174348697,
+      "fee_drag": 0.205008035387243,
+      "slippage_drag": 0.12055662861521443,
+      "avg_exposure": 0.9929057847015218,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    }
+  }
+}

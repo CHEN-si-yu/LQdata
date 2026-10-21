@@ -1,0 +1,17 @@
+{
+ "allowed_variants": [
+  {
+   "full_rank": 7,
+   "residual_df": 13,
+   "signal": "book_wc_cash_realization_noise",
+   "window": 20
+  }
+ ],
+ "baseline": "{\"custom\": {\"cfo_mean20q\": \"mean(CFO_t/A_t) over same20 t\", \"cfo_sigma20q\": \"sample std (ddof=1) of CFO_t/A_t over same20 t\", \"due_delta_mean20q\": \"mean((non_cur_liab_due_1y_t-non_cur_liab_due_1y_t-1)/A_t) over same20 t\", \"due_delta_sigma20q\": \"sample std (ddof=1) of same scaled due-item changes over same20 t\", \"dw_sigma20q\": \"sample std (ddof=1) of y over same20 t\", \"log_avg_assets20q\": \"mean(log(A_t)) over same20 t\"}, \"policy\": \"same event snapshot/window/mask; all fixed cols retained; base8 original vs base8 same extra-common vs all extras, rank/model FM raw/declared HAC19; no delete-column rank rescue\", \"production\": [\"momentum_120\", \"short_term_reversal_5\", \"vol_120\", \"idio_vol_60\", \"log_mv\", \"turnover_std_20\", \"bp\", \"roe_ttm\", \"r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9\", \"r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5\"]}。R12 康复：v2 身份重建。",
+ "family_id": "r8e_wc_cash_noise_v2",
+ "freeze_reference": "artifacts/research/round8_20261005/freeze/e_wc_cash_noise_definition_v1.json",
+ "idea_id": "r8e_wc_cash_noise_v1",
+ "trial_budget": 1,
+ "variants": "none",
+ "rehab_note": "；【2026-10-06 R12 康复登记】原 v1 记录已 retired（终态不可逆）。依 rec12 复审裁决（artifacts/research/round12_20261006/verdicts/reconsideration_v1.md）与平台规则「恢复应建立新的研究记录」，以 v2 重新登记：实现模块与参数与 v1 完全一致（未改数值口径），仅生命周期身份为新记录；新 run/eval/verify 将按现行代码同源重建。"
+}

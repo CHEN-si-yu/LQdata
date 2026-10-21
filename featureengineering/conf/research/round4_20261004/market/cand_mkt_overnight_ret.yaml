@@ -1,0 +1,18 @@
+name: r4m_mkt_overnight_ret_v1
+family_id: r4m_market_state_v1
+implementation: research.families.r4m_market_state_v1:build
+parameters: {signal: mkt_overnight_ret}
+units: 无量纲（收益率小数）；= 池内 open / pre_close − 1 的等权均值。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily，delay=0）；使用当日原始 open 与厂商 pre_close（已除权调整的前收对比口径）；无未来数据。
+missing_policy: 停牌 / 缺价（open 或 pre_close 缺失、pre_close<=0）不计入分母；有效票 < 100 的日 → NaN；不零填充、不前向填充。
+spec:
+  group: market
+  desc: "池内隔夜收益均值 open/pre_close−1（绿卡描述量，无方向）"
+  formula: "r_on=open/pre_close-1（当日原始价）；value=mean(r_on) over 有效票"
+  deps: [stock_daily]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  is_market: true
+  note: "绿卡通道预登记（无方向承诺）；隔夜收益为单序列原始字段的比例（收益率标准变换），日频原值；用 ctx.px_raw 取当日原始 open/pre_close，不用前向填充伪造成交；固定2115只主板池；有效样本分母，少于100只为NaN；市场标量不做截面rank；缺失保持NaN；未做收益有效性承诺。"

@@ -1,0 +1,647 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-10-20 19:31:36",
+  "score_source": "training_predictions",
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "score_window": [
+    "2025-07-01",
+    "2026-10-19"
+  ],
+  "model_train_read": true,
+  "weights_reloaded": true,
+  "folds_checked": 16,
+  "max_cpu_reload_error": 0.0,
+  "audit": [
+    {
+      "quarter": "2025Q3",
+      "fold": 1,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-07-01",
+        "2025-08-15",
+        "2025-09-30"
+      ]
+    },
+    {
+      "quarter": "2025Q4",
+      "fold": 1,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-10-09",
+        "2025-11-20",
+        "2025-12-31"
+      ]
+    },
+    {
+      "quarter": "2026Q1",
+      "fold": 1,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-01-05",
+        "2026-02-12",
+        "2026-03-31"
+      ]
+    },
+    {
+      "quarter": "2026Q2",
+      "fold": 1,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-04-01",
+        "2026-05-19",
+        "2026-06-30"
+      ]
+    },
+    {
+      "quarter": "2025Q3",
+      "fold": 2,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-07-01",
+        "2025-08-15",
+        "2025-09-30"
+      ]
+    },
+    {
+      "quarter": "2025Q4",
+      "fold": 2,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-10-09",
+        "2025-11-20",
+        "2025-12-31"
+      ]
+    },
+    {
+      "quarter": "2026Q1",
+      "fold": 2,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-01-05",
+        "2026-02-12",
+        "2026-03-31"
+      ]
+    },
+    {
+      "quarter": "2026Q2",
+      "fold": 2,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-04-01",
+        "2026-05-19",
+        "2026-06-30"
+      ]
+    },
+    {
+      "quarter": "2025Q3",
+      "fold": 3,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-07-01",
+        "2025-08-15",
+        "2025-09-30"
+      ]
+    },
+    {
+      "quarter": "2025Q4",
+      "fold": 3,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-10-09",
+        "2025-11-20",
+        "2025-12-31"
+      ]
+    },
+    {
+      "quarter": "2026Q1",
+      "fold": 3,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-01-05",
+        "2026-02-12",
+        "2026-03-31"
+      ]
+    },
+    {
+      "quarter": "2026Q2",
+      "fold": 3,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-04-01",
+        "2026-05-19",
+        "2026-06-30"
+      ]
+    },
+    {
+      "quarter": "2025Q3",
+      "fold": 4,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-07-01",
+        "2025-08-15",
+        "2025-09-30"
+      ]
+    },
+    {
+      "quarter": "2025Q4",
+      "fold": 4,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-10-09",
+        "2025-11-20",
+        "2025-12-31"
+      ]
+    },
+    {
+      "quarter": "2026Q1",
+      "fold": 4,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-01-05",
+        "2026-02-12",
+        "2026-03-31"
+      ]
+    },
+    {
+      "quarter": "2026Q2",
+      "fold": 4,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-04-01",
+        "2026-05-19",
+        "2026-06-30"
+      ]
+    }
+  ],
+  "metrics_total": {
+    "quarter": "总计",
+    "days": 242,
+    "IC": 0.04718188361243969,
+    "ICIR": 0.5012069009951443,
+    "top_return": 0.43095268382341684,
+    "top_return_stability": 0.10482860285793408,
+    "total_return": 131.1474350700929,
+    "IC_1d": 0.04718188361243969,
+    "IC_5d": 0.05152749514082576,
+    "RankIC_1d": 0.043579236097626706,
+    "RankIC_5d": 0.0526028272619797
+  },
+  "min_test_combinations": [
+    {
+      "params": {
+        "topn": 500,
+        "money": 1500000000.0,
+        "label": "label_ret_1d"
+      },
+      "metrics": {
+        "IC": 0.04718188361243969,
+        "ICIR": 0.5012069009951443,
+        "top_return": 0.43095268382341684,
+        "top_return_stability": 0.10482860285793408,
+        "total_return": 131.1474350700929,
+        "IC_1d": 0.04718188361243969,
+        "IC_5d": 0.05152749514082576,
+        "RankIC_1d": 0.043579236097626706,
+        "RankIC_5d": 0.0526028272619797
+      },
+      "quarterly": [
+        {
+          "quarter": "2025Q3",
+          "top_return": 0.9499753112895708,
+          "IC": 0.05458796804542305
+        },
+        {
+          "quarter": "2025Q4",
+          "top_return": 0.09596351861012613,
+          "IC": 0.0558161388417508
+        },
+        {
+          "quarter": "2026Q1",
+          "top_return": -0.19477131929764904,
+          "IC": 0.04252242767170208
+        },
+        {
+          "quarter": "2026Q2",
+          "top_return": 0.7790260284035998,
+          "IC": 0.034749761051535294
+        }
+      ]
+    },
+    {
+      "params": {
+        "topn": 50,
+        "money": 100000000.0,
+        "label": "label_ret_1d"
+      },
+      "metrics": {
+        "IC": 0.04718188361243969,
+        "ICIR": 0.5012069009951443,
+        "top_return": 0.19481238057223407,
+        "top_return_stability": 0.03189618523140397,
+        "total_return": 1.2912158871926316,
+        "IC_1d": 0.04718188361243969,
+        "IC_5d": 0.05152749514082576,
+        "RankIC_1d": 0.043579236097626706,
+        "RankIC_5d": 0.0526028272619797
+      },
+      "quarterly": [
+        {
+          "quarter": "2025Q3",
+          "top_return": -0.054716846651464854,
+          "IC": 0.05458796804542305
+        },
+        {
+          "quarter": "2025Q4",
+          "top_return": 0.5229313374767127,
+          "IC": 0.0558161388417508
+        },
+        {
+          "quarter": "2026Q1",
+          "top_return": 0.47187774632799334,
+          "IC": 0.04252242767170208
+        },
+        {
+          "quarter": "2026Q2",
+          "top_return": -0.11741876775821777,
+          "IC": 0.034749761051535294
+        }
+      ]
+    },
+    {
+      "params": {
+        "topn": 5,
+        "money": 10000000.0,
+        "label": "label_ret_1d"
+      },
+      "metrics": {
+        "IC": 0.04718188361243969,
+        "ICIR": 0.5012069009951443,
+        "top_return": 0.5454077099891383,
+        "top_return_stability": 0.0781811656691644,
+        "total_return": 105.37556413325504,
+        "IC_1d": 0.04718188361243969,
+        "IC_5d": 0.05152749514082576,
+        "RankIC_1d": 0.043579236097626706,
+        "RankIC_5d": 0.0526028272619797
+      },
+      "quarterly": [
+        {
+          "quarter": "2025Q3",
+          "top_return": 0.42239600485008577,
+          "IC": 0.05458796804542305
+        },
+        {
+          "quarter": "2025Q4",
+          "top_return": 1.0216403329124053,
+          "IC": 0.0558161388417508
+        },
+        {
+          "quarter": "2026Q1",
+          "top_return": 0.7039800088054368,
+          "IC": 0.04252242767170208
+        },
+        {
+          "quarter": "2026Q2",
+          "top_return": 0.056487150490283966,
+          "IC": 0.034749761051535294
+        }
+      ]
+    },
+    {
+      "params": {
+        "topn": 5,
+        "money": 100000.0,
+        "label": "label_ret_1d"
+      },
+      "metrics": {
+        "IC": 0.04718188361243969,
+        "ICIR": 0.5012069009951443,
+        "top_return": 0.5936821184682944,
+        "top_return_stability": 0.08456896963716293,
+        "total_return": 129.09935239528488,
+        "IC_1d": 0.04718188361243969,
+        "IC_5d": 0.05152749514082576,
+        "RankIC_1d": 0.043579236097626706,
+        "RankIC_5d": 0.0526028272619797
+      },
+      "quarterly": [
+        {
+          "quarter": "2025Q3",
+          "top_return": 0.5994021828201684,
+          "IC": 0.05458796804542305
+        },
+        {
+          "quarter": "2025Q4",
+          "top_return": 1.0216403597344954,
+          "IC": 0.0558161388417508
+        },
+        {
+          "quarter": "2026Q1",
+          "top_return": 0.7039799981617502,
+          "IC": 0.04252242767170208
+        },
+        {
+          "quarter": "2026Q2",
+          "top_return": 0.056487118701140086,
+          "IC": 0.034749761051535294
+        }
+      ]
+    }
+  ],
+  "snapshot": {
+    "built_at": "2026-10-20 15:50:37",
+    "stock_feature_count": 310,
+    "input_feature_count": 272,
+    "meta_sha256": "ab81f299edf8cf7441b89b3ba38cde883238703af0a90811cb457aaa76903566"
+  },
+  "clean_blocks_are_epoch_selection_data": true,
+  "min_test_algorithm": "reference pandas tie order; literal sequential scalar allocation; labels multiplied by100 before Pearson IC",
+  "replica_status": "single screening replica; no promotion",
+  "realizable": {
+    "topk": 5,
+    "label": "label_ret_5d",
+    "ideal_mean_pct": -0.11696314421378476,
+    "realizable_mean_pct": -0.14262852496661557,
+    "ratio": 1.219431351006773,
+    "days": 242,
+    "days_with_position": 240,
+    "gap_pct": 0.012029959204179855,
+    "gap_t": 0.06546024133243002
+  },
+  "clean_blocks": {
+    "strategy": "top5_5d",
+    "blocks": [
+      {
+        "quarter": "2025Q3",
+        "fold": 4,
+        "start": "2023-07-21",
+        "end": "2025-04-25",
+        "days": 427,
+        "ideal_mean_pct": 0.4078171907942723,
+        "realizable_mean_pct": -0.23475194142684377,
+        "tradable_ratio": -0.5756303234045543,
+        "strategy_return_value": 0.8311431062042918,
+        "strategy_net_annual_pct": 40.296673628453604,
+        "strategy_max_drawdown": -0.3593859912396916,
+        "idle_cash_pct": 21.565693884930155,
+        "trades": 384,
+        "gross_return_same_positions": 0.9069819797421736,
+        "total_fees": 4797.554494396267,
+        "fee_drag": 0.04797554494396264,
+        "slippage_drag": 0.027863328593919233,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      },
+      {
+        "quarter": "2025Q4",
+        "fold": 4,
+        "start": "2023-09-28",
+        "end": "2025-08-01",
+        "days": 444,
+        "ideal_mean_pct": 0.6091085882970317,
+        "realizable_mean_pct": 0.06928629473336503,
+        "tradable_ratio": 0.11375031655205882,
+        "strategy_return_value": 0.47177982176691624,
+        "strategy_net_annual_pct": 26.427730401169946,
+        "strategy_max_drawdown": -0.3819250099201734,
+        "idle_cash_pct": 27.127742768831688,
+        "trades": 366,
+        "gross_return_same_positions": 0.5370035077597766,
+        "total_fees": 4149.018694053526,
+        "fee_drag": 0.04149018694053526,
+        "slippage_drag": 0.023733499052325316,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      },
+      {
+        "quarter": "2026Q1",
+        "fold": 4,
+        "start": "2023-12-08",
+        "end": "2025-11-03",
+        "days": 459,
+        "ideal_mean_pct": 0.4502884493501601,
+        "realizable_mean_pct": 0.18282478556255355,
+        "tradable_ratio": 0.4060170449106559,
+        "strategy_return_value": 0.3810213344381572,
+        "strategy_net_annual_pct": 22.07049791246208,
+        "strategy_max_drawdown": -0.4229714719156895,
+        "idle_cash_pct": 29.518748188934087,
+        "trades": 336,
+        "gross_return_same_positions": 0.4370926216944442,
+        "total_fees": 3594.3725469780825,
+        "fee_drag": 0.035943725469780835,
+        "slippage_drag": 0.02012756178650583,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      },
+      {
+        "quarter": "2026Q2",
+        "fold": 4,
+        "start": "2024-02-07",
+        "end": "2026-01-22",
+        "days": 473,
+        "ideal_mean_pct": 1.1811540371980926,
+        "realizable_mean_pct": 1.0460807354095951,
+        "tradable_ratio": 0.885642941111292,
+        "strategy_return_value": 1.91625796715834,
+        "strategy_net_annual_pct": 60.3237721008515,
+        "strategy_max_drawdown": -0.25238595826204846,
+        "idle_cash_pct": 26.07062119599823,
+        "trades": 380,
+        "gross_return_same_positions": 2.0509452547753777,
+        "total_fees": 8498.88360406112,
+        "fee_drag": 0.08498883604061114,
+        "slippage_drag": 0.04969845157642696,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      }
+    ],
+    "total_days": 1803,
+    "note": "这些 (季度, 折) 的训练集全部早于其验证块 ⇒ **无前视**；块与块之间日历不连续，**不可拼接**，只并列看。"
+  },
+  "bag_vs_argmax": {
+    "folds": 16,
+    "topk": 5,
+    "bag_epochs": [
+      [
+        10,
+        12,
+        15,
+        14,
+        6
+      ],
+      [
+        8,
+        10,
+        5,
+        13,
+        7
+      ],
+      [
+        9,
+        7,
+        13,
+        12,
+        14
+      ],
+      [
+        7,
+        13,
+        12,
+        10,
+        9
+      ],
+      [
+        15,
+        16,
+        12,
+        10,
+        9
+      ],
+      [
+        17,
+        19,
+        12,
+        11,
+        18
+      ],
+      [
+        14,
+        18,
+        16,
+        10,
+        15
+      ],
+      [
+        14,
+        20,
+        13,
+        19,
+        12
+      ],
+      [
+        12,
+        15,
+        17,
+        14,
+        9
+      ],
+      [
+        6,
+        12,
+        9,
+        10,
+        8
+      ],
+      [
+        11,
+        9,
+        16,
+        10,
+        15
+      ],
+      [
+        13,
+        12,
+        14,
+        8,
+        6
+      ],
+      [
+        6,
+        5,
+        7,
+        12,
+        8
+      ],
+      [
+        12,
+        10,
+        7,
+        15,
+        13
+      ],
+      [
+        3,
+        6,
+        9,
+        8,
+        7
+      ],
+      [
+        5,
+        8,
+        6,
+        4,
+        11
+      ]
+    ],
+    "metrics": {
+      "val_wei": {
+        "bagged": 1.2760543117235539,
+        "argmax": 1.5319563734706652,
+        "delta": -0.2559020617471112,
+        "t": -6.321076424752065,
+        "wins": 1
+      },
+      "IC_1d": {
+        "bagged": 0.06885464567720015,
+        "argmax": 0.06515054273242749,
+        "delta": 0.0037041029447726697,
+        "t": 5.8449179660732655,
+        "wins": 15
+      },
+      "IC_5d": {
+        "bagged": 0.08281166585174324,
+        "argmax": 0.08051937340388834,
+        "delta": 0.0022922924478548973,
+        "t": 2.2877032814012215,
+        "wins": 10
+      },
+      "RankIC_1d": {
+        "bagged": 0.053886204450217814,
+        "argmax": 0.05171605983708293,
+        "delta": 0.0021701446131348863,
+        "t": 1.657482804340801,
+        "wins": 10
+      },
+      "RankIC_5d": {
+        "bagged": 0.0702792349652443,
+        "argmax": 0.06885387896485619,
+        "delta": 0.0014253560003881184,
+        "t": 0.7352149828863339,
+        "wins": 10
+      },
+      "val_return_proxy": {
+        "bagged": 0.0040204022790268235,
+        "argmax": 0.00481435808970348,
+        "delta": -0.0007939558106766564,
+        "t": -1.2669542730805836,
+        "wins": 7
+      }
+    }
+  },
+  "fusion": {
+    "flow_weight": 1.0,
+    "fold_weights": {
+      "2025Q3/fold1": 1.0,
+      "2025Q4/fold1": 1.0,
+      "2026Q1/fold1": 1.0,
+      "2026Q2/fold1": 1.0,
+      "2025Q3/fold2": 1.0,
+      "2025Q4/fold2": 1.0,
+      "2026Q1/fold2": 1.0,
+      "2026Q2/fold2": 1.0,
+      "2025Q3/fold3": 1.0,
+      "2025Q4/fold3": 1.0,
+      "2026Q1/fold3": 1.0,
+      "2026Q2/fold3": 1.0,
+      "2025Q3/fold4": 1.0,
+      "2025Q4/fold4": 1.0,
+      "2026Q1/fold4": 1.0,
+      "2026Q2/fold4": 1.0
+    },
+    "rank_scale": "raw neural output; raw fourfold sum; daily z-score for min_test evaluation",
+    "absolute_gate": "separate training-fitted1d return, never percentile as return"
+  },
+  "auxiliary_forecast": "separate raw1d technical return; existing yearly parquet column; same fixed159 paths"
+}

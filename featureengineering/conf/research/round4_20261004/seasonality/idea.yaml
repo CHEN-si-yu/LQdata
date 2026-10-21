@@ -1,0 +1,15 @@
+idea_id: r4j_seasonality_v1
+hypothesis: 日历季节性（Heston–Sadka 同月效应）：同一日历月份在历年反复出现的方向性月收益模式，携带横截面预期收益信息——某只股票在历年同月的月收益均值越正（或为正的年份越多），其当年该月的预期收益越高。
+mechanism: |
+  1) same_month_mean_ret：过去最多 6 个历年同日历月（按 trade_date 月份）的月收益均值，
+     min 2 个历史同月才出值；只用当年本月之前已完结的历史同月，当月内不回填本月收益。
+  2) same_month_consistency：同月历史月收益为正的比例（严格 R>0，min 2 个样本）。
+  变体（登记前冻结）：
+  A) same_month_min4：机制 1 的样本充足性变体，最少 4 个历史同月；
+  B) same_month_prev_year：同月口径退化为「去年同期月」单点（min 1）。
+expected_direction: 四个候选全部登记为 true（正向）：同月历史月收益均值 / 为正占比 / 去年同期单点越高，预期随后 1/5 日收益越高。方向在看任何结果之前冻结。
+target_horizons: [1, 5]
+falsifiable: declared 分年同号 < 7/9；或 G7 控制后 t 不显著；或 G2 覆盖不足（实测分年有效票数表要求 ≥60% 交易日有 ≥100 只有效票，2018 年起点因 min 2 历史同月可能偏低，须实测）；或与 momentum_120 / price_to_52w_high |rho|>0.9（季节性只是动量/位置代理）。
+fields: [stock_daily.close, stock_daily.vol, stock_adj_factor.adj_factor]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

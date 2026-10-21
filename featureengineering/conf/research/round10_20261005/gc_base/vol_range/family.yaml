@@ -1,0 +1,62 @@
+{
+  "family_id": "r10gc_vol_range_v1",
+  "idea_id": "r10gc_vol_range_v1",
+  "trial_budget": 6,
+  "allowed_variants": [
+    {
+      "kind": "ret_std",
+      "window": 21
+    },
+    {
+      "kind": "ret_std",
+      "window": 63
+    },
+    {
+      "kind": "ret_std",
+      "window": 252
+    },
+    {
+      "kind": "high_low",
+      "window": 21
+    },
+    {
+      "kind": "high_low",
+      "window": 63
+    },
+    {
+      "kind": "high_low",
+      "window": 252
+    }
+  ],
+  "baseline": [
+    "vol_120",
+    "idio_vol_60",
+    "atr_14_ratio",
+    "price_to_52w_high",
+    "price_distance_from_52w_low",
+    "rv_term_structure",
+    "ret_skew_20"
+  ],
+  "parameters_frozen": {
+    "windows_trading_days": {
+      "ret_std": [
+        21,
+        63,
+        252
+      ],
+      "high_low": [
+        21,
+        63,
+        252
+      ]
+    },
+    "min_count": "n//2",
+    "std_ddof": 0,
+    "return_definition": "ctx.ret_clean(1) —— 停牌日 NaN",
+    "price_definition": "ctx.hfq('close') —— 后复权（PIT 安全）",
+    "direction": "higher_is_better=true for all (declared=raw; no direction claimed)",
+    "bound": "登记 6 个期限点（收益波动三点 + 振幅三点）。资格判定同为 IN 但本轮未登记的：return_std_42d、high_low_42d、high_low_126d（期限三点制下取 21/63/252）。"
+  },
+  "variants": "none：6 个变体在同一模块内事前冻结（FROZEN 字典），build() 拒绝任何其它参数组合。",
+  "channel": "green-card candidate (basic thresholds only; G4-G7 not claimed)"
+}

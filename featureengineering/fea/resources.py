@@ -65,6 +65,15 @@ _GUARD_FNS = ("arcsinh", "log", "log1p", "log2", "log10", "exp", "expm1",
               "arcsin", "arccos", "arctan")
 _guard_factor: str | None = None
 _guard_seen: set = set()
+_guard_originals: dict = {}
+
+
+def uninstall_float32_guard():
+    """Restore NumPy entrypoints after a scoped audit or test."""
+    import numpy as np
+    for name, original in _guard_originals.items():
+        setattr(np, name, original)
+    _guard_originals.clear()
 
 
 def set_guard_factor(name: str | None) -> None:
@@ -73,7 +82,7 @@ def set_guard_factor(name: str | None) -> None:
     _guard_factor = name
 
 
-def install_float32_guard(report: str | None = None):
+def install_float32_guard(report: str | None = None, project_root=None):
     """把 numpy 的超越函数包一层：**入参是 float32 就记一笔**（不改数值、不抛错）。
 
     用途：找出"哪些因子还在把 float32 送进超越函数"—— 这条路径的末位不可复现
@@ -83,31 +92,27 @@ def install_float32_guard(report: str | None = None):
 
         FEA_FP_GUARD=/tmp/guard.jsonl python main.py run <因子> --sandbox /tmp/x ...
     """
-    import atexit
     import json
     import sys
     import numpy as np
+    uninstall_float32_guard()
 
     if report is None:
         report = os.environ.get("FEA_FP_GUARD") or ""
     if not report:
         return None
-    out = open(report, "a", encoding="utf-8")
-
-    def cleanup():
-        try:
-            for row in sorted(_guard_seen):
-                out.write(json.dumps({"factor": row[0], "fn": row[1], "at": row[2]},
-                                     ensure_ascii=False) + "\n")
-        finally:
-            out.close()
-
-    atexit.register(cleanup)
+    from pathlib import Path
+    root = Path(project_root or Path(__file__).resolve().parents[1]).resolve()
+    report = (root / report).resolve()
+    if not report.is_relative_to(root):
+        raise ValueError("FEA_FP_GUARD 必须在本次项目运行目录内")
+    report.parent.mkdir(parents=True, exist_ok=True)
 
     for name in _GUARD_FNS:
         orig = getattr(np, name, None)
         if orig is None:
             continue
+        _guard_originals[name] = orig
 
         def wrapper(*a, _orig=orig, _name=name, **kw):
             for v in a:
@@ -123,7 +128,14 @@ def install_float32_guard(report: str | None = None):
                         where = f"{fr.f_code.co_filename.rsplit('/', 1)[-1]}:{fr.f_lineno}"
                     except Exception:                              # noqa: BLE001
                         where = "?"
-                    _guard_seen.add((_guard_factor or "?", _name, where))
+                    row = (_guard_factor or "?", _name, where)
+                    if row not in _guard_seen:
+                        _guard_seen.add(row)
+                        # Persist immediately without retaining an open handle.
+                        # A killed worker still leaves its observed evidence.
+                        with report.open("a", encoding="utf-8") as out:
+                            out.write(json.dumps({"factor": row[0], "fn": row[1], "at": row[2]},
+                                                 ensure_ascii=False) + "\n")
                     break
             return _orig(*a, **kw)
 
@@ -132,89 +144,107 @@ def install_float32_guard(report: str | None = None):
     return report
 
 
-def safe_jobs(value=0):
-    """因子计算的并行进程数校验（默认 1 = 串行）。
+_POLICY = {"default_jobs": 8, "max_jobs": 12, "memory_budget_gib": 90,
+           "process_address_space_gib": 24}
 
-    ★ 2026-09-25：上限由硬编码的 2 改成可用 **`FEA_MAX_JOBS`** 调整（默认仍是 2）。
 
-    为什么：单进程只吃 ~1 核（本机 25 核），实测全量重建 18.3 min/年、CPU 大量空闲，
-    时间几乎全花在等单个因子的 pandas 运算上。用户要求试 3 路并行来判断能否再提速。
-    但**内存是硬约束**：每年块要装下价格层 + 派生层 + 面板（jobs=1 实测 cgroup 峰值
-    29~31 GB；本机 90 GB 上限、批内 RSS 保护 64 GB、共享内存保护 80 GB）。
-    所以上限**默认不动**，只在明确评估过内存余量时用环境变量显式放开：
+def resource_policy(policy=None):
+    """Resolve project limits; the task budget may be tightened, never >90GiB."""
+    if hasattr(policy, "raw"):
+        policy = policy.raw.get("resources", {})
+    out = {**_POLICY, **(policy or {})}
+    for env, key in (("FEA_MAX_JOBS", "max_jobs"),
+                     ("FEA_DEFAULT_JOBS", "default_jobs"),
+                     ("FEA_MEMORY_BUDGET_GIB", "memory_budget_gib")):
+        if os.environ.get(env):
+            out[key] = float(os.environ[env]) if key == "memory_budget_gib" else int(os.environ[env])
+    if not 1 <= float(out["memory_budget_gib"]) <= 90:
+        raise ValueError("单次因子任务 memory_budget_gib 必须在 1~90 GiB")
+    if int(out["max_jobs"]) < 1 or int(out["default_jobs"]) < 1:
+        raise ValueError("default_jobs/max_jobs 必须为正整数")
+    if float(out["process_address_space_gib"]) <= 0:
+        raise ValueError("process_address_space_gib 必须为正数")
+    return out
 
-        FEA_MAX_JOBS=3 python main.py rebuild --jobs 3
 
-    内存由 `run_bounded` 每秒采样看护：批内 RSS > 64 GB 或容器内存 > 80 GB 会**停止本批**
-    （而不是让容器 OOM）。放开上限前先实测峰值 —— 采样器见
-    `scripts/mem_trace.py`（重建期间每 5 秒记一次 cgroup 与批内 RSS）。
-    """
-    n = int(value or 1)
-    # ★ 2026-09-25：默认上限 2 → **12**。原值是在「护栏判据虚高、真实余量未知」时
-    #   定的保守值，后果是 README 宣传的层并行 3.19× **在默认配置下根本拿不到**
-    #   （`prebuild` 取 min(jobs, 层数)，要 4 才能展开）。现在有实测了：
-    #
-    #     单年块（2018，513 因子）阶梯实测：
-    #       jobs=4  墙钟 350s · 真实计费内存峰值 37.5 GB / 90 GB
-    #       jobs=8  墙钟 240s · 45.4 GB
-    #       jobs=12 墙钟 205s · 52.2 GB   ← 最快
-    #       jobs=16 墙钟 215s · 58.8 GB   ← **反而更慢**，曲线在 12 处拐弯
-    #
-    #   拐弯的原因是共享盘 I/O 争用（12 个进程同读同一批年分区），不是 CPU 也不是内存
-    #   —— 25 核在 jobs=12 时只用到 11.8 核，内存离 90 GB 还有 38 GB。所以上限设 12
-    #   是「实测最优」，不是拍的；再往上加只会更慢且更接近护栏。
-    cap = int(os.environ.get("FEA_MAX_JOBS", "12"))
-    if not 1 <= n <= cap:
-        raise ValueError(f"因子计算并行度必须在 1~{cap}；默认串行。"
-                         f"要提高上限设 FEA_MAX_JOBS（见 fea/resources.py 的说明），"
-                         f"并先确认内存余量")
-    return n
+def available_cpus():
+    """Respect Linux affinity and CPU quotas, including the current v1 host."""
+    from pathlib import Path
+    count = os.cpu_count() or 1
+    try:
+        count = min(count, len(os.sched_getaffinity(0)))
+    except (AttributeError, OSError):
+        pass
+    try:
+        v2 = Path("/sys/fs/cgroup/cpu.max")
+        if v2.exists():
+            quota, period = v2.read_text().split()
+            if quota != "max":
+                count = min(count, max(1, int(quota) // int(period)))
+        else:
+            quota = int(Path("/sys/fs/cgroup/cpu/cpu.cfs_quota_us").read_text())
+            period = int(Path("/sys/fs/cgroup/cpu/cpu.cfs_period_us").read_text())
+            if quota > 0:
+                count = min(count, max(1, quota // period))
+    except (OSError, ValueError):
+        pass
+    return max(1, count)
 
-def configure():
-    import resource
-    target = 24 * 1024**3
-    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-    for bound in (soft, hard):
-        if bound != resource.RLIM_INFINITY:
-            target = min(target, bound)
-    resource.setrlimit(resource.RLIMIT_AS, (target, hard))
+
+def memory_limits(container_limit=None, policy=None):
+    """Charged-memory guard leaves 10% headroom under both independent caps."""
+    project_limit = int(float(resource_policy(policy)["memory_budget_gib"]) * 1024**3)
+    effective = min(project_limit, container_limit) if container_limit else project_limit
+    return {"project": project_limit, "effective": effective,
+            "charged": int(effective * 0.90),
+            "anon": max(int(effective * 0.75), effective - 14*1024**3)}
+
+
+def safe_jobs(value=0, policy=None):
+    """Honor explicit positive workers; zero selects a project/CPU-capped default."""
+    n = int(value or 0)
+    if n < 0:
+        raise ValueError("因子计算并行度必须为正整数；0 使用自动配置")
+    if n > 0:
+        return n
+    resolved = resource_policy(policy)
+    cap = min(int(resolved["max_jobs"]), available_cpus())
+    return min(int(resolved["default_jobs"]), cap)
+
+
+def configure(policy=None, *, enforce_limits=True):
+    """Configure worker threads; explicit production jobs skip project memory limits."""
+    global _POLICY
+    _POLICY = resource_policy(policy)
+    target = None
     for key in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS", "ARROW_NUM_THREADS"):
         os.environ[key] = "1"
+    if enforce_limits:
+        target = int(float(_POLICY["process_address_space_gib"]) * 1024**3)
+        try:
+            import resource
+        except ImportError:
+            return target
+        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+        for bound in (soft, hard):
+            if bound != resource.RLIM_INFINITY:
+                target = min(target, bound)
+        resource.setrlimit(resource.RLIMIT_AS, (target, hard))
     import pyarrow as pa
     pa.set_cpu_count(1)
     pa.set_io_thread_count(1)
     return target
 
 
-def run_bounded(cmd, *, cwd, stdout):
-    """只管理本次启动的进程组；按**容器真实计费内存**决定是否停批。
-
-    ## 判据的演进（2026-09-25：两个方向相反的错，实测都抓到了）
-
-    1. **触发太晚（危险）** —— 原来把 `total_rss` 当"匿名内存"、阈值写死 80 GB。
-       但容器被计费的是 `total_rss + total_cache`：实测本机
-       `total_rss 32.9 GB` + `total_cache 11.0 GB` = `usage_in_bytes 44.6 GB`，
-       判据**漏看 11.7 GB**。于是"anon>80 GB 才停"意味着真实用量要涨到 ~91.7 GB
-       才触发 —— **会在护栏动作之前先被内核 OOM 打死**。本工作负载专读
-       6.86 亿行 / 6.24 亿行的 parquet，页缓存正是它最大的一块波动量。
-       （与 `scripts/backfill_history.py` 里那个写死 v2 的 `memory.max` 是同一类问题。）
-    2. **触发太早（浪费）** —— 批内判据把进程组内每个进程的 `VmRSS` 相加，
-       而 fork 出的 worker 与父进程共享价格层/派生层（COW），还 mmap 了 parquet。
-       共享页被**每个进程各算一遍**，实测虚高 1.3~1.5×：jobs=4 时判据峰值 39.5 GB、
-       同期真实计费 37.5 GB，而真实 `total_rss` 只有 26.6 GB。按 64 GB 停批≈
-       真实用量 44 GB 就掐断，**容器一半内存用不上**，直接压死并行度。
-
-    现在：**主判据 = 容器真实计费内存 vs 真实上限**（两者都从 cgroup 动态读，
-    不再写死 80/90）；第二道 = 不可回收量（本机 swap=0、shmem=0，`total_rss`/`anon`
-    完全不可回收，顶满即 OOM）；批内 VmRSS 求和**降级为诊断输出**，只留一个
-    远高于真实需求的兜底阈值，防止"进程组异常膨胀但 cgroup 没反映"这种情况。
-    """
+def run_bounded(cmd, *, cwd, stdout, policy=None):
+    'Run this child group under the <=90 GiB project budget. Charged cgroup memory includes cached pages. PSS counts shared pages proportionally; summed RSS is diagnostic only.'
     import signal
     import subprocess
     import time
     from pathlib import Path
-    child=subprocess.Popen(cmd,cwd=cwd,stdout=stdout,stderr=subprocess.STDOUT,start_new_session=True)
-    peak_rss=peak_anon=peak_used=0
+    _HZ = os.sysconf("SC_CLK_TCK") if hasattr(os, "sysconf") else 100
+    peak_rss=peak_anon=peak_used=peak_pss=0
+    peak_cpu_ticks=0
     stopped=False;reason=""
     # ---- cgroup v1 / v2：真实计费用量、真实上限、不可回收量键 ----
     if Path("/sys/fs/cgroup/memory.current").exists() and Path("/sys/fs/cgroup/memory.max").exists():
@@ -232,20 +262,59 @@ def run_bounded(cmd, *, cwd, stdout):
     _limit=_read_int(_lim_path)
     if _limit is None or _limit>1<<62:_limit=None      # "max"/无限大哨兵值
     # 主判据留 10% 余量：吸收写入期脏页、同 cgroup 内其他任务与内核自身。
-    _used_cap=int(_limit*0.90) if _limit else 80*1024**3
+    limits = memory_limits(_limit, policy)
+    _project_limit, _used_cap = limits["project"], limits["charged"]
     # 不可回收量离上限 14 GB 就该停（本机 swap=0，anon 顶满即 OOM）。
-    _anon_cap=(_limit-14*1024**3) if _limit else _used_cap
-    # 批内 VmRSS 兜底：只防"进程组异常膨胀"，远高于真实需求，不再当主判据。
-    _batch_backstop=160*1024**3
+    _anon_cap = limits["anon"]
+    # Validate policy before starting a subprocess; an invalid budget must not
+    # leave an unmonitored child running.
+    child=subprocess.Popen(cmd,cwd=cwd,stdout=stdout,stderr=subprocess.STDOUT,start_new_session=True)
+    # ★★ 2026-10-03 实测踩过：driver 被 SIGTERM 时 Python 默认直接退出、不跑清理，
+    #   留在独立会话里的整棵子进程树（coordinator + 年块 + 因子 worker）会变孤儿
+    #   继续写 data/。这里装一对转发处理器：收到信号先 killpg 整组，再按默认语义退出。
+    _old_handlers={}
+    def _forward(signum, frame):                                   # noqa: ARG001
+        try:
+            os.killpg(child.pid, signal.SIGTERM)
+        except (ProcessLookupError, OSError):
+            pass
+        try:
+            child.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            try: os.killpg(child.pid, signal.SIGKILL)
+            except (ProcessLookupError, OSError): pass
+        signal.signal(signum, signal.SIG_DFL)
+        os.kill(os.getpid(), signum)
+    try:
+        for _sig in (signal.SIGTERM, signal.SIGINT):
+            _old_handlers[_sig]=signal.signal(_sig,_forward)
+    except ValueError:
+        _old_handlers={}          # 非主线程调用时不能装处理器；退回默认语义
     try:
         while child.poll() is None:
-            rss=0
+            rss=pss=0;cpu_ticks=0
             for directory in Path("/proc").iterdir():
                 if not directory.name.isdigit():continue
                 try:
                     if os.getpgid(int(directory.name))!=child.pid:continue
                     for line in (directory/"status").read_text().splitlines():
                         if line.startswith("VmRSS:"):rss+=int(line.split()[1])*1024
+                    # PSS counts shared fork pages proportionally rather than
+                    # duplicating every worker's RSS. RSS is diagnostic only.
+                    try:
+                        for line in (directory/"smaps_rollup").read_text().splitlines():
+                            if line.startswith("Pss:"):pss+=int(line.split()[1])*1024
+                    except OSError:
+                        pass
+                    # ★ 2026-10-03 资源记账：顺带累计进程组 CPU（含 cutime/cstime，
+                    #   即已回收子进程的 CPU）→ 返回 cpu_seconds 供利用率台账。
+                    #   累计量单调不减，取采样最大值即全程消耗。
+                    try:
+                        raw=(directory/"stat").read_text()
+                        rp=raw.rindex(")");parts=raw[rp+2:].split()
+                        cpu_ticks+=int(parts[11])+int(parts[12])+int(parts[13])+int(parts[14])
+                    except (OSError,ValueError,IndexError):
+                        pass
                 except (OSError,ProcessLookupError):pass
             try:
                 stat=dict(line.split() for line in _stat_path.read_text().splitlines())
@@ -254,14 +323,16 @@ def run_bounded(cmd, *, cwd, stdout):
             used=_read_int(_use_path) or 0
             peak_rss=max(peak_rss,rss);peak_anon=max(peak_anon,anon)
             peak_used=max(peak_used,used)
+            peak_pss=max(peak_pss,pss);peak_cpu_ticks=max(peak_cpu_ticks,cpu_ticks)
             if used>_used_cap:
-                stopped=True;reason=f"容器计费内存 {used/2**30:.1f} GB > {_used_cap/2**30:.1f} GB"
+                stopped=True;reason=f"计费内存 {used/2**30:.1f} GiB > 项目护栏 {_used_cap/2**30:.1f} GiB"
             elif anon>_anon_cap:
                 stopped=True;reason=f"不可回收内存 {anon/2**30:.1f} GB > {_anon_cap/2**30:.1f} GB"
-            elif rss>_batch_backstop:
-                stopped=True;reason=f"批内 RSS 异常 {rss/2**30:.1f} GB > {_batch_backstop/2**30:.1f} GB"
+            elif pss>_used_cap:
+                stopped=True;reason=f"本批 PSS {pss/2**30:.1f} GiB > 项目护栏 {_used_cap/2**30:.1f} GiB"
             if stopped:
-                os.killpg(child.pid,signal.SIGTERM)
+                try:os.killpg(child.pid,signal.SIGTERM)
+                except ProcessLookupError:pass
                 try:child.wait(timeout=10)
                 except subprocess.TimeoutExpired:os.killpg(child.pid,signal.SIGKILL)
                 break
@@ -276,6 +347,12 @@ def run_bounded(cmd, *, cwd, stdout):
         raise
     # `peak_cgroup_bytes` 是**真实计费内存**峰值（主判据用的就是它）；
     # `peak_rss_bytes` 保留但只作诊断 —— 它把共享页重复计数，会明显虚高，别拿它当结论。
+    # `cpu_seconds` 是整个进程组（含全部 worker）消耗的 CPU 秒，供资源台账算利用率。
+    for _sig,_handler in _old_handlers.items():
+        try: signal.signal(_sig,_handler)
+        except ValueError: pass
     return {"returncode":rc,"peak_rss_bytes":peak_rss,"peak_shared_anon_bytes":peak_anon,
-            "peak_cgroup_bytes":peak_used,"cgroup_limit_bytes":_limit,
+            "peak_cgroup_bytes":peak_used,"peak_pss_bytes":peak_pss,
+            "cgroup_limit_bytes":_limit,"project_memory_limit_bytes":_project_limit,
+            "memory_guard_bytes":_used_cap,"cpu_seconds":round(peak_cpu_ticks/_HZ,1),
             "memory_stopped":stopped,"stop_reason":reason}

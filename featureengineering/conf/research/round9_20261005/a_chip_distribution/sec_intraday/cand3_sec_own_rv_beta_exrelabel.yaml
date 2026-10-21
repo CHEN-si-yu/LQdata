@@ -1,0 +1,39 @@
+name: r9a_sec_own_rv_beta_exrelabel_v1
+family_id: r9_sec_intraday_family_v3
+implementation: research.families.r9a_sec_intraday_v2:build
+parameters: {signal: sec_own_rv_beta_exrelabel, window: 60, min_count: 54}
+units: 无量纲（回归系数），定义与 r9a_sec_own_rv_beta_v2 完全相同，只把多标签股票整列置 NaN。
+availability: >-
+  与 r9a_sec_own_rv_beta_v2 相同（tdx_minute delay_days=0、T 日收盘后可得、T+1 开盘交易、
+  无未来位移）。截断自证见 tools/prove_truncation_tdx.py。额外前视披露：排除名单由
+  2022-2026 的 DC 风格标签计算后回溯应用于 2018-2026，属于**样本选择层面的前视**，
+  本候选仅作诊断用途。
+missing_policy: >-
+  在 r9a_sec_own_rv_beta_v2 的缺失策略之上，再把 EXCLUDE_RELABELLED（1,032 只）的整列置 NaN；
+  其余完全一致（不填充、不前向填充、窗口 60 中至少 54 日）。
+closest_existing_baselines: [vol_120, idio_vol_60, r9a_sec_own_rv_beta_v2_ef77e079dd4478fe]
+source_fields:
+  - tdx_minute.board_code
+  - tdx_minute.board_name
+  - tdx_minute.trade_time
+  - tdx_minute.close
+  - stock_list.stock_code
+  - stock_list.industry
+  - stock_daily.close
+  - stock_adj_factor.adj_factor
+spec:
+  group: r9_sector_intraday_sensitivity
+  desc: >-
+    前视敏感性诊断：与 r9a_sec_own_rv_beta_v2 同定义，但剔除在 2022-2026 区间内
+    携带多个 DC 风格行业标签的 1,032 只股票。higher_is_better=false。
+  formula: >-
+    identical to r9a_sec_own_rv_beta_v2 (beta_i=Cov_60(r_i,RV_s(i))/Var_60(RV_s(i))),
+    with EXCLUDE_RELABELLED columns forced to NaN
+  deps: [tdx_minute, stock_list, stock_daily, stock_adj_factor]
+  warmup_days: 200
+  higher_is_better: false
+  version: 1
+  note: >-
+    诊断候选（Lead 条件 1）。用途是回答「行业标签不稳定是否驱动了主候选的结果」。
+    已知混杂必须随结果一起报告：排除名单有样本选择前视、来自另一套分类体系、且使池子腰斩。
+    不主张本候选可入库。

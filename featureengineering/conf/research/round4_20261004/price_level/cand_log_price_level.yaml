@@ -1,0 +1,16 @@
+name: r4r_log_price_level_v1
+family_id: r4r_price_level_v1
+implementation: research.families.r4r_price_level_v1:build
+parameters: {signal: log_price_level}
+units: 价格单位为元（原始名义价，未复权）；因子值 = ln(close_raw)，量纲为 log 元。
+availability: 只用信号日 T 当日的原始收盘价（严格当日原始值，不外推、不沿用停牌前旧价）；不依赖复权因子；stock_daily 不在可得性滞后名单（fea/delay.py），无需 lagged_ok。
+missing_policy: 当日无成交（停牌=无行）/收盘价缺失/≤0 → NaN；不零填充、不前向填充。
+spec:
+  group: research_price_level
+  desc: 未验证候选：名义收盘价水平的对数（预登记方向 true）。
+  formula: ln(close_raw[T])
+  deps: [stock_daily]
+  warmup_days: 10
+  higher_is_better: true
+  version: 1
+  note: 口径事前定死 = 原始名义价（未复权）；理由（跨股票可比、PIT 不变、符合 fea/spec.py 红线指引）见模块 docstring；研究候选，不进生产。

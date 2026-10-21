@@ -1,0 +1,38 @@
+# 事前登记假设，不构成收益证明；机制集合、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r2_pledge_change_fast_v2",
+  "family_id": "r2_pledge_family_v2",
+  "implementation": "research.families.r2_pledge_v2:build",
+  "parameters": {
+    "signal": "pledge_change_fast"
+  },
+  "units": "百分点。",
+  "availability": "同机制 1 的保守滞后；两条腿同滞后。",
+  "missing_policy": "同机制 1；任一条腿缺失即 NaN。",
+  "closest_existing_baselines": [
+    "total_leverage_ratio",
+    "momentum_20"
+  ],
+  "semantic_difference": "与 13 周变化共用机制，仅窗口不同，用于判断变化信号的时间尺度。",
+  "source_fields": [
+    "stock_pledge_stat.stock_code",
+    "stock_pledge_stat.end_date",
+    "stock_pledge_stat.unrest_pledge",
+    "stock_pledge_stat.rest_pledge",
+    "stock_pledge_stat.total_share"
+  ],
+  "pre_registered_direction": "lower_is_better",
+  "spec": {
+    "group": "r2_pledge",
+    "desc": "质押比例 5 周变化（机制 2 的窗口变体）",
+    "formula": "100*(L(t) - L(t-25 个交易日))，L 为滞后 15 个交易日的质押比例",
+    "deps": [
+      "stock_pledge_stat"
+    ],
+    "start": null,
+    "warmup_days": 150,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "v2：公式/窗口/方向与 v1 逐字相同，仅将实现模块换成 r2_pledge_v2.py（为 stock_pledge_stat 声明 end_date 为可得日期列，使框架原有截断生效）；v1 零 run、零 IC。原 note：R2-I1 试验预算内的窗口变体之一；方向事前冻结 higher_is_better=false。"
+  }
+}

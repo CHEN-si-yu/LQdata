@@ -1,0 +1,17 @@
+name: r4p_goodwill_to_equity_v1
+family_id: r4p_goodwill_v1
+implementation: research.families.r4p_goodwill_v1:build
+parameters: {signal: goodwill_to_equity}
+units: 无量纲比率（商誉/归母净资产）。0=无商誉；>1 表示商誉超过归母账面净资产；NaN=不可考。
+availability: 商誉与归母净资产均取公告时点 pit=max(ann_date,f_ann_date,end_date)≤信号日的最新可考版本（as-of 前向填充、含历次修订）；财报数据无未来信息；stock_balancesheet delay_days=0（conf/frequency.yaml），公告日当天可用。
+missing_policy: 商誉不可考、或归母净资产不可考/≤0（财务层 POSITIVE_ONLY 置 NaN）/≤1e6 元（因子层分母地板 min_abs_den=1e6）时为 NaN；商誉=0 为真实值保留（无并购）；不做零填充、不向旧报告回退；非有限值输出为 NaN。
+spec:
+  group: research_goodwill
+  desc: 未验证候选（V1 机制1）：商誉/归母净资产，高商誉→未来减值/摊薄风险→低预期收益。
+  formula: point(goodwill) / point(total_hldr_eqy_exc_min_int)
+  deps: [stock_balancesheet]
+  fin_fields: [goodwill, total_hldr_eqy_exc_min_int]
+  warmup_days: 500
+  higher_is_better: false
+  version: 1
+  note: 方向事前冻结 false（减值风险先验）；商誉是存量时点科目、不做 TTM；分母保护 min_abs_den=1e6；归母净资产≤0 由财务层置 NaN（负净资产公司整体缺失，报告披露）；商誉 0 保留（deriv.py POSITIVE_ONLY 注释逐字点名「商誉占比」，0 是真实值）。

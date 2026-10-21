@@ -1,0 +1,16 @@
+name: r4s_pledge_change_accel_v1
+family_id: r4s_pledge_v2_v2
+implementation: research.families.r4s_pledge_v2_v1:build
+parameters: {signal: pledge_change_accel}
+units: 百分点²（质押比例百分点的二阶差分，量纲为百分点）。
+availability: 周频快照 stock_pledge_stat；end_date 仅为截止日、无发布时刻；本模块进程内声明 end_date 为可得日期列（AGENTS.md F.1 绕行，已用 Upstream._audit_frame 实测截断生效）；as-of 只前向填充，整体保守滞后 15 个交易日（> 实测供应商滞后 12–13 个交易日）；lag<13 的口径被禁。
+missing_policy: zero 主口径：(股票×周) 稠密网格缺席记 0（实测缺席⇒无存续质押，正质押→下周仍被报告 0.9975）；网格到日频为 as-of 前向填充。
+spec:
+  group: research_pledge
+  desc: 质押比例变化的加速度：滞后可得水平 P（百分点）的月度二阶差分 A(t)=P(t)−2P(t−20)+P(t−2·20)。值越高 = 质押加杠杆在加速，预期未来收益越低。
+  formula: "P(t) - 2*P(t-20) + P(t-40), P = lag15(asof(100*(unrest_pledge+rest_pledge)/total_share))"
+  deps: [stock_pledge_stat]
+  warmup_days: 400
+  higher_is_better: false
+  version: 1
+  note: 事前登记 S=20 交易日（4 周）；窗口敏感性 S=65 只作执行者侧同代码复算（pledge_change_accel_q），不登记、不改方向；level 用 float64 重算不用 pledge_ratio（厂商 0.01pp 量化）；严禁 lag5 前视口径。

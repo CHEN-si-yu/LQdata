@@ -1,0 +1,18 @@
+name: r4m_mkt_turnover_median_v1
+family_id: r4m_market_state_v1
+implementation: research.families.r4m_market_state_v1:build
+parameters: {signal: mkt_turnover_median}
+units: 百分数（%）= vol / float_share × 100（流通股本口径，厂商 float_share 语义）；日频原值、不做平滑。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily / stock_finance，delay=0）；无未来数据。
+missing_policy: 停牌（无真实成交）与缺测不计入分母；有效票 < 100 的日 → NaN；不零填充、不前向填充。
+spec:
+  group: market
+  desc: "池内换手率中位数（绿卡描述量，无方向）"
+  formula: "turnover=vol/float_share*100（ctx.px('turnover') 生产同口径）；value=median(turnover) over 有效票"
+  deps: [stock_daily, stock_finance]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  is_market: true
+  note: "绿卡通道预登记（无方向承诺）；换手率为直接观测统计量的中位数（绿卡列举项），日频原值；固定2115只主板池；有效样本分母，缺测/停牌不计，少于100只为NaN；市场标量不做截面rank；缺失保持NaN；未做收益有效性承诺。"

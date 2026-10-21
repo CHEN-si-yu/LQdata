@@ -1,0 +1,18 @@
+name: r4b_close_location_value_20
+family_id: r4b_intraday_shape_v1
+implementation: research.families.r4b_intraday_shape_v1:build
+parameters: {signal: close_location_value_20}
+units: 无量纲同日比值 (close−low)/(high−low) ∈ [0,1]，未复权原值同日相除，无需复权因子。
+availability: 只用信号日当日日线 high/low/close（收盘后可得）；stock_daily 经 fea/delay.py /
+  conf/frequency.yaml 实测 delay_days=0，无需位移。
+missing_policy: high<=low（含涨跌停锁死 high==low）、价格缺失或非正为 NaN；停牌日为 NaN；
+  不零填充。20 日窗内有效日 <15 为 NaN。
+spec:
+  group: research_intraday
+  desc: Lead 预登记机制 5：收盘位置 CLV=(close−low)/(high−low) 的 20 日均（收盘承接强度）。
+  formula: mean20( (close − low) / (high − low) )，日线口径
+  deps: [stock_daily]
+  warmup_days: 45
+  higher_is_better: true
+  version: 1
+  note: 取数用 ctx.px_raw（当日原始值，停牌不沿用前值）；high==low 无法定义记 NaN。

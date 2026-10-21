@@ -1,0 +1,30 @@
+idea_id: r9e_forecast_timing_v1
+hypothesis: >
+  在同一个报告期（end_date）、同一种业绩预告类型（type）的公告队列内，披露得比同类同伴更晚的
+  公司（late = ann_date − end_date 高于该队列截至其公告日的中位数），其随后 1/5 日收益偏低。
+  方向在看任何结果之前冻结为 false（越晚越差，declared = −raw）。
+mechanism: |
+  唯一机制 peer_lateness（方向 false）：
+  1) 对每一条业绩预告，取 late = ann_date − end_date（日历天）；同一 (stock, ann_date)
+     多条取中位数。
+  2) 队列 = (end_date, type)。队列内按 ann_date 升序做**扩张中位数**（min_periods=5，
+     含本公告）作为「同类同伴的披露时点基准」；rel = late − 扩张中位数。
+     只用公告日 ≤ 本公告日的同队列成员 → 严格无未来信息。
+  3) 按 ann_date as-of 前向填充到面板交易日轴（与 r4a 同口径），方向 false。
+  机制独立性：条件在 type 上做队列归一化，把「消息好坏档位」固定住，剩下的只是披露时机；
+  管理层拖延坏消息、抢先好消息（Skinner 1994；Kothari/Shu/Wysocki 2009），拖延本身携带
+  「后续还有坏消息待消化」的信息。与「预告幅度」（已删 forecast_profit_midpoint_change、r4a 惊喜轴）、
+  「预告区间宽度」（已删 forecast_profit_range_uncertainty）、「类型打分」（已删 forecast_type_score）、
+  「公告前量价抢跑」（r4t）都不是同一个构念，详见实现模块 docstring 的 §8.8 重蹈检查。
+expected_direction: >
+  唯一机制 peer_lateness 预登记为 false（相对同类同伴披露越晚，未来 1/5 日收益越低）。
+  方向先于任何结果统计冻结；登记后不得反号、不得改 higher_is_better、不得换版本扳方向。
+target_horizons: [1, 5]
+falsifiable: >
+  declared 分年同号年数 < 7/9（方向 false 下应为一致为正 ≥7/9）；或 G7 控制
+  （momentum_120, short_term_reversal_5, vol_120, idio_vol_60, log_mv, turnover_std_20, bp, roe_ttm）
+  后 Fama-MacBeth 系数不显著或符号与登记方向不一致；或与 r4a_forecast_landing_gap_v3_* /
+  short_term_reversal_5 / momentum_120 的 |rho| > 0.9（投影）；或 G2 覆盖率不达标。
+fields: [stock_forecast.ann_date, stock_forecast.end_date, stock_forecast.type, stock_daily.close, stock_adj_factor.adj_factor]
+origin: round9_lead_preregistered_2026-10-05
+status: unvalidated_hypothesis

@@ -1,0 +1,31 @@
+idea_id: r3_chipshape_idea_v1
+hypothesis: >-
+  stock_cyq_chips 的逐价位成本分布除了分位点/矩摘要之外，还有「形态」维度：分布的分散度（熵）、
+  是否分裂成两个分离的筹码峰、现价上下两侧的局部密度不对称（套牢盘 vs 获利盘的相对厚度）、
+  以及分布重心相对现价的迁移速度。这四个形态量在固定 2115 只主板池上可能对下一开盘 1/5 日
+  收益排序含独立信息。cyq 是供应商估算的成本分布，不是真实逐账户持仓。
+mechanism: >-
+  四个事前固定机制 ——
+  (1) chip_entropy：把整条档位表重采样到统一的对数相对价位直方图（x=ln(price/close)，
+      固定窗 [-1.60,+1.60]、窗宽 0.040、80 格），取归一化 Shannon 熵。
+  (2) chip_multimodality：对同一归一化直方图做核平滑后找局部极大值，取最高的两个峰，
+      谷深 × 次峰侧质量占比。
+  (3) chip_slope_asymmetry：等对数带宽（现价 ±10%）内的密度比 A/(A+B)。
+  (4) chip_migration_speed：分布重心 r_t = Σ_b q_b·x_b，取 |r_t − r_(t−5)|。
+expected_direction: >-
+  chip_entropy / chip_multimodality / chip_slope_asymmetry 登记 higher_is_better=false；
+  chip_migration_speed 登记 higher_is_better=true。方向在写第一行代码之前固定，
+  未按任何 IC 或收益结果翻转；模块内不含任何反号逻辑。
+target_horizons: [1, 5]
+falsifiable: >-
+  若某候选与定向对照筹码因子 |rho| > 0.9 且无法论证新增信息在哪里，或 declared 分年同号
+  年数 < 7/9，或工程验证（截断 + 两阶段增量）不一致，或与任一现有正式因子 |rho| > 0.95，
+  则该候选不支持本假设。
+fields:
+  - stock_cyq_chips.trade_date
+  - stock_cyq_chips.stock_code
+  - stock_cyq_chips.price
+  - stock_cyq_chips.percent
+  - stock_daily.close
+origin: round3_preregistered_r3c
+status: unvalidated_hypothesis

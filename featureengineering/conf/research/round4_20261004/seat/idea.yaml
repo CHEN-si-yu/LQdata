@@ -1,0 +1,15 @@
+idea_id: r4i_seat_closeout_v1
+hypothesis: 龙虎榜席位收口（Revise 兑现 + 权威净额）：机构专用席位的净买入相对活跃游资席位越强，后续收益越高（机构定价 vs 游资投机的分歧度）；同一机制在 R3-A 零填充口径下 9/9 年为正但 NaN 条件口径符号翻转，本单元把 NaN 原生口径（窗口内未上榜 = NaN，不填 0）作为事前主判据重新登记，零填充仅作并列对照。机构席位净买强度（占当日成交额比）取其 20 日衰减均值，同样只在榜单条件下有值。
+mechanism: |
+  1) class_divergence_nan_native（W20/W60 两窗口）：value = [Σ_W 机构专用净买 − Σ_W 游资净买] / Σ_W gross，
+     仅用权威净额 net_buy_amount；窗口内无上榜记录 → NaN（主口径）；零填充对照并列报告。
+  2) inst_net_intensity_cond（W20）：上榜日 r = Σ机构专用净买额 / 当日 stock_daily.amount（元），
+     value = DecayLinear(r, 20)（权重 20..1 归一；非上榜日贡献 0；无有效上榜日 → NaN）。
+  席位分类与 org_name 规范化沿用 R3-A 冻结规则（机构/北向/游资/普通四分类，游资 = PIT 前置上榜 ≥30 次；
+  14 条改名别名表）。2018 年约 94% 行买卖列整块互换，故绝不使用 buy−sell，只用 net_buy_amount。
+expected_direction: 三个机制全部登记为 true（机构相对游资净买越强/机构净买强度越高 → 预期未来收益越高）；零填充对照窗口同样按 R3 方向 true 登记，仅并列对照、不单独立主张。
+target_horizons: [1, 5]
+falsifiable: 主口径（NaN）declared RankIC 分年同号 <7/9；与已删同族重算（dragon_tiger_org_net_20、top_list_net_rate_20）任一 |rho|>0.95；G7 全控制后不显著；或 NaN 口径与零填充口径结论不可调和。
+fields: [stock_dragon_tiger.trade_date, stock_dragon_tiger.stock_code, stock_dragon_tiger.org_name, stock_dragon_tiger.buy_amount, stock_dragon_tiger.sell_amount, stock_dragon_tiger.net_buy_amount, stock_daily.amount]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

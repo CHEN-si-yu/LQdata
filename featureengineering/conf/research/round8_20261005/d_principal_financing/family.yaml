@@ -1,0 +1,27 @@
+{
+  "family_id": "r8d_net_principal_cash_raising_v1",
+  "idea_id": "r8d_net_principal_cash_raising_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "net_principal_cash_raising",
+      "window": 4,
+      "asset_lag_quarters": 4
+    }
+  ],
+  "baseline": "base8 deduplicated=momentum_120,short_term_reversal_5,vol_120,idio_vol_60,log_mv,turnover_std_20,bp,roe_ttm; +roa_ttm,asset_growth_qoq,R4SUE,R4accruals. Exact current/source/legacy controls fixed in delivery r8d_controls_manifest_v1.json (semantic digest ddea618ffb9b37b6b6f3154e412b84a0db4bf5c111ab10b66bc426ff31195d10; file SHA f1819201f2e3516f4730d3a0169b5e255deb1ec2c3f5a5cca3b505d80e09d802). F=E+D; each leg separately substituted; joint original values unidentifiable, never delete columns or call rank residual new primitive. Old borrowing/share source removed: documentary definition hashes, not recovered source hashes, faithful original control reproduction required.",
+  "parameters_frozen": {
+    "window": 4,
+    "asset_lag_quarters": 4,
+    "warmup_days": 1500,
+    "max_common_report_age_days": 550,
+    "strict_amount_floor_yuan": 1000000,
+    "comp_type": "1 in both latest joint reports",
+    "all16_gross_single_quarters_nonnegative": true,
+    "negative_net_preserved": true,
+    "next_trading_day": true,
+    "direction": false
+  },
+  "variants": "none",
+  "freeze_reference": "artifacts/research/round8_20261005/delivery/financial/r8d_definition_v1.json"
+}

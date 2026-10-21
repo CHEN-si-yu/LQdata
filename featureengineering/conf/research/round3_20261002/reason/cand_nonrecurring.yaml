@@ -1,0 +1,25 @@
+# R3-D 候选定义（关键词表见 research/families/r3_reason_text_v1.py 的 KEYWORDS 常量，已冻结）。
+{
+  "name": "r3r_nonrecurring_v1",
+  "family_id": "r3_reason_family_v1",
+  "implementation": "research.families.r3_reason_text_v1:reason_taxonomy",
+  "parameters": {"signal": "nonrecurring"},
+  "units": "二值指示（0/1），无单位。",
+  "availability": "唯一可用时点是 stock_forecast.ann_date（与 fea/upstream.py 对 stock_forecast 的 announcement 截断口径一致）；ann_date < 1990-01-01 的行剔除。ctx.asof_daily(ann_date) 前向填充。stock_forecast.end_date 可指向未来报告期，绝不作为特征输入。",
+  "missing_policy": "change_reason 为空/空白 -> NaN（与「未命中任何类别」严格区分）；文本非空但未命中该类别 -> 0.0；文本非空且命中 -> 1.0。同一 (stock, ann_date) 有多条预告记录时，当日该类别的取值取 max（任一记录命中即为 1）。窗口内首次预告之前 NaN，不填 0。",
+  "closest_existing_baselines": ["forecast_type_score", "forecast_profit_midpoint_change", "forecast_profit_range_uncertainty"],
+  "semantic_difference": "只用变动原因的文本驱动类型，不使用预告类型与任何幅度数值字段。",
+  "source_fields": ["stock_forecast.ann_date", "stock_forecast.change_reason"],
+  "pre_registered_direction": "lower_is_better",
+  "spec": {
+    "group": "r3_reason",
+    "desc": "预告变动原因是否以非经常性损益/补助/处置/投资收益为主要驱动",
+    "formula": "hit(change_reason, KEYWORDS.nonrecurring) over the latest readable forecast; 1 if matched, 0 if the text is non-empty but unmatched, NaN if empty; asof to daily grid at ann_date",
+    "deps": ["stock_forecast"],
+    "start": null,
+    "warmup_days": 400,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "R3-D 机制2；预期方向 false（非经常性驱动 = 盈余质量低）。"
+  }
+}

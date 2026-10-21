@@ -1,0 +1,31 @@
+{
+  "name": "r7d_lagged_capex_profit_conversion_v1",
+  "family_id": "r7d_lagged_capex_profit_conversion_v1",
+  "implementation": "research.families.r7d_lagged_capex_profit_conversion_v1:build",
+  "parameters": {
+    "signal": "lagged_capex_profit_conversion",
+    "window": 4,
+    "lag_quarters": 4
+  },
+  "units": "无量纲；负deltaOP原样保留",
+  "availability": "季度末报表，pit=max(ann_date,f_ann_date,end_date)，必须有有效ann或f_ann；同一报告期两表均首次披露后才进入共同Q前沿，Q按已共同披露期的前缀最大值推进。任一Income/CF公告和修订事件均以事件pit重查当前Q下全部历史版本，旧期修订不使Q倒退；CF两个科目取同一整行最新报告版本，缺失分量不能沿用旧值。官方协议处理交易消费延迟；每日当前共同期末距面板日>550自然日NaN。供应商未留旧版不冒称可重建。",
+  "missing_policy": "严格8个连续OP单季、4个当前OCF单季、4个lag4 capex单季，Q1=YTD，非Q1=同财年当前YTD-上一季度YTD；缺中间季即NaN，禁止三行TTM fallback。OP_current>1e6且OCF_current>0；lagged四capex逐季有限非负且合计>1e6；OPprev负或零可得，负delta保留。单季真实0capex允许，负单季/缺失无效；新无效公告/修订NaN覆盖旧值，不能回退旧有效Q。",
+  "spec": {
+    "group": "research_financial_dynamics",
+    "desc": "在当前经营利润与经营现金均为正的公司中，较高的年度经营利润增量/前一年度现金资本开支可能反映较好的利润转化或资本节约，弱正方向事前先验。该指标也等于利润增长腿×低历史capex腿；不归因真实项目回报或因果投资效率。",
+    "formula": "raw=(sum(S_OP(Q..Q-3))-sum(S_OP(Q-4..Q-7)))/sum(S_capex(Q-4..Q-7)); eligibility OPcurrent>1e6,OCFcurrent>0,all lag capex>=0,Kprev>1e6",
+    "deps": [
+      "stock_income",
+      "stock_cashflow"
+    ],
+    "fin_fields": [
+      "operate_profit",
+      "c_pay_acq_const_fiolta",
+      "n_cashflow_act"
+    ],
+    "warmup_days": 1500,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "正式base8 G7；另行强制base8+G+L，G=deltaOP/max(abs(OPprev),1e6)，L=max(abs(OPprev),1e6)/Kprev，raw=G*L，同候选PIT与资格掩码。固定旧近邻：roa_ttm,asset_growth_qoq,ind_dt_netprofit_yoy,qf_core_roe_yoy_change,r4a_sue_seasonal_q_v1_f1def0b01eb0b979,r4a_sue_accel_v1_4b443eb2d4fda83c,ocf_to_profit,qf_cash_margin_floor_4q。rank FM与消费FM分列。 严格float64计算、官方Store float32；完整2018起日轴和冻结2115股票键，不删NaN行；G/L不是额外候选。"
+  }
+}

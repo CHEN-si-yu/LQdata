@@ -1,0 +1,13 @@
+idea_id: r4t_preann_v1
+hypothesis: 财报公告前的抢跑结构（公告前窗口的池内超额收益、换手放大、波动放大）携带公告落地后横截面收益的反向信息；公告日盘中不可用，信号只用到 T−1。与 PEAD（公告后漂移，已被证伪≈动量轮廓）机制完全不同——本单元是信息泄露/抢跑定价，与动量的独立性是核心证伪线。
+mechanism: |
+  1) pre_ann_runup_20：公告前窗口内每个交易日的「最近 20 个交易日累计池内超额收益」（池内等权、只用已成交股票算截面均值），度量抢跑强度；
+  2) pre_ann_turnover_shock：最近 5 日换手均值 / 前 60 日（第 6–65 日，与快窗不重叠）换手基线均值，度量公告前资金异动；
+  3) pre_ann_vol_expansion：最近 5 日日收益标准差 / 前 60 日基线标准差，度量公告前波动放大。
+  窗口口径（执行前冻结）：对每只股票、每个季末报告期 p，预期公告日 E(p) = min(去年同期报告期首个披露时点 + 1 年（整数位移 +10000）, 法定截止日 dl(p))；窗口 = [E(p) − 20 个交易日, min(公告可见日（pit 次一交易日）前最后交易日, dl(p) + 60 日历天)]；活跃 = 任一未公告报告期窗口的并集（「下一个未公告期」口径，事先固定并披露）。机制两两相关预判 0.3–0.6（同一现象的三种表达），实测值如实报告。
+expected_direction: 三个机制全部登记为 false（反向）：抢跑越强（超额收益越高、换手/波动放大越强）→ 公告落地后 1/5 日收益越低。方向在看任何结果之前冻结；无变体额度（机制已同源）。
+target_horizons: [1, 5]
+falsifiable: 任一机制与 momentum_60 |rho|>0.9（动量代理，核心证伪线）；declared 分年同号 <7/9；G7 控制后 t 不显著；与 turnover_std_20 / vol_120 高度重合且无增量。
+fields: [stock_income.ann_date, stock_income.f_ann_date, stock_income.end_date, stock_daily.close, stock_daily.vol, stock_adj_factor.adj_factor, stock_finance.float_share]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
 
 # ---------------------------------------------------------------- 全局起点
 GLOBAL_START = "2010-01-01"
@@ -179,12 +178,12 @@ _GATE_TIER: dict[str, str] = {
     #   当年加它的原因（"freq=irregular 不足以表达它其实每天发 T"）已由分类本身解决。
 }
 
-# ★ 2026-09-15 深夜：`tdx_block_stocks` / `index_ths_constituent_stocks` 的
+# ★ 2026-09-15 深夜：`tdx_block_stocks` 的
 #   `date_field` 从 `'trade_date'` 改成 **`''`（无日历轴）**。
-#   它们的**数据里根本没有这一列**（实测列：`block_code/block_name/block_type/stock_code`
-#   与 `index_code/code/stock_code/stock_name/plate_name`），原值是从旧工程 spec 抄来的残留。
-#   后果有两个：① 它们是唯二"既躲过 mode=='snapshot' 的跳过规则、又永远算不出指纹"的表；
-#   ② 哪天接口真的开始返回 `trade_date`，单日 MD5 台账会**静默地只从那天开始记**。
+#   它的**数据里根本没有这一列**（实测列：`block_code/block_name/block_type/stock_code`），
+#   原值是从旧工程 spec 抄来的残留。
+#   后果：它是唯一"既躲过 mode=='snapshot' 的跳过规则、又永远算不出指纹"的表；
+#   哪天接口真的开始返回 `trade_date`，单日 MD5 台账会**静默地只从那天开始记**。
 #   现在把"无日期轴"变成**声明**：`gate_tier` 判 skip、`dayhash.trackable` 判不记账。
 #   （`partition='none'` 的写入分支有 `if ds.date_field in merged.columns` 守卫，置空安全。）
 
@@ -194,8 +193,8 @@ def gate_tier(ds: DS) -> str:
     if ds.name in _GATE_TIER:
         return _GATE_TIER[ds.name]
     # 无日历轴：快照类。★ 必须同时看 freq / mode / entity_range 三个字段 ——
-    #   只看 mode=='snapshot' 会漏掉 `tdx_block_stocks` / `index_ths_constituent_stocks`
-    #   （它们 mode='per_entity'、freq='snapshot'、entity_range=False，数据里根本没有日期列），
+    #   只看 mode=='snapshot' 会漏掉 `tdx_block_stocks`
+    #   （它 mode='per_entity'、freq='snapshot'、entity_range=False，数据里根本没有日期列），
     #   这个坑已经让改造前 `gate.py` 里那条 snapshot 分支形同虚设。
     if ds.freq == "snapshot" or ds.mode == "snapshot" or not ds.date_field:
         return "skip"
@@ -359,43 +358,6 @@ _reg(DS(name='tdx_daily', path='/tdx/daily', mode='per_entity', method='GET', ke
 _reg(DS(name='tdx_minute', path='/tdx/minute', mode='per_entity', keys=('board_code', 'trade_time'), date_field='trade_time', code_param='board_code', start='2011-12-01', expect_rows=False, tier='large', params={'level': '5min'}, entity_from=('tdx_blocks', 'block_code'), freq='minute'))
 _reg(DS(name='dc_blocks', path='/dc/blocks', mode='snapshot', keys=('block_code',), date_field='trade_date', partition='none', page_size=8000, tier='small', freq='snapshot'))
 _reg(DS(name='dc_daily', path='/dc/daily', mode='per_date', keys=('block_code', 'trade_date'), date_field='trade_date', page_size=8000, start='2018-01-01', expect_rows=False, freq='daily_full'))
-# ★★ 2026-09-19：`index_ths_sector_categories` / `index_ths_constituent_stocks` 按用户
-#   指示**彻底删除**。删因：这两张是**快照**（厂商接口的请求参数里根本没有日期字段，
-#   只有"当前状态"），而模型训练是回溯的 —— 拿"今天的成分名单"解释过去必然前视，
-#   用户判定无研究意义。接口随时可重抓，删掉不损失不可再生的东西。
-#   备份：everyday_tasks/state/backtest/snapshot_tables_removed_20260919_113054/
-#
-#   ⚠️ `index_ths_sector_categories` 原是 `index_ths_daily` 的**名单来源**，
-#      直接删会让后者失去抓取对象，故先把名单**固化**成静态文件（见下方 _THS_ROSTER）。
-#      这不是权宜之计，顺带解决了一个真问题：名单原会漂移（实测 2026-03-02 多 763 只、
-#      2026-09-14 少 291 只），每次都让 index_ths_daily 出现覆盖台阶，
-#      且新增实体的更早历史**永远补不齐**。
-
-
-def _load_ths_roster() -> list[str]:
-    """THS 指数名单：现读 `conf/ths_index_codes.txt`（每行一个代码，`#` 开头是注释）。
-
-    ★ 为什么固化而不是从源表取：源表是快照，会漂移（见上方说明）。
-      固化后覆盖范围**固定、可复现**，名单变化变成一件**要人做**的事。
-
-    ⚠️ 文件缺失/为空时**大声失败**，不返回空清单 —— 空清单会让 index_ths_daily
-      一个指数都不抓，而报告照旧显示 ✔（静默停更，正是本工程反复防的那类坑）。
-    """
-    p = Path(__file__).resolve().parent.parent / "conf" / "ths_index_codes.txt"
-    if not p.exists():
-        raise FileNotFoundError(
-            f"THS 指数名单缺失：{p}\n"
-            f"它已从快照表 index_ths_sector_categories 固化为静态文件，"
-            f"请从 state/backtest/snapshot_tables_removed_*/ 恢复或重新生成。")
-    codes = [ln.strip() for ln in p.read_text(encoding="utf-8").splitlines()
-             if ln.strip() and not ln.startswith("#")]
-    if not codes:
-        raise ValueError(f"THS 指数名单为空：{p}（会造成 index_ths_daily 静默停更）")
-    return codes
-
-
-_THS_ROSTER = _load_ths_roster()
-_reg(DS(name='index_ths_daily', path='/index/ths_daily', mode='per_entity', keys=('ths_code', 'trade_date'), date_field='trade_date', code_param='ths_code', expect_rows=False, chunk_days=3660, entity_codes=_THS_ROSTER, freq='daily_full', delay_days=1))
 _reg(DS(name='stock_daily_dump', path='/stock/daily_dump', mode='dump', keys=(), date_field='trade_date', start_param='date', tier='large', freq='minute'))
 
 
@@ -438,7 +400,6 @@ _REVISION = {
 #    ⚠️ 标 ★需实测 的，首次跑 `main.py doctor` 会真实探测并回写结论
 _ENTITY_BATCH = {
     "tdx_minute": 100,              # ✅ 文档确认 board_code 支持 string[]（618 → 7）
-    "index_ths_daily": 100,         # ✅ 文档 + 实测确认 ths_code 支持 string[]（1676 → 17）
     "stock_cyq_chips": 100,         # ✅ 2026-09-14 实测确认可用：单只 99 行 / 2 只 203 / 3 只 313
                                     #    （旧文档记的"传数组返回 0 行"已不成立 —— 3484 → 35 个请求）
     "tdx_daily": 1,                 # 文档标单值；改走"按 trade_date 查当日全部板块"（★需实测）
@@ -450,8 +411,7 @@ _SNAPSHOT_EVERY = {
     "basic_calendar": 1,            # 每天（且要更新到 T+30）
     "stock_list": 1,                # 每天（5901 行，1 请求）
     "tdx_blocks": 7, "dc_blocks": 7,
-    # index_ths_sector_categories / tdx_block_stocks / index_ths_constituent_stocks
-    # 已于 2026-09-19 彻底删除（快照表，无历史版本，回测必然前视）
+    # tdx_block_stocks 已于 2026-09-19 彻底删除（快照表，无历史版本，回测必然前视）
 }
 
 # ---- 5) delay_days 覆盖
@@ -491,19 +451,15 @@ _DELAY = {
     # ths_hot 已于 2026-09-19 删除（原 delay=0）。它当年 delay 在 0/1 之间来回的完整取证
     #   （"发布晚 ≠ 不发布"那一课）已并入 `README.md` §7.1，此处不再留。
 
-    # ★★ 2026-09-15 深夜（**用户拍板**）：1 → **0**，与 ths_hot 同一批、同一类问题。
-    #   两张表同晚 7 次 monitor 采样的滞后序列（新→旧）：
-    #     · stock_st_info   0,1,1,1,0,0,0
-    #     · index_ths_daily 0,1,1,1,0,0,0
+    # ★★ 2026-09-15 深夜（**用户拍板**）：stock_st_info 1 → **0**。
+    #   同晚 7 次 monitor 采样滞后序列（新→旧）0,1,1,1,0,0,0：
     #   18:11 / 21:01 / 21:22 滞后 1（当晚还没发布），**23:32 变 0**（服务端已有 T=09-15）。
-    #   即与 ths_hot 一样是"当天有、深夜才发布"型；声明 1 让本地白晚一天
-    #   （当晚实测两张表都是 服务端=09-15 / 本地=09-14 / local_lag=1）。
-    #   ⚠️ 这里用 `_DELAY` 覆写而不是改 `_reg` 的内联值（`:140` / `:178` 的 delay_days=1）：
-    #      与 ths_hot / dc_daily / stock_top_list 一样，把"实测拍板"的结论集中放这里，
+    #   即"当天有、深夜才发布"型；声明 1 会让本地白晚一天。
+    #   ⚠️ 这里用 `_DELAY` 覆写而不是改 `_reg` 的内联值：
+    #      与 dc_daily / stock_top_list 一样，把"实测拍板"的结论集中放这里，
     #      内联值按 `registry.py:338-339` 的约定保留为"首次观测到缺口时的初始值"。
-    #   ⚠️ 代价与复核口径同 ths_hot（闸门会等到 4 小时预算耗尽；delay_history 无独立证据）。
+    #   ⚠️ 代价与复核口径同 dc_daily（闸门会等到小时预算耗尽；delay_history 无独立证据）。
     "stock_st_info": 0,
-    "index_ths_daily": 0,
     # ★ 2026-09-15 补。实测证据：T=09-14 时 dc_daily 的服务端最新只到 09-11
     #   （manifest 里 8 条 `2026-09-14|empty` 的 suspect、delay_history 里
     #   `dc_daily: server_max="无"`）。声明 delay=0 会让闸门每天为它白等，
@@ -627,8 +583,8 @@ _DUMP_BRIDGED = {"stock_history_5min"}
 #         → 按**哪个轴向的窗口更省**来选：
 #           · cyq_chips：单股单年 2.4 万行，全量要 3484 股 × 9 年 = 31356 次请求
 #             → 选 date 轴（每天 1 天窗口 × 3484 股），成本与天数成正比
-#           · tdx_minute / index_ths_daily：实体数少（618 / 1676）且支持数组批量
-#             → 选 date 轴 + 批量编组，1676 → 17 个请求
+#           · tdx_minute：实体数少（618）且支持数组批量
+#             → 选 date 轴 + 批量编组，618 → 7 个请求
 #
 #   ⚠️ 判据不是"哪个看起来快"，而是：**请求数随什么增长**。
 #      随天数增长 → date 轴；随实体数增长且不批量 → 必须批量化或收紧窗口。
@@ -647,14 +603,13 @@ _PULL_AXIS = {
     "stock_financial_indicator": "entity", "stock_income": "entity",
     "stock_balancesheet": "entity", "stock_cashflow": "entity",
     "stock_forecast": "entity",          # ⚠️ 但支持 ann_date 区间 → 见下方特例
-    # tdx_block_stocks / index_ths_constituent_stocks 已于 2026-09-19 删除
+    # tdx_block_stocks 已于 2026-09-19 删除
     # ---- ③ both：两个轴向都支持 → 按窗口成本选
     "stock_cyq_chips": "both", "stock_history_5min": "both",
-    "tdx_minute": "both", "tdx_daily": "both", "index_ths_daily": "both",
+    "tdx_minute": "both", "tdx_daily": "both",
     # ---- ④ 快照：无时间轴
     "basic_calendar": "snapshot", "stock_list": "snapshot",
     "tdx_blocks": "snapshot", "dc_blocks": "snapshot",
-    # index_ths_sector_categories 已于 2026-09-19 删除（名单已固化进 conf/）
 }
 
 # ★ 特例：/stock/forecast 虽然是 entity 形状（要 stock_code），

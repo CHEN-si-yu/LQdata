@@ -1,0 +1,48 @@
+name: r2ca_corpaction_frequency_w500_v1
+family_id: r2_corpaction_family_v1
+implementation: research.families.r2_corpaction_v1:build
+parameters:
+  signal: corpaction_frequency
+  window: 500
+units: 复权因子跳变比是无量纲比值；送转强度与现金分红强度均取自然对数，仍为无量纲；corpaction_frequency 为过去 window 个交易日的整数事件次数；ex_days_since
+  为「新鲜度权重(无量纲, 0..1) x 除权后累计池相对对数收益(无量纲)」。不做跨表单位换算。
+availability: 事件日与强度均只用 <= T 的记录：stock_adj_factor 为 daily_full/delay_days=0，stock_adj_factor_changes
+  为 daily_sparse/date_field=date/delay_days=0（项目 conf/frequency.yaml 合同记为当天可得）；除权除息日本身是事前公告的公司行动，ratio
+  只用 T 与 T-1 两个因子值。全部为前向递推，无向后填充、无未来位移；标签不在候选内读取。该合同为项目内源可得性声明，不等于供应商历史 vintage 证明。
+missing_policy: 原始 adj_factor 在池内 2115 只的每个 stock_daily 行上都有记录（实测缺 0/6053645），落在非交易日
+  2023-01-01 的 2 行脏数据由价格层按交易日历丢弃。adj_factor 按交易日前向沿用后再取比，停牌缺口不会造出假事件。|ratio-1| <=
+  1e-4 视为厂商 4 位小数舍入抖动，不记为事件（实测未命中 changes 表的假跳变全部 <= 6.5e-2，其中 8 个批量刷新日共 4457 行，最大
+  1.0647，均被 changes 表命中条件挡掉）。窗口内无事件记为 0：这是被观测到的状态而非缺失（复权因子序列完整、比值全部低于阈值）；窗口内原始 adj_factor
+  有效交易日不足 80% 时输出 NaN。非 A 股代码与池外股票由 ctx.code_index 丢弃。非交易日输出 NaN。
+closest_existing_baselines:
+- short_term_reversal_5
+- momentum_20
+- dividend_yield_3y_avg
+- efx_dividend_gap
+- turnover_std_20
+source_fields:
+- stock_adj_factor_changes.stock_code
+- stock_adj_factor_changes.date
+- stock_adj_factor.stock_code
+- stock_adj_factor.trade_date
+- stock_adj_factor.adj_factor
+- stock_daily.stock_code
+- stock_daily.trade_date
+- stock_daily.close
+- stock_daily.pre_close
+- stock_daily.vol
+pre_registered_direction: lower_is_better
+spec:
+  group: r2_corpaction
+  desc: 过去 500 个交易日的除权除息事件次数（含现金分红与送转）
+  formula: roll_sum(event, 500); event = changes 表命中且 ratio-1>1e-4
+  deps:
+  - stock_adj_factor_changes
+  - stock_adj_factor
+  - stock_daily
+  start: null
+  warmup_days: 1000
+  higher_is_better: false
+  version: 1
+  note: R2-I2 事前登记候选；ratio=adj_factor(T)/adj_factor(T-1)；事件=changes 表命中且 ratio-1>1e-4；送转/现金分界固定
+    ratio>=1.10。候选注册不等于生产批准。 方向 lower_is_better：公司行动越频繁，预期后续收益越低。

@@ -1,0 +1,39 @@
+name: r11u2_peak_timing_ownrel_state_v1
+family_id: r11u2_gated_peak_timing_v1
+implementation: research.families.r11u2_gated_peak_timing_v1:build
+parameters: {signal: own_pm_rel_state}
+units: >
+  无量纲。`vol_peak_pos` ∈ [0,1] 归一化时点；状态是逐股符号 ±1。
+  股票级 (T, C)。
+availability: >
+  T 日收盘后可用：`vol_peak_pos`、`pm_open5`、`pm_close5` 全部来自当日 48 根
+  5 分钟棒的聚合成交；市场均值只用当日同一横截面。T 日取值用于 T+1 开盘起的标签，
+  无前视。上游 `stock_history_5min` 冻结在 2026-09-11。
+missing_policy: >
+  `vol_peak_pos`、`pm_open5`、`pm_close5` 任一缺失或非正 → 该 (股票, 日) 为 NaN；
+  停牌 / 未上市 / 退市当日日内层没有行 → NaN（精确落格，不前向填充、不零填充）。
+  市场均值为当日池内有效值的等权均值（nanmean 语义）。
+spec:
+  group: research_intraday_gated
+  desc: >
+    日内放量时点的条件结构：把「会话状态」从市场标量**下放到逐股**——
+    个股自身午后收益相对当日市场均值的符号。放量时点只在「该股午后强于市场」的
+    子截面里对未来收益为正、在「弱于市场」的子截面里为负，因此当日截面排序
+    天然不是腿的单调变换（逐日 |ρ| vs 腿均值 0.127）。higher_is_better=true。
+  formula: >
+    leg = vol_peak_pos（[0,1] 归一化时点）；pm = pm_close5/pm_open5−1；
+    rel = pm − mean_j(pm_j)；value = sign(rel) × (leg − 0.5)
+  deps: [stock_history_5min]
+  start: '2018-01-01'
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: >
+    ★ 预筛实测（2018-01-02~2026-09-30，2,123 日）：leg 无条件 h=1 RankIC +0.00086
+    (HAC t=+0.60) ⇒ P2 通过；本变体 h=1 IC = +0.00831 (HAC t=+4.45)，分年同号 8/9；
+    与腿的逐日 |ρ| 均值 0.127（max 0.603，frac>0.99 = 0）⇒ 不是秩置换。
+    ★ 结构性披露：P3 的市场级版本（state=z252(市场午后收益)）不适用于本变体
+    （状态逐股可变）；其条件分解按子截面读数（见 report 的 P3' 一栏），
+    两个子截面的腿 IC 必须符号相反且各自显著，否则本变体不成立。
+    ★ 与在产因子的差异：`idt_overnight_minus_intraday` 拆的是隔夜 vs 日内，
+    本变体用的是**午后相对市场**方向与量峰时点的交互；`pm_ret` 自身不在产。

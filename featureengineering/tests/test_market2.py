@@ -128,17 +128,6 @@ class TestRollSumNan(unittest.TestCase):
 
 
 class TestLagSemantics(unittest.TestCase):
-    def test_lag_moves_forward_in_time(self):
-        np.testing.assert_allclose(m2._lag(np.array([1.0, 2.0, 3.0]), 1),
-                                   [np.nan, 1.0, 2.0], equal_nan=True)
-
-    def test_shift_mean_excludes_today(self):
-        """★ 不含当日：当日值同时进分子分母会把比率拉向 1。"""
-        x = np.array([10.0, 20.0, 30.0, 40.0])
-        got = m2._shift_mean(x, 2)
-        # t=2 时用的是 (t-2, t-1] = 第 0、1 天的值（不含第 2 天）
-        self.assertAlmostEqual(got[2], 15.0, places=12)
-
     def test_lag2d_keeps_shape_and_fills_head(self):
         M = np.arange(6, dtype=float).reshape(3, 2)
         got = m2._lag2d(M, 1)
@@ -191,8 +180,11 @@ class TestRegistrationContract(unittest.TestCase):
     def test_expected_counts(self):
         # ★ 2026-09-24：冗余审计（newfactor_corr.py）查出 6 个与**已有**因子 |ρ|≥0.90
         #   （mkt_full_up_ratio 与 mkt_up_ratio 0.984 等），已删 ⇒ 37 → 31。
-        self.assertEqual(len(self.new_market), 31)
-        self.assertEqual(len(self.new_stock), 5)
+        # ★ 2026-10-04 市场因子复审清理：未准入 27 个删除（本模块 19 个）⇒ 31 → 12。
+        self.assertEqual(len(self.new_market), 12)
+        # ★ 2026-10-03 清理复审：tradability 组三个未通过对象（open_pressure / seal_to_float /
+        #   streak_max）已删除 ⇒ 5 → 2（limit_broken_ratio_20、limit_days_since_up_20）。
+        self.assertEqual(len(self.new_stock), 2)
 
     def test_all_have_deps_and_note(self):
         for n in self.new_market + self.new_stock:
@@ -236,7 +228,7 @@ class TestRegistrationContract(unittest.TestCase):
             if "stock_margin_detail" not in s.deps:
                 continue
             src = inspect.getsource(s.fn)
-            self.assertIn("_lag", inspect.getsource(m2._margin),
+            self.assertIn("lag_grid", inspect.getsource(m2._margin),
                           f"{n} 依赖两融但 _margin 里没有行位移")
             del src
 

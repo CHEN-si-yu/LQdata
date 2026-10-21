@@ -1,0 +1,36 @@
+name: r3cs2_chip_entropy_v1
+family_id: r3_chipshape_family_v2
+implementation: research.families.r3_chipshape_v2:build
+parameters: {signal: chip_entropy}
+units: >-
+  无量纲。entropy 是归一化 Shannon 熵（除以 ln(80)，∈[0,1]）；multimodality 是谷深（∈[0,1]）
+  × 次峰侧质量占比（∈[0,1]）；slope_asymmetry 是质量占比（∈[0,1]）；migration_speed 是
+  |对数相对价位重心之差|（单位：对数收益率）。
+availability: >-
+  stock_cyq_chips 是收盘后发布的当日成本分布快照，项目可得性契约 conf/frequency.yaml 声明
+  delay_days=0；T 日因子值只使用 T 日及以前的档位表与 T 日同日未复权收盘价，T+1 开盘交易，
+  无任何未来位移或向后填充。迁移速度只用 T 与 T−5（或 T−20）两个已实现快照。
+  残留 PIT 风险：供应商历史发布时刻没有被独立保存，无法证明 2018–2020 的当日快照在当日收盘后
+  立即可得；这一点与本库全部 19 个既有筹码因子相同，不做更好或更坏的主张。
+missing_policy: >-
+  逐价位表精确落格（缺则 NaN），绝不前向填充；停牌/无快照 = NaN。三个事前固定的几何有效性闸门：
+  档位数 < 12 -> NaN；落在对数窗 ±1.60 内的归一化质量 < 0.90 -> NaN；斜率不对称的 ±10% 带内
+  质量 < 0.05 -> NaN（仅该候选）。price<=0、percent<0 的档位一律丢弃（实测 2018 有 1676 行
+  price==0）。percent 按当日 Σpercent 归一化（实测 p99 达 175.8）。不做零填充。
+closest_existing_baselines: [chip_concentration, chip_cv_factor, cost_skew_ratio, chip_peak_distance, chip_position, chip_tail_risk, chip_near_overhang_5pct, chip_win_peak_frac]
+source_fields:
+  - stock_cyq_chips.trade_date
+  - stock_cyq_chips.stock_code
+  - stock_cyq_chips.price
+  - stock_cyq_chips.percent
+  - stock_daily.close
+spec:
+  group: r3_chipshape
+  desc: R3-C 机制1：筹码分布对数相对价位直方图的归一化 Shannon 熵（分散度）
+  formula: x=ln(price/close_raw); 归一化 percent 落到固定对数格 [-1.60,+1.60] 宽 0.040(80格); H=-Σq·ln(q)/ln(80)
+  deps: [stock_cyq_chips, stock_daily]
+  start: '2018-01-02'
+  warmup_days: 10
+  higher_is_better: false
+  version: 1
+  note: 机制1。与 chip_concentration(=(p95-p5)/p50 纯宽度)、chip_cv_factor(std/mean) 的区别：熵对分布的空隙与分裂敏感，宽度量不敏感。方向 false 事前固定。v2 相对 v1 仅修正 Panel.place 入参粒度。

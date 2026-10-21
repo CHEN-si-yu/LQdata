@@ -1,0 +1,16 @@
+name: r4i_cd_zerofill_w60_ctrl_v1
+family_id: r4i_seat_closeout_v1
+implementation: research.families.r4i_seat_v1:build
+parameters: {signal: class_divergence_zerofill_control, window: 60}
+units: 无量纲比率 =（窗口内机构专用净买额合计 − 窗口内游资净买额合计）/ 窗口内 gross 合计；金额单位为元、分子分母同源相除。
+availability: 仅用 trade_date <= T 的席位明细（stock_dragon_tiger 延迟 0 日）；机构/游资/北向分类与 org_name 规范化沿用 R3-A 冻结规则；PIT 计数只统计严格更早记录。
+missing_policy: 零填充对照口径——窗口内无上榜记录 → 0（与 R3-A 零填充主口径逐字一致）；窗口内 gross 合计为 0 → 0.0；池外 → NaN。本候选仅作 NaN 原生主口径的并列对照，不单独立主张。
+spec:
+  group: research_seat
+  desc: R3-A 零填充口径对照（W60，翻转窗口）：与主口径同公式但不设 obs 掩码，未上榜=0；仅并列对照。
+  formula: num = roll_sum(inst_net, 60, min_count=1) − roll_sum(hot_net, 60, min_count=1); den = roll_sum(gross, 60, min_count=1); value = where(den>0, num/den, 0.0)
+  deps: [stock_dragon_tiger]
+  warmup_days: 420
+  higher_is_better: true
+  version: 1
+  note: 只用 net_buy_amount（权威净额），绝不用 buy−sell；gross 换位不变量仅用于归一。属对照候选，不纳入正式主张计数。

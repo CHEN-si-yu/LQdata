@@ -1,0 +1,40 @@
+name: r9f_breadth_intraday_slope_x_beta_v1
+family_id: r9f_breadth_shape_v1
+implementation: research.families.r9f_breadth_shape_v1:build
+parameters: {signal: breadth_intraday_slope_x_beta}
+units: 无量纲（有符号 z252 状态 × 无杠杆市场 beta），股票级 (T, C)。
+availability: >
+  T 日收盘后可用：状态 = 当日 15:00 的 up_share 减去 09:30–09:59 的 up_share 均值，
+  两段都来自同一交易日的分钟快照（15:00 行是收盘快照，生产同口径）；腿用 ≤T 的日线；
+  z252 只用 ≤T 的历史值；T 日取值用于 T+1 开盘起的标签，无前视。
+missing_policy: >
+  状态在两段中任一段缺失或 z252 历史不足 120 个有效值 → 全横截面 NaN；
+  个股停牌/未上市/收益缺失 → 该格 NaN；beta 回归有效对数 < 60 → 该格 NaN。
+  不零填充、不前向填充。
+spec:
+  group: research_breadth_shape
+  desc: >
+    市场宽度**日内路径**状态（全市场 15:00 up_share − 09:30–09:59 up_share 均值，z252(min120)）
+    × 个股 120 日市场 beta。买压集中在后半场时，尾盘聚合需求把市场敏感度最高的股票推过均衡价、
+    次日部分回吐，故交互项对未来 1/5 日收益偏负（higher_is_better=false）。
+  formula: >
+    up_share = up_count/(up_count+down_count+flat_count)（全市场口径）；
+    slope = up_share(15:00) − mean(up_share over 09:30..09:59)；
+    state = (slope − roll_mean252(slope))/(roll_std252(slope, ddof=0))，min_count=120；
+    beta = roll_cov(ret_clean(1), 池内等权收益, 120, 60)/roll_var(池内等权收益, 120, 60)；
+    value = state × beta
+  deps: [stock_market_distribution_history, stock_daily, stock_adj_factor]
+  start: '2018-01-01'
+  warmup_days: 700
+  higher_is_better: false
+  version: 1
+  note: >
+    ★ 与已删 breadth 族的关键差异：bw_intraday_beta_20 是「个股日内收益对**宽度变化**的 20 日滚动 β」
+    （每只股票一个敏感度）；本因子的**日内路径**是**整市场**的 (T,) 状态（241 个分钟快照聚合成
+    一阶矩），腿才是市场 beta。已删 mkt_am_* 系列用 5 分钟棒算**上午**截面的水平/离散度，
+    本状态是**上午→收盘的漂移**（路径的一阶矩，日线与单点截面都无法还原）。
+    在库 mkt_am_up_ratio / mkt_up_ratio 分别是 11:30 与收盘的**水平**，本状态是二者的**差**且
+    分母为全市场口径（约 4,770 只，非 2,115 冻结池）。241 点日内路径此前完全未被任何因子使用。
+    ★ 结构性披露：交互的当日截面秩恒等于 beta 的秩（只差当日符号），增量信息在符号时间序列；
+    G5 应按面板合并口径读，报告同时给出两列。
+    环境指纹: python 3.14.7 / numpy 2.5.3 / 数值指纹 7c7d05c7564f。

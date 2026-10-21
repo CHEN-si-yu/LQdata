@@ -68,7 +68,7 @@
 用 `index_daily` 里的 **`000300.SH`（沪深300）** 日收益（`pct_chg/100`），
 按**面板日期精确对齐**（实测 2010-01-04 起面板日期 100% 命中，无缺日；
 真遇到缺日按「市场无变动 0」处理并计数告警）。基准写在 `BENCH` 常量里。
-`index_daily` **不在** `fea/spec.py` 的 `LAGGED_DATASETS` 里（那是 `index_ths_daily`），
+`index_daily` **不在** `fea/spec.py` 的 `LAGGED_DATASETS` 里，
 且实测它的最新日期就是最新交易日，不需要行位移。
 
 ## warmup
@@ -184,52 +184,10 @@ def _zero_trade_mask(ctx, n: int) -> np.ndarray:
 
 
 # --------------------------------------------------------------------------- 基准
-def _market_ret(ctx) -> np.ndarray:
-    """沪深300 的日收益 → `(T,)`，与面板日期逐日对齐；缺日按 0（无变动）处理。
-
-    ★ 指数**不在股票网格里**（`ctx.code_index` 会给 −1），所以不能走
-      `asof_daily` / `panel.place`（那两个都要 code 下标）。
-      这里直接在日期轴上 `searchsorted` 精确对齐 —— 指数是日频的，
-      不需要 asof 语义，也就不存在「前向填充陈旧值」的问题。
-    """
-    df = ctx.dataset("index_daily", columns=["ts_code", "trade_date", "pct_chg"])
-    T = ctx.panel.T
-    if df.empty:
-        log.warning("index_daily 为空，%s 的因子将全是 NaN", ctx.panel.dates[0])
-        return np.full(T, np.nan)
-    df = df[df["ts_code"] == BENCH]
-    if df.empty: return np.full(T, np.nan)
-    days = ctx.date_col(df["trade_date"])
-    vals = pd.to_numeric(df["pct_chg"], errors="coerce").to_numpy(dtype=np.float64) / 100.0
-    order = np.argsort(days, kind="stable")
-    days, vals = days[order], vals[order]
-
-    pos = np.clip(np.searchsorted(days, ctx.panel.dates), 0, days.size - 1)
-    ok = (days[pos] == ctx.panel.dates) & np.isfinite(vals[pos])
-    n_miss = int((~ok).sum())
-    if n_miss:
-        # 面板早于指数起点（index_daily 实测从 2010-01-04 开始）时会走到这里。
-        # 补 0 = 「市场当日无变动」，比 ffill 一个陈旧收益安全（后者会重复计入涨跌）。
-        log.warning("面板有 %d 个交易日在 %s 的 index_daily 里找不到，保持 NaN"
-                    "（首个：%s）", n_miss, BENCH, ctx.panel.dates[0])
-    return np.where(ok, vals[pos], np.nan)
 
 
-def _index_level(ctx) -> np.ndarray:
-    """沪深300 的累计净值 `(T, 1)`：`L(t) = Π(1 + r_i)`，用于算指数的 k 日收益。"""
-    m = _market_ret(ctx)
-    return np.cumprod(1.0 + m)[:, None]
 
 
-def _relative_strength(ctx, k: int) -> np.ndarray:
-    """祖鲁法则的相对强度：`RS = (r_s − r_m) / (1 + r_m)`（参考库同式）。
-
-    `r_m` 是指数**复利** k 日收益（不是把日收益乘 k），所以要用累计净值之比。
-    """
-    rs_ = _ret_k(ctx, k)                              # (T, C)
-    lv = _index_level(ctx)                            # (T, 1)
-    rm = lv / ctx.shift(lv, k) - 1.0                  # (T, 1) 指数 k 日复利收益
-    return ctx.safe_div(rs_ - rm, 1.0 + rm, min_abs_den=1e-6)
 
 
 # --------------------------------------------------------------------------- 动量
@@ -273,7 +231,7 @@ for _k in (20, 60, 120, 250):
         start=None,
         warmup_days=W250 if _k >= 250 else _warm(_k),
         higher_is_better=True,
-        version=3,          # v3：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★），口径已变 → 必须重建
+        version=4,          # v3：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★），口径已变 → 必须重建
         note="★ 后复权（hfq），不是前复权：`adj` 在参考库里叫 daily_adj.parquet（qfq），"
              "照抄会破坏 PIT。停牌日 hfq_close 被前向填充 → 停牌段收益为 0、"
              "复牌跳空计入累计收益（口径正确，不要再用 ffill 去「修」）。"
@@ -297,7 +255,7 @@ for _k in (20, 60, 120, 250):
     formula="Reversal2 = hfq_close(T) / hfq_close(T-2) - 1  "
             "# 参考库: close.groupby(Code).pct_change(2)",
     start=None, warmup_days=_warm(2), higher_is_better=False,
-    version=3,          # v3：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★）
+    version=4,          # v3：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★）
     note="参考库 fac_short_term.py 的 reversal_2d **不做取负**（值就是 2 日收益），"
          "方向由下游处理 —— 本实现照抄该口径，用 higher_is_better=False 标注方向。"
          "★ 与 short_term_reversal_5 不同：那个参考库里显式取了负号。"
@@ -314,7 +272,7 @@ def reversal_2d(ctx):
     formula="ShortReversal5 = -Mom5 = -(hfq_close(T) / hfq_close(T-5) - 1)  "
             "# 参考库: cross_sectional_rank(-mom5)",
     start=None, warmup_days=_warm(5), higher_is_better=True,
-    version=3,          # v3：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★）
+    version=4,          # v3：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★）
     note="参考库 momentum_rebuilt.py 的 short_term_reversal_5 是最新 5 日动量的**负向**，"
          "这里 keep 负号并标 higher_is_better=True（值大 = 超跌更多 = 反转预期更强）。"
          "★ 它是 momentum_5 的精确相反数（−1 ×），两者只能留一个。"
@@ -339,7 +297,7 @@ def short_term_reversal_5(ctx):
     formula="Proximity = hfq_close / roll_max(hfq_close, 252) - 1  "
             "# 参考库: adj / adj.rolling(252, min_periods=120).max() - 1",
     start=None, warmup_days=W250, higher_is_better=True,
-    version=2,          # v2：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★）
+    version=3,          # v2：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★）
     note="George-Hwang 52 周高点效应在 A 股的实现。★ warmup=480（250 交易日窗口）。"
          "★ 偏离两处：(1) 参考库窗口是 252 交易日，本实现用 250（52 周 ≈ 250 个交易日，"
          "差 2 日对「年内高点」的位置无实质影响），公式串保留参考库原文以利溯源；"
@@ -361,7 +319,7 @@ def price_to_52w_high(ctx):
     formula="Dist = (hfq_close - roll_min(hfq_close, 252)) / roll_min(hfq_close, 252)  "
             "# 参考库: (adj - low_252) / low_252",
     start=None, warmup_days=W250, higher_is_better=True,
-    version=2,          # v2：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★）
+    version=3,          # v2：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★）
     note="与 price_to_52w_high 一起构成 George-Hwang 效应的两端：贴着一年的低点 = 持续阴跌，"
          "远离低点 = 趋势健康。值域 [0, +∞)。★ 同样偏离参考库两处：窗口 252→250 交易日、"
          "min_periods=120→要求满 250 日（理由见 price_to_52w_high）。"
@@ -375,118 +333,16 @@ def price_distance_from_52w_low(ctx):
     return np.where(_zero_trade_mask(ctx, 250), np.nan, out)
 
 
-@register(FactorSpec(
-    name="time_since_52w_high", group=GROUP, deps=PRICE_DEPS,
-    desc="距最近一次 250 日新高的**交易日**数（0 = 今天创的年内新高）",
-    formula="at_high = (hfq_close >= roll_max(hfq_close, 252));  "
-            "DaysSince = bars since the last at_high（截断到 249）",
-    start=None, warmup_days=W250_STATE, higher_is_better=False,
-    version=3,          # v3：warmup 480→960（累加器状态需要**两倍窗口**，见 W250_STATE 的说明）
-                        # v2：加「窗口内零成交 ⇒ NaN」守卫（★ 见 _ret_k 的 ★★）
-    note="★★ **v3（2026-09-17）**：`warmup_days` 480 → 960。本因子的实现是"
-         "`np.maximum.accumulate(行号)`（求「最近一次创 250 日新高的行号」），"
-         "而 `at_high` 依赖 `roll_max` 先有效（面板前 249 行是 NaN）⇒ 累加器只能从第 250 行起有状态 ⇒"
-         "**面板必须有两倍窗口（≈500 交易日）才能在年初给出正确值**。"
-         "给 480 天时年初计数被钉在 249（假「250 日没创过新高」），"
-         "实测 `000001.SZ@2016-01-04` 真值 141 而旧版给 249（960 天版给 141 ✔）。"
-         "这是面板锚点从「全局」改成「按年」之后**才暴露**的 —— 全局锚定下面板天然够长。\n"
-         "★ 偏离参考库三处："
-         "(0) 窗口 252→250 交易日（与另两个 52 周因子一致）；"
-         "(1) 参考库用「全历史 ffill 最后一次新高时间」→ 无界（可以到几千天），"
-         "但我们的面板只从 warmup 起算，无界口径会让**长期阴跌股静默变成 NaN**"
-         "（恰恰是因子最该识别的尾部）；本实现改用 250 日窗内的高点，值域 [0, 249]，永不缺值。"
-         "(2) 单位用**交易日**而不是参考库的日历天 —— 交易日数不受假期/周末错位影响，更稳。"
-         "实现上用 np.maximum.accumulate(行号) 取「最近一次创 250 日新高的行号」，"
-         "所以今天平前高（>=）记 0；这与 roll_argmax 不同（后者并列时取**最早**一次）。",
-))
-def time_since_52w_high(ctx):
-    px = ctx.hfq("close")
-    hi = ctx.roll_max(px, 250)
-    at_high = np.isfinite(hi) & (px >= hi)
-    rows = np.arange(px.shape[0], dtype=np.float64)[:, None]
-    # 最近一次「创 250 日新高」的行号；从未出现过是 −inf → 下面截断成 249
-    last = np.maximum.accumulate(np.where(at_high, rows, -np.inf), axis=0)
-    out = np.minimum(rows - last, 249.0)
-    # 零成交窗口 ⇒ NaN（否则 px 被前向填充成常数 → 「天天都是年内新高」→ 恒为 0）
-    return np.where(_zero_trade_mask(ctx, 250), np.nan, out)
 
 
 
 
 # --------------------------------------------------------------------------- 收益结构
-@register(FactorSpec(
-    name="ret_autocorr_1d_20", group=GROUP, deps=PRICE_DEPS,
-    desc="日收益一阶自相关（20 日窗口）：正 = 涨后跟涨（动量），负 = 均值回归（反转）",
-    formula="AC = Corr(ret, shift(ret, 1), 20)  "
-            "# 参考库: ret_w.rolling(20).corr(ret_w.shift(1))",
-    start=None, warmup_days=_warm(20), higher_is_better=True,
-    version=2,          # v2：加退化窗口定义域守卫（见 note 的 ★★），口径已变 → 必须重建
-    note="直接度量「趋势的稳固程度」，与动量的**水平**正交，是反转强度的标准化度量。"
-         "★ 偏离：参考库 min_periods=10，本实现要求满 20 个有效观测（缺失毒化）。"
-         "停牌日 ret(1)=0（价格层前向填充的副作用），会给自相关灌进少量 0 观测 → "
-         "轻微向 0 收缩；停牌多的股票解释时要小心。值域 [−1, 1]。"
-         "★★ 实测坑（2070 格 |ρ|>1、最大 14.36，全部是 002145.SZ / 600193.SH 一类"
-         "连续停牌股）：退化窗口里 num 与 den 都是浮点噪声，`mathx.roll_corr` 的 "
-         "`den > 0` 守卫挡不住。故本因子显式做两步**定义域**处理（不是 winsor、"
-         "不是 rank，只是把「无定义」判成 NaN）：① 窗口内真实成交日 < 10（= 一半）→ NaN；"
-         "② |ρ| > 1 → NaN。处理后值域严格 [−1,1]（实测 max 0.975），"
-         "代价是 2015 年丢掉约 5% 的格子（那些格子本来就没有信息）。",
-))
-def ret_autocorr_1d_20(ctx):
-    r = ctx.ret(1)
-    c = ctx.roll_corr(r, ctx.shift(r, 1), 20)
-    # ① 定义域：窗口里真实成交的交易日太少 ⇒ 收益序列≈常数 ⇒ 相关系数无定义
-    #    （不是 0，是「没有信息」）。停牌日 ret(1)=0 会把这些格子伪装成「有观测」。
-    n_traded = ctx.roll_sum(np.asarray(ctx.traded(), dtype=np.float64), 20)
-    c = np.where(n_traded >= 10.0, c, np.nan)
-    # ② 数学值域兜底：|ρ|≤1 恒成立，越界只可能是①没盖住的残余数值退化
-    return np.where(np.abs(c) <= 1.0, c, np.nan)
-
-
-@register(FactorSpec(
-    name="ret_efficiency_20", group=GROUP, deps=PRICE_DEPS,
-    desc="20 日路径效率 = |20 日净收益| / 20 日收益的绝对值和（Kaufman ER）",
-    formula="ER = |Σ_{20} r| / Σ_{20} |r|, r = 日收益  "
-            "# 参考库同名侧写: kama_efficiency_20（|adj.diff(20)| / rolling_sum(|adj.diff()|)）",
-    start=None, warmup_days=_warm(20), higher_is_better=True,
-    note="★ **偏离参考库的 ret_efficiency_20**：参考库那个 factor 叫『价格效率』，"
-         "实现是 `rolling_sum(pct_chg, 20) / rolling_sum(amount, 20)`（收益/成交额）。"
-         "本实现按任务书括号里的『路径效率』做成 Kaufman 效率比率（净位移 / 路径长度）："
-         "ER 高 = 单边趋势（路径短、位移大），ER 低 = 反复震荡（路径长、位移小）。"
-         "选它的理由：对成交额的单位（元/千元）与量纲不敏感、值域天然是 [0,1]、"
-         "且与 amihud 类流动性因子不重复。要改回参考库口径只需换成 "
-         "safe_div(roll_sum(ctx.ret(1),20), roll_sum(ctx.amount,20))。"
-         "值域 [0,1]，恒不缺失。",
-))
-def ret_efficiency_20(ctx):
-    r = ctx.ret(1)
-    net = np.abs(ctx.roll_sum(r, 20))
-    gross = ctx.roll_sum(np.abs(r), 20)
-    return ctx.safe_div(net, gross, min_abs_den=1e-12)
 
 
 
 
 
 
-@register(FactorSpec(
-    name="trend_strength_60", group=GROUP, deps=PRICE_DEPS,
-    desc="60 日趋势强度 = 带符号的线性回归 R²（价格对时间回归）",
-    formula="R2 = Corr(t, hfq_close, 60)^2 （= OLS 的 R²）;  Factor = sign(Corr) * R2  "
-            "# 参考库无同名因子；同类见 rsrs_r2_18 / macd_trend_strength",
-    start=None, warmup_days=_warm(60), higher_is_better=True,
-    version=2,          # v2：加 |ρ|>1 兜底（见 note 末句），口径已变 → 必须重建
-    note="★ 两份参考文档里没有同名因子，这是**自建口径**：任务书要求『R² 或 t 值类』。"
-         "时序回归 R² = 相关系数平方，所以用 roll_corr(行号, 收盘价, 60)² 免去 OLS 的斜率/截距。"
-         "取**带符号**：纯 R² ∈ [0,1] 对上涨和下跌一视同仁，在动量家族里没有方向；"
-         "sign(ρ)·R² 让「强势单边上涨」最大、「强势单边下跌」最小（−1）。值域 [−1, 1]。"
-         "R² 对 y 的正仿射变换不变，所以用不用后复权价、用不用对数价，结果完全一样。"
-         "与 ret_autocorr_1d_20 同样的退化窗口兜底：|ρ|>1 只可能来自数值退化 → NaN"
-         "（本因子的 x 是行号、方差大，实测 0 格越界；加它是为了不让同一个坑再咬一次）。",
-))
-def trend_strength_60(ctx):
-    px = ctx.hfq("close")
-    T, C = px.shape
-    tn = np.broadcast_to(np.arange(T, dtype=np.float64)[:, None], (T, C)).copy()
-    c = ctx.roll_corr(tn, px, 60)
-    return np.where(np.abs(c) <= 1.0, np.sign(c) * c * c, np.nan)
+
+

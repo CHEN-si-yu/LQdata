@@ -1,0 +1,17 @@
+name: r4a_forecast_landing_gap_v3
+family_id: r4a_earnings_surprise_v3
+implementation: research.families.r4a_earnings_surprise_v3:build
+parameters: {signal: forecast_landing_gap}
+units: 实际净利（元）换算到预告口径（万元）后与中点之比，无量纲，arcsinh 压缩。
+availability: 事件铺在每个定期报告公告可得日 pit = max(ann_date, f_ann_date, end_date) 上；中点取该报告期、落地日前最后一次预告修订（ann ≤ 落地 pit）；只在实际公布后可见。
+missing_policy: 该报告期无配对预告、中点为 NaN/0、实际净利缺失时为 NaN（下一次报告落地时旧值自动失效）；不零填充、不跨报告期借用。
+spec:
+  group: research_earnings
+  desc: 预告落地偏差：实际定期报告归母净利相对同报告期公告前最后一次预告中点的偏差（落地日才公开的新信息）。
+  formula: "arcsinh((actual - mid*1e4) / |mid*1e4|), mid=(net_profit_min+net_profit_max)/2 万元, actual=n_income_attr_p 元, placed at report pit"
+  deps: [stock_forecast, stock_income]
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: 工程修复重发布（v3 = v1 + np.isin 一行修复，v1 版该候选因 ndarray.isin AttributeError 失败无产出）；公式/参数/方向与 v1 预登记完全一致。单位换算实测校验 actual/(mid×1e4) 中位 = 1.001。
+  fin_fields: [n_income_attr_p]

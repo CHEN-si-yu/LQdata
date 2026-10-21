@@ -44,10 +44,37 @@ CAL_FILE = paths.STATE / "calendar_ext.json"
 
 
 def calendar() -> list[str]:
-    try:
-        return sorted(str(x)[:10] for x in json.loads(CAL_FILE.read_text(encoding="utf-8")))
-    except (OSError, json.JSONDecodeError):
-        return []
+    # 自愈日历只记录见过的日期，跑前的新交易日必须从正式日历补入。
+    return state.effective_calendar()
+
+
+def comparable_day(ds) -> bool:
+    return ds.name in {item.name for item in R.daily_tables()} and (
+        ds.mode == 'range' or (ds.mode == 'per_date' and not ds.variants))
+
+
+def exact_day_rows(client, ds, date, cal):
+    """核对整市场单日业务键数，避免重复 total 和跨日窗口造成假缺口。"""
+    import pandas as pd
+    payload = probe_mod.probe_payload(ds, date, cal)
+    if payload is None:
+        raise ValueError(f'{ds.name} 没有单日探测参数')
+    rows = client.fetch_all(ds.path, payload, page_size=ds.page_size,
+                            method=ds.method, expect_rows=False)
+    if not getattr(rows, 'complete', True):
+        raise RuntimeError(f'{ds.name} 服务端分页不完整')
+    if not rows:
+        return 0
+    # 除权事件接口返回代码数组，日期由单日请求参数确定，与正式抓取转换相同。
+    if not isinstance(rows[0], dict):
+        rows = [{ds.array_of or 'value': value} for value in rows]
+    if ds.mode == 'per_date':
+        rows = [dict(row, **{ds.date_field: row.get(ds.date_field, date)}) for row in rows]
+    frame = pd.DataFrame(rows)
+    if ds.date_field not in frame.columns or not set(ds.keys).issubset(frame.columns):
+        raise ValueError(f'{ds.name} 服务端记录缺少日期或业务键')
+    frame = frame[frame[ds.date_field].astype(str).str[:10] == date]
+    return len(frame.drop_duplicates(list(ds.keys)))
 
 
 def _tail_days(cal: list[str], T: str, n: int = 7) -> list[str]:
@@ -63,6 +90,8 @@ def snapshot(date: str, out: Path | None = None) -> dict:
 
     cal = calendar()
     tail = set(_tail_days(cal, date, 7))
+    if not tail:
+        raise ValueError(f'{date} 不在有效交易日历内，拒绝保存空基线')
     cli = Client(C.load())
 
     tables: dict[str, dict] = {}
@@ -88,7 +117,8 @@ def snapshot(date: str, out: Path | None = None) -> dict:
             days = [date] if ds.delay_days == 0 else [date, _shift(cal, date, int(ds.delay_days))]
             for d in [x for x in days if x]:
                 try:
-                    rec["server"][d] = probe_mod.probe_rows(cli, ds, d, cal)
+                    rec["server"][d] = (exact_day_rows(cli, ds, d, cal) if comparable_day(ds)
+                                         else probe_mod.probe_rows(cli, ds, d, cal))
                 except Exception:  # noqa: BLE001
                     rec["server"][d] = None
         tables[ds.name] = rec
@@ -151,6 +181,9 @@ def verify(date: str, reprobe: bool = False) -> int:
         print(f"✘ 找不到基线 {src} —— 必须先在跑之前执行 snapshot")
         return 2
     base = json.loads(src.read_text(encoding="utf-8"))
+    if not base.get('tail_days'):
+        print('✘ 跑前基线没有交易日窗口，不能据此宣称冗余指纹一致；须恢复真实跑前台账')
+        return 2
     cal = calendar()
     # ★ 基线是"跑之前"存的：有些表（如 margin_detail）的服务端数据在**基线之后、
     #   开跑之前**才发布，基线里记的是 0 → 行数比对会被跳过。
@@ -166,6 +199,7 @@ def verify(date: str, reprobe: bool = False) -> int:
     idem_ok: list[str] = []
     changed: list[dict] = []
     missing: list[str] = []
+    row_failures: list[str] = []
 
     daily = {d.name for d in R.daily_tables()}
     for name, t in sorted(base["tables"].items()):
@@ -179,7 +213,7 @@ def verify(date: str, reprobe: bool = False) -> int:
         #   （tdx_daily 查 1 个板块、history_5min 查 1 只股票的 48 根、ths_hot 查"热股"），
         #   而本地是全表全变体 —— 拿它们相减必然"不等"，那是探测口径问题，不是数据问题。
         #   只有"一次请求就拿全市场"的 range 表 / 无变体的 per_date 表才可比。
-        comparable = ds.mode == "range" or (ds.mode == "per_date" and not ds.variants)
+        comparable = comparable_day(ds)
 
         # A. 新的一天（只有闸门管的日频表才"必须"推进；其余表看数据）
         if ds.freq != "snapshot":
@@ -189,10 +223,10 @@ def verify(date: str, reprobe: bool = False) -> int:
                 hit = led_now[led_now["date"].astype(str).str[:10] == (exp or date)]
                 got = int(hit.iloc[-1]["rows"]) if len(hit) else 0
             ok_wm = (after_wm or "") >= (exp or "") if exp else True
-            if (srv in (None, 0)) and got > 0 and cli is not None:
+            if comparable and cli is not None:
                 # 基线之后才发布的数据：定点复探，让行数比对也能成立
                 try:
-                    srv = probe_mod.probe_rows(cli, ds, exp or date, cal)
+                    srv = exact_day_rows(cli, ds, exp or date, cal)
                 except Exception:  # noqa: BLE001
                     srv = None
             if not comparable:
@@ -202,8 +236,10 @@ def verify(date: str, reprobe: bool = False) -> int:
                 # ★ 只把"本地**少于**服务端"当缺口：`probe_rows` 对不返回 total 的接口
                 #   只能拿回一页（page_size=3），那会让本地行数"显得"多于服务端
                 #   （实测 stock_dragon_tiger 本地 557 vs 探测 3）—— 那是探测口径，不是缺数据。
-                ok_rows = (srv in (None, 0)) or (got >= srv)
+                ok_rows = srv is not None and got >= srv
                 mark = "✔" if (ok_wm and ok_rows) else "⚠️"
+                if not ok_rows:
+                    row_failures.append(f'{name}：本地台账 {got}，服务端单日唯一键数 {srv}')
             rows_new.append(
                 f"| {name} | {t['watermark'] or '—'} | {after_wm or '—'} | "
                 f"{exp or '—（非日频）'} | {got:,} | "
@@ -229,7 +265,7 @@ def verify(date: str, reprobe: bool = False) -> int:
                 if n["rows"] > b["rows"]:
                     kind, note = "补齐", "行数变多 = 我们自己补的（正常）"
                 elif n["rows"] == b["rows"]:
-                    kind, note = "厂商重算", "行数不变、只有值变 = 上游重算（记录即可）"
+                    kind, note = "值修订", "行数不变不代表无下游影响；核对变化列与因子依赖"
                 else:
                     kind, note = "🚩变少", "行数变少 —— 必须查"
                 changed.append({"name": name, "date": d, "kind": kind,
@@ -245,8 +281,9 @@ def verify(date: str, reprobe: bool = False) -> int:
            f"- 有不一致：{len(other)} 个（分类见下）",
            f"- 🚩 行数变少：{len(red)} 个",
            f"- 水位没跟上的表：{len(missing)} 张" + (f"　{missing}" if missing else ""),
+           f"- 单日条数未通过或未确认：{len(row_failures)} 张" + (f"　{row_failures}" if row_failures else ""),
            "", "## A. 新的一天（本地 vs 服务端）", "",
-           "| 数据集 | 跑前水位 | 跑后水位 | 期望 | 本地新一天行数 | 服务端行数 | 判定 |",
+           "| 数据集 | 跑前水位 | 跑后水位 | 期望 | 本地台账行数 | 服务端单日唯一键数/抽样数 | 判定 |",
            "|:--|:--|:--|:--|--:|--:|:--|", *rows_new, ""]
     if changed:
         out += ["## B. 冗余重抓出现差异的 (表, 日期)", "",
@@ -263,7 +300,7 @@ def verify(date: str, reprobe: bool = False) -> int:
     p.write_text(text, encoding="utf-8")
     print(text)
     print(f"\n（报告已写入 {p}）")
-    return 1 if (red or missing) else 0
+    return 1 if (red or missing or row_failures) else 0
 
 
 def _ledger_now(name: str) -> dict:

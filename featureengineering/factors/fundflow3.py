@@ -170,9 +170,6 @@ class _Flow:
             np.asarray(self.ctx.px("total_share"), dtype=np.float64)
 
 
-def _ser(x: np.ndarray) -> np.ndarray:
-    """把 (T,1) 的市场向量摊成 (T,)，便于 shift。"""
-    return np.ascontiguousarray(x[:, 0])
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -182,7 +179,7 @@ def _ser(x: np.ndarray) -> np.ndarray:
 
 
 @register(FactorSpec(
-    name="mf_small_order_avg_price_dev",
+    name="mf_small_order_avg_price_dev", version=2,
     group=GROUP,
     deps=(FLOW, "stock_daily"),
     desc="小单成交均价相对当日 VWAP 的绝对偏离（散户的成交价劣势）",
@@ -212,35 +209,6 @@ def mf_small_order_avg_price_dev(ctx):
     return np.abs(ctx.safe_div(sm_px, vwap, 1e-8) - 1.0)
 
 
-@register(FactorSpec(
-    name="mf_flow_price_absorption_20",
-    group=GROUP,
-    deps=(FLOW, "stock_daily", "stock_adj_factor"),
-    desc="20 日大单净流入占比累计 / 20 日累计绝对收益（单位价格冲击吸收的流量）",
-    formula="flow = roll_sum(big_net_ratio, 20, 10); move = roll_sum(abs(ret), 20, 10); "
-            "factor = flow / move",
-    start=FLOW_START,
-    warmup_days=W20,
-    higher_is_better=True,
-    note=("**本文件新造**。" + _DE + " 分子用**大单净额占八列毛额之比**"
-          "（量纲自约的无尺度流量），分母用 20 日**累计绝对日收益**"
-          "（价格走了多远，不看方向）。"
-          "比值高 ⇒ 机构净买入很多但价格几乎没动 = **潜伏式建仓**"
-          "（吸筹被市场流动性无声吸收）；比值低 ⇒ 流量不大却价格大幅波动 = "
-          "**薄盘**或**派发**。"
-          "★ 与同日尺度的 `large_order_timing_signal` 互补："
-          "那个是「今天在什么位置买」，本因子是「20 天里买进去了多少、价格让了多少」——"
-          "一个横截面位置量、一个时序弹性量，窗口与信息都不同。"
-          "`roll_sum` 用 (T,C) 原语；`ctx.roll_sum` 支持 `min_count`（2026-09-17 已修"
-          "那处重复定义的坑），此处用显式 `min_count=N//2`。"),
-))
-def mf_flow_price_absorption_20(ctx):
-    f = _Flow(ctx)
-    flow = f.rate("lg", net=True) + f.rate("elg", net=True)
-    move = np.abs(ctx.ret(1))
-    s_flow = ctx.roll_sum(flow, 20, 10)
-    s_move = ctx.roll_sum(move, 20, 10)
-    return ctx.safe_div(s_flow, s_move, 1e-8)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -248,7 +216,7 @@ def mf_flow_price_absorption_20(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="mf_net_vol_surprise_20",
+    name="mf_net_vol_surprise_20", version=2,
     group=GROUP,
     deps=(FLOW, 'stock_daily'),
     desc="厂商净流入量的 20 日意外度 = (净量 − 20 日均) / 毛量 20 日均",
@@ -279,197 +247,28 @@ def mf_net_vol_surprise_20(ctx):
     return ctx.safe_div(nv - ma, gross, 1e-6)
 
 
-@register(FactorSpec(
-    name="mf_net_amount_mom5_to_mv",
-    group=GROUP,
-    deps=(FLOW, "stock_daily", 'stock_finance'),
-    desc="厂商净流入额的 5 日变化 / 总市值（无尺度的流量动量）",
-    formula='mom = net_mf_amount.diff(5); return cross_sectional_rank(mom)   # 参考库原式\n'
-            '本实现：mom * 1e4 / (close * total_share)',
-    start=FLOW_START,
-    warmup_days=W5,
-    higher_is_better=True,
-    note=("源自参考库 `net_mf_amount_momentum_5d`。"
-          "★★ **必须归一化**：参考库原式的单位是**万元且未除以任何规模量** ⇒ "
-          "它在横截面上的排序**实质上就是市值排序**（大票的万元流量天然大几个量级），"
-          "与 `log_mv` rank 相关极高，作为「流量动量」因子完全失效。"
-          "本实现除以**自算总市值**（`close × total_share`，未复权价 × 当期已披露股本），"
-          "与同家族的 `mf_net_amount_intensity` / `elg_net_60d_to_mv` 同一市值口径"
-          "（**不用** `stock_finance.total_mv` —— 日频快照表会被厂商事后重算）。"
-          "★ 厂商 `net_mf_amount` 是独立序列（§一.③），本因子不与四档净额重复。"),
-))
-def mf_net_amount_mom5_to_mv(ctx):
-    f = _Flow(ctx)
-    n = f.g("vendor_amt") * WAN2YUAN
-    mv = f.mktcap()
-    return ctx.safe_div(ctx.diff(n, 5), mv, 1e-6)
 
 
-@register(FactorSpec(
-    name="mf_order_size_entropy_chg_5d",
-    group=GROUP,
-    deps=(FLOW, "stock_daily"),
-    desc="四档成交量分布信息熵的 5 日变化（参与结构形状的迁移）",
-    formula='sm_share = (buy_sm_vol+sell_sm_vol)/total_vol;  # md/lg/elg 同理\n'
-            'entropy = -(Σ p·ln(p+1e-10))/ln(4);  factor = entropy.diff(5)',
-    start=FLOW_START,
-    warmup_days=W5,
-    higher_is_better=True,
-    note=("**本文件新造**：在已注册的 `mf_order_size_entropy`（**水平**）上取 5 日差分。"
-          "★ 为什么它**不是** `mf_order_size_entropy` 的重复、也不是"
-          "`order_size_ratio_change` 的重复：熵是四档占比的**非线性**函数"
-          "（`−Σp ln p`），它的变化量不在「某一档占比的变化」所张成的空间里 ——"
-          "同样的「大单占比 +2%」，从中档迁移过来与从小单迁移过来，"
-          "熵的变化完全不同。"
-          "★ 口径与 `mf_order_size_entropy` **逐字一致**（**成交量**口径、"
-          "除以 ln4 归一化到 [0,1]、`p+1e-10`），保证差分是同一序列的差分。"
-          "★ 分母 = 四档毛量之和（Σp ≡ 1，量纲自约，无需单位换算）。"),
-))
-def mf_order_size_entropy_chg_5d(ctx):
-    f = _Flow(ctx)
-    tot = f.g("tot_vol")
-    h = np.zeros_like(tot)
-    for t in TIERS:
-        p = ctx.safe_div(f.g("gross_vol", t), tot, 1e-6)
-        h = h - p * np.log(np.maximum(p, 0.0) + 1e-10)
-    h = ctx.safe_div(h, np.log(4.0), 1e-12)
-    # 四档全缺 -> h 会是 0/ln4 = 0 的假值；用 tot 的有效性把它挡回 NaN
-    h = np.where(np.isfinite(tot), h, np.nan)
-    return ctx.diff(h, 5)
 
 
 # ══════════════════════════════════════════════════════════════════════
 # 3. 跨档位的**二阶**结构（3 个）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="mf_big_mid_net_corr_20",
-    group=GROUP,
-    deps=(FLOW, 'stock_daily'),
-    desc="大单净额 与 中单净额 的 20 日滚动相关（机构与中户是否同向）",
-    formula="b = (buy_lg+buy_elg-sell_lg-sell_elg); m = (buy_md-sell_md)\n"
-            "factor = roll_corr(b, m, 20, 10)",
-    start=FLOW_START,
-    warmup_days=W20,
-    higher_is_better=True,
-    note=("**本文件新造**。" + _DE + " ★ 关键：**滚动相关跳出了恒等式的线性张成** —— "
-          "四档净额虽只活在 3 维空间里，但「两个序列的**相关**」是二阶量，"
-          "不是任何单一档位净额的线性函数，所以它不是既有因子的重标定。"
-          "经济含义：> 0 ⇒ 中户跟着机构同向（**跟风一致**，信号可信度高）；"
-          "< 0 ⇒ 机构买、中户卖（**对手盘**，筹码从散户向机构转移）。"
-          "与已注册的 `mf_big_small_divergence`（大单净 − 小单净，**方向差**）不同："
-          "一个是两序列的**协动性**，一个是两序列的**水平差**，"
-          "可以「大单大幅净买、中单也小幅净买」相关为 1 而差值为大。"
-          "用**净额占比**（÷八列毛额）而不是净额原值，避免大市值股票主导相关。"),
-))
-def mf_big_mid_net_corr_20(ctx):
-    f = _Flow(ctx)
-    b = f.rate("lg", net=True) + f.rate("elg", net=True)
-    m = f.rate("md", net=True)
-    return ctx.roll_corr(b, m, 20, 10)
 
 
-@register(FactorSpec(
-    name="mf_tier_flow_agreement_20",
-    group=GROUP,
-    deps=(FLOW, 'stock_daily'),
-    desc="「大单与中单同向」频率 − 「中单与小单同向」频率（20 日）",
-    formula="agree(a,b) = sign(a)==sign(b); factor = mean(agree(big,mid),20,10) "
-            "- mean(agree(mid,small),20,10)",
-    start=FLOW_START,
-    warmup_days=W20,
-    higher_is_better=True,
-    note=("**本文件新造**。" + _DE + " 与 `mf_big_mid_net_corr_20` 的分工："
-          "那个用**相关系数**（对幅度敏感，被大流量日主导），"
-          "本因子用**符号一致频率**（只看方向、对幅度免疫）——"
-          "同样的相关性可以由「每天小幅同向」或「几天大幅同向」产生，"
-          "两者对「资金结构是否稳定」的含义完全不同。"
-          "★★ 符号判定**必须**先做有限值掩码再比较："
-          "`np.sign(NaN)` 是 NaN 而 `NaN != NaN` 为 True，"
-          "写成 `sign(a) != sign(b)` 会把缺失日**静默计成「不同向」**"
-          "（这类 bug 已在 `mf_flow_stability_20d` 的 note 里记录过一次）。"
-          "⚠ **取值卡片化警告**：20 日均值只有 21 个可能取值，"
-          "`fea/eval.py` 的 LOWCARD 判据是「每日唯一值中位 ≤ 20」——"
-          "沙箱自检阶段必看每日截面唯一值数，不足就地砍。"),
-))
-def mf_tier_flow_agreement_20(ctx):
-    f = _Flow(ctx)
-    big = f.rate("lg", net=True) + f.rate("elg", net=True)
-    mid = f.rate("md", net=True)
-    sml = f.rate("sm", net=True)
-
-    def agree(a, b):
-        ok = np.isfinite(a) & np.isfinite(b)
-        return np.where(ok, (np.sign(a) == np.sign(b)).astype(np.float64), np.nan)
-
-    return (ctx.roll_mean(agree(big, mid), 20, 10)
-            - ctx.roll_mean(agree(mid, sml), 20, 10))
 
 
-@register(FactorSpec(
-    name="mf_elg_lg_split_20",
-    group=GROUP,
-    deps=(FLOW, 'stock_daily'),
-    desc="超大单净额占比 − 大单净额占比（20 日均值）：哪一级机构在买",
-    formula="e = elg_net/total; l = lg_net/total; factor = mean(e,20,10) - mean(l,20,10)",
-    start=FLOW_START,
-    warmup_days=W20,
-    higher_is_better=True,
-    note=("**本文件新造**。" + _DE + " ★ **与「大单」合计口径的区别**："
-          "既有的所有因子都用 `big = lg + elg` 把这两档**合并**了 ——"
-          "合并会丢掉「**哪一级**在买」这一维。"
-          "在双记恒等式下，同日的四档净额只活在 3 维空间里，"
-          "但 `elg − lg` 是其中**一个独立方向**（不与 `lg + elg` 共线），"
-          "而且本因子取的是**20 日均值之差**（不是同日之差），"
-          "在时间维上进一步与同日线性组合分离。"
-          "经济含义：超大单 = 公募/保险/量化通道，大单 = 游资/私募 ——"
-          "> 0 ⇒ 配置型资金主导，< 0 ⇒ 交易型资金主导。"
-          "⚠ 与已注册的 `super_large_order_intensity`（5 日累计超大单）可能有重叠，"
-          "`dedup` 阶段定量裁决。"),
-))
-def mf_elg_lg_split_20(ctx):
-    f = _Flow(ctx)
-    e = f.rate("elg", net=True)
-    l = f.rate("lg", net=True)
-    return ctx.roll_mean(e, 20, 10) - ctx.roll_mean(l, 20, 10)
 
 
 # ══════════════════════════════════════════════════════════════════════
 # 4. 时序高阶矩与持续性（3 个）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="mf_big_order_net_kurt_20",
-    group=GROUP,
-    deps=(FLOW, 'stock_daily'),
-    desc="大单净额占比的 20 日峰度（脉冲式建仓 vs 匀速滴灌）",
-    formula='x = (mf["buy_lg_amount"]+mf["buy_elg_amount"]'
-            '-mf["sell_lg_amount"]-mf["sell_elg_amount"])\n'
-            'kurt = x.groupby(level="Code").transform(lambda s: s.rolling(20, min_periods=10).kurt())',
-    start=FLOW_START,
-    warmup_days=W20,
-    higher_is_better=True,
-    note=("抄参考库 fund_flow 的 `big_order_net_kurt_20`（窗口 20）。"
-          + _DE + " 用**净额占比**（÷八列毛额）而不是净额原值："
-          "峰度对尺度不变，但原值口径下大市值股票的流量序列会被市值量级主导，"
-          "归一化后比较的是**形状**而不是规模。"
-          "★★ **必须带退化守卫**（抄 `ret_kurt_20` 的既有做法）："
-          "窗口内若二阶矩趋 0（连续多日净额几乎不变），峰度的分母趋 0 会产出"
-          "1e8 量级的垃圾值，触发 `main.py check` 的「值域异常」。"
-          f"守卫：`|kurt| > {_KURT_LIM:g}` → NaN。"
-          "经济含义：峰度高 ⇒ 建仓是**几次大额脉冲**（事件驱动 / 大宗 / 指数调仓），"
-          "峰度低 ⇒ **匀速滴灌**（算法拆单的被动配置）。"
-          "这两类资金对后续收益的含义完全不同：脉冲式更可能是短期冲击。"),
-))
-def mf_big_order_net_kurt_20(ctx):
-    f = _Flow(ctx)
-    x = f.rate("lg", net=True) + f.rate("elg", net=True)
-    k = ctx.roll_kurt(x, 20, 10)
-    return np.where(np.isfinite(k) & (np.abs(k) <= _KURT_LIM), k, np.nan)
 
 
 @register(FactorSpec(
-    name="mf_big_order_net_ac1_20",
+    name="mf_big_order_net_ac1_20", version=2,
     group=GROUP,
     deps=(FLOW, 'stock_daily'),
     desc="大单净额占比的一阶自相关（20 日）（资金流入的持续性）",

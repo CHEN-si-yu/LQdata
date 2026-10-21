@@ -1,0 +1,17 @@
+name: r4c_accrual_ratio_ttm_v1
+family_id: r4c_accruals_v1
+implementation: research.families.r4c_accruals_v1:build
+parameters: {signal: accrual_ratio_ttm}
+units: 无量纲比率（金额/总资产）。正值=应计成分高（经营现金流覆盖不足），负值=现金覆盖充分。
+availability: 归母净利、经营现金流（TTM）与总资产均取公告时点 pit=max(ann_date,f_ann_date,end_date)≤信号日的最新可考版本；财报数据无未来信息；三表 delay_days=0（conf/frequency.yaml），公告日当天即可用。
+missing_policy: 净利TTM、经营现金流TTM、总资产任一不可考，或 |总资产|≤1e6 元时为 NaN；不做零填充、不向旧报告回退；非有限值输出为 NaN。
+spec:
+  group: research_accruals
+  desc: 未验证候选（U3 机制1，TTM 口径）：应计利润占总资产比率，高应计→低预期收益。
+  formula: (ttm(n_income_attr_p) − ttm(n_cashflow_act)) / point(total_assets)
+  deps: [stock_income, stock_cashflow, stock_balancesheet]
+  fin_fields: [n_income_attr_p, n_cashflow_act, total_assets]
+  warmup_days: 500
+  higher_is_better: false
+  version: 1
+  note: 方向事前冻结 false（Sloan 1996 应计异象）；TTM 直接由财务层 ctx.ttm 提供；安全除法地板 min_abs_den=1e6。

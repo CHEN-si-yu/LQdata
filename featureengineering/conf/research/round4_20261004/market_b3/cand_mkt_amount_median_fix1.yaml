@@ -1,0 +1,18 @@
+name: r4o_mkt_amount_median_v1_fix1
+family_id: r4o_market_b3_v1_fix1
+implementation: research.families.r4o_market_b3_v1:build
+parameters: {signal: mkt_amount_median}
+units: 元（成交额原始单位）；池内成交额中位数（日频原值、不做平滑）。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily、stock_adj_factor，delay=0）；无未来数据。
+missing_policy: 停牌（无真实成交，收益与成交额均记 NaN）与缺测不计入分母；有效票 < 100 的日 → NaN；不零填充、不前向填充。
+spec:
+  group: market
+  desc: "池内成交额中位数（绿卡描述量，无方向）"
+  formula: "a=amount where (universe & finite(ret))（生产 _base 掩码口径）；value=median(a) over 有效票"
+  deps: [stock_daily, stock_adj_factor]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  is_market: true
+  note: "工程修复重发布（fix1 = v1 + deps 补正：finite(ret_clean) 掩码实际读取 stock_adj_factor，v1 因未声明该依赖被引擎拒绝写入、无产出——trial_failed, r_e19e88213e9a4efe80520c913e38ade2）；公式/参数/方向与 v1 预登记完全一致。绿卡通道预登记（无方向承诺）；中位数为直接观测统计量（绿卡列举项），成交额原始字段的横截面直接统计（无跨序列复合）；与批 1 绿卡 mkt_amount_total_log（合计取 log、边界案例）为同字段不同统计量（中位数 vs 合计水平），M4 记录相关；已删 mkt_amount_hhi（集中度）、mkt_am_amount_ratio20（量比）差异见 report.md 防重蹈检查；固定2115只主板池；有效样本分母，缺测/停牌不计，少于100只为NaN；市场标量不做截面rank；缺失保持NaN；未做收益有效性承诺。"

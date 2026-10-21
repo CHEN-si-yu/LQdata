@@ -1,0 +1,24 @@
+{
+  "name": "r6m_full_pm_breadth_path_area_lag1_v1",
+  "family_id": "r6m_breadth_path_area_v1",
+  "implementation": "research.families.r6m_breadth_path_area_v1:build",
+  "parameters": {
+    "signal": "full_pm_breadth_path_area_lag1"
+  },
+  "units": "dimensionless breadth-share signed area; raw value unscaled",
+  "availability": "F_t uses A from the immediately preceding trading date only. Required11:30+13:01..15:00 complete source snapshots. lag1 is a conservative response to documented latest-day source publication delay; historical real arrival/vintage is NOT verified. No same-day latest data claim.",
+  "missing_policy": "A day needs all121 required unique date/minute keys, finite nonnegative integer counts and a positive constant within-day denominator. Missing/duplicate required minute or invalid counts -> dayNaN. Exact one-trading-day lag; no ffill, no skipping missing days. All-market source cannot be reconstructed to fixed2115 pool.",
+  "spec": {
+    "group": "research_market_breadth_path",
+    "desc": "全市场下午广度相对11:30至15:00端点连线的有符号面积，延后1交易日；负方向弱先验。",
+    "formula": "B=up/(up+down+flat); A_d=mean_j=1..120[B_d,j-(1-j/120)*B_d,11:30-(j/120)*B_d,15:00]; F_t=A_prev_trade_day(t)",
+    "deps": [
+      "stock_market_distribution_history"
+    ],
+    "warmup_days": 40,
+    "higher_is_better": false,
+    "is_market": true,
+    "version": 1,
+    "note": "Round6 strict single-definition candidate. PM13:01..15:00, lunch excluded; all closing snapshots included; no claim of complete nonmonotone event ordering. Direction-1 weak, fixed before any outcome statistics. Documents artifacts/research/round6_20261005/delivery/r6_market. lag1 arrival remains conservative assumption, not actual historical publication proof."
+  }
+}

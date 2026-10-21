@@ -1,0 +1,31 @@
+family_id: r11u2_gated_peak_timing_v1
+idea_id: r11u2_gated_intraday_shape_v1
+trial_budget: 3
+baseline: >
+  朴素对照 = 无条件的在产日内因子（`idt_rv_daily` / `id2_parkinson_vol` /
+  `r4b_intraday_volume_hhi_20_*` / `idt_vol_stability` / `r3b_intraday_rv_skewness_v2_*` /
+  `close30_ret` / `id2_hi_lo_pos_gap`）；腿的直接近亲 = 无（`vol_peak_pos` 在 125 个
+  在产股票因子里没有任何使用者；`r4b_intraday_volume_hhi_20_*` 用的是量**集中度**、
+  不是量峰**时点**）。定向相关对照 = `id2_hi_lo_pos_gap`（用 hi_pos/lo_pos 之差，
+  本 family 的门控用到 `vol_peak_pos − hi_pos`，必须逐日对齐检查）。
+  G7 控制集 = AGENTS.md §B 的通用 base8（momentum_120 / short_term_reversal_5 /
+  vol_120 / idio_vol_60 / log_mv / turnover_std_20 / bp / roe_ttm）。
+  ★ `var_95_20` 在 125 个在产股票因子里**不存在**（本 family 不引用它，不改用替代品顶替；
+  波动族附加控制改用 `idt_rv_daily, id2_parkinson_vol, atr_14_ratio` 三列并两报）。
+allowed_variants:
+  - {signal: mkt_pm_state_x_shape_gate}
+  - {signal: own_pm_rel_state}
+parameters_frozen: true
+variants: []
+search_policy: >
+  两个变体各一个机制、无参数变体：状态窗 252/120、腿 = 日内层 `vol_peak_pos`、
+  leg 中心化常数 0.5、门控 λ=1、门控变量仅 `vol_peak_pos−hi_pos` 与 `am_ret−pm_ret`、
+  以及「状态下放到逐股」的 `sign(pm_ret−市场均值)` 全部**先于任何候选级结果**冻结。
+  登记后不看 G4/G7 改窗口、改门控、改方向。
+registration_note: >
+  ★ 结构约束的正面执行：Round 9 证明「(T,) 标量状态 × 单一 (T,C) 腿」在引擎逐日
+  winsor→z-score 后是腿的**逐日秩置换**（实测逐日 |ρ| ≡ 1.0000，2,123/2,123 天），
+  不构成新截面信息。本 family 的每个变体都携带逐股门控量，当日截面排序不是腿的
+  单调变换（实测逐日 |ρ| vs 腿：A = 0.547 / B = 0.127，frac>0.99 = 0）；
+  纯交互变体**不登记**，仅作为预筛参照记录在报告里。
+  本 family 为 Round 11 单元 U2 的事前研究登记（非追溯登记）。

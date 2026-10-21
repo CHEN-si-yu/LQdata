@@ -1,0 +1,13 @@
+idea_id: r4f_effective_spread_v1
+hypothesis: 由日线收益的一阶负自协方差（Roll 1984 有效价差）与相邻两日高低价区间重叠（Corwin–Schultz 2012）隐含估计的买卖价差，携带「流动性差 → 未来补偿收益高」的横截面预期收益信息，且该信息超出 Amihud 非流动性、换手与波动类因子的既有表达。
+mechanism: |
+  1) Roll：买卖价差使成交价在有效价格两侧跳动，制造负的一阶自相关；
+     2·sqrt(max(−cov(r_t, r_{t−1}), 0)) 即有效价差平方的矩估计（只对「检出负自相关」的样本有定义）。
+  2) Corwin–Schultz：相邻两日 high/low 区间的重叠程度隐含价差；区间越「错开」隐含价差越大。
+     两类估计量都以「价差大 = 流动性差」映射到未来预期收益（均登记 higher_is_better=true）。
+expected_direction: 五个信号全部 true（微结构价差越大 = 流动性越差 → 未来预期收益越高）。方向在看结果前固定。
+target_horizons: [1, 5]
+falsifiable: 任一候选与 amihud_daily_5 的横截面 |rho|>0.9，或 declared RankIC 分年同号 < 7/9，或控制组（vol_120、idio_vol_60、atr_14_ratio、log_mv、turnover_std_20 等）回归中不显著，则不支持该机制成立。
+fields: [stock_daily.high, stock_daily.low, stock_daily.close, stock_daily.vol, stock_adj_factor.adj_factor]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

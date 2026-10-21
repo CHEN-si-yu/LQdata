@@ -1,0 +1,37 @@
+# 事前登记定义；方向与机制在计算前冻结。
+{
+  "name": "r2_supply_float_unlock_d60_v1",
+  "family_id": "r2_supply_family_v3",
+  "implementation": "research.families.r2_supply_v1:build",
+  "parameters": {
+    "signal": "float_unlock_decay60"
+  },
+  "units": "float_share/total_share 为无量纲比例；候选值为过去 60 个交易日正跳升的线性衰减加权和（权重 n..1 归一化），量纲为比例。",
+  "availability": "仅用 T 日及以前的 stock_finance 日频股本状态（delay_days=0 合同），as-of 前向沿用最后一条有效记录；无未来位移。",
+  "missing_policy": "非正股本值视为供应商异常并从 as-of 源剔除（沿用上一有效值）；窗口内不足 60 个有效观测为 NaN；不成交日均输出 NaN；合法无事件为 0。",
+  "closest_existing_baselines": [
+    "circ_mv",
+    "turnover_std_20",
+    "efx_free_turnover"
+  ],
+  "semantic_difference": "现有因子用 stock_finance 只做 pe/pb/ps/dv、换手与市值，没有任何因子度量流通比例的时间跳变。",
+  "source_fields": [
+    "stock_finance.total_share",
+    "stock_finance.float_share"
+  ],
+  "pre_registered_direction": "higher_is_better=false",
+  "spec": {
+    "group": "research_round2_supply",
+    "desc": "流通比例跳升（解禁）的 60 日线性衰减压力",
+    "formula": "decay_linear(max(diff(float_share/total_share),0),60)",
+    "deps": [
+      "stock_finance",
+      "stock_daily"
+    ],
+    "start": null,
+    "warmup_days": 200,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "送转会同比例抬升 float_share 与 total_share，比例不变 ⇒ 本机制天然免疫送转，无需 adj_factor。 ctx.traded() 的真实成交掩码读取 stock_daily，已在 deps 显式声明。"
+  }
+}

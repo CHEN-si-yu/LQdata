@@ -1,0 +1,10 @@
+family_id: r4s_pledge_v2_v2
+idea_id: r4s_pledge_v2_v1
+trial_budget: 5
+baseline: 朴素对照 = 正式因子 margin_repay_deceleration、turnover_std_20、log_mv（B3 §V4 指定，total_leverage_ratio 类已删）。零填充口径（主）与 NaN 口径（敏感性）并列报告；不把模型贡献视为已完成。
+allowed_variants:
+  - {signal: pledge_change_accel}
+  - {signal: pledge_unpledge_asym}
+  - {signal: pledge_release_streak}
+  - {signal: pledge_change_accel_nan}
+  - {signal: pledge_unpledge_asym_nan}

@@ -1,0 +1,37 @@
+# 事前登记定义；方向与机制在计算前冻结。
+{
+  "name": "r2_supply_float_unlock_d120_v1",
+  "family_id": "r2_supply_family_v3",
+  "implementation": "research.families.r2_supply_v1:build",
+  "parameters": {
+    "signal": "float_unlock_decay120"
+  },
+  "units": "同 d60；窗口 120 个交易日。",
+  "availability": "同 d60。",
+  "missing_policy": "同 d60，窗口阈值改为 120。",
+  "closest_existing_baselines": [
+    "circ_mv",
+    "turnover_std_20",
+    "efx_free_turnover"
+  ],
+  "semantic_difference": "同 d60；仅预登记的衰减长度变体（解禁影响持续期未知）。",
+  "source_fields": [
+    "stock_finance.total_share",
+    "stock_finance.float_share"
+  ],
+  "pre_registered_direction": "higher_is_better=false",
+  "spec": {
+    "group": "research_round2_supply",
+    "desc": "流通比例跳升（解禁）的 120 日线性衰减压力",
+    "formula": "decay_linear(max(diff(float_share/total_share),0),120)",
+    "deps": [
+      "stock_finance",
+      "stock_daily"
+    ],
+    "start": null,
+    "warmup_days": 300,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "机制 1 的预登记窗口变体；不搜索其它窗口。 ctx.traded() 的真实成交掩码读取 stock_daily，已在 deps 显式声明。"
+  }
+}

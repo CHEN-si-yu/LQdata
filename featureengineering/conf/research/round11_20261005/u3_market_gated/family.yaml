@@ -1,0 +1,34 @@
+family_id: r11u3_market_gated_v1
+idea_id: r11u3_market_gated_v1
+trial_budget: 5
+baseline: >
+  朴素对照 = 各条腿对应的在产近亲（`beta_60` 对 index_daily 的 60 日 β；
+  `vol_120` / `idio_vol_60`；`amihud_daily_5`）；状态侧对照 = 对应的在产市场标量
+  （`mkt_dispersion`、`r4o_mkt_amount_median_v1_fix1_36ab6152c0703e8c`、
+  `mkt_mf_large_breadth`、`mkt_illiquidity_median`），以及 R9-F 已通过预筛的
+  `r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f`。不把模型贡献视为已完成。
+allowed_variants:
+  - {signal: mktliq_x_amountbeta}
+parameters_frozen: true
+variants: []
+search_policy: >
+  五个机制各恰一个候选、无参数变体；状态窗 252/min_count 120、腿窗 120/min_count 60
+  （半 β 25 个同类日）、池内最小截面 100 只、状态标准化口径 z252 全部在**看任何结果之前**
+  冻结（`artifacts/research/round11_20261005/u3_market_gated/PREREGISTRATION.md`，
+  sha256 b04f2560dc571a4f59c5b446b8c13e6d8128767824dbd6ac558aca2497449d3c）。
+  强制预筛 P1/P2/P3 先于登记执行；**未通过者不登记、不反号、不换版扳方向**。
+trial_budget_note: >
+  5 = 预登记的五个假设（三条状态族 × 三条自算腿的组合）；其中只有 1 个通过 P1/P2/P3，
+  故 `allowed_variants` 只列 1 个。另外 4 个假设以证伪记录在
+  `artifacts/research/round11_20261005/u3_market_gated/`（不占候选、不登记）。
+registration_note: >
+  本族为 Round 11 单元 U3 的**事前研究登记**（非追溯登记）。形状为**股票级 (T, C) 交互候选**，
+  `is_market` 保持默认 False —— 依据 `research/evaluation.py` 的 is_market 硬分支
+  （市场标量 rankic=None、无 G4 可裁决）与已删市场因子 M5 预测检验 0/27 的实测事实。
+  §8.8 重蹈检查：已删 374 个股票因子中 `ret_autocorr_1d_20`/`ret_efficiency_20`/`trend_strength_60`
+  （自相关/路径/趋势强度）、`downside_upside_vol_60`/`downside_vol_ratio_20`/`sortino_ratio_60`/
+  `gain_loss_asymmetry_60`（**自身**上下行波动比）、`bw_beta_60`/`bw_beta_asym_20`（对**宽度**的 β）、
+  `liquidity_shock_20`/`amihud_asymmetry_20`（自身流动性）、`ind_beta_60`（行业 β）
+  与本族三条腿**均不同轴**（详见 `research/families/r11u3_market_gated_v1.py` 的 §8.8 段）。
+  ★ 明确的上游偏离：任务书举例的"个股反转腿 / 个股动量腿 / 个股日内形态腿"本轮不能用 ——
+  反转与动量的**无条件 IC 显著**必然触发 P2 失败；日内形态属 U2（task-8）范围。

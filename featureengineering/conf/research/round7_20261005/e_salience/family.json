@@ -1,0 +1,30 @@
+{
+  "family_id": "r7e_context_salience_v1",
+  "idea_id": "r7e_context_salience_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "context_salience20",
+      "window": 20,
+      "min_valid": 15,
+      "theta": 0.1,
+      "delta": 0.7,
+      "market_min": 100
+    }
+  ],
+  "baseline": "Unchanged base8 + published R4 idio_MAX20 + published ret_skew20 + momentum20 + same strict-return/control-mask MAX20 and MIN20 + DSV20=sum(min(r,0)^2)/sum(r^2),den>1e-12 + beta60 + existing R4 standardized coskew60. Formal average-tie rank/FM; full common-finite sample counts; no dropping controls to rescue rank deficiency.",
+  "variants": "none",
+  "initial_single_task_budget_decimal_bytes": 3000000000,
+  "parameters_frozen": {
+    "signal": "context_salience20",
+    "window": 20,
+    "min_valid": 15,
+    "theta": 0.1,
+    "delta": 0.7,
+    "market_min": 100,
+    "higher_is_better": false,
+    "warmup_days": 80
+  },
+  "freeze_path": "artifacts/research/round7_20261005/freeze/e_salience_definition_v1.json",
+  "freeze_sha256": "f33a728cd1c83ddd2ae679ad4b8b36aad755d8882f8bc047110f056b5a3e0602"
+}

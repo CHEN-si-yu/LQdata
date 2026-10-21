@@ -1,0 +1,18 @@
+name: r4o_mkt_amount_price_divergence_5_v1
+family_id: r4o_market_b3_v1
+implementation: research.families.r4o_market_b3_v1:build
+parameters: {signal: mkt_amount_price_divergence_5}
+units: 无量纲（两个 252 日滚动 z 的差）；量腿=5 日均池内成交额合计的同比变化（252 交易日），价格腿=等权池 5 日累计收益。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily / stock_adj_factor，delay=0）；5 日均与同比参照（T−252 交易日）及 z252 只用 ≤T 的历史值；无未来数据。
+missing_policy: 单日有效票 < 100 的成交额合计 / 等权收益记 NaN；5 日窗口内任一 NaN → 该日腿值 NaN（min_count=5）；同比需 T−252 交易日腿值有限且 >0，否则 NaN；z252 需 ≥120 个有限历史值否则 NaN；不零填充、不前向填充。
+spec:
+  group: market
+  desc: "成交额-价格背离：z252(5日均成交额同比变化) − z252(等权池 5 日累计收益)（严格通道，方向 −1）"
+  formula: "amt5=MA5(sum(amount),min5)；yoy=amt5(T)/amt5(T−252)−1；ew5=prod(1+ew,5)−1；z252(x)=(x−mean252(x))/std252(x,ddof=0), min_count=120；value=z252(yoy)−z252(ew5)"
+  deps: [stock_daily, stock_adj_factor]
+  start: '2018-01-01'
+  warmup_days: 900
+  higher_is_better: false
+  version: 1
+  is_market: true
+  note: "Round4-V6 严格通道预登记（方向 −1、先验弱-中，封存于 freeze b3 方向表）；z252(min120) 与『同比=252 交易日』解读先于结果统计冻结（edge_notes 含事前披露的备选解读）；warmup 900 天覆盖 252 日同比参照 + z252(120) 的联合前置历史；与 b2 宽度侧背离（mkt_breadth_price_divergence_5）的机制独立性通过 M4 时序相关实测见证（report.md 对比说明）；防重蹈检查（对照 doc/市场因子清理记录_20261004.md 27 个已删市场因子）见 report.md；固定2115只主板池；有效样本分母，缺测/停牌不计，少于100只为NaN；市场标量不做截面rank；T日收盘后可用；缺失保持NaN不用未来值回填；未承诺收益有效性，由 M0–M7 门序裁决。"

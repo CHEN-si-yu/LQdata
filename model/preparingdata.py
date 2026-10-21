@@ -1,122 +1,45 @@
 #!/usr/bin/env python
-"""初加工 —— 上游因子 → `trainingdata/`（模型可直接读的训练输入，**按年拆分**）。
+"""直接整理落盘因子 → trainingdata/，无需上游 Python、配置、注册表或 state。
 
-**这个脚本只干一件事**：把上游因子产物拼成一份快照，并维护它的增量。
-全量 / 增量两条路径都在 `prepare()` 里，块怎么算在 `build_year()` 与 `BLOCKS` 里。
+输入默认为 ../featureengineering/data/（即 /root/autodl-fs/featureengineering/data）：
+  factors/<name>/year=YYYY/data.parquet       trade_date, stock_code, value[, rank]
+  market_factors/<name>/year=YYYY/data.parquet trade_date, value
+只有确实存在年分区文件的目录参与打包。label_ret_<h>d 自动识别为收益标签，
+其余股票对象全部纳入。日期与股票轴取入选股票产物主键的并集，缺格保留 NaN。
 
-    trainingdata/
-      meta.json                              清单 / 边界 / 逐年摘要 / 覆盖率 / 值口径
-      factors/year=YYYY/data.parquet         trade_date, stock_code, <上游当前的股票因子列>
-      target/year=YYYY/data.parquet          trade_date, stock_code, <label 列>
-      amount/year=YYYY/data.parquet          trade_date, stock_code, amount  ← 每日成交额（元）
-      fac_sample/year=YYYY/data.parquet      trade_date, stock_code, <抽样因子列>
-      market_factors/year=YYYY/data.parquet  trade_date, <市场因子 × 原值/滚动 z 两列>  ← 每日一行
-      prices/year=YYYY/data.parquet          trade_date, stock_code, <7 列原始价 + adj_factor>  ← 回测
+输出仍使用原布局：factors、target、fac_sample、market_factors、amount、prices。
+股票特征沿用 zscore_win1_99_v1：逐日 1%/99% 缩尾、z-score、截断 ±10；
+标签保存 value 原值；市场因子保存原值与截至当日的滚动 252 日 z-score。
+Parquet 没有优劣方向：默认沿用本地 meta.json 已有方向，新因子保持原始方向。
+另建快照时可继承本项目 trainingdata/meta.json 的方向；--direction-policy raw 全部不翻转。
+本脚本不会从因子名称、rank 或未来收益推断优劣方向。
 
-## 本层的边界（用户 2026-09-25 定；2026-09-26 就 `prices` 一处反转）
+--jobs 同时控制主键扫描线程、因子处理进程和市场读取线程。因子进程完整执行
+读取 → 对齐 → 标准化，最多排队 2×jobs 个任务；年份逐个处理以控制内存。
+默认最多 12 个进程，同时遵守 CPU affinity 与容器配额；每进程默认 1 个计算线程。
+tqdm 显示扫描、年度打包、每年股票特征/标签、市场因子和附加块进度。
+本地 .source_index.json 缓存扫描结果，按源路径/大小/mtime_ns 失效，校验模式不写缓存。
 
-`trainingdata/` 与 `preparingdata.py` 是**整个 model 项目的最上游**：**对齐**上游产物、
-落成一份可增量维护的快照，本身**不加工口径**（不复权、不填充、不算收益、不改标签）。
+成交额及回测价格继续从 ../datadownload/data/ 的原始 Parquet 复制；不复权、不填充。
+--factors-only 仅打包因子、标签、抽样与市场块，无需原始价格目录。
+增量刷新最长标签 h + 1 + 冗余 7 个交易日；列集、方向或股票轴变化自动全量重建。
 
-- ⇒ **不受下游模型训练相关的约束**。下游要什么（策略、门控、特征子集），在下游自己解决；
-  不因为某个实验单元要读，就往快照里加块、加列、改口径。
-- ⇒ 出现差异时**改后面**（实验单元、docs 对单元的约定），不改这里去迁就下游。
-- ★ **唯一的例外：`prices`（回测价格）**。它确实来自模块①、不是因子侧产物，2026-09-25 曾按
-  上面的规则移出；**2026-09-26 用户定再放回来做一块**（消费方只读本地快照、不再各自连模块①），
-  而且它与因子落在**同一条日期轴**上：日常增量一起刷新，不会出现"因子刷到 9-24、价格停在 9-23"
-  这种两轴错位。这一块仍然**只复制不加工**：7 列原始价 + `adj_factor`，
-  复权 / 前向填充 / 停牌与涨跌停判定全在消费方（见 `experiments/V2` 的 `Prices`）。
-  它走 `ensure_block`（与 amount/fac_sample/market 同一条路）⇒ 不存在旧版那种
-  "引导条件永远建不出来"的死循环。
-- 五块里直接读模块①（`RAW_DATA`）的是 **`amount`（流量）与 `prices`（价格）**；
-  `factors` / `target` / `market_factors` 三块来自因子侧产物。
+用法：
+  python preparingdata.py                         # 首次全量，以后增量
+  python preparingdata.py --jobs 16               # 指定并行度
+  python preparingdata.py --full --progress bars  # 全量并强制显示进度
+  python preparingdata.py --source-data /path/data --factors-only --out packed
+  python preparingdata.py --check                 # 只读校验
+  python preparingdata.py --years 2026 --out trial # 隔离打包指定年份
+  python preparingdata.py --features-from /path/meta.json  # 固定股票特征清单
+  python preparingdata.py --amount-only           # 只重建指定附加块
+  python preparingdata.py --prices-only
+  python preparingdata.py --market-only
+  python preparingdata.py --fac-sample-only
 
-## 数据块
-
-`factors` 保存**统一方向的逐日缩尾+z-score**（`VALUES_SEMANTICS`，见下）；`target` 保存各持有期
-收益标签（**原值，不做变换**）；`amount` 保存每日成交额；`fac_sample` 用 seed=42 从完整因子中
-抽取 20 列（值逐字取自 `factors`）；`market_factors` 保存 61 个市场标量，每个因子**原值 + 滚动
-252 日 z** 两列（每行一个交易日，主键只有 `trade_date`）。
-
-★ 市场块的日期轴与 `factors` 对齐（2018 起），但**部分市场因子起点更晚**
-（7 个 `mkt_limit_*` 是 2020-01-02、`mkt_idx_growth_value_spread20` 是 2019-07-02…），
-所以它们的**原值列有一段前缀 NaN** —— 这是设计如此，不是缺数；`check()` 只报"首个有效值
-之后还有空洞"。滚动 z 列另有一段 252 交易日的预热期 NaN（2018 全年为空）。
-
-## ★ 因子列的值口径（2026-09-25 变更，改之前先读完这段）
-
-**旧口径**：直接搬上游算好的 `rank` 列（当日截面百分位），翻转过的是 `1−rank`，取值全在 `[0,1]`。
-
-**现口径** `zscore_win1_99_v1`：改读上游 `value` **原值**，自己做逐日横截面
-「1%/99% 缩尾 → 减均值除标准差 → 兜底截断 ±10 → 按方向取负」，见 `_standardize`。
-两处细节：缩尾分位点重合时**不缩尾**（稀疏事件因子）；缩尾后退化则**退回原值**再标准化
-（离散因子实测会退化）。逐行计算 ⇒ **PIT 安全**；缩尾分位与上游算 rank 时同源 ⇒
-**当日名次不变**（IC/排序结论不受影响）。
-
-口径写在 `meta.semantics` 里。**此前面板没有任何值口径标记**，换了口径在产物上看不出来 ——
-下游若按旧口径（缺失填 0.5、`(x−0.5)×2`）消费，会**静默**得到错误输入。
-
-`--check` 的取值口径探针（「有界 + 逐日 mean≈0/std≈1」）就是防"没做标准化/半新半旧"的。
-
-## 增量：窗口取多少天，是标签定的
-
-窗口 = `[上次已建末日 − lb, 上游最新日]`，`lb = max(标签 h) + 1 + REDUNDANT_DAYS(7)` = 28。
-
-- **`h + 1` 是硬下限**：标签 `T` 用到 `open(T+1+h)`，所以 `T` 要等到 `T+1+h` 那天才定型。
-  窗口比这短，那些天一旦出窗就再也不会被重算 ⇒ **20d 标签永久停在 NaN**（上游后来补上也不捡）。
-- **`+7` 是冗余覆盖**（用户 2026-09-20 要的）：即使标签已定型，也把那 7 个交易日重算一遍，
-  用来吃掉上游的小幅回改。
-- 为什么**不**写成"每个标签各自刷最新 7 个有效行"：那样跨度大时会漏 ——
-  若上次跑在 30 个交易日之前，20d 标签是在 `T_max−51 ~ T_max−21` 里陆续定型的，
-  只刷最新 7 行就漏掉 `T_max−51 ~ T_max−29`，它们**永久是 NaN**。
-  `上次末日 − lb` 这种写法对任何间隔都成立。
-
-## 这个脚本为什么是**单文件**
-
-它原先拆成 `mx/prepared.py` + `panel_io.py` + `upstream.py` + `config.py` + `state.py` 五个模块，
-好让"只想读个 parquet"的模型侧不必拖上上游依赖。2026-09-20 重构后顶层 `mx/` 被删、
-模型侧每个单元各自带一份引擎，于是这套拆分对**构建期**就只剩坏处：
-副作用是本脚本不再 import 项目内任何东西（**只依赖 numpy / pandas / pyarrow + 上游 `fea`**），
-换机器/交接时一个文件就是全部。
-
-★ 两处**看着能简化、其实不能动**的地方，改之前先读它们的 docstring：
-`_place` / `_cols`（热路径：满格快路 + 线程池，单年 285 s → 76 s）与
-`build_year` 里的不变式校验（每条都对应一次真实事故）。
-
-## 用法
-
-    python preparingdata.py                    # 自动：没有产物→全量；有→增量
-    python preparingdata.py --full             # 全量重建
-    python preparingdata.py --years 2026       # 只加工指定年份
-    python preparingdata.py --check            # 只校验不写：meta ↔ 文件 ↔ 上游
-    python preparingdata.py --amount-only      # 只补 amount（每日成交额）
-    python preparingdata.py --fac-sample-only  # 只补 fac_sample（因子抽样）
-    python preparingdata.py --market-only      # 只补 market_factors（市场因子，每日一行）
-    python preparingdata.py --meta-only  # 只补 meta 派生字段（不碰数据、不读因子侧）
-    python preparingdata.py --out trainingdata_new --full   # 写到另一份目录（现有产物一字不动）
-
-    --jobs 4      读并发（默认 6；共享盘上有别的任务在跑时别开大）
-    --lookback N  增量回溯交易日数（默认 = 最长标签 h + 1 + 7，见上）
-
-★ **本脚本是唯一的写入口**：模型侧（各单元的 `mx/`）只读 `trainingdata/`，绝不写。
-★ **默认采用上游当前的股票因子集** —— 上游增删因子，快照跟着变，这就是本层的职责。
-  下游已训好的权重能不能吃新的列，是下游自己的事（重训，或用 `--features-from` 把清单
-  钉在某一版：给一份 meta.json 或快照目录即可）。
-★ 必须用 `/autodl-fs/data/miniconda3/bin/python`（非登录 shell 的 `python` 没有 pandas）。
-★ 产物位置：`--out` > `$MX_DATA` > `<脚本目录>/trainingdata`。
-
-## 上游在哪
-
-三个数据源都在 `featureengineering/` 的**上一级**（= `/autodl-fs/data/`）：
-
-| 常量 | 默认值 | 装什么 |
-|:--|:--|:--|
-| `FACTORS_DIR` | `../featureengineering/data/factors` | 每个因子一个目录，`year=YYYY/data.parquet` |
-| `FACTORS_STATE` | `../featureengineering/state` | 因子的 manifest（零 I/O 读覆盖区间） |
-| `FACTORS_ROOT` | `../featureengineering` | 只为 `import fea.*`（读层 / 股票池 / 价格层） |
-| `RAW_DATA` | `../datadownload/data` | 模块① 的原始表（`stock_daily` 等），只给 `amount` 用 |
-
-换机器时用 `MX_UPSTREAM` / `MX_FACTORS_DIR` / `MX_FACTORS_STATE` / `MX_RAW_DATA` 覆盖。
+路径：--source-data > MX_SOURCE_DATA > MX_UPSTREAM/data；MX_FACTORS_DIR 和
+MX_MARKET_FACTORS_DIR 可分别覆盖默认因子目录；MX_RAW_DATA 覆盖原始行情目录。
+输出：--out > MX_DATA > 脚本旁 trainingdata。依赖 numpy、pandas、pyarrow、tqdm。
 """
 from __future__ import annotations
 
@@ -124,28 +47,64 @@ from __future__ import annotations
 #   与"读并发"以及机器上别的任务互相踩踏。要改就设环境变量 MX_THREADS。
 import os
 
-_MX_THREADS = os.environ.get("MX_THREADS", "4")
+_MX_THREADS = os.environ.get("MX_THREADS", "1")
 for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
     os.environ[_v] = _MX_THREADS
 
 import argparse                                                  # noqa: E402
 import gc                                                        # noqa: E402
+import hashlib                                                   # noqa: E402
 import json                                                      # noqa: E402
+import multiprocessing as mp                                     # noqa: E402
 import re                                                        # noqa: E402
 import shutil                                                    # noqa: E402
 import sys                                                       # noqa: E402
 import tempfile                                                  # noqa: E402
 import time                                                      # noqa: E402
 import warnings                                                  # noqa: E402
-from concurrent.futures import ThreadPoolExecutor                # noqa: E402
+from concurrent.futures import (ThreadPoolExecutor, ProcessPoolExecutor,
+                                wait, FIRST_COMPLETED)           # noqa: E402
 from datetime import datetime, timedelta                         # noqa: E402
-from functools import lru_cache                                  # noqa: E402
 from pathlib import Path                                         # noqa: E402
 
 import numpy as np                                               # noqa: E402
 import pandas as pd                                              # noqa: E402
 import pyarrow as pa                                             # noqa: E402
+import pyarrow.compute as pc                                     # noqa: E402
 import pyarrow.parquet as pq                                     # noqa: E402
+from tqdm.auto import tqdm                                       # noqa: E402
+
+_PROGRESS_MODE = "auto"
+
+
+def _progress(items, **kwargs):
+    quiet = kwargs.pop("disable", False)
+    quiet = quiet or kwargs.get("total") == 0 or _PROGRESS_MODE == "off"
+    quiet = quiet or (_PROGRESS_MODE == "auto" and not sys.stderr.isatty())
+    return tqdm(items, disable=quiet, dynamic_ncols=True, **kwargs)
+
+
+def progress_log(message: str) -> None:
+    """日志与正在显示的进度条共存。"""
+    tqdm.write(str(message))
+
+
+def _bounded_results(pool, function, items, jobs):
+    """最多保留 2×jobs 个在途任务，及时回收完成结果，限制排队内存。"""
+    iterator = iter(items)
+    pending = set()
+    for _ in range(max(1, jobs) * 2):
+        item = next(iterator, None)
+        if item is None:
+            break
+        pending.add(pool.submit(function, item))
+    while pending:
+        done, pending = wait(pending, return_when=FIRST_COMPLETED)
+        for future in done:
+            yield future.result()
+            item = next(iterator, None)
+            if item is not None:
+                pending.add(pool.submit(function, item))
 
 
 # ============================================================================
@@ -154,19 +113,18 @@ import pyarrow.parquet as pq                                     # noqa: E402
 #: 本脚本所在目录 = 模型工程根（`preparingdata.py` 与 `trainingdata/` 同级）
 ROOT = Path(__file__).resolve().parent
 
-#: 上游因子工程根（模块②）。只为 `import fea.*` 用 —— 读层、股票池、价格层都在它里面。
+#: 仅用于解析数据路径；不导入上游代码、不读配置/注册表/状态文件。
 FACTORS_ROOT = Path(os.environ.get("MX_UPSTREAM", ROOT / "../featureengineering")).resolve()
+SOURCE_DATA = Path(os.environ.get("MX_SOURCE_DATA", FACTORS_ROOT / "data")).resolve()
 #: 因子产物目录：每个因子一个子目录，里面 `year=YYYY/data.parquet`
-FACTORS_DIR = Path(os.environ.get("MX_FACTORS_DIR", FACTORS_ROOT / "data" / "factors")).resolve()
-#: 因子的状态目录（manifest 在这，回答"某因子覆盖哪些年"时零 I/O）
-FACTORS_STATE = Path(os.environ.get("MX_FACTORS_STATE", FACTORS_ROOT / "state")).resolve()
+FACTORS_DIR = Path(os.environ.get("MX_FACTORS_DIR", SOURCE_DATA / "factors")).resolve()
 #: 模块① 的原始数据表。**`amount` 与 `prices` 两块用** —— 五块里仅有的两块不来自因子侧。
 RAW_DATA = Path(os.environ.get("MX_RAW_DATA", FACTORS_ROOT.parent / "datadownload" / "data")).resolve()
 #: 市场因子产物目录（模块② 的**另一个**输出根，与 `data/factors` 并列；每日一行、无股票列）。
 MARKET_FACTORS_DIR = Path(os.environ.get(
-    "MX_MARKET_FACTORS_DIR", FACTORS_ROOT / "data" / "market_factors")).resolve()
+    "MX_MARKET_FACTORS_DIR", SOURCE_DATA / "market_factors")).resolve()
 
-#: 五个 target 的名字。上游把它们和普通因子存在同一个目录（靠 `is_label` 区分）。
+#: 默认标签名；实际扫描用 label_ret_<h>d 命名识别，支持新增持有期。
 LABEL_NAMES = ("label_ret_1d", "label_ret_3d", "label_ret_5d",
                "label_ret_10d", "label_ret_20d")
 
@@ -189,22 +147,23 @@ MK_Z_WINDOW = 252
 
 
 class Cfg:
-    """构建期的极简配置对象。
+    """仅包含输入 Parquet 路径与本地快照设置，不加载上游工程。"""
 
-    ★ **属性名与原先的 `mx/config.py:Cfg` 保持一致**（`factors_dir` / `factors_root` /
-      `root` / `trainingdata` / `labels` / `label_horizon`）—— 这样第 1~4 节那些搬运过来的
-      函数体**一个字都不用改**。这才是这个类存在的唯一理由。
-    ★ 它**不是**模型侧的配置：`split` / `models` / `strategy` 那些跟构建期无关的东西一概没有。
-    """
-
-    def __init__(self, root: Path = ROOT, trainingdata: Path | None = None):
+    def __init__(self, root: Path = ROOT, trainingdata: Path | None = None,
+                 source_data: Path | None = None):
         self.root = Path(root)
         self.factors_root = FACTORS_ROOT
         self.factors_dir = FACTORS_DIR
-        self.factors_state = FACTORS_STATE
         self.market_factors_dir = MARKET_FACTORS_DIR
+        if source_data is not None:
+            self.factors_dir = Path(source_data).resolve() / "factors"
+            self.market_factors_dir = Path(source_data).resolve() / "market_factors"
         self.raw_data = RAW_DATA
         self.labels = list(LABEL_NAMES)
+        self.jobs = DEFAULT_JOBS
+        self.factors_only = False
+        self.direction_policy = "preserve"
+        self._data_index = None
         #: 产物根：`--out` > `$MX_DATA` > `<root>/trainingdata`
         env = os.environ.get("MX_DATA")
         self.trainingdata = (Path(trainingdata) if trainingdata is not None
@@ -370,107 +329,43 @@ def read_frame(root: Path, kind: str, years: list[int] | None = None,
 
 
 # ============================================================================
-# 3. 上游只读适配（原 `mx/upstream.py`）
+# 3. 落盘数据发现
 # ============================================================================
 
-# ---------------------------------------------------------------- fea 导入
-_FEA_READY = False
-
-
-def _ensure_fea(cfg: Cfg) -> None:
-    """把模块② 的工程根加进 sys.path 并 import 它（幂等、懒加载）。"""
-    global _FEA_READY
-    if _FEA_READY:
-        return
-    root = str(cfg.factors_root)
-    if root not in sys.path:
-        sys.path.insert(0, root)
-    # import 即生效；`fea.*` 是模块② 的公开包路径
-    import fea.config as _fcfg          # noqa: F401
-    import fea.dates as _fdates         # noqa: F401
-    import fea.store as _fstore         # noqa: F401
-    _FEA_READY = True
-
-
-@lru_cache(maxsize=1)
-def _factors_registered(cfg_root: str) -> bool:
-    """确保 `factors/` 被 import —— 因子注册靠 import 触发（见模块② DEVELOPING.md）。"""
-    if cfg_root not in sys.path:
-        sys.path.insert(0, cfg_root)
-    import factors  # noqa: F401
-    return True
-
-
-# ---------------------------------------------------------------- 读因子产物
-def list_factor_names(cfg: Cfg) -> list[str]:
-    """产物目录下的全部因子名（含 5 个标签）。"""
-    d = cfg.factors_dir
-    if not d.exists():
+# ---------------------------------------------------------------- 因子目录
+def _product_names(directory: Path) -> list[str]:
+    """只发现至少有一个年分区文件的因子，忽略空目录/临时目录。"""
+    if not directory.exists():
         return []
-    return sorted(p.name for p in d.iterdir() if p.is_dir())
+    return sorted(p.name for p in directory.iterdir()
+                  if p.is_dir() and any(year_file(directory, p.name, y).is_file()
+                                        for y in years_of(directory, p.name)))
+
+
+def list_factor_names(cfg: Cfg) -> list[str]:
+    return _product_names(cfg.factors_dir)
 
 
 def list_market_factor_names(cfg: Cfg) -> list[str]:
-    """**市场因子**产物目录下的全部名字。
-
-    ★ 与 `list_factor_names` 是两个并列的目录（`data/factors` vs `data/market_factors`），
-      上游用 `FactorSpec.is_market` 区分、落到不同的 root（`fea/config.py:factor_root`）。
-      这里绝不能把两边合并 —— 市场因子是每日一行的标量，混进 478 列的股票面板会让
-      `_place` 直接失败（它按 (trade_date, stock_code) 两键落格）。
-    """
-    d = cfg.market_factors_dir
-    if not d.exists():
-        return []
-    return sorted(p.name for p in d.iterdir() if p.is_dir())
+    return _product_names(cfg.market_factors_dir)
 
 
-# ---------------------------------------------------------------- 股票池 / 价格层
-@lru_cache(maxsize=4)
-def _engine(cfg_root: str, cfg_yaml: str):
-    """构建模块② 的 Engine（**注意**：`lru_cache` 按参数缓存，Engine 本身很轻）。
-
-    用模块② 自己的 conf/config.yaml 构建 —— 这样股票池口径（主板/ST/上市窗口）
-    与因子层**逐格一致**，不会出现"模型认为有效的样本，因子侧认为不在池内"。
-
-    ★ 自己确保 `sys.path` 里有上游根：调用方（回测/策略）可能**先** `import fea.panel`
-      再调这里。2026-09-18 之前不是问题（那时数据层会读上游、顺手把路径加好），
-      改成读 trainingdata 之后就踩到了 —— 别把这个副作用再依赖在调用顺序上。
-    """
-    if cfg_root and cfg_root not in sys.path:
-        sys.path.insert(0, cfg_root)
-    import fea.config as fcfg
-    from fea.engine import Engine
-
-    return Engine(fcfg.load())
+def upstream_specs(cfg: Cfg, extra_features: list[str] | None = None) -> dict[str, dict]:
+    """数据目录就是清单。label_ret_<h>d 为标签，其余股票对象全部纳入。"""
+    names = list_factor_names(cfg)
+    missing = sorted(set(extra_features or []) - set(names))
+    if missing:
+        raise ValueError(f"额外因子没有落盘的年分区：{missing[:5]}")
+    return {n: {"is_label": bool(re.fullmatch(r"label_ret_\d+d", n))}
+            for n in names}
 
 
-#   从布局里摘掉了（实测它恒为 True，详见模块头部）。它们曾是本文件里**唯一**构造
-#   上游 `fea.Panel` 的地方，删掉顺带让每年的构建少一次 `universe_for`（纯白算：掩码
-#   以前也没进 `_coverage`，只被原样写盘）。要恢复请从 git 取回。
+def market_specs(cfg: Cfg) -> list[str]:
+    return list_market_factor_names(cfg)
 
 
 def last_upstream_day(cfg: Cfg) -> str:
-    """上游日频基准表的最新交易日（**不是"今天"** —— 见模块② `baseline_last_day` 的坑）。"""
-    _ensure_fea(cfg)
-    eng = _engine(str(cfg.factors_root), str(cfg.root))
-    return to_str(eng.baseline_last_day())
-
-
-# ---------------------------------------------------------------- 因子侧先验
-def upstream_eval_summary(cfg: Cfg) -> list[dict]:
-    """模块② 的因子评价表（`state/eval/summary.json`）——用于特征初筛与基线对照。
-
-    ⚠️ 已知：该文件的 `icir`/`t` 在同一份数据上**全是 NaN**（模块② 按"年份分区"算，
-    当前只有 2026 一个分区）→ 模型侧要用自己从日频 IC 序列算的 ICIR/t。
-    """
-    p = cfg.factors_state / "eval" / "summary.json"
-    if not p.exists():
-        return []
-    import json
-    try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except (ValueError, OSError):
-        return []
+    return scan(cfg, log=None)["span"][1]
 
 
 # ============================================================================
@@ -487,7 +382,21 @@ META_VERSION = 2
 #   规则要抓的是"上游写盘写到一半"这类事故：那天会**明显偏离当年自身的水位**。
 LOW_COV_REL = 0.5               # 低于当年均值的一半 → 告警
 LOW_COV_ABS = 0.15              # 或绝对值低于它 → 告警
-DEFAULT_JOBS = 6                # 共享盘 + 常有别的任务在跑：默认别开大
+
+
+def _available_cpus() -> int:
+    """同时尊重 CPU affinity 与容器 CPU quota。"""
+    count = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else (os.cpu_count() or 1)
+    try:
+        quota, period = Path("/sys/fs/cgroup/cpu.max").read_text().split()
+        if quota != "max":
+            count = min(count, max(1, int(quota) // int(period)))
+    except (OSError, ValueError):
+        pass
+    return count
+
+
+DEFAULT_JOBS = min(12, _available_cpus())
 REDUNDANT_DAYS = 7              # 增量回溯的**冗余覆盖**天数（用户 2026-09-20 要的，见 `lookback_for`）
 
 
@@ -496,7 +405,7 @@ def lookback_for(cfg: Cfg, labels: list[str] | None = None) -> int:
 
     ★ 为什么不能拍一个常数：标签 `T` 用到 `open(T+1+h)`，所以一个交易日要等到
       **h+1 个交易日之后**它的标签才定型。若窗口比这短，那些天一旦离开窗口就再也不会被重算，
-      20d 标签会**永久停在 NaN**（上游后来补上了也不会被捡回来）。默认取 max(h)+2 最稳。
+      20d 标签会**永久停在 NaN**（上游后来补上了也不会被捡回来）。默认加 1 日及 7 日冗余。
     """
     ls = labels if labels is not None else cfg.labels
     return max((cfg.label_horizon(l) for l in ls), default=1) + 1 + REDUNDANT_DAYS
@@ -508,98 +417,122 @@ def lookback_for(cfg: Cfg, labels: list[str] | None = None) -> int:
 #   本脚本是构建期的、本来就要上游，所以合并回来。
 
 
-# ================================================================ 上游扫描（零 I/O / 极低 I/O）
-def upstream_specs(cfg: Cfg) -> dict[str, dict]:
-    """`{因子名: {is_label, higher_is_better, group}}` —— 只取**有产物目录**的那些。"""
-    _ensure_fea(cfg)                                  # noqa: SLF001
-    _factors_registered(str(cfg.factors_root))        # noqa: SLF001
-    from fea.spec import all_specs
-
-    have = set(list_factor_names(cfg))
-    out: dict[str, dict] = {}
-    for s in all_specs():
-        # ★ 刻意**排除**市场因子：它们没有 `stock_code`、没有 rank 列，混进这份清单会
-        #   让它们进入 478 列的股票面板。市场因子走 `market_specs()` 这条独立的路。
-        if s.name in have and not getattr(s, "is_market", False):
-            out[s.name] = {"is_label": bool(getattr(s, "is_label", False)),
-                           "higher_is_better": bool(getattr(s, "higher_is_better", True)),
-                           "group": str(getattr(s, "group", ""))}
-    return out
+# ================================================================ 直接扫描落盘数据
+SOURCE_INDEX_FILE = ".source_index.json"
 
 
-def market_specs(cfg: Cfg) -> list[str]:
-    """市场因子的名字清单（只取**有产物目录**的那些），排序后返回。
+def _inspect_partition(item):
+    """只解压主键列，取日期/股票并集；不读取 value/rank。"""
+    key, path, signature = item
+    pf = pq.ParquetFile(path)
+    stock = key.startswith("stock/")
+    columns = ["trade_date", "stock_code"] if stock else ["trade_date"]
+    required = set(columns + ["value"])
+    if not required <= set(pf.schema_arrow.names):
+        raise ValueError(f"因子文件缺少必要列 {sorted(required - set(pf.schema_arrow.names))}：{path}")
+    if not stock and "stock_code" in pf.schema_arrow.names:
+        raise ValueError(f"市场因子文件不应有 stock_code：{path}")
+    dates, codes = set(), set()
+    for batch in pf.iter_batches(batch_size=131072, columns=columns, use_threads=False):
+        for name, output in (("trade_date", dates), ("stock_code", codes)):
+            if name not in columns:
+                continue
+            values = pc.unique(batch.column(columns.index(name))).to_pylist()
+            if any(v is None for v in values):
+                raise ValueError(f"因子主键 {name} 含空值：{path}")
+            output.update(str(v)[:10] if name == "trade_date" else str(v) for v in values)
+    if any(not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d) for d in dates):
+        raise ValueError(f"trade_date 必须是 YYYY-MM-DD：{path}")
+    axis = {"days": sorted(dates), "codes": sorted(codes)}
+    digest = hashlib.sha256(json.dumps(axis, sort_keys=True).encode()).hexdigest()
+    if [path.stat().st_size, path.stat().st_mtime_ns] != signature:
+        raise RuntimeError(f"扫描时源文件发生变化，请稍后重跑：{path}")
+    return key, {"signature": signature, "axis": digest, "rows": pf.metadata.num_rows}, axis
 
-    ★ 方向：上游 61 个市场因子的 `higher_is_better` **清一色是默认 True**
-      （`factors/market.py` / `market2.py` 的注册处都没传这个参数），也就是说这个语义
-      对市场因子**实际未被填写**。所以这里不透出方向、也不做翻转 —— 编造一个方向
-      比不做更危险。真要方向，得先让因子侧把 `higher_is_better` 填对。
-    """
-    _factors_registered(str(cfg.factors_root))        # noqa: SLF001
-    from fea.spec import all_specs
 
-    have = set(list_market_factor_names(cfg))
-    return sorted(s.name for s in all_specs()
-                  if getattr(s, "is_market", False) and s.name in have)
+def _load_data_index(cfg: Cfg, *, jobs: int, log=progress_log) -> dict:
+    """本地缓存按路径、文件大小、mtime_ns 失效；不读取任何上游状态文件。"""
+    if cfg._data_index is not None:
+        return cfg._data_index
+    old = load_json(getattr(cfg, "_index_root", root_of(cfg)) / SOURCE_INDEX_FILE, {}) or {}
+    roots = {"stock": str(cfg.factors_dir.resolve()), "market": str(cfg.market_factors_dir.resolve())}
+    if old.get("roots") != roots or old.get("version") != 1:
+        old = {}
+    axes, partitions, todo = {}, {}, []
+    for kind, directory, names in (("stock", cfg.factors_dir, list_factor_names(cfg)),
+                                   ("market", cfg.market_factors_dir, list_market_factor_names(cfg))):
+        for name in names:
+            for year in years_of(directory, name):
+                path = year_file(directory, name, year)
+                if not path.is_file():
+                    continue
+                st = path.stat()
+                signature = [st.st_size, st.st_mtime_ns]
+                key = f"{kind}/{name}/{year}"
+                previous = (old.get("partitions") or {}).get(key)
+                if (previous and previous.get("signature") == signature
+                        and previous.get("axis") in (old.get("axes") or {})):
+                    partitions[key] = previous
+                    axes[previous["axis"]] = old["axes"][previous["axis"]]
+                else:
+                    todo.append((key, path, signature))
+    cached = len(partitions)
+    if log:
+        log(f"  落盘分区：{cached + len(todo)} 个 · 缓存命中 {cached} 个 · 待扫描 {len(todo)} 个")
+    with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
+        results = _bounded_results(pool, _inspect_partition, todo, jobs)
+        for key, record, axis in _progress(results, total=len(todo), desc="扫描主键", unit="分区",
+                                      disable=log is None, leave=False):
+            partitions[key] = record
+            axes[record["axis"]] = axis
+    cfg._data_index = {"version": 1, "roots": roots, "partitions": partitions, "axes": axes}
+    return cfg._data_index
 
 
 def _factor_years(cfg: Cfg, name: str) -> list[int]:
-    from fea.store import factor_years
-    return [int(y) for y in factor_years(cfg.factors_dir, name)]
+    return [y for y in years_of(cfg.factors_dir, name)
+            if year_file(cfg.factors_dir, name, y).is_file()]
 
 
-def _read_days(cfg: Cfg, name: str, year: int) -> list[str]:
-    p = year_file(cfg.factors_dir, name, year)
-    if not p.exists():
-        return []
-    t = pq.read_table(p, columns=["trade_date"]).column("trade_date").to_pylist()
-    return sorted({str(d)[:10] for d in t})
-
-
-def _span_of(cfg: Cfg, name: str) -> tuple[str | None, str | None]:
-    """一个因子的产物覆盖区间：先读 manifest（零 I/O），没有再退回读首末年的日期列。"""
-    from fea.manifest import Manifest
-
-    m = Manifest.load(cfg.factors_state, name)
-    lo = min((v["min_date"] for v in m.partitions.values() if v.get("min_date")), default=None)
-    hi = max((v["max_date"] for v in m.partitions.values() if v.get("max_date")), default=None)
-    if lo and hi:
-        return str(lo), str(hi)
-    ys = _factor_years(cfg, name)
-    if not ys:
-        return None, None
-    first, last = _read_days(cfg, name, ys[0]), _read_days(cfg, name, ys[-1])
-    return (min(first) if first else None, max(last) if last else None)
-
-
-def scan(cfg: Cfg, names: list[str] | None = None, jobs: int = DEFAULT_JOBS, log=print) -> dict:
-    """扫上游：每因子的年份与覆盖区间（manifest 优先，零 I/O）。"""
-    names = names or sorted(upstream_specs(cfg))
+def scan(cfg: Cfg, names: list[str] | None = None, jobs: int = DEFAULT_JOBS, log=progress_log) -> dict:
+    """从真实 Parquet 主键汇总覆盖范围与坐标轴（首次扫描；以后复用本地缓存）。"""
     t0 = time.time()
-    with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
-        spans = list(pool.map(lambda n: _span_of(cfg, n), names))
-    per = {n: {"start": lo, "end": hi, "years": _factor_years(cfg, n)}
-           for n, (lo, hi) in zip(names, spans)}
-    los = [v["start"] for v in per.values() if v["start"]]
-    his = [v["end"] for v in per.values() if v["end"]]
-    res = {"n_factors": len(names),
-           "span": (min(los) if los else None, max(his) if his else None),
-           "years": sorted({y for v in per.values() for y in v["years"]}),
-           "per_factor": per, "seconds": round(time.time() - t0, 1)}
-    log(f"  上游扫描：{len(names)} 个因子 · 分区年 {len(res['years'])} 个 · "
-        f"覆盖 {res['span'][0]} ~ {res['span'][1]}（{res['seconds']}s，零 I/O）")
-    return res
+    names = sorted(upstream_specs(cfg)) if names is None else names
+    index = _load_data_index(cfg, jobs=jobs, log=log)
+    days, codes, per = set(), set(), {}
+    for name in names:
+        part_days, years = set(), []
+        for year in _factor_years(cfg, name):
+            record = index["partitions"][f"stock/{name}/{year}"]
+            axis = index["axes"][record["axis"]]
+            part_days.update(axis["days"])
+            codes.update(axis["codes"])
+            years.append(year)
+        days.update(part_days)
+        per[name] = {"start": min(part_days) if part_days else None,
+                     "end": max(part_days) if part_days else None, "years": years}
+    days = sorted(days)
+    result = {"n_factors": len(names), "span": (days[0], days[-1]) if days else (None, None),
+              "years": sorted({y for v in per.values() for y in v["years"]}),
+              "per_factor": per, "seconds": round(time.time() - t0, 1),
+              "days": days, "codes": sorted(codes)}
+    if log:
+        log(f"  上游扫描：{len(names)} 个股票对象 · 分区年 {len(result['years'])} 个 · "
+            f"覆盖 {result['span'][0]} ~ {result['span'][1]}（{result['seconds']}s，直接读落盘数据）")
+    return result
 
 
 # ================================================================ 日期轴 / 股票轴
-def build_axis(cfg: Cfg, lo: str, hi: str, log=print) -> tuple[list[str], np.ndarray]:
-    """(交易日列表, 股票代码数组) —— 日历 ∩ [lo, hi] × Engine.codes（含退市股，无幸存者偏差）。"""
-    eng = _engine(str(cfg.factors_root), str(cfg.root))     # noqa: SLF001
-    days = [str(d)[:10] for d in eng.cal.day_strs if lo <= str(d)[:10] <= hi]
-    if not days:
-        raise SystemExit(f"✘ 日历 ∩ [{lo}, {hi}] 是空的 —— 检查上游产物端点")
-    codes = np.asarray(eng.codes, dtype=object)
-    log(f"  日期轴：{len(days)} 个交易日（{days[0]} ~ {days[-1]}）· 股票轴：{len(codes)} 只")
+def build_axis(cfg: Cfg, lo: str, hi: str, log=progress_log,
+               scanned: dict | None = None) -> tuple[list[str], np.ndarray]:
+    """全部入选股票产物的主键并集：不读取上游日历、股票池或配置。"""
+    sc = scanned if scanned is not None else scan(cfg, jobs=cfg.jobs, log=None)
+    days = [d for d in sc["days"] if lo <= d <= hi]
+    codes = np.asarray(sc["codes"], dtype=object)
+    if not days or not len(codes):
+        raise ValueError("落盘股票因子中没有有效的日期/股票主键")
+    if log:
+        log(f"  日期轴：{len(days)} 个交易日（{days[0]} ~ {days[-1]}）· 股票轴：{len(codes)} 只")
     return days, codes
 
 
@@ -624,14 +557,14 @@ def _place(df: pd.DataFrame, *, source: str, codes_index: pd.Index,
     （实测 1.1 核、单年 4 分钟；快路后降到几十秒）。
 
     快路的正确性由三件事保证（都通过才走）：行数 = 天数×代码数、日期向量**逐元素**等于
-    `repeat(days, C)`、首末两天的代码向量等于权威 codes。任一不满足就退回通用路径。
+    `repeat(days, C)`、每一天的代码向量均等于输出 codes。任一不满足就退回通用路径。
     """
     if codes is not None and days_int is not None and len(df) == n_days * C and n_days:
-        from fea.dates import series_to_int
-        di = series_to_int(df["trade_date"])
-        if np.array_equal(di, np.repeat(days_int, C)):
-            if (np.array_equal(df["stock_code"].head(C).to_numpy(dtype=object), codes)
-                    and np.array_equal(df["stock_code"].tail(C).to_numpy(dtype=object), codes)):
+        di = df["trade_date"].to_numpy(dtype=object).reshape(n_days, C)
+        expected_days = days_index.to_numpy(dtype=object)[:, None]
+        if np.all(di == expected_days):
+            # 每一天都核对股票顺序，避免中间某天乱序却误走快路。
+            if np.all(df["stock_code"].to_numpy(dtype=object).reshape(n_days, C) == codes[None, :]):
                 v = df[source].to_numpy(dtype=np.float32, copy=True)
                 return v, int(v.size), 0
 
@@ -640,7 +573,10 @@ def _place(df: pd.DataFrame, *, source: str, codes_index: pd.Index,
     ok = (di >= 0) & (ci >= 0)
     v = df[source].to_numpy(dtype=np.float32, copy=False)
     out = np.full(n_days * C, np.nan, dtype=np.float32)
-    out[di[ok] * C + ci[ok]] = v[ok]
+    positions = di[ok] * C + ci[ok]
+    if len(np.unique(positions)) != len(positions):
+        raise ValueError("因子文件有重复的 (trade_date, stock_code)，不能静默覆盖")
+    out[positions] = v[ok]
     return out, int(ok.sum()), int((~ok).sum())
 
 
@@ -666,8 +602,6 @@ def _standardize(flat: np.ndarray, n_days: int, C: int, flip: bool) -> np.ndarra
       不同取值）缩尾后可能整行同值、标准差为 0。若直接标准化会把整列变成 NaN（`cs_zscore`
       的保护行为），等于**静默丢掉一个因子**。这类行改用原始值再标准化一次，保住信号。
     """
-    from fea.mathx import cs_zscore
-
     x = flat.reshape(n_days, C).astype(np.float64)
     # ★ `np.errstate` 只管浮点异常，管不住 nan-functions 走的 `warnings.warn`。
     #   全 NaN 行（晚起点因子在更早的年份）必然会触发 "All-NaN slice / Mean of empty slice /
@@ -675,8 +609,8 @@ def _standardize(flat: np.ndarray, n_days: int, C: int, flip: bool) -> np.ndarra
     #   不静音的话每个因子-年都会刷一遍，日志会被淹掉。
     with np.errstate(all="ignore"), warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        lo = np.nanquantile(x, Z_WINSOR[0], axis=1)[:, None]
-        hi = np.nanquantile(x, Z_WINSOR[1], axis=1)[:, None]
+        quantiles = np.nanquantile(x, Z_WINSOR, axis=1)
+        lo, hi = quantiles[0, :, None], quantiles[1, :, None]
         usable = np.isfinite(lo) & np.isfinite(hi) & (lo < hi)   # 分位点重合 → 不缩尾
         xw = np.where(usable, np.clip(x, lo, hi), x)
 
@@ -685,49 +619,94 @@ def _standardize(flat: np.ndarray, n_days: int, C: int, flip: bool) -> np.ndarra
         if degen.any():
             xw[degen] = x[degen]
 
-        z = cs_zscore(xw, min_count=Z_MIN_COUNT)   # 复用上游：含 常量/除零 → NaN 保护
+        count = np.isfinite(xw).sum(axis=1)
+        mu = np.nanmean(xw, axis=1)
+        sd = np.nanstd(xw, axis=1)
+        mu = np.where(count >= Z_MIN_COUNT, mu, np.nan)
+        sd = np.where(count >= Z_MIN_COUNT, sd, np.nan)
+        z = (xw - mu[:, None]) / sd[:, None]
+        z[~np.isfinite(z)] = np.nan
         z = np.clip(z, -Z_CLAMP, Z_CLAMP)          # NaN 经 clip 仍是 NaN
         if flip:
-            z = -z                                  # 方向统一成「越大越好」
+            z = -z                                  # 仅按本地已有方向翻转
     return z.astype(np.float32).ravel()
+
+
+_COLUMN_CONTEXT = None
+
+
+def _init_column_worker(factors_dir, year, codes, days, flip_map, source, standardize):
+    """每个工作进程只初始化一次坐标索引，不把大面板传给子进程。"""
+    global _COLUMN_CONTEXT
+    codes_index, days_index = pd.Index(codes), pd.Index(days)
+    codes_index.get_indexer(codes[:1])
+    days_index.get_indexer(days[:1])
+    _COLUMN_CONTEXT = (Path(factors_dir), year, codes, days, codes_index, days_index,
+                       flip_map, source, standardize)
+    pa.set_cpu_count(max(1, int(_MX_THREADS)))
+    pa.set_io_thread_count(max(1, int(_MX_THREADS)))
+
+
+def _read_column(nm, context):
+    directory, year, codes, days, codes_index, days_index, flip_map, source, standardize = context
+    path = year_file(directory, nm, year)
+    if not path.is_file():
+        return nm, np.full(len(days) * len(codes), np.nan, dtype=np.float32), {
+            "hit": 0, "dropped": 0, "missing_year": True}
+    # 增量只解压窗口内的主键和值；rank 从不读取。
+    tab = pq.read_table(path, columns=[*KEY, source], use_threads=False,
+                        filters=[("trade_date", ">=", days[0]), ("trade_date", "<=", days[-1])])
+    df = tab.to_pandas()
+    del tab
+    df["trade_date"] = df["trade_date"].astype(str).str[:10]
+    df["stock_code"] = df["stock_code"].astype(str)
+    arr, hit, dropped = _place(df, source=source, codes_index=codes_index,
+                               days_index=days_index, n_days=len(days), C=len(codes),
+                               codes=codes, days_int=np.asarray([to_int(d) for d in days]))
+    del df
+    if standardize:
+        arr = _standardize(arr, len(days), len(codes), flip_map.get(nm, False))
+    return nm, arr, {"hit": hit, "dropped": dropped, "missing_year": False}
+
+
+def _column_worker(nm):
+    return _read_column(nm, _COLUMN_CONTEXT)
 
 
 def _cols(cfg: Cfg, year: int, names: list[str], flip_map: dict[str, bool], source: str,
           codes_index: pd.Index, days_index: pd.Index, n_days: int, C: int,
           *, jobs: int, what: str, codes: np.ndarray, days_int: np.ndarray,
-          log=print, standardize: bool = False) -> tuple[dict[str, np.ndarray], dict]:
-    """并发读若干因子的**一年**产物并落格。返回 (列字典, 逐因子统计)。
-
-    `standardize=True` 时对落格后的原值再做逐日「缩尾 + z-score」与方向翻转（特征走这条）；
-    `False` 时原样落盘（**标签**走这条 —— 未来收益是原值，不做任何变换）。
-    """
-    from fea.store import read_year
-
-    out: dict[str, np.ndarray] = {}
-    stat: dict[str, dict] = {}
-
-    def _one(nm: str):
-        df = read_year(cfg.factors_dir, nm, int(year))
-        if df is None or len(df) == 0:
-            return nm, None
-        return nm, _place(df, source=source, codes_index=codes_index,
-                          days_index=days_index, n_days=n_days, C=C,
-                          codes=codes, days_int=days_int)
-
-    with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
-        for k, (nm, r) in enumerate(pool.map(_one, names), start=1):
-            if r is None:
-                out[nm] = np.full(n_days * C, np.nan, dtype=np.float32)
-                stat[nm] = {"hit": 0, "dropped": 0, "missing_year": True}
-            else:
-                arr, hit, dropped = r
-                if standardize:
-                    arr = _standardize(arr, n_days, C, flip_map.get(nm, False))
-                out[nm] = arr
-                stat[nm] = {"hit": hit, "dropped": dropped, "missing_year": False}
-            if log and (k % 50 == 0 or k == len(names)):
-                log(f"    {what} {k}/{len(names)} …")
-    return out, stat
+          log=progress_log, standardize: bool = False) -> tuple[dict[str, np.ndarray], dict]:
+    """因子任务并行完成读取、落格及标准化；标签只读原值。"""
+    if not names:
+        return {}, {}
+    jobs = min(max(1, jobs), len(names))
+    days = days_index.to_numpy(dtype=object)
+    args = (cfg.factors_dir, int(year), codes, days, flip_map, source, standardize)
+    context = (cfg.factors_dir, int(year), codes, days, codes_index, days_index,
+               flip_map, source, standardize)
+    out, stat = {}, {}
+    if jobs == 1:
+        results = (_read_column(n, context) for n in names)
+        for nm, arr, record in _progress(results, total=len(names), desc=f"{year} {what}",
+                                    unit="因子", disable=log is None, leave=False):
+            out[nm], stat[nm] = arr, record
+    else:
+        # spawn 避免继承主进程 Arrow/BLAS 的线程状态；标签无需 CPU 标准化，用轻量线程池。
+        if standardize:
+            pool = ProcessPoolExecutor(max_workers=jobs, mp_context=mp.get_context("spawn"),
+                                       initializer=_init_column_worker, initargs=args)
+            worker = _column_worker
+        else:
+            pool = ThreadPoolExecutor(max_workers=jobs)
+            worker = lambda nm: _read_column(nm, context)
+        with pool:
+            results = _bounded_results(pool, worker, names, jobs)
+            for nm, arr, record in _progress(results, total=len(names), desc=f"{year} {what} ({jobs}并行)",
+                                        unit="因子", disable=log is None, leave=False):
+                out[nm], stat[nm] = arr, record
+    # 完成顺序不影响输出列顺序，单进程/多进程快照一致。
+    return {n: out[n] for n in names}, {n: stat[n] for n in names}
 
 
 def _coverage(cols: dict[str, np.ndarray], n_days: int, C: int) -> dict:
@@ -757,7 +736,7 @@ def _coverage(cols: dict[str, np.ndarray], n_days: int, C: int) -> dict:
 # ================================================================ 构建一年
 def build_year(cfg: Cfg, year: int, days_new: list[str], codes: np.ndarray,
                feats: list[str], labels: list[str], directions: dict[str, int],
-               *, jobs: int = DEFAULT_JOBS, log=print, keep: dict | None = None,
+               *, jobs: int = DEFAULT_JOBS, log=progress_log, keep: dict | None = None,
                root: Path | None = None) -> dict:
     """构建（或增量重算）一年的 factors/target 并原子落盘。
 
@@ -767,7 +746,6 @@ def build_year(cfg: Cfg, year: int, days_new: list[str], codes: np.ndarray,
     ★ 增量调用必须传"窗口内"的日子：传整年会把窗口外的旧行算第二遍 → 该年出现重复 (date,code)。
     """
     t0 = time.time()
-    from fea.dates import int_to_str_vec
 
     C = len(codes)
     if not days_new:
@@ -810,7 +788,7 @@ def build_year(cfg: Cfg, year: int, days_new: list[str], codes: np.ndarray,
             old = (keep or {}).get(name) or {}
             if set(old) != set(cols):
                 raise SystemExit(f"✘ {year} 年 {name} 的既有列与新算列不一致 —— 请全量重建")
-            if len(next(iter(old.values()))) != n_keep * C:
+            if old and len(next(iter(old.values()))) != n_keep * C:
                 raise SystemExit(f"✘ {year} 年 {name} 的既有行数不等于 {n_keep}×{C} —— 产物坏了，请全量重建")
             for k in cols:
                 cols[k] = np.concatenate([old[k], cols[k]])
@@ -818,7 +796,7 @@ def build_year(cfg: Cfg, year: int, days_new: list[str], codes: np.ndarray,
     n = n_days * C
     di = np.asarray([int(d[:4]) * 10000 + int(d[5:7]) * 100 + int(d[8:10]) for d in days],
                     dtype=np.int32)
-    td = pa.array(np.repeat(np.asarray(int_to_str_vec(di), dtype=object), C))
+    td = pa.array(np.repeat(np.asarray(days, dtype=object), C))
     sc = pa.array(np.tile(np.asarray(codes, dtype=object), n_days))
     sizes = {}
     for kind, cols in ((FK, X), (TK, Y)):
@@ -841,11 +819,8 @@ def build_year(cfg: Cfg, year: int, days_new: list[str], codes: np.ndarray,
     cov = _coverage(X, n_days, C)
     miss = sorted(k for k, v in stat_x.items() if v["missing_year"])
     dropped = sum(v["dropped"] for v in stat_x.values())
-    # ★ 增量时"窗口外"的行**本来就该被丢弃** —— 它们由 `keep` 原样提供，不是脏数据。
-    #   不扣掉这一块的话，日跑会天天报"上亿行被丢弃"，真有脏数据时反而被淹没。
-    #   （实测：2026 增量跑，dropped = 103,349,475 = 145 天窗口外 × 2115 只 × 337 因子，分毫不差）
-    n_have = sum(1 for v in stat_x.values() if not v["missing_year"])
-    dirty = dropped - n_keep * C * n_have
+    # 窗口外旧行已在 Parquet 读取时过滤，不计作脏行。
+    dirty = dropped  # 窗口外的行已在 Parquet 读取时过滤，不计入丢弃
     if dirty > 0:
         log(f"    ⚠️ {dirty:,} 行落在日期轴/股票轴之外被丢弃（上游有非交易日或非主板代码的脏行？）")
     log(f"  {year}: {n_days} 天 × {C} 只 = {n:,} 行"
@@ -874,6 +849,7 @@ def source_description(cfg: Cfg, sc: dict) -> dict:
     per_years = {n: sorted(int(y) for y in (v.get("years") or []))
                  for n, v in sc["per_factor"].items()}
     return {"factors_dir": str(cfg.factors_dir), "n_products": sc["n_factors"],
+            "market_factors_dir": str(cfg.market_factors_dir),
             "first_upstream_day": sc["span"][0], "last_upstream_day": sc["span"][1],
             "per_factor_years": per_years}
 
@@ -937,7 +913,7 @@ def derive_feature_sets(meta: dict, min_cov: float = 0.005) -> dict[str, list[st
     return slim
 
 
-def attach_meta_fields(cfg: Cfg, *, log=print) -> dict:
+def attach_meta_fields(cfg: Cfg, *, log=progress_log) -> dict:
     """只补 meta 中的特征集，不改数据文件、不读取上游因子。"""
     root = root_of(cfg)
     meta = load_meta(root)
@@ -954,10 +930,14 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
             jobs: int = DEFAULT_JOBS, lookback: int | None = None,
             root: str | Path | None = None,
             features: list[str] | None = None, direction: dict[str, int] | None = None,
-            log=print) -> dict:
+            extra_features: list[str] | None = None,
+            log=progress_log) -> dict:
     """全量、增量或指定年份构建训练数据。"""
     t_all = time.time()
     root = Path(root).resolve() if root else root_of(cfg)
+    cfg.jobs = max(1, jobs)
+    cfg._data_index = None
+    cfg._index_root = root
     if root != root_of(cfg):
         log(f"  ★ 本次写到**另一份快照**：{root}（现有快照 {root_of(cfg)} 不动）")
     meta_old = load_meta(root)
@@ -965,36 +945,62 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
     log(f"══ 初加工 trainingdata{'（全量）' if mode == 'full' else ''}")
     log(f"  产物：{root}")
 
-    specs = upstream_specs(cfg)
+    specs = upstream_specs(cfg, extra_features)
     feats = sorted(n for n, v in specs.items() if not v["is_label"])
     labels = sorted(n for n, v in specs.items() if v["is_label"])
-    directions = {n: (1 if v["higher_is_better"] else -1) for n, v in specs.items()}
+    # Parquet 没有因子优劣方向。只沿用本地快照/显式传入的方向，未知因子保持原值方向。
+    local_meta = meta_old or load_meta(ROOT / "trainingdata")
+    known_direction = dict((local_meta.get("columns") or {}).get("direction") or {})
+    raw_direction = set((local_meta.get("columns") or {}).get("raw_direction_features") or [])
+    if direction is not None:
+        known_direction.update(direction)
+        raw_direction -= set(direction)
+    if cfg.direction_policy == "raw":
+        known_direction = {}
+        raw_direction = set(specs)
+    invalid = {n: v for n, v in known_direction.items() if v not in (-1, 1)}
+    if invalid:
+        raise ValueError(f"本地方向只能取 -1 或 1：{list(invalid.items())[:5]}")
+    directions = {n: int(known_direction.get(n, 1)) for n in specs}
+    raw_direction |= set(specs) - set(known_direction)
     # ★ `features` 非空 = **锁定特征清单**（`--features-from`）：只收清单里的列，且顺序照它。
     #   两个用途：① 与旧产物逐位对拍（上游因子集变了也还能比）；② 冻结特征集不随上游漂移。
     if features:
         miss = [f for f in features if f not in specs]
         if miss:
             raise SystemExit(f"✘ --features-from 里有 {len(miss)} 个因子在当前上游不存在：{miss[:5]}")
-        if direction:
-            # 方向表变了 = 那个特征的符号翻了 —— 对拍会全线不一致，且原因极难查。当场报。
-            diff = {f: (direction.get(f), directions[f]) for f in features
-                    if f in direction and direction[f] != directions[f]}
-            if diff:
-                raise SystemExit(f"✘ 方向表与清单不一致（{len(diff)} 个）：{list(diff.items())[:3]}\n"
-                                 f"    —— 上游改了 higher_is_better，锁清单也复现不出旧产物")
-        feats = list(features)
-        labels = [l for l in labels if l in set(specs)] or labels
+        feats = list(dict.fromkeys(list(features) + list(extra_features or [])))
+        if any(specs[n]["is_label"] for n in feats):
+            raise ValueError("--features-from/--extra-features 不能把收益标签作为特征")
     # 源身份只跟随本次实际写入的特征与标签。新增但未纳入锁定清单的因子
     # 不应触发 `_years_with_new_partitions` 把 2018 起所有年度重建一遍。
-    sc = scan(cfg, names=sorted(set(feats) | set(labels)), log=log)
+    sc = scan(cfg, names=sorted(set(feats) | set(labels)), jobs=cfg.jobs, log=log)
     lo, hi = sc["span"]
     if not lo:
         raise SystemExit("✘ 上游没有任何因子产物")
     log(f"  特征 {len(feats)} · 标签 {len(labels)} · 需翻转 "
         f"{sum(1 for f in feats if directions[f] < 0)}"
-        f"（这些存 −z，语义统一成「越大越好」）· 值口径 {VALUES_SEMANTICS}")
+        f"（沿用本地方向；{sum(f in raw_direction for f in feats)} 个因子保持原始方向）"
+        f"· 值口径 {VALUES_SEMANTICS}")
 
-    days, codes = build_axis(cfg, lo, hi, log=log)
+    days, codes = build_axis(cfg, lo, hi, log=log, scanned=sc)
+    old_columns = meta_old.get("columns") or {}
+    changed = bool(meta_old) and (
+        old_columns.get("features") != feats or old_columns.get("labels") != labels
+        or old_columns.get("direction") != {n: directions[n] for n in feats}
+        or (meta_old.get("axis") or {}).get("codes") != codes.tolist()
+        or meta_old.get("semantics") != VALUES_SEMANTICS)
+    if meta_old and not years:
+        old_end = str((meta_old.get("axis") or {}).get("last_built_day") or "")
+        old_years = set((meta_old.get("years") or {}).keys())
+        old_days = sum(int(v["days"]) for v in (meta_old.get("years") or {}).values())
+        changed = changed or len([d for d in days if d[:4] in old_years and d <= old_end]) != old_days
+    if changed:
+        if years:
+            raise ValueError("列集/方向/股票轴发生变化，必须重建全部年份；请去掉 --years，或 --out 到新目录")
+        force_full = True
+        log("  ★ 列集/方向/股票轴变化 → 自动全量重建，避免新旧分区混用")
+    log(f"  并行：{cfg.jobs} 个因子工作进程 · 每进程 { _MX_THREADS } 个计算线程")
     by_year: dict[int, list[str]] = {}
     for d in days:
         by_year.setdefault(int(d[:4]), []).append(d)
@@ -1043,14 +1049,15 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
         return {"action": "none", "rebuilt": {}, "meta": meta_old}
 
     # ---- 执行
-    years_meta = dict(meta_old.get("years") or {})
-    for y in sorted(plan):
+    years_meta = dict(meta_old.get("years") or {}) if years or not force_full else {}
+    for y in _progress(sorted(plan), desc="年度打包", unit="年", disable=log is None):
         act, tail = plan[y]
         keep = None
         if act == "incr":
             keep = _load_keep(cfg, y, tail[0], feats, labels, log=log, root=root)
             if keep is None:
                 act, tail = "full", None
+        plan[y] = (act, tail)
         # ★★ 增量时必须只传**窗口内的那些天**（`tail`），绝不能传整年（`by_year[y]`）：
         #    keep 里已经有窗口外的旧行，再算一遍整年 → 那些天在文件里出现两次
         #    （行数虚高、(date,code) 重复、下游静默双计）。这个坑踩过一次，别再踩。
@@ -1072,21 +1079,26 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
         "version": META_VERSION,
         "built_at": now(),
         "source": {**source, "scan": {"n": sc["n_factors"], "partition_years": sc["years"],
-                                  "per_factor_years": source["per_factor_years"]}},
+                                  "per_factor_years": source["per_factor_years"]},
+                   "discovery": "parquet_direct", "extra_features": list(extra_features or []),
+                   "raw_blocks": not cfg.factors_only},
         "columns": {"features": feats, "labels": labels,
                     "direction": {n: directions[n] for n in feats},
-                    "n_flipped": sum(1 for f in feats if directions[f] < 0)},
+                    "n_flipped": sum(1 for f in feats if directions[f] < 0),
+                    "direction_policy": cfg.direction_policy,
+                    "raw_direction_features": [f for f in feats if f in raw_direction]},
         # ★ 因子列的**值口径**（2026-09-25 新增）。此前面板没有任何值口径标记，
         #   `panel_digest` 只哈希列名与文件 sha ⇒ "换了口径"在产物上完全看不出来。
         #   改口径必须同时改 `VALUES_SEMANTICS`，否则这个字段会说谎。
         "semantics": VALUES_SEMANTICS,
         "axis": {"start": min(v["start"] for v in years_meta.values()),
                  "end": max(v["end"] for v in years_meta.values()),
-                 "n_days": len(days), "n_codes": len(codes),
+                 "n_days": sum(v["days"] for v in years_meta.values()), "n_codes": len(codes),
                  "codes": [str(c) for c in codes],
                  "first_built_day": min(v["start"] for v in years_meta.values()),
                  "last_built_day": max(v["end"] for v in years_meta.values())},
-        "years": years_meta, "built_years": kept, "partial": bool(years),
+        "years": years_meta, "built_years": kept,
+        "partial": set(years_meta) != {d[:4] for d in days},
         "seconds": round(time.time() - t_all, 1),
     }
     # ★★ 上面这个 meta 是**从零重建**的，而 `amount` / `fac_sample` 的记录是事后由
@@ -1095,10 +1107,15 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
     #   （2026-09-20 实测踩到：跑一次日常增量后 meta 顶层就没这两个 key 了。）
     #   先原样搬过来，下面 `ensure_block` 真重建时会用新的 `_record_block` 覆盖掉。
     for _k in (*ALL_KINDS, MK):
+        if cfg.factors_only and _k in (AK, PK):
+            continue
+        if _k == MK and not market_specs(cfg):
+            continue
         if _k in meta_old:
             meta[_k] = meta_old[_k]
 
     meta["feature_sets"] = derive_feature_sets(meta)      # 单元 DATA={"features":"core_2018"} 用
+    save_json(root / SOURCE_INDEX_FILE, cfg._data_index)
     save_json(meta_path(root), meta)
     log(f"  ✔ meta 已写（本次 {meta['seconds']}s）")
 
@@ -1108,11 +1125,13 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
     #   会直接 return，而这两块与因子侧没有共同的失效条件（见 `stale_block_years`）。
     #   `rebuilt_years` 必须传：这三块的陈旧判据（文件在不在 / 日期轴 / 列名）**抓不到"值变了"**，
     #   而 `fac_sample` 是 `factors` 的逐字副本 ⇒ 不传的话换口径后它会留着旧值（详见 `ensure_block`）。
-    ensure_block(cfg, AK, Path(root), rebuilt_years=plan.keys(), log=log)
     ensure_block(cfg, SK, Path(root), rebuilt_years=plan.keys(), log=log)
-    ensure_block(cfg, PK, Path(root), rebuilt_years=plan.keys(), log=log)
+    if not cfg.factors_only:
+        ensure_block(cfg, AK, Path(root), rebuilt_years=plan.keys(), log=log)
+        ensure_block(cfg, PK, Path(root), rebuilt_years=plan.keys(), log=log)
     ensure_market(cfg, Path(root), rebuilt_years=plan.keys(), log=log)
 
+    meta = load_meta(root)
     _summary(meta, log=log)
     # ★ `rebuilt` 交回给调用方喂台账：`{"年": "full"/"incr"}` —— 只有**本次真的重建了**
     #   的年份在里面。别看 `meta["years"][y]["action"]`，那个对没重建的年份是上一次的旧值。
@@ -1121,7 +1140,7 @@ def prepare(cfg: Cfg, *, mode: str = "auto", years: list[int] | None = None,
 
 
 def _load_keep(cfg: Cfg, year: int, win_lo: str, feats: list[str], labels: list[str],
-               log=print, root: Path | None = None) -> dict | None:
+               log=progress_log, root: Path | None = None) -> dict | None:
     """增量：把增量窗口之外的既有行读回来（拼在新数据前面）。没有就返回 None（→ 整年重建）。
 
     ★ `root` 与 `build_year` 同源：读旧行与写新行**必须指向同一个目录**，
@@ -1157,7 +1176,7 @@ def _prev_day(day: str) -> str:
 
 
 # ================================================================ 校验
-def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
+def check(cfg: Cfg, *, root: str | Path | None = None, log=progress_log) -> dict:
     """只校验不写：meta ↔ 文件 ↔ 上游（单条记录级体检，不做跨因子深度分析）。
 
     `root` 指定要校验的快照（配 `preparingdata.py --check --out DIR`）——
@@ -1168,13 +1187,15 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
     if not meta:
         log("  ⊘ 还没有产物 —— 先跑 `python preparingdata.py`（首次会自动全量）")
         return {"ok": False, "problems": ["没有 meta.json"], "years": []}
+    cfg._data_index = None
+    cfg._index_root = root
     built = meta.get("built_years") or []
     problems: list[str] = []
     log(f"══ 校验 {root}（{len(built)} 年：{built[0]} ~ {built[-1]}）")
-    sc = scan(cfg, log=log)
+    sc = scan(cfg, jobs=cfg.jobs, log=log)
     ax = meta.get("axis") or {}
     lo_now, hi_now = sc["span"]
-    if lo_now and str(lo_now) < str(ax.get("start")):
+    if lo_now and str(lo_now) < str(ax.get("start")) and not meta.get("partial"):
         problems.append(f"上游已回溯到 {lo_now} < 产物起点 {ax.get('start')} —— 需要 --full 扩展")
     if hi_now and str(hi_now) > str(ax.get("last_built_day")):
         problems.append(f"上游最新日 {hi_now} > 已建 {ax.get('last_built_day')} —— 需要跑增量")
@@ -1186,7 +1207,8 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
         exp = int(info["days"]) * C
         # ★ 只查**双键块**（`ALL_KINDS`）。市场块是单键、每日一行，期望行数是 `days` 而不是
         #   `days × C`，混进来会被报成"行数不符" —— 它在本函数后半段有自己的一段校验。
-        for kind in ALL_KINDS:
+        kinds = (FK, TK, SK) if not (meta.get("source") or {}).get("raw_blocks", True) else ALL_KINDS
+        for kind in kinds:
             p = year_file(root, kind, int(y))
             if not p.exists():
                 # 四块都必建。缺 `amount`/`fac_sample` 时用 `--amount-only` / `--fac-sample-only` 补。
@@ -1241,7 +1263,7 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
         for k, v in cov["per_factor"].items():
             if v != 0.0:
                 continue
-            if _upstream_variance(k, y) is False:
+            if _upstream_variance(k, y) is not True:
                 no_obs.append(k)     # 上游本年无方差 ⇒ 标准化后为空，正常
             else:                    # 有方差却整列空（或分区都没了）⇒ 真丢了
                 bad.append(k)
@@ -1350,7 +1372,7 @@ def check(cfg: Cfg, *, root: str | Path | None = None, log=print) -> dict:
     return {"ok": not problems, "problems": problems, "years": built, "meta": meta}
 
 
-def _summary(meta: dict, log=print) -> None:
+def _summary(meta: dict, log=progress_log) -> None:
     ym = meta["years"]
     tot = sum(v["rows"] for v in ym.values())
     xmb = sum((v.get("files") or {}).get(FK, {}).get("mb", 0) for v in ym.values())
@@ -1360,7 +1382,6 @@ def _summary(meta: dict, log=print) -> None:
         f"{meta['axis']['n_days']} 天 × {meta['axis']['n_codes']} 只")
     log(f"  特征 {len(meta['columns']['features'])} · 标签 {len(meta['columns']['labels'])} · "
         f"翻转 {meta['columns']['n_flipped']} · 值口径 {meta.get('semantics', '?')}")
-    log("  下一步：python main.py split <单元>    # 零成本看训练/验证/测试窗口")
 
 
 # ================================================================ 台账
@@ -1370,7 +1391,7 @@ LEDGER_DIR = "log"
 
 
 def write_ledger(root: str | Path, *, action: str,
-                 rebuilt: dict[tuple[str, int], str] | None = None, log=print) -> Path:
+                 rebuilt: dict[tuple[str, int], str] | None = None, log=progress_log) -> Path:
     """把快照里**每个数据文件的当前状态**写成一份**带日期的台账**（TSV）。
 
     用户 2026-09-20 要的：每天增量更新时生成一个新文件，好回答"某天那份快照长什么样"。
@@ -1461,7 +1482,7 @@ def fac_sample_features(meta: dict, n: int = FAC_SAMPLE_N,
 
 
 def _record_block(meta: dict, kind: str, years: list[int], extra: dict, root: Path,
-                  log=print) -> dict:
+                  log=progress_log) -> dict:
     """把数据块的分区和列信息写入 meta。"""
     meta[kind] = {"years": sorted(int(y) for y in meta.get("built_years", years)
                                  if kind in meta.get("years", {}).get(str(y), {}).get("files", {})),
@@ -1504,7 +1525,7 @@ def _write_block_year(root: Path, kind: str, year: int, days: list[str],
 
 # ---------------------------------------------------------------- amount
 def build_year_amount(cfg: Cfg, year: int, days: list[str], codes: np.ndarray,
-                      cols: tuple[str, ...], *, log=print, root: Path | None = None) -> dict:
+                      cols: tuple[str, ...], *, log=progress_log, root: Path | None = None) -> dict:
     """导出**一年**的 `amount/year=YYYY/data.parquet` —— 每日成交额（元），用户口径叫"市场所有的流动性"。
 
     ## 为什么直读模块① 而不走价格层
@@ -1576,7 +1597,7 @@ class Block:
         self.keys = tuple(keys)
 
 
-def stale_block_years(root: str | Path, kind: str, *, log=None) -> list[int]:
+def stale_block_years(root: str | Path, kind: str, *, log=None, cfg: Cfg | None = None) -> list[int]:
     """某块的**陈旧年份** —— 各块共用一套判据：
 
     ① 文件不存在；
@@ -1587,7 +1608,8 @@ def stale_block_years(root: str | Path, kind: str, *, log=None) -> list[int]:
     root = Path(root)
     meta = load_meta(root)
     blk = BLOCKS[kind]
-    want = tuple(blk.keys) + tuple(blk.cols(meta)) if meta.get("columns") else ()
+    cols = market_block_columns(directory=cfg.market_factors_dir) if kind == MK and cfg else blk.cols(meta)
+    want = tuple(blk.keys) + tuple(cols) if meta.get("columns") else ()
     out = []
     for y in years_of(root, FK):
         p = year_file(root, kind, y)
@@ -1601,7 +1623,7 @@ def stale_block_years(root: str | Path, kind: str, *, log=None) -> list[int]:
     return sorted(out)
 
 
-def build_block(cfg: Cfg, kind: str, *, years: list[int] | None = None, log=print,
+def build_block(cfg: Cfg, kind: str, *, years: list[int] | None = None, log=progress_log,
                 root: str | Path | None = None) -> dict:
     """导出某一块（全部年份或指定年份）。
 
@@ -1613,7 +1635,7 @@ def build_block(cfg: Cfg, kind: str, *, years: list[int] | None = None, log=prin
     if not meta:
         raise SystemExit(f"✘ {root} 还没有 meta.json —— 先跑一次完整的 `preparingdata.py`")
     blk = BLOCKS[kind]
-    cols = tuple(blk.cols(meta))
+    cols = tuple(market_block_columns(directory=cfg.market_factors_dir) if kind == MK else blk.cols(meta))
     keys = sorted(int(y) for y in (meta.get("built_years") or []))
     want = sorted(set(int(y) for y in years) & set(keys)) if years else keys
     if years is not None and not want:
@@ -1626,7 +1648,7 @@ def build_block(cfg: Cfg, kind: str, *, years: list[int] | None = None, log=prin
     log(f"══ 导出{blk.title}（{len(want)} 年：{want[0]} ~ {want[-1]}）· {root}"
         + (f" · {len(cols)}/{len(meta['columns']['features'])} 列" if kind == SK else ""))
     years_meta = dict(meta.get("years") or {})
-    for y in want:
+    for y in _progress(want, desc=blk.title, unit="年", disable=log is None, leave=False):
         days = _days_of(root, FK, y)      # ★ 从既有 factors 分区取日子，保证四块同形
         info = blk.build_year(cfg, y, days, codes, cols, log=log, root=root)
         rec = dict(years_meta.get(str(y)) or {})
@@ -1638,7 +1660,7 @@ def build_block(cfg: Cfg, kind: str, *, years: list[int] | None = None, log=prin
     return {"action": kind, "years": want}
 
 
-def ensure_block(cfg: Cfg, kind: str, root: Path, *, rebuilt_years=(), log=print) -> list[int]:
+def ensure_block(cfg: Cfg, kind: str, root: Path, *, rebuilt_years=(), log=progress_log) -> list[int]:
     """把陈旧的某块补上（`prepare()` 的出口调它）。★ 必须在主 meta 写完之后 ——
     `build_block` 会再读一次 meta 再写回，放前面会被主流程的 save_json 覆盖掉。
 
@@ -1650,7 +1672,7 @@ def ensure_block(cfg: Cfg, kind: str, root: Path, *, rebuilt_years=(), log=print
       日期轴与列名一个字都没变 ⇒ 不给 `rebuilt_years` 的话 `fac_sample` **不会重建**，
       会静静留着旧口径的值，而下游读的是它。
     """
-    stale = sorted(set(stale_block_years(root, kind, log=log)) | {int(y) for y in rebuilt_years})
+    stale = sorted(set(stale_block_years(root, kind, log=log, cfg=cfg)) | {int(y) for y in rebuilt_years})
     if not stale:
         return []
     build_block(cfg, kind, years=stale, log=log, root=root)
@@ -1659,7 +1681,7 @@ def ensure_block(cfg: Cfg, kind: str, root: Path, *, rebuilt_years=(), log=print
 
 # ---------------------------------------------------------------- fac_sample
 def build_year_fac_sample(cfg: Cfg, year: int, days: list[str], codes: np.ndarray,
-                          cols: tuple[str, ...], *, log=print, root: Path | None = None) -> dict:
+                          cols: tuple[str, ...], *, log=progress_log, root: Path | None = None) -> dict:
     """导出**一年**的 `fac_sample/year=YYYY/data.parquet`。
 
     ★ 值**逐字取自 `factors`**（不重算）：读那几列、原样写出去。这样抽样块与 `factors`
@@ -1693,7 +1715,7 @@ def build_year_fac_sample(cfg: Cfg, year: int, days: list[str], codes: np.ndarra
 
 
 def build_year_prices(cfg: Cfg, year: int, days: list[str], codes: np.ndarray,
-                      cols: tuple[str, ...], *, log=print, root: Path | None = None) -> dict:
+                      cols: tuple[str, ...], *, log=progress_log, root: Path | None = None) -> dict:
     """导出**一年**的 `prices/year=YYYY/data.parquet` —— 回测用的原始价 + 复权因子。
 
     ★ 与 `amount` 同一套读法：直读模块① 的两张原始表、按 `(trade_date, stock_code)`
@@ -1760,7 +1782,7 @@ MK = "market_factors"
 MK_Z_SUFFIX = "_z252"
 
 
-def market_block_columns(meta=None) -> list[str]:       # noqa: ARG001  (Block.cols 的签名)
+def market_block_columns(meta=None, *, directory: Path | None = None) -> list[str]:
     """市场块的全部列 = 每个因子「原值一列 + 滚动 z 一列」。
 
     ★ 直接读**上游目录**而不是记在 meta 里：这样因子侧新增一个市场因子时，
@@ -1768,19 +1790,19 @@ def market_block_columns(meta=None) -> list[str]:       # noqa: ARG001  (Block.c
       记在 meta 里就会漏掉新增（`fac_sample` 靠 `meta['columns']['features']` 是对的，
       因为它的列清单本来就由主流程维护）。
     """
-    d = MARKET_FACTORS_DIR
-    if not d.exists():
-        return []
+    d = directory if directory is not None else MARKET_FACTORS_DIR
     out: list[str] = []
-    for p in sorted(d.iterdir()):
-        if p.is_dir():
-            out += [p.name, p.name + MK_Z_SUFFIX]
+    names = _product_names(d)
+    if any(n.endswith(MK_Z_SUFFIX) for n in names):
+        raise ValueError(f"市场因子原名不能以 {MK_Z_SUFFIX} 结尾，以免与派生列重名")
+    for name in names:
+        out += [name, name + MK_Z_SUFFIX]
     return out
 
 
 #: 本轮进程内的市场因子全历史缓存（`{(目录, 名): Series}`）。整块只有 ~1MB，读一次就够；
 #: 不加缓存的话「9 个年份各建一次 ⇒ 每个因子被重读 9 遍」。
-_MARKET_CACHE: dict[tuple[str, str], pd.Series] = {}
+_MARKET_CACHE: dict[tuple, pd.Series] = {}
 
 
 def _market_series(cfg: Cfg, name: str) -> pd.Series:
@@ -1790,17 +1812,16 @@ def _market_series(cfg: Cfg, name: str) -> pd.Series:
       **每年开头 252 天会算错**（而"值取决于我们碰巧从哪一年开始建"本身就是错的锚点）。
       这与因子侧"预热锚定输出年份"是同一个原则。
     """
-    key = (str(cfg.market_factors_dir), name)
+    files = [year_file(cfg.market_factors_dir, name, y) for y in years_of(cfg.market_factors_dir, name)]
+    files = [p for p in files if p.is_file()]
+    key = (str(cfg.market_factors_dir), name, tuple((p.stat().st_size, p.stat().st_mtime_ns) for p in files))
     hit = _MARKET_CACHE.get(key)
     if hit is not None:
         return hit
-    from fea.store import factor_years
 
     parts = []
-    for y in sorted(int(x) for x in factor_years(cfg.market_factors_dir, name)):
-        p = year_file(cfg.market_factors_dir, name, y)
-        if p.exists():
-            parts.append(pq.ParquetFile(p).read(columns=["trade_date", "value"]).to_pandas())
+    for p in files:
+        parts.append(pq.ParquetFile(p).read(columns=["trade_date", "value"], use_threads=False).to_pandas())
     if not parts:
         s = pd.Series(dtype=np.float64)
     else:
@@ -1831,14 +1852,14 @@ def _rolling_z(s: pd.Series, window: int = MK_Z_WINDOW) -> pd.Series:
 
 
 def build_year_market(cfg: Cfg, year: int, days: list[str], codes: np.ndarray,
-                      cols: tuple[str, ...], *, log=print, root: Path | None = None) -> dict:
+                      cols: tuple[str, ...], *, log=progress_log, root: Path | None = None) -> dict:
     """导出**一年**的 `market_factors/year=YYYY/data.parquet`（每日一行、`trade_date` 单键）。"""
     t0 = time.time()
     root = root if root is not None else root_of(cfg)
     names = [c for c in cols if not c.endswith(MK_Z_SUFFIX)]
     idx = pd.Index(np.asarray(days, dtype=object))
     fields: dict[str, pa.Array] = {"trade_date": pa.array(np.asarray(days, dtype=object))}
-    for nm in names:
+    def one(nm):
         s = _market_series(cfg, nm)
         if s.empty:
             raw = np.full(len(days), np.nan)
@@ -1848,8 +1869,18 @@ def build_year_market(cfg: Cfg, year: int, days: list[str], codes: np.ndarray,
             z = _rolling_z(s).reindex(idx).to_numpy(dtype=np.float64)
         if np.isinf(raw).any() or np.isinf(z).any():
             raise ValueError(f"✘ 市场因子 {nm}：出现无穷值")
-        fields[nm] = pa.array(raw.astype(np.float32))
-        fields[nm + MK_Z_SUFFIX] = pa.array(z.astype(np.float32))
+        return nm, raw.astype(np.float32), z.astype(np.float32)
+
+    jobs = min(cfg.jobs, max(1, len(names)))
+    with ThreadPoolExecutor(max_workers=jobs) as pool:
+        results = _bounded_results(pool, one, names, jobs)
+        values = {}
+        for nm, raw, z in _progress(results, total=len(names), desc=f"{year} 市场因子", unit="因子",
+                               disable=log is None, leave=False):
+            values[nm] = (raw, z)
+    for nm in names:
+        fields[nm] = pa.array(values[nm][0])
+        fields[nm + MK_Z_SUFFIX] = pa.array(values[nm][1])
     tab = pa.table(fields)
     p = year_file(root, MK, year)
     atomic_parquet(tab, p)
@@ -1864,9 +1895,9 @@ def build_year_market(cfg: Cfg, year: int, days: list[str], codes: np.ndarray,
     return info
 
 
-def ensure_market(cfg: Cfg, root: Path, *, rebuilt_years=(), log=print) -> list[int]:
+def ensure_market(cfg: Cfg, root: Path, *, rebuilt_years=(), log=progress_log) -> list[int]:
     """市场因子块：显式建立后由日常增量维护（与 amount / fac_sample 同一套）。"""
-    if not market_block_columns():
+    if not market_block_columns(directory=cfg.market_factors_dir):
         log("  ⊘ 上游没有市场因子目录，跳过 market_factors 块")
         return []
     return ensure_block(cfg, MK, Path(root), rebuilt_years=rebuilt_years, log=log)
@@ -1909,7 +1940,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "（factors 股票因子 / target 标签 / amount 流量 / "
                     "market_factors 市场因子 / prices 回测价格，附 fac_sample 抽样副本）")
     m = ap.add_mutually_exclusive_group()
-    m.add_argument("--full", "-f", action="store_true", help="全量重建（删旧、逐年重建）")
+    m.add_argument("--full", "-f", action="store_true", help="全量重建所有入选年份")
     m.add_argument("--incremental", "-i", action="store_true", help="强制增量（默认自动判断）")
     m.add_argument("--check", "-c", action="store_true", help="只校验不写")
     m.add_argument("--meta-only", action="store_true",
@@ -1925,7 +1956,15 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--years", "-y", type=int, nargs="+", default=None,
                     help="只加工这些年份（例：--years 2025 2026）")
     ap.add_argument("--jobs", "-j", type=int, default=DEFAULT_JOBS,
-                    help=f"读并发（默认 {DEFAULT_JOBS}）")
+                    help=f"读取/对齐/标准化并行进程数（默认 {DEFAULT_JOBS}，按容器 CPU 配额选择）")
+    ap.add_argument("--source-data", type=Path, default=None, metavar="DIR",
+                    help="直接读取的因子 data 根目录（含 factors/、market_factors/）")
+    ap.add_argument("--factors-only", action="store_true",
+                    help="只打包因子、标签、市场因子及抽样块，不读取原始成交额/价格表")
+    ap.add_argument("--direction-policy", choices=("preserve", "raw"), default="preserve",
+                    help="preserve 沿用本地已有方向、未知因子保持原方向；raw 全部保持原方向")
+    ap.add_argument("--progress", choices=("auto", "bars", "off"), default="auto",
+                    help="tqdm 进度：auto 终端显示、bars 强制显示、off 关闭")
     ap.add_argument("--lookback", "-l", type=int, default=None,
                     help="增量回溯窗口（交易日）。默认 = 最长标签 h + 1 + 7 —— "
                          "h+1 是硬下限（太短会让 20d 标签出了窗口就再也不刷新、永久停在 NaN），"
@@ -1936,13 +1975,21 @@ def build_parser() -> argparse.ArgumentParser:
                     help="★ 把特征清单**钉在**指定 meta.json 的 `columns.features` 上"
                          "（默认 = 上游当前的因子集，上游增删就跟着变）。给目录或 meta.json 都行。"
                          "用途：① 与某份旧产物逐位对拍；② 冻结列集，不随上游漂移")
+    ap.add_argument("--extra-features", default=None, metavar="NAMES",
+                    help="兼容旧参数：校验落盘名字；配 --features-from 时追加列。默认已纳入所有落盘因子。"
+                         "支持逗号分隔或 JSON 文件（feature_names/features/列表）")
     return ap
 
 
 def main(argv: list[str] | None = None) -> int:
+    global _PROGRESS_MODE
     a = build_parser().parse_args(argv)
+    _PROGRESS_MODE = a.progress
     out = None if not a.out else (ROOT / a.out).resolve()
-    cfg = Cfg(trainingdata=out)
+    cfg = Cfg(trainingdata=out, source_data=a.source_data)
+    cfg.jobs = max(1, a.jobs)
+    cfg.factors_only = a.factors_only
+    cfg.direction_policy = a.direction_policy
     if out is not None:
         print(f"  ★ 本次写到**另一份目录**：{out}（现有 {ROOT / 'trainingdata'} 不动）")
 
@@ -1953,22 +2000,22 @@ def main(argv: list[str] | None = None) -> int:
         attach_meta_fields(cfg)
         return 0
     if a.market_only:
-        r = build_block(cfg, MK, years=a.years, log=print)
+        r = build_block(cfg, MK, years=a.years, log=progress_log)
         return 0
     if a.amount_only:
-        r = build_block(cfg, AK, years=a.years, log=print)
+        r = build_block(cfg, AK, years=a.years, log=progress_log)
         write_ledger(root_of(cfg), action=r.get("action", ""),
-                     rebuilt={(AK, int(y)): AK for y in (r.get("years") or [])}, log=print)
+                     rebuilt={(AK, int(y)): AK for y in (r.get("years") or [])}, log=progress_log)
         return 0
     if a.fac_sample_only:
-        r = build_block(cfg, SK, years=a.years, log=print)
+        r = build_block(cfg, SK, years=a.years, log=progress_log)
         write_ledger(root_of(cfg), action=r.get("action", ""),
-                     rebuilt={(SK, int(y)): SK for y in (r.get("years") or [])}, log=print)
+                     rebuilt={(SK, int(y)): SK for y in (r.get("years") or [])}, log=progress_log)
         return 0
     if a.prices_only:
-        r = build_block(cfg, PK, years=a.years, log=print)
+        r = build_block(cfg, PK, years=a.years, log=progress_log)
         write_ledger(root_of(cfg), action=r.get("action", ""),
-                     rebuilt={(PK, int(y)): PK for y in (r.get("years") or [])}, log=print)
+                     rebuilt={(PK, int(y)): PK for y in (r.get("years") or [])}, log=progress_log)
         return 0
     feats = direction = None
     if a.features_from:
@@ -1983,16 +2030,37 @@ def main(argv: list[str] | None = None) -> int:
         direction = dict(pm["columns"].get("direction") or {})
         print(f"  ★ 特征清单钉在 {a.features_from} 的 {len(feats)} 列（不随上游漂移）")
     else:
-        print("  ★ 采用上游当前的股票因子集（上游增删因子，快照跟着变）")
+        print("  ★ 直接打包 data/factors 下所有落盘股票对象（不依赖上游代码、配置、注册表或 state）")
 
     mode = "full" if a.full else ("incremental" if a.incremental else "auto")
     if out is not None and not a.full:
         print("  ⚠️ --out 建议配 --full 用（另建目录的语义就是「从头建一份」）")
+
+    extra = None
+    if a.extra_features:
+        raw = a.extra_features.strip()
+        fp = Path(raw).expanduser()
+        if fp.is_file():                       # JSON 文件：feature_names / features / 裸列表
+            data = load_json(fp, None)
+            if isinstance(data, dict):
+                data = data.get("feature_names") or data.get("features") or []
+            if not isinstance(data, list) or not data:
+                print(f"  ✘ --extra-features 的 JSON 里没有可用的名字列表：{a.extra_features}")
+                return 1
+            extra = [str(x) for x in data]
+        else:                                  # 逗号分隔的名字
+            extra = [x.strip() for x in raw.split(",") if x.strip()]
+        if not extra:
+            print(f"  ✘ --extra-features 没解析出任何名字：{a.extra_features}")
+            return 1
+        print(f"  ★ 校验/追加 {len(extra)} 个落盘因子：{extra[:5]}"
+              f"{' …' if len(extra) > 5 else ''}")
+
     r = prepare(cfg, mode=mode, years=a.years, jobs=max(1, a.jobs),
                 lookback=a.lookback,
-                features=feats, direction=direction)
+                features=feats, direction=direction, extra_features=extra)
     write_ledger(root_of(cfg), action=r.get("action", ""),
-                 rebuilt=r.get("rebuilt") or {}, log=print)
+                 rebuilt=r.get("rebuilt") or {}, log=progress_log)
     return 0
 
 

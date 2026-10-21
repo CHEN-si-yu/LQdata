@@ -1,0 +1,114 @@
+{
+  "family_id": "r11gc_turnover_term_ext_v1",
+  "idea_id": "r11gc_turnover_term_ext_v1",
+  "trial_budget": 19,
+  "allowed_variants": [
+    {
+      "kind": "lvl",
+      "window": 5
+    },
+    {
+      "kind": "lvl",
+      "window": 10
+    },
+    {
+      "kind": "lvl",
+      "window": 20
+    },
+    {
+      "kind": "lvl",
+      "window": 42
+    },
+    {
+      "kind": "lvl",
+      "window": 126
+    },
+    {
+      "kind": "std",
+      "window": 63
+    },
+    {
+      "kind": "bias_turn",
+      "short": 21,
+      "long": 504
+    },
+    {
+      "kind": "bias_turn",
+      "short": 42,
+      "long": 252
+    },
+    {
+      "kind": "bias_turn",
+      "short": 42,
+      "long": 504
+    },
+    {
+      "kind": "bias_turn",
+      "short": 63,
+      "long": 504
+    },
+    {
+      "kind": "bias_turn",
+      "short": 126,
+      "long": 504
+    },
+    {
+      "kind": "bias_std_turn",
+      "short": 42,
+      "long": 252
+    },
+    {
+      "kind": "bias_std_turn",
+      "short": 63,
+      "long": 252
+    },
+    {
+      "kind": "bias_std_turn",
+      "short": 126,
+      "long": 252
+    },
+    {
+      "kind": "bias_std_turn",
+      "short": 21,
+      "long": 504
+    },
+    {
+      "kind": "bias_std_turn",
+      "short": 42,
+      "long": 504
+    },
+    {
+      "kind": "bias_std_turn",
+      "short": 63,
+      "long": 504
+    },
+    {
+      "kind": "bias_std_turn",
+      "short": 126,
+      "long": 504
+    },
+    {
+      "kind": "amount_ma",
+      "window": 20
+    }
+  ],
+  "baseline": [
+    "turnover_std_20",
+    "turnover_anomaly_20",
+    "amount_ratio_20",
+    "vol_ratio_ma5_ma20",
+    "mkt_turnover_median"
+  ],
+  "parameters_frozen": {
+    "windows_trading_days": "lvl 5/10/20/42/126; std 63; bias_* short/long in {21,42,63,126} x {252,504}; amount_ma 20",
+    "window_semantics": "交易日；Tushare 原文 w=121/221/321/621/1221/2421 是「月数拼接 21」，不得照抄",
+    "min_count": "n//2",
+    "std_ddof": 0,
+    "turnover_definition": "ctx.px('turnover') = vol / float_share * 100（百分数，截面可比）",
+    "amount_definition": "ctx.px('amount')（元，流量；停牌日 NaN）",
+    "direction": "higher_is_better=true for all (declared=raw; no direction claimed)",
+    "bound": "本族只登记批 1 liquidity_turnover 未覆盖的 19 个 IN-D 名称；批 1 的 10 个不重复登记。"
+  },
+  "variants": "none：19 个变体在同一模块内事前冻结（FROZEN 字典），build() 拒绝任何其它参数组合。",
+  "channel": "green-card candidate (basic thresholds only; G4-G7 not claimed)"
+}

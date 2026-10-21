@@ -1,0 +1,26 @@
+{
+  "name": "r10gc_high_low_21_v1",
+  "family_id": "r10gc_vol_range_v1",
+  "implementation": "research.families.r10gc_vol_range_v1:build",
+  "parameters": {
+    "kind": "high_low",
+    "window": 21
+  },
+  "units": "无量纲比值（>= 1）",
+  "availability": "T 日收盘后可得：stock_daily 与 stock_adj_factor 均 delay_days: 0（conf/frequency.yaml 原文）。复权用 ctx.hfq（截至当日累计复权因子），历史值不随未来分红改变。真实值起点 = default_start（2018-01-01）；更早年份仅用于 warmup，不产出真实值。",
+  "missing_policy": "停牌日：ctx.ret_clean(1) 置 NaN（不用被前向填充的 hfq_close 造出的 0 收益），滚动标准差按 min_count=n//2 统计有效值，不足一半 ⇒ NaN。极值用 hfq_close（水平量，停牌日前向填充，不会造假极值）；窗口最低价 <= 0 或非有限 ⇒ NaN。真实 0 收益（收平）是观测值，保留。池外股票 ⇒ NaN。",
+  "spec": {
+    "group": "r10_gc_risk",
+    "desc": "振幅（1 个月）：过去 21 个交易日后复权收盘价的最高/最低之比",
+    "formula": "Max(hfq_close,21) / Min(hfq_close,21)  # daily_return = ctx.ret_clean(1); hfq_close = ctx.hfq('close')",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "fin_fields": [],
+    "warmup_days": 60,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "绿卡候选（只主张三项基础门槛：非空 / 非常数 / 无泄露；G4–G7 未主张）。higher_is_better=true 仅表示 declared=raw（不做反号），不代表任何预测方向，不主张预测有效性，不写「已验证信号」。；Tushare high_low_21d。透明观测描述量：单条价格序列在窗口内的极值之比（rolling extreme / amplitude）。；【与 Tushare 原文的等价性】原文 NetValue 为「自固定起点累乘 (1+日收益)」，窗口内 max 与 min 共享同一累乘基座 ⇒ 基座精确相消 ⇒ 恒等于同一窗口上 Max(后复权收盘)/Min(后复权收盘)，故实现无近似。；【无泄露】输入仅 stock_daily 与 stock_adj_factor（delay_days: 0）；收益用 ctx.ret_clean(1)（停牌日 NaN，不用前向填充价造出的 0 收益）；价格用 ctx.hfq（截至当日累计复权因子，PIT 安全）；模块内无 shift / 无前向填充 / 无全样本标准化。；【与在产对象的差异论证】在产 `vol_120` = Std(日收益,120)（其 note 原文「公式形式逐字同 return_std_126d」）⇒ Tushare 的 `return_std_126d` 已开采，**本批不登记 126 日窗**，改取 21/63/252 三个无在产对应的期限点。在产 `atr_14_ratio` 是 14 日真实波幅/价格（含 high/low 的路径量），与收益标准差不是同一估计量。在产 `price_to_52w_high`（现价/最高−1）与 `price_distance_from_52w_low`（(现价−最低)/最低）都含**现价**；`high_low_n` 是窗口内 max/min 的**振幅**，与现价无关，故 `high_low_252` 与那两个 250 日因子在代数上满足 high_low=(1+to52h)·(1+dist52l)，但排序上不是任一者的单调变换；实测 |rho| 见交付报告 §6（>0.95 时按 §8.6 判重蹈）。在产 `rv_term_structure`（coupling）= Std(ret,20)/Std(ret,60) 是**比率**（不含水平），本批 `return_std_n` 是**水平**，两者互补。被删的 `risk` 族 13 个（downside_upside_vol_60、var_95_20、max_drawdown_*、sortino_ratio_60 等）与 `technical` 族的 bollinger_* 均不是「同序列滚动标准差」或「窗口极值比」，无重蹈。；【Lead 裁定 OUT、本执行者同意的 Tushare Risk 类成员（记录在案，未登记）】滚动回归类：beta_60d_000300、beta_125d_000300、beta_250d_000300、beta_500d_000300、beta_1000d_000300、beta_1320d_000001、sigma_1320d_000001、sigma_1320d_000300、beta_consistency_1320d_000300、volume_beta_120d_000300；矩比类：sharpe_60d、sharpe_750d、adjusted_sharpe_750d；同字段净额：days_beyond_upper_lower_21d；已开采：return_std_126d（≡ 在产 vol_120，该因子 note 原文自述「公式形式逐字同 return_std_126d」）。"
+  }
+}

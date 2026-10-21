@@ -1,0 +1,15 @@
+family_id: r3_intraday_moments_v2
+idea_id: r3_intraday_moments_v1
+trial_budget: 6
+baseline: idt_rv_daily —— 同族已有因子的直译（日内 sum(r^2) 已实现方差）；本族用候选 rv_daily 复刻它做朴素基线对照，另对全库正式因子做相关性筛查。
+note: |
+  v2 与 v1 的 idea / 机制集合 / 预期方向 / 期限 / 试验预算完全相同，唯一差异是实现缺陷修复：
+  v1 依赖「48 行 = 一个股票日」的整齐网格，冒烟测试在 2026 分区直接报错（该年 rows%48=15，
+  有 49 根/47 根等不规整股票日）。v1 的 5 个候选从未完成任何 run，也没有任何 IC 被看过，
+  因此不构成"看过结果后改方向/扩大搜索空间"。v2 改为按 (日期变化 | 时段回跳) 切段。
+allowed_variants:
+  - {signal: rv_daily}
+  - {signal: rv_skewness}
+  - {signal: jump_share}
+  - {signal: signed_jump}
+  - {signal: vol_price_diffusion}

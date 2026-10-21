@@ -1,0 +1,16 @@
+name: r4r_price_granularity_ma60_v1
+family_id: r4r_price_level_v1
+implementation: research.families.r4r_price_level_v1:build
+parameters: {signal: price_granularity_ma60}
+units: 最小报价单位占价比（百分数表达）；tick=0.01 元，因子值 = 100×tick/mean_60d(close_raw) = 1/mean_60d(close_raw)，量纲为 1/元。与 log_price_level_ma60 互为镜像（构造使然）。
+availability: 只用信号日 T 及之前 60 个交易日（含 T）的原始收盘价；严格当日原始值，不沿用停牌前旧价；stock_daily 不在可得性滞后名单，无需 lagged_ok。
+missing_policy: 60 日窗口内真实成交日的有效原始收盘价 <48 个（80%）→ NaN；停牌日不贡献价格（skip）；不零填充。
+spec:
+  group: research_price_level
+  desc: 未验证候选：60 日平均名义价的颗粒度占比 = 1/mean 归一化（机制 2 的 60 日均价口径变体，预登记方向 true）。
+  formula: 100*0.01/mean_60d(close_raw) = 1/mean_60d(close_raw)
+  deps: [stock_daily]
+  warmup_days: 130
+  higher_is_better: true
+  version: 1
+  note: 与 log_price_level_ma60 互为镜像（共同有效格上秩相关恒为 −1，构造使然）；报告按两侧对照解读。

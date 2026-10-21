@@ -1,0 +1,16 @@
+name: r4g_downside_beta_60_v1
+family_id: r4g_coskew_v1
+implementation: research.families.r4g_coskew_v1:build
+parameters: {signal: downside_beta_60}
+units: 无量纲 beta（仅下行日样本的 OLS 斜率：r 对 r_m 的回归系数）。
+availability: 只用信号日 T 收盘及以前（含 T）的后复权日收益与池内当日等权均值；hfq 价只用 <=T 的 adj_factor（PIT 安全）；stock_daily / stock_adj_factor 不在 fea/delay.py 的 LAGGED_DATASETS（实测仅 stock_margin_detail），无需位移。
+missing_policy: 窗口（60 日，含 T）内 r_m<0 且成对有效的交易日 <8 → NaN；n_down·Var(r_m|r_m<0) ≤ 1e-12 的退化窗口 → NaN（数值守卫）；停牌/未上市/当日无成交不参与窗口（不是 0 收益）；不填充、不外推。
+spec:
+  group: research_coskew
+  desc: Lead 预登记机制 2：60 日下行贝塔（仅 r_m<0 日回归，对池等权市场）；高下行贝塔 → 预期收益更高（Ang et al. 下行风险溢价）。
+  formula: beta_down = OLS slope of r ~ r_m on days with r_m < 0 (60d window incl. T, min 8 down days)
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 128
+  higher_is_better: true
+  version: 1
+  note: 窗口含 T；仅下行日子样本（min 8）；市场 = 池内当日等权均值（自算）；退化守卫分母<1e-12 → NaN；与 beta_60（无条件、对沪深300）是不同估计量：条件样本 + 不同基准。

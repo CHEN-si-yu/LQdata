@@ -1,0 +1,36 @@
+name: r11u4_intraday_shape_x_volhhi_v1
+family_id: r11u4_intraday_interaction_family_v1
+implementation: research.families.r11u4_intraday_interaction_v1:build
+parameters: {signal: intraday_shape_x_volume_concentration}
+units: 无量纲（两个逐日截面 z 分数的乘积）
+availability: |
+  T 日只用 T 日收盘后已可得的在产因子值：状态 `r4b_intraday_volume_hhi_20` 与腿
+  `intraday_vol_ratio_5d` 经 `ctx.load_factor(name)` 读落盘 `value`（精确落格、缺失 NaN、
+  不 asof 前向填充）。两腿已各自满足其登记时的 PIT 契约；本候选不引入新的上游表。
+  T 日取值用于 T+1 开盘起的标签。无滞后表依赖。
+missing_policy: |
+  · 任一腿 NaN -> 该格 NaN（缺失传播）；不零填充、不插值、不 asof。
+  · 池外股票 -> NaN。完整输入下乘积恰为 0 是观测到的 0，保留。
+  · 附录 J 规则 4 不适用：无缺失约定自由度（两腿均为稠密在产因子）。
+source_fields:
+  - r4b_intraday_volume_hhi_20_2462d9ca21d9adf8（在产因子）
+  - intraday_vol_ratio_5d（在产因子）
+spec:
+  group: r11_field_interaction
+  desc: R11-U4 日内族字段级条件交互：日内成交量集中度 × 日内/隔夜波动比（两腿同属日内族，状态逐股变化）；乘积越大 = 信息驱动但流动性脆弱的日内状态，预期收益越低（higher_is_better=false）
+  formula: "X(t,i) = cs_zscore(r4b_intraday_volume_hhi_20) * cs_zscore(intraday_vol_ratio_5d)，逐日截面 z（mask=universe），任一腿 NaN 则 NaN"
+  deps: [r4b_intraday_volume_hhi_20_2462d9ca21d9adf8, intraday_vol_ratio_5d]
+  warmup_days: 600
+  higher_is_better: false
+  version: 1
+  fin_fields: [revenue]
+  note: |
+    【来源】954 个同族字段对（19 族）经 P1/P2/P3 强制预筛后的**两个**双筛存活者之一。
+      本候选 leg_t=+1.69、P3 差值 t=+5.94（高于已准入 r9f_breadth_intraday_slope_x_beta 的 −4.38）。
+    【附录 K 声明】状态是**逐股变化**的 ⇒ 候选在每个交易日内都不是腿的单调变换，
+      不是自身腿/状态的有符号置换；广播态陷阱不适用。
+    【附录 I 规则 3】按报告 §4 给出最高相关对象与冻结 base8 + 同源腿的增量诊断，两套并报。
+    【缺失约定】无可选约定，规则 4 不适用。
+    【fin_fields 说明】不使用财务字段；为限制引擎"全建 80 个财务字段"而声明**未使用**的占位字段 revenue
+      （沿用 r7c/r9c/r9d/r11u4-v1 先例）。
+    【方向】higher_is_better=false，事前固定，未按结果翻转。

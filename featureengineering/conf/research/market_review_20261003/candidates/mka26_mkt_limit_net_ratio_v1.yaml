@@ -1,0 +1,28 @@
+{
+  "name": "mka26_mkt_limit_net_ratio_v1",
+  "family_id": "mkta26_limit_family_v1",
+  "implementation": "research.families.market_gate_audit_v1:build",
+  "parameters": {
+    "original_name": "mkt_limit_net_ratio",
+    "definition_sha256": "3caa18538b83176b637107922e7aed4436cf28313ea66a3f28c0f1af7399170b"
+  },
+  "units": "与正式因子 mkt_limit_net_ratio 完全一致（本候选仅做逐值复算，不改变任何口径）；单位与可用性详见其正式 note。",
+  "availability": "与正式因子 mkt_limit_net_ratio 一致：T 日值于 T 日收盘后可用；无额外滞后；上午族截面时点 11:30 但生产可用时点为收盘后。",
+  "missing_policy": "与正式因子一致：缺失保持 NaN，不用未来值回填；对齐前缀按正式声明（align_fill 或 NaN）。",
+  "spec": {
+    "group": "market",
+    "desc": "池内涨停减跌停家数占比",
+    "formula": "(count(U)-count(D))/count(pool)",
+    "deps": [
+      "stock_limit_list",
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": "2020-01-01",
+    "warmup_days": 40,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "市场审计别名（mka26 复审）：逐值复算正式因子 mkt_limit_net_ratio@v1；市场标量，每天恰好一行、无股票列、无横截面 rank；未做收益有效性承诺。只统计冻结池内的股票；limit 三态 U涨停/D跌停/Z炸板。 缺失保持 NaN，不用未来值回填。",
+    "is_market": true
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "family_id": "mkta26_flow_family_v1",
+  "idea_id": "mkta26_flow_idea_v1",
+  "trial_budget": 4,
+  "allowed_variants": [
+    {
+      "original_name": "mkt_mf_large_net_ratio",
+      "definition_sha256": "b36c234f5c13b1e85134cbad9819f85aa924083e67cd0f39984e01bda1dc2f06"
+    },
+    {
+      "original_name": "mkt_mf_large_net_ratio_ma5",
+      "definition_sha256": "dd4676a6462ed0e9cda098f610de83b7218d62d327d1c5203f877fada63489f5"
+    },
+    {
+      "original_name": "mkt_mf_large_breadth",
+      "definition_sha256": "85382163f1a172e4a1ad46391d93ba805c631d850b277e43c5e5ba7e867dd6c1"
+    },
+    {
+      "original_name": "mkt_mf_elg_turnover_share",
+      "definition_sha256": "cc99cc2b382fe2b986fe575df72a956c5aacb7785ce439ad07c74768cebcb3c3"
+    }
+  ],
+  "baseline": [
+    "mkt_up_ratio"
+  ],
+  "hypothesis_boundary": "大单资金净流入代理知情交易与资金推动；金额单位万元，仅同表内比率，不跨表相除。",
+  "search_policy": "只登记既有正式因子的逐值审计别名，不扩窗口、不改参数、不新增变体",
+  "registration_note": "本文件为 2026-10-03 市场因子复审的**追溯登记**（既有正式因子的逐值审计别名），非事前研究登记；方向与先验强度的预登记见 freeze 方向表，检验为回顾性筛选，不构成未触碰留出样本上的结论（retrospective_screening;historical_selection_is_not_untouched_holdout）。"
+}

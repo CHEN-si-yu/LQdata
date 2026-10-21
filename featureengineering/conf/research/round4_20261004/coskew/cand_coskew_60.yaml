@@ -1,0 +1,16 @@
+name: r4g_coskew_60_v1
+family_id: r4g_coskew_v1
+implementation: research.families.r4g_coskew_v1:build
+parameters: {signal: coskew_60}
+units: 无量纲（标准化偏回归系数：z_r ~ [z_m, z_m²] 的 z_m² 系数）。原始量纲 OLS 系数（对 r_m²）= 本值 × σ_r/σ_m²，与个股波动水平机械共线，故冻结为标准版。
+availability: 只用信号日 T 收盘及以前（含 T）的后复权日收益与池内当日等权均值；hfq 价只用 <=T 的 adj_factor（PIT 安全）；stock_daily / stock_adj_factor 不在 fea/delay.py 的 LAGGED_DATASETS（实测仅 stock_margin_detail），无需位移。
+missing_policy: 窗口内成对有效交易日 <45 → NaN；var_m/var_r ≤ 1e-10 或偏回归分母 (Var(z_m²) − γ²) ≤ 1e-4 的退化窗口 → NaN（数值守卫，不 clip）；停牌/未上市/当日无成交不参与窗口（不是 0 收益）；不填充、不外推。
+spec:
+  group: research_coskew
+  desc: Lead 预登记机制 1：60 日协同偏度（对池等权市场，标准化偏回归口径）；高协偏度 → 预期收益更低（Harvey–Siddique）。
+  formula: b2 = (S_y2 − gamma*rho) / (Var(z_m^2) − gamma^2)；z_r ~ [z_m, z_m^2] 的偏回归系数，60 日窗（含 T），成对有效日 min 45
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 128
+  higher_is_better: false
+  version: 1
+  note: 窗口含 T；全窗口矩在成对有效日上计算；标准化去量纲防波动机械共线；市场 = 池内当日等权均值（自算）；退化守卫 var<1e-10、分母<1e-4 → NaN；与 beta_60（对沪深300）不同基准。

@@ -1,0 +1,21 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "idea_id": "s26_activity_idea_v1",
+  "hypothesis": "解释价格波动后的成交参与创新可能改善固定2115股的下一开盘1/5日排序",
+  "mechanism": "用截至T-1的60日个股回归解释log成交额，控制固定股票池收益偏离绝对值与同日对数振幅，再观察T日创新在强收盘、突破失败、安静推进和跌后修复中的区别。",
+  "expected_direction": "按每个机制独立预登记，不依据事后IC翻转",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "若多年度1/5日配对评价无稳定信息、接近已生产基线或工程截断/增量不一致则拒绝准入",
+  "fields": [
+    "stock_daily.open",
+    "stock_daily.high",
+    "stock_daily.low",
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_daily.amount",
+    "stock_adj_factor.adj_factor"
+  ]
+}

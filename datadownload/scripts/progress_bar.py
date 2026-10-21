@@ -63,7 +63,7 @@ DISABLED = _disabled()
 ORDER = [n for n in ORDER if n not in DISABLED]
 TOTAL = len(ORDER)
 
-# `[index_ths_daily 逐实体]  13.4% 4492/33520 已用 16m22s 259/min ETA 1h53m14s rows=17.96万`
+# `[tdx_minute 逐实体]  13.4% 82/618 已用 16m22s 259/min ETA 1h53m14s rows=17.96万`
 PROG_RE = re.compile(
     r"\[(?P<name>\S+)\s+(?P<mode>[^\]]+)\]\s+"
     r"(?P<pct>[\d.]+)%\s+(?P<cur>\d+)/(?P<tot>\d+)\s+"

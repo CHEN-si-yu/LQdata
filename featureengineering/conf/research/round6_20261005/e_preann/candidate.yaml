@@ -1,0 +1,31 @@
+{
+  "name": "r6e_completed_preann_turnover_propensity_v1",
+  "family_id": "r6e_preann_propensity_v1",
+  "implementation": "research.families.r6e_preann_propensity_v1:build",
+  "parameters": {
+    "signal": "completed_preann_turnover_propensity",
+    "events": 4,
+    "max_age_days": 730,
+    "fast": 5,
+    "base": 60
+  },
+  "units": "dimensionless median log turnover anomaly",
+  "resource_note": "Engine treats empty fin_fields with stock_income deps as request for all financial fields. Explicit revenue is one unused compatible prebuild field; compute reads only announcement dates and turnover, never revenue. This resource declaration does not change the signal.",
+  "availability": "First known PIT per report period, revision not a new event. Strictly exclude announcement day from source window, release at nextTD. Four-event property only available after all four events completed; max730 firstPIT age includes boundary. Fixed1100 calendar warmup, full actual calendar anchors.",
+  "missing_policy": "All65 trading days turnover finite>0 and truly traded; baseline>1e-6 percent. Same(code,v) only1 event, earliestPIT then earliestend. Invalid events stay in queue and poison newest4; insufficient4 or oldest firstPIT age>730=>NaN; t not traded=>NaN; no event skipping/zero filling/window extension.",
+  "spec": {
+    "group": "research_financial_behavior",
+    "fin_fields": ["revenue"],
+    "desc": "Companies repeatedly attracting speculative demand ahead of completed announcements may retain overvaluation outside the current announcement window; weak negative prior, not an extension of R4 demonstrated event effects.",
+    "formula": "pit_p=min_versions(max(ann,f_ann,end));a=lastTD<pit;v=firstTD>pit;z=log(mean(U[a-4:a])/mean(U[a-64:a-5]));F=median(latest4 continuous independent v-events), all firstPIT ages<=730",
+    "deps": [
+      "stock_income",
+      "stock_daily",
+      "stock_finance"
+    ],
+    "warmup_days": 1100,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "Single frozen main candidate, no variants. All65 trading days turnover finite>0 and truly traded; baseline>1e-6 percent. Same(code,v) only1 event, earliestPIT then earliestend. Invalid events stay in queue and poison newest4; insufficient4 or oldest firstPIT age>730=>NaN; t not traded=>NaN; no event skipping/zero filling/window extension. Float64 calculations; Store float32. Complete fixed2115 stock/date keys. base8 + turnover_anomaly_20 + diagnostic mean turnover20 + latest report age + current prospective announcement-window state; window-outside and latest-event-age>20TD mechanism diagnostic."
+  }
+}

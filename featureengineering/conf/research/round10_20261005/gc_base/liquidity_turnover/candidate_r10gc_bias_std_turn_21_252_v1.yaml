@@ -1,0 +1,27 @@
+{
+  "name": "r10gc_bias_std_turn_21_252_v1",
+  "family_id": "r10gc_liquidity_turnover_v1",
+  "implementation": "research.families.r10gc_turnover_term_v1:build",
+  "parameters": {
+    "kind": "bias_std_turn",
+    "short": 21,
+    "long": 252
+  },
+  "units": "百分数（换手率 = vol/float_share×100）；偏离量为无量纲比值",
+  "availability": "T 日收盘后可得：stock_daily.vol 与 stock_finance.float_share 均为 delay_days: 0（conf/frequency.yaml 原文）。因子值只用 T 日及更早的观测；不依赖任何滞后表，故不需要 lag_grid。真实值起点 = conf/config.yaml 的 default_start（2018-01-01）；更早年份仅用于 warmup 预热，不产出真实值。",
+  "missing_policy": "停牌 / 未上市 / 已退市：vol 为流量，停牌日 NaN（不前向填充）⇒ 该日换手率为 NaN，滚动窗口按 min_count=n//2 统计有效值；有效值不足一半 ⇒ NaN。float_share 缺失 ⇒ 该日换手率 NaN。分母（长端均值/标准差）为 0 或非有限 ⇒ NaN，绝不补零、不前向填充。真实 0 换手率（有成交行但 vol=0）是观测到的 0，保留。池外股票 ⇒ NaN。",
+  "spec": {
+    "group": "r10_gc_liquidity",
+    "desc": "换手率波动偏离（1 个月 vs 12 个月）：Std21/Std252 − 1",
+    "formula": "StdDev_pop(turnover_rate,21) / StdDev_pop(turnover_rate,252) - 1  # turnover_rate = stock_daily.vol / stock_finance.float_share × 100（ctx.px('turnover')）",
+    "deps": [
+      "stock_daily",
+      "stock_finance"
+    ],
+    "fin_fields": [],
+    "warmup_days": 480,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "绿卡候选（只主张三项基础门槛：非空 / 非常数 / 无泄露；G4–G7 未主张）。higher_is_better=true 仅表示 declared=raw（不做反号），不代表任何预测方向，不主张预测有效性，不写「已验证信号」。；Tushare bias_std_turn_21d_252d。透明观测描述量：同一条原始序列的短/长端波动偏离。；【窗口口径（Tushare 原文自相矛盾，此处明示解释）】原文把 `avg_turnover_21d` 的窗口写成 w=121、`avg_turnover_252d` 写成 w=1221、`bias_*_504d` 写成 w=2421；121/221/321/621/1221/2421 是「月数拼接 21」的损坏渲染（1|21、2|21、3|21、6|21、12|21、24|21），照抄会得到超过样本长度的窗口。本批按**名称与中文描述**解释：1 个月 = 21 个交易日 ⇒ 窗口 21/42/63/126/252。`warmup_days` 由真实交易日窗口换算（n×1.8+20 向上取整），保证声明的真实值起点与预热一致。；【PIT / 无泄露】输入仅 stock_daily(vol) 与 stock_finance(float_share)，conf/frequency.yaml 对两表均声明 delay_days: 0（T 日收盘后可得），不需要滞后位移。模块内无 shift / 无前向填充 / 无全样本标准化，全部为因果滚动窗口（只看 ≤t）。；【与在产对象的差异论证】在产 `turnover_std_20` = −Std(turnover,20)（20 日窗）；本批 std 取 42/126/252，**刻意避开 21 日窗**（与 20 日窗在同一序列上排序意义近乎恒等，属 §8.6 结构性同构，已列为与 Lead 分类表的分歧项）。在产 `turnover_anomaly_20` = MA(turnover,20)/MA(turnover,60) − 1，是本构念的**同类**但不同期限点（20 vs 60 日）；本批 BIAS 的分母固定为 252 日（12 个月），与 60 日基座是不同随机变量，实测两两相关见交付报告 §6。在产 `amount_ratio_20`/`vol_ratio_ma5_ma20`/`volume_ratio` 用的是 **amount / vol** 序列，不是换手率（`vol/float_share`），币种与量纲都不同。★ 家族级负结果披露：`doc/历史报告.md:410` 记录「非流动性/价差（方向证伪）」。本批是**换手率**期限结构（不是 Amihud 非流动性、不是价差），且绿卡对象**不主张方向**，故「方向证伪」不适用于一个无方向的描述量；但该邻近性如实记录，不隐藏。另：`turnover_std_20` 是 G7 冻结控制集成员，已删的 `supply_pressure_interaction` 曾因「换手波动率代理 rho=0.856」被剔除 ⇒ 换手波动轴是本项目已知的风格轴。"
+  }
+}

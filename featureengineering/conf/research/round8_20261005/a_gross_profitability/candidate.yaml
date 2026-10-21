@@ -1,0 +1,31 @@
+{
+  "name": "r8a_gross_profitability_v1",
+  "family_id": "r8a_gross_profitability_v1",
+  "implementation": "research.families.r8a_gross_profitability_v1:build",
+  "parameters": {
+    "signal": "gross_profitability",
+    "window": 4,
+    "asset_lag_quarters": 4
+  },
+  "units": "dimensionless; negative gross profit retained",
+  "availability": "Each row pit=max(valid ann_date,valid f_ann_date), >=end_date required; next trading day effective. Latest prefix-max common report Q; all revision events recompute windows using versions <=event pit. Invalid new latest Q/revision writes NaN, never backfill old valid Q. No records before1990.; current report end age<=550 calendar days",
+  "missing_policy": "strict consecutive four YTD-differenced single quarters; exact Q-4 assets>1e6; current joint income/balance comp_type1; invalid latest common frontier/revision clears old; no positive-profit/cash requirement; source date before end rejected.",
+  "spec": {
+    "group": "research_financial_profitability",
+    "desc": "严格毛利TTM/同季前一年资产是资产承载的生产端盈利表达，true弱先验；美国年度会计/月度证据不保证A股1/5日收益，不宣称第三种原始信息。",
+    "formula": "(strict_revenue_TTM(Q)-strict_oper_cost_TTM(Q))/total_assets(Q-4)",
+    "deps": [
+      "stock_income",
+      "stock_balancesheet"
+    ],
+    "fin_fields": [
+      "revenue",
+      "oper_cost",
+      "total_assets"
+    ],
+    "warmup_days": 1500,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "central frozen base8 deduplicated (roe_ttm already included); extras roa_ttm,afx_fi_q_gsprofit_margin,r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5,r4a_sue_seasonal_q_v1_f1def0b01eb0b979 plus same-PIT M,U,NI_same_assets. raw=M*U where revenue!=0. Raw zero-revenue eligibility unchanged; report extra diagnostic mask loss. Original frozen deleted gross/invest_capital replication only. Financial field n_income_attr_p is read only for optional NI diagnostic, not raw eligibility. Formula computes float64, official Store float32; root final freeze separately, unvalidated."
+  }
+}

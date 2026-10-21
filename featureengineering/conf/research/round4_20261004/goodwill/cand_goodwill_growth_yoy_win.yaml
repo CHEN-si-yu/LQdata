@@ -1,0 +1,17 @@
+name: r4p_goodwill_growth_yoy_win_v1
+family_id: r4p_goodwill_v1
+implementation: research.families.r4p_goodwill_v1:build
+parameters: {signal: goodwill_growth_yoy_win}
+units: 无量纲增速（商誉同比），固定双帽 [−1.0, +2.0]（winsor 敏感性变体）。−1=归零；+2=一年增至三倍以上的极端并购入值截断。
+availability: 同 r4p_goodwill_growth_yoy_v1——本期与去年同季商誉均取公告时点 pit≤信号日的最新可考版本；同季对比（报告期−4 的 as-of 值）；公告日当天可用。
+missing_policy: 同 r4p_goodwill_growth_yoy_v1——本期商誉不可考、或去年同季商誉不可考/≤1e6 元时为 NaN；clip 不改变 NaN；不零填充；非有限值输出为 NaN。
+spec:
+  group: research_goodwill
+  desc: 变体（V1 机制3 的 winsor 敏感性）：clip(商誉同比, −1.0, 2.0)——若主口径结论由并购冲刺的极端增速驱动，本变体应显著削弱。
+  formula: clip(point(goodwill) / point(goodwill, lag=4) − 1, −1.0, 2.0)
+  deps: [stock_balancesheet]
+  fin_fields: [goodwill]
+  warmup_days: 500
+  higher_is_better: false
+  version: 1
+  note: 帽值 [−1,2] 在首个 run 之前固定（未查看数据分布）；下界即数学下界（商誉为 0），实际生效的是上帽；除帽外口径与机制3完全一致，作敏感性对照。

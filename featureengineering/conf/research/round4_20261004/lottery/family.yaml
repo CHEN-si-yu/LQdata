@@ -1,0 +1,13 @@
+family_id: r4e_lottery_max_v1
+idea_id: r4e_lottery_max_v1
+trial_budget: 6
+baseline: vol_120（波动水平）、ret_skew_20（偏度）；extreme_up_share_60 的朴素对照 = extreme_move_event（正式）。朴素基线对照全部按 declared 口径与候选逐日配对比较。
+note: |
+  机制集合固定 4 个（任务书 §4-U5），方向全部预先登记为 false；预算 ≤6 个候选，
+  预留至多 2 个位置仅用于实现缺陷修复（不得用于扩网格/改方向）。
+  市场调整口径事前定死：ret − mkt_ew_ret，mkt_ew_ret = 冻结池内当日等权平均日收益。
+allowed_variants:
+  - {signal: max_ret_20}
+  - {signal: idio_max_20}
+  - {signal: idio_max_60}
+  - {signal: extreme_up_share_60}

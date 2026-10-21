@@ -1,0 +1,39 @@
+# 事前登记假设，不构成收益证明；机制集合、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r2_pledge_change_v1",
+  "family_id": "r2_pledge_family_v1",
+  "implementation": "research.families.r2_pledge_v1:build",
+  "parameters": {
+    "signal": "pledge_change"
+  },
+  "units": "百分点（质押股数/总股本 ×100 的差）；两条腿同滞后，单位相消一致。",
+  "availability": "与机制 1 同一条滞后序列：ctx.asof_daily 前向填充 + ctx.lag_grid 15 个交易日；两条腿用同一滞后，故差值不含额外前视。",
+  "missing_policy": "同机制 1 的稠密网格规则。任一条腿缺失即为 NaN（不填充伪变化）。",
+  "closest_existing_baselines": [
+    "total_leverage_ratio",
+    "momentum_20",
+    "short_term_reversal_5"
+  ],
+  "semantic_difference": "衡量质押比例的变动速度，而非水平；与水平候选的相关性在报告中单列。",
+  "source_fields": [
+    "stock_pledge_stat.stock_code",
+    "stock_pledge_stat.end_date",
+    "stock_pledge_stat.unrest_pledge",
+    "stock_pledge_stat.rest_pledge",
+    "stock_pledge_stat.total_share"
+  ],
+  "pre_registered_direction": "lower_is_better",
+  "spec": {
+    "group": "r2_pledge",
+    "desc": "质押比例 13 周变化（资金链紧张速度）",
+    "formula": "100*(L(t) - L(t-65 个交易日))，L 为滞后 15 个交易日的质押比例",
+    "deps": [
+      "stock_pledge_stat"
+    ],
+    "start": null,
+    "warmup_days": 200,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "R2-I1 机制 2；方向事前冻结 higher_is_better=false。"
+  }
+}

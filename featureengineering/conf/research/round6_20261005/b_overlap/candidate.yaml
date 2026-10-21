@@ -1,0 +1,26 @@
+{
+  "name": "r6b_borrowing_repayment_overlap_turnover_v1",
+  "family_id": "r6b_debt_overlap_v1",
+  "implementation": "research.families.r6b_debt_overlap_v1:build",
+  "parameters": {
+    "signal": "borrowing_repayment_overlap_turnover",
+    "quarters": 4
+  },
+  "units": "annual cash overlap / average debt, dimensionless turnover proxy",
+  "availability": "Joint frontier=max(first cashflow PIT,first balancesheet PIT) per report period; Q prefix maximum of actually common periods. Every event/revision from either table refetches all components under same PIT=max(ann,f_ann,end). No independent latest-period division.",
+  "missing_policy": "Strict four continuous single quarters each cash field; no partial TTM; TTM borrowing/repayment finite nonnegative; all eight debt components finite nonnegative; average debt>1e6; real zero cash is valid0; no-debt isNaN; invalid latest common window replaces old state; report end age<=550 calendar days.",
+  "spec": {
+    "group": "research_financial_behavior",
+    "fin_fields": ["c_recp_borrow", "c_prepay_amt_borr", "st_borr", "non_cur_liab_due_1y", "lt_borr", "bond_payable"],
+    "desc": "Repeated borrowing and principal repayment cash turnover can indicate financing friction or recurrent funding dependence; weak negative prior, not observed matched refinancing transactions.",
+    "formula": "F=min(sum_4_single(c_recp_borrow),sum_4_single(c_prepay_amt_borr))/mean(Debt_Q,Debt_Q-4);Debt=sum(st_borr,non_cur_liab_due_1y,lt_borr,bond_payable)",
+    "deps": [
+      "stock_cashflow",
+      "stock_balancesheet"
+    ],
+    "warmup_days": 1100,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "Single frozen main candidate, no variants. Strict four continuous single quarters each cash field; no partial TTM; TTM borrowing/repayment finite nonnegative; all eight debt components finite nonnegative; average debt>1e6; real zero cash is valid0; no-debt isNaN; invalid latest common window replaces old state; report end age<=550 calendar days. Float64 calculations; Store float32. Complete fixed2115 stock/date keys. base8 + asset growth + interest coverage + OCF/revenue + R4 accruals; diagnostic debt/assets, net financing/assets, near-term debt share and money_cap/debt."
+  }
+}

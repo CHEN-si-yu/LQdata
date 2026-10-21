@@ -1,0 +1,49 @@
+name: r9c_abnormal_dispersion_shift_v2
+family_id: r9c_holder_dispersion_family_v2
+implementation: research.families.r9c_holder_dispersion_v1:build
+parameters: {signal: abnormal_dispersion_shift, z_lookback: 8, z_min_prior: 4}
+units: 无量纲（该股自身历史户数变化尺度下的标准差倍数）
+availability: |
+  唯一可用时点 = stock_holder_number.ann_date（公告日）。T 日只用 ann_date <= T 的记录；
+  end_date 只用于确定"哪一期更新"，绝不作为可见日期、不参与 as-of 键。
+  实测本表同一 (stock_code, end_date) 有 27,744 行重复（不同 ann_date 的重述），
+  状态机按 ann_date 逐日推进，因此新公告不会改写历史生效日。
+  holder_num 为不规则披露频率，无固定滞后；已披露状态用 as-of 前向沿用，从未披露 -> NaN。
+  ★ 本表日期列 ann_date 在 fea/upstream.py::_audit_columns 的白名单内，
+    verify 的 audit_cutoff 走原生 "announcement" 分支截断，不需要任何框架绕行。
+missing_policy: |
+  · holder_num <= 0 -> 该行无效（全表实测 20,434 行为 0；不参与任何报告期状态）。
+  · 相邻报告期 end_date 间隔必须落在 (0, 200] 真实日历天，否则该配对不产生变化
+    （与 R2-I3 及生产因子 holder_number_chg 的间隔保护同口径）。
+  · 可用历史变化数 < z_min_prior，或历史标准差 <= 1e-12（无离散度）-> z 未定义 -> NaN，
+    且不发射事件（沿用最近一次可计算的 z；从未可计算 -> NaN）。理由：无离散度时 z 是 0/0，
+    不是 0；写成 0 会伪造一个观测。不做任何前向填充成交、不用 0 顶替 NaN。
+  · 池外股票 -> NaN。完整输入下 z 恰为 0 是观测到的 0，保留。
+source_fields:
+  - stock_holder_number.stock_code
+  - stock_holder_number.ann_date
+  - stock_holder_number.end_date
+  - stock_holder_number.holder_num
+spec:
+  group: r9c_holder_dispersion
+  desc: R9-C1 异常分散位移：最近一期户数对数变化相对于该股自身历史 8 个变化的标准差倍数；z 越大 = 分散度异常上升，预期收益越低（higher_is_better=false）
+  formula: "d_j = log(n_j) - log(n_{j-1}) (按 end_date 排序的报告期序列, 相邻间隔 in (0,200] 日历天); z = (d_0 - mean(d_{1..8})) / std(d_{1..8}, ddof=1), 需要 >= 4 个历史变化且 std > 1e-12; 值 = as-of(ann_date) 前向沿用的最近一次可计算 z"
+  deps: [stock_holder_number]
+  warmup_days: 500
+  higher_is_better: false
+  version: 1
+  fin_fields: [revenue]
+  note: |
+    【去重论证】与三个既有构造都不同：holder_number_chg（生产）= 单期变化率本身，无历史基准、
+    无波动率归一；r2own_v2_trend_persistence_v1（生产, t=+4.74/+4.53）= 最近 4 期下降的方向 ×
+    幅度均值，同样无波动率归一；R2 dispersion_residual = 变化率对 log 市值/换手的**截面** OLS 残差，
+    实测与 holder_number_chg |rho|=0.9534 并被 R2 判为重蹈。本候选是**时间序列**标准化
+    （除以该股自身历史标准差），横截面含义是"自身历史上户数很稳、本期却大幅变动"。
+    实测两两相关见交付报告 §6。
+    【fin_fields 说明】本因子不使用任何财务字段；但 fea/engine.py:1502 对"任一 spec 未声明
+    fin_fields"的 run 会退回"全建 80 个财务字段"。为把单候选 run 的资源限制在最小集合，
+    这里按 R7-C（r7c_self_disclosure_delay_v1）的既有先例声明一个**未被使用**的占位字段
+    revenue —— 这是资源约束下的兼容性声明，不是数据依赖。
+    【PIT】以 ann_date 为唯一可得日；本表 ann_date 在审计白名单内，verify 原生支持截断。
+    【方向】higher_is_better=false，事前固定，未按结果翻转。
+    【v2 修订（实现缺陷修复，非定义变更）】v1 模块第 149 行 uniq_end, _ = np.unique(end) 是类型缺陷：np.unique(arr) 只返回一个数组，导致 research run 在 builder 第一步即抛 ValueError、9 秒失败（证据：runs/r_56a0d092a545422c823c9cf347b034d2/failure.json）。v1 从未产出任何因子值、从未计算 IC，不构成试验消耗。v2 仅把该行改为 uniq_end = np.unique(end)；机制/窗口/方向/阈值/PIT 合同/缺失口径与 v1 逐字相同。

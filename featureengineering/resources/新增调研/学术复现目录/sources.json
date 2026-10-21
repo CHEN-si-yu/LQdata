@@ -1,0 +1,47 @@
+[
+  {
+    "source_id": "root_osa_data",
+    "title": "Open Source Asset Pricing 数据与文档目录",
+    "url": "https://www.openassetpricing.com/data/",
+    "source_type": "author_research_project",
+    "accessed_at": "2026-10-07T09:26:11.627938+00:00",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "网站资料按其条款；只保存自写摘要与链接",
+    "summary": "作者项目提供信号目录、原研究文献信息、复现说明以及组合收益；网站分别列示股票信号与日频和月频组合收益。",
+    "limitations": "主要为美国市场研究和复现；组合收益频率不等于信号更新频率；不能据此宣称A股日频有效。"
+  },
+  {
+    "source_id": "root_osa_signal_doc",
+    "title": "OpenSourceAP CrossSection SignalDoc 信号与文献元数据",
+    "url": "https://github.com/OpenSourceAP/CrossSection/blob/8db892442c2c3a3779b0f1eac4370d3655be15a1/SignalDoc.csv",
+    "source_type": "github_metadata_dataset",
+    "accessed_at": "2026-10-07T09:26:11.627938+00:00",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "GPL-2.0，仓库LICENSE与原始元数据随参考快照保存",
+    "summary": "读取固定commit的CSV，保留具体信号标识、原文作者年份、数据类别、Predictor/Placebo分类和定义定位；不复制本项目因子实现。",
+    "limitations": "具体公式在参考CSV而非自写目录摘要；A股字段映射、披露时点和制度适配尚需后续研究。",
+    "commit": "8db892442c2c3a3779b0f1eac4370d3655be15a1",
+    "snapshot": "参考快照/SignalDoc.csv",
+    "record_count": 331
+  },
+  {
+    "source_id": "root_globalq_testing",
+    "title": "Global q 测试组合与异常复现目录",
+    "url": "https://global-q.org/testingportfolios.html",
+    "source_type": "author_research_project",
+    "accessed_at": "2026-10-07T09:26:11.627938+00:00",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "原文链接；未保存无明确复制许可全文",
+    "summary": "作者项目按动量、估值与增长、投资、盈利、无形资产、交易摩擦组织测试组合，并提供组合收益及更新说明。",
+    "limitations": "美国市场资产定价与组合复现资料；日频组合收益不等于A股日频信号已验证。",
+    "related_urls": [
+      "https://global-q.org/uploads/1/2/2/6/122679606/release_notes_for_july_2026_factors_and_portfolios_update.pdf",
+      "https://global-q.org/uploads/1/2/2/6/122679606/portfoliostd_2026jul.pdf",
+      "https://global-q.org/uploads/1/2/2/6/122679606/q5rf2021.pdf",
+      "https://global-q.org/uploads/1/2/2/6/122679606/houxuezhang2020rfs.pdf"
+    ]
+  }
+]

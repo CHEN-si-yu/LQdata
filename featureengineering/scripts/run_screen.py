@@ -581,6 +581,9 @@ def main() -> int:
         })
 
     outdir = Path(args.out) if args.out else (Path(cfg.state_dir) / "screen")
+    outdir=(outdir if outdir.is_absolute() else cfg.root/outdir).resolve()
+    if not outdir.is_relative_to(cfg.root.resolve()):
+        raise ValueError("Screen output must stay inside project")
     outdir.mkdir(parents=True, exist_ok=True)
     (outdir / "screen_metrics.json").write_text(
         json.dumps(rows_out, ensure_ascii=False, indent=2, default=str), encoding="utf-8")

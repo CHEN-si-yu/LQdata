@@ -1,0 +1,54 @@
+{
+  "family_id": "r7m_income_dispersion_v1",
+  "idea_id": "r7m_income_dispersion_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "disclosed_earnings_change_dispersion"
+    }
+  ],
+  "baseline": {
+    "primary_horizons": [
+      1,
+      5
+    ],
+    "primary_direction": true,
+    "direction_strength": "weak risk-compensation prior, not proved 1/5-day prediction",
+    "baseline_controls": [
+      "mkt_idx_csi300_momentum20",
+      "mkt_idx_csi300_volatility20",
+      "mkt_dispersion",
+      "mkt_up_ratio",
+      "mkt_margin_breadth",
+      "mkt_am_dispersion"
+    ],
+    "additional_controls_main": [
+      "raw_change_median",
+      "improvement_breadth",
+      "sales_growth_median",
+      "sales_growth_iqr",
+      "net_margin_median",
+      "net_margin_iqr",
+      "external_current_sue_median",
+      "external_current_sue_iqr",
+      "disclosure_fraction",
+      "valid_fraction",
+      "report_age_days",
+      "frontier_age_days",
+      "report_quarter_Q2_Q3_Q4_dummies"
+    ],
+    "additional_controls_alternative": "Replace raw_change_median by asinh_change_median in a separately reported diagnostic. Never jointly include both as independent information. Even-sample medians need not transform identically; ranks may be near equivalent. Report rank deficiency honestly; do not drop controls to rescue a result.",
+    "hac_lags": [
+      19,
+      63
+    ],
+    "preregistered_decision": "If standard M5 supports a horizon, M6 baseline and additional-control specifications must each report HAC19 and HAC63 and require declared positive t>=2 at that same supported horizon under both lags. No opposite-horizon rescue.",
+    "effective_states": "Report true distinct report periods, finite days per report and each-period contribution. Repeated held daily rows do not create independent quarterly news.",
+    "no_candidate_variant": true,
+    "registered_before_real_returns": true,
+    "market_target_contract": "official fixed-pool market labels and Lead market M5/M6 contract; not stock cross-sectional base8 FM"
+  },
+  "variants": "none",
+  "initial_single_task_budget_bytes": 3000000000,
+  "resource_estimate_not_measured": true
+}

@@ -1,0 +1,16 @@
+name: r3b_intraday_rv_skewness_v1
+family_id: r3_intraday_moments_v1
+implementation: research.families.r3_intraday_moments_v1:build
+parameters: {signal: rv_skewness}
+units: 因子值 = -sqrt(N)*sum(r~^3)/(sum(r~^2))^1.5，无量纲（已实现偏度取负）。
+availability: 只用信号日 15:00 收盘前的当日 5min bar；不跨日、无未来数据；fea/delay.py 实测 stock_history_5min 不在可得性滞后名单，无需位移。
+missing_policy: 当日可用 bar 收益 < 40 个、或 sum(r~^2)=0 时为 NaN；停牌/无该日分区为 NaN；不零填充。
+spec:
+  group: research_intraday
+  desc: Lead 预登记机制 1：日内 5min 已实现偏度取负，负偏度=崩盘风险溢价。
+  formula: -sqrt(N)*sum(r~^3)/(sum(r~^2))^1.5，r~ 为 ±6*sigma_bpv 截尾的段内 bar 收益（剔除午休跨段收益）
+  deps: [stock_history_5min]
+  warmup_days: 1
+  higher_is_better: true
+  version: 1
+  note: 截尾尺度 sigma_bpv=sqrt(BPV/N)，BPV=(pi/2)*sum|r_i||r_i-1|；底层偏度 RS 的 rankic_raw 与本因子严格反号。

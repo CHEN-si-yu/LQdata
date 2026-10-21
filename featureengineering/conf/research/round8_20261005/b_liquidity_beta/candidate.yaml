@@ -1,0 +1,28 @@
+{
+  "name": "r8b_local_amihud_shock_beta_v1",
+  "family_id": "r8b_local_amihud_shock_beta_v1",
+  "implementation": "research.families.r8b_local_amihud_shock_beta_v1:build",
+  "parameters": {
+    "signal": "local_amihud_shock_beta",
+    "ar_window": 126,
+    "beta_window": 126,
+    "min_pairs": 100
+  },
+  "units": "raw decimal realized stock return / unit log Amihud innovation",
+  "availability": "EOD t realized-only observations, nextTD execution; qAR target only through d-1; stored historical u never retrospectively fit; actual vendor arrival/revision history unobserved.",
+  "missing_policy": "Exact unique pool/date raw rows; no ffill; both traded price/adj endpoints and current amount>0; abs return<=.60; full ordered2115 and complete exchange slots; market minmax100; full126/126 fixed slots min100 joint cases; q requires median>0, no epsilon; current r/m/u missing clears old; first253 prefix slots NaN (price[t-253] required).",
+  "spec": {
+    "group": "research_systematic_liquidity",
+    "desc": "Bad aggregate local Amihud surprises load negatively on vulnerable stocks; raw negative conditional liquidity exposure receives risk compensation, weak1/5TD prior only.",
+    "formula": "q_d=log(1e8*median_E(|r|/amount)); u_d=q_d-OLS126(q[s+1]~1+q[s],s=d-127..d-2)(q[d-1]); raw=theta from OLS126 r_i[d]~1+mean_E(r[d])+u[d],d=t-125..t, min100",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "fin_fields": [],
+    "warmup_days": 620,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "Only one frozen definition. AR predictor Var>1e-12; beta Var(m)>1e-10, Var(u)>1e-12,1-rho^2>1e-6; centered/scaled OLS restored to raw units, no ridge/clip. Controls freeze/index clarification in family. Components are diagnostics only, no candidates; common components cannot enter stock cross-sectional controls.3decimalGB estimate, real RSS unmeasured."
+  }
+}

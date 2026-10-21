@@ -1,0 +1,28 @@
+# 机制2 disclosure_rank_in_peers：同报告期内全池公告序分位。
+{
+  "name": "r2d_peer_rank_last_v1",
+  "family_id": "r2_disclosure_family_v1",
+  "implementation": "research.families.r2_disclosure_v1:disclosure_timing",
+  "parameters": {"signal": "peer_rank_last"},
+  "units": "无量纲比例（0,1]：本股公告当日，全池中已披露同报告期的家数 / 2115。",
+  "availability": "rank(method='max') 只统计 avail <= 本股 avail 的同报告期记录，分母为冻结池常数 2115，故取值在本股公告当日即完全可知，不引用任何尚未披露的同业。铺设用 ctx.asof_daily(avail)。",
+  "missing_policy": "该股该报告期无记录 -> 无值；窗口内首次披露前 NaN。earliness 下限过滤（-60 天）同样应用于该报告期的配对集合。",
+  "closest_existing_baselines": ["forecast_type_score", "forecast_profit_midpoint_change"],
+  "semantic_difference": "相对同业披露进度而非相对法定日；按池内真实披露强度曲线重塑，非线性于日历日提前量。",
+  "source_fields": ["stock_income.ann_date", "stock_income.f_ann_date", "stock_income.end_date",
+                    "stock_balancesheet.ann_date", "stock_balancesheet.f_ann_date", "stock_balancesheet.end_date",
+                    "stock_cashflow.ann_date", "stock_cashflow.f_ann_date", "stock_cashflow.end_date",
+                    "stock_financial_indicator.ann_date", "stock_financial_indicator.end_date"],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r2_disclosure",
+    "desc": "同报告期内本股公告日在全池中的分位（越早越高）",
+    "formula": "peer_rank = count(peers with avail <= own avail for the same end_date) / 2115; asof to daily grid at own avail",
+    "deps": ["stock_income", "stock_balancesheet", "stock_cashflow", "stock_financial_indicator"],
+    "start": null,
+    "warmup_days": 400,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R2-I4 机制2；分母用冻结池常数以保证公告当日可知（PIT 安全），不使用该报告期最终披露家数。"
+  }
+}

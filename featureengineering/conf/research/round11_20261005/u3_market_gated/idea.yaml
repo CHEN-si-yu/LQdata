@@ -1,0 +1,47 @@
+idea_id: r11u3_market_gated_v1
+hypothesis: >
+  市场状态（流动性 / 波动 / 资金流-情绪）**调制**个股对市场的**敏感度暴露**（成交额参与 β /
+  下行半 β / 流动性风险 β）与未来 1–5 日收益的关系。五个机制各自**恰一个候选**，
+  `higher_is_better` 与机制陈述先于任何结果统计冻结（冻结件 sha256 = b04f2560dc571a4f）。
+  ★ 前置事实：`research/evaluation.py` 对 `spec.is_market=True` 硬编码 `rankic=None`
+  （`evaluation_type="market_context_quality_only"`）⇒ 市场标量**不可能**产出 RankIC，
+  本单元交付物只能是**股票形状 (T, C) 交互候选**，市场量只作**有符号状态**。
+  ★ 结构性恒等式：引擎逐日 winsor→z-score 且 z 对正尺度不变 ⇒
+  `z_t(state × leg) = sign(state_t)·z_t(leg)` 逐日精确 ⇒ **腿若是在产因子，P1 必然失败**；
+  故三条腿全部是模块内自算量。
+mechanism: |
+  1) `mktliq_x_amountbeta`（方向 false）：状态 = z252(log 池内成交额中位数)（市场参与度/流动性）；
+     腿 = 个股 log 成交额对 log 池内成交额中位数的 120 日 β（**资金参与敏感度**）。
+     参与度高于常态 ⇒ 增量资金面广，把参与 β 最高的股票推过均衡价，随后 1–5 日部分回吐；
+     参与度低迷 ⇒ 这批恰是被冷落的低流动性名，赚非流动性溢价（反向）⇒ 交互项偏负。
+  2) `mktvol_x_downbeta`（方向 false）：状态 = z252(池内日收益截面标准差)（同 mkt_dispersion 口径）；
+     腿 = 120 日**下行半 β**（只在池内等权收益 < 0 的日子上估）。
+     高波动/高离散 ⇒ 融资约束收紧、风险偏好回落，对下跌最敏感的股票被去杠杆式抛售而跑输；
+     平静市 ⇒ risk-on，高下行 β 拿正常风险溢价 ⇒ 交互项偏负。
+  3) `mktflow_x_illiqbeta`（方向 false）：状态 = z252(大单净流入家数占比)（同 mkt_mf_large_breadth）；
+     腿 = 个股 log 非流动性对市场 log 非流动性的 120 日 β（**流动性风险 β**）。
+     大单净买入面广 ⇒ 总量需求充裕，高流动性风险 β 最易被吸纳、被推过均衡价后回吐；
+     净卖出面广 ⇒ 先被砸出流动性折价、随后赚流动性风险补偿 ⇒ 交互项偏负。
+  4) `mktvol_x_illiqbeta`（方向 true）：状态同 2、腿同 3。
+     高波动 ⇒ 总量流动性风险被重新定价、要求更高补偿 ⇒ 高 β 拿到**正**超额；平静市补偿被压缩。
+  5) `mktliq_x_downbeta`（方向 false）：状态同 1、腿同 2。
+     参与度高 = 风险偏好高 ⇒ 下行风险被低估、高下行 β 被推高后跑输；参与度低迷 ⇒ 下行风险溢价恢复。
+  ★ 强制预筛（P1 逐日秩对齐 / P2 腿无独立信号 / P3 状态显著翻转腿）**先于登记**执行：
+     P2 实测 `L_ILB` t=+3.14/+2.88（**失败**）、`coskew_120` t=−6.55（失败）、
+     `L_AMTB` +0.92/+0.68（过）、`L_DBETA` −0.29/+0.49（过）；
+     P3 实测 H1 斜率 HAC t=−4.09/−3.82（**过**）、H2 −0.93/+0.75（失败）、H5 +0.46/+0.63（失败）。
+     ⇒ 只有 H1 通过三条，`ADMITTED` 只含 `mktliq_x_amountbeta`；其余四个以证伪记录，**不反号重登**。
+expected_direction: >
+  H1/H2/H3/H5 预登记为 false（`higher_is_better=false`，declared = −raw）；
+  H4 预登记为 true。方向先于任何结果统计冻结；登记后不得反号、不得改 `higher_is_better`、
+  不得换版本扳方向。**未通过预筛的假设不得登记，也不得用探索性网格里的其他格替代。**
+target_horizons: [1, 5]
+falsifiable: >
+  declared 分年同号 < 7/9；或 G7 控制集（base8 及规则 3 增补控制）后 FM 系数不显著 /
+  符号与登记方向不一致；或 G2/G3 不达标（广播状态造成退化截面）；或与任一在产股票因子
+  逐日 |ρ| > 0.99（D2 变体：逐日秩置换）；或 P3 两状态条件 IC 未反号 / 斜率 HAC |t| < 3。
+  静态事实面：`var_95_20` **不在**库（不得引用为存在）；`stock_main_fund_flow` 的
+  2018 年前覆盖有限（H3 未登记，故不影响）。
+fields: [stock_daily.stock_code, stock_daily.trade_date, stock_daily.amount, stock_daily.vol, stock_daily.close, stock_daily.pre_close, stock_adj_factor.adj_factor, stock_main_fund_flow.buy_lg_amount, stock_main_fund_flow.sell_lg_amount, stock_main_fund_flow.buy_elg_amount, stock_main_fund_flow.sell_elg_amount]
+origin: round11_u3_preregistered_2026-10-05
+status: unvalidated_hypothesis

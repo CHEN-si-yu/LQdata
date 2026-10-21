@@ -66,13 +66,9 @@ class TestClosing30(unittest.TestCase):
         self.assertEqual(row.high_tail30, 11.0)
         self.assertEqual(row.close_tail30, 10.4)
         ctx = _Context(row)
-        share = 1200 / 5400
-        giveback = 1 - 10.4 / 11
-        self.assertAlmostEqual(factors_closing30.close30_amt_share(ctx)[0, 0], share)
+        # ★ 2026-10-03 清理复审：amt_share / crowded_fade（及其助手 _giveback）未通过并删除；
+        #   本用例保留对留存对象 close30_ret 的数值断言，层聚合断言不变。
         self.assertAlmostEqual(factors_closing30.close30_ret(ctx)[0, 0], 0.04)
-        self.assertAlmostEqual(factors_closing30._giveback(ctx)[0, 0], giveback)
-        self.assertAlmostEqual(factors_closing30.close30_crowded_fade(ctx)[0, 0],
-                               share * giveback)
 
     def test_missing_or_duplicate_bar_is_not_a_valid_day(self):
         base = _bars()
@@ -98,8 +94,9 @@ class TestClosing30(unittest.TestCase):
         df.loc[42:, "amount"] = 0.0
         row = self._row(df)
         self.assertEqual(row.amt_tail30, 0.0)
-        self.assertEqual(factors_closing30.close30_amt_share(_Context(row))[0, 0], 0.0)
+        # 尾段零成交 ⇒ 留存对象 close30_ret 不得给出伪造收益（开盘尾段缺失 → NaN）。
         self.assertTrue(np.isnan(row.open_tail30))
+        self.assertTrue(np.isnan(factors_closing30.close30_ret(_Context(row))[0, 0]))
 
         df = _bars()
         df.loc[45, "high"] = np.nan
@@ -113,14 +110,16 @@ class TestClosing30(unittest.TestCase):
         df.loc[47, "high"] = 9.0
         row = self._row(df)
         self.assertEqual(row.high_tail30, 10.4)
-        self.assertEqual(factors_closing30._giveback(_Context(row))[0, 0], 0.0)
+        # _giveback 助手已随未通过的 crowded_fade 一并删除；留存对象 close30_ret 仍应给出正常收益。
+        self.assertAlmostEqual(factors_closing30.close30_ret(_Context(row))[0, 0], 0.04)
 
     def test_registration_contract(self):
-        for name in ("close30_amt_share", "close30_ret", "close30_crowded_fade"):
+        # ★ 2026-10-03 清理复审后仅 close30_ret 留存；版本因「删未通过实现」身份变更已升至 3。
+        for name in ("close30_ret",):
             spec = REGISTRY[name]
             self.assertEqual(spec.deps, ("stock_history_5min",))
             self.assertEqual(spec.warmup_days, 0)
-            self.assertEqual(spec.version, 1 if name == "close30_amt_share" else 2)
+            self.assertEqual(spec.version, 3)
             self.assertFalse(spec.is_market)
 
 

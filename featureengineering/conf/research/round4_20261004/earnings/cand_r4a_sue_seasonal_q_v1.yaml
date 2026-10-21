@@ -1,0 +1,17 @@
+name: r4a_sue_seasonal_q_v1
+family_id: r4a_earnings_surprise_v1
+implementation: research.families.r4a_earnings_surprise_v1:build
+parameters: {signal: sue_seasonal_q}
+units: n_income_attr_p 原值单位（元）经 TTM 差分后相除，量纲被约去，输出为无量纲 z 型比值。
+availability: 只用公告可得日 pit = max(ann_date, f_ann_date, end_date)（且 ann/fann ≥ 19900101）起可见的财报行；财务层三行式 TTM（cum_q + cum_FY(y−1) − cum_q−4）恒等式给出单季同比差，不用供应商单季字段、不做日频差分；asof 前向填充，公告前不可见。
+missing_policy: 分母窗口最少 6 个有效历史同比差（共 8 个），不足为 NaN；标准差为 0 或当期值为 NaN 时为 NaN；不零填充。
+spec:
+  group: research_earnings
+  desc: 单季归母净利同比惊喜的标准化（盈余惊喜基础机制，库内无同类因子）。
+  formula: "(lag_ttm(NP,0)-lag_ttm(NP,1)) / std_pop(lag_ttm(NP,j)-lag_ttm(NP,j+1) for j=1..8, min_count=6), NP=n_income_attr_p"
+  deps: [stock_income]
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: TTM 三行恒等式 lag_ttm(j)-lag_ttm(j+1)=Q(p-j)-Q(p-j-4) 实测跨年成立；2026-10-04 实测 stock_income 无 ann/fann 1970 哨兵（0 行），防御过滤保留；单季口径与供应商无单季字段的差异已在模块 docstring 记录。
+  fin_fields: [n_income_attr_p]

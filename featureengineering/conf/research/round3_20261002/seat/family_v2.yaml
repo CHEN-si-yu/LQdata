@@ -1,0 +1,39 @@
+family_id: r3_seat_family_v2
+idea_id: r3_seat_idea_v1
+trial_budget: 7
+allowed_variants:
+  - {signal: seat_class_divergence, window: 60}
+  - {signal: seat_concentration, window: 60}
+  - {signal: seat_persistence, window: 60}
+  - {signal: seat_buy_sell_overlap, window: 60}
+  - {signal: seat_novelty, window: 60}
+  - {signal: seat_class_divergence, window: 20}
+  - {signal: seat_persistence, window: 120}
+baseline:
+  - dragon_tiger_org_net_20
+  - top_list_net_rate_20
+  - efx_top_imbalance
+  - efx_top_amount_rate
+  - turnover_std_20
+  - log_mv
+hypothesis_boundary: >
+  只研究席位身份维度上的五个机制。已占用的表达是「机构专用净买额的 20 日滚动」
+  （dragon_tiger_org_net_20）与龙虎榜净买率（top_list_net_rate_20），两者都是金额水平；
+  本轮候选不得退化为金额水平的重复表达。不得扩展窗口或方向搜索。
+search_policy: >
+  5 个机制各 1 个候选（窗口 60 交易日）+ 2 个预登记窗口变体（机制1 的 20 日短窗、
+  机制3 的 120 日长窗）。窗口变体在看任何 IC 之前登记；不扩参数网格、不事后调阈值。
+  零填充为唯一主口径；NaN 口径不单独消耗候选预算。
+sparse_event_policy: >
+  「未上榜」不等于「无事件」：未达上榜标准本身是信息，故主口径把窗口内无上榜记录记为 0，
+  并同时报告 NaN（条件口径）的覆盖率与 RankIC。
+v1_defect_disclosure: >
+  family v1（r3_seat_family_v1，7 个已登记候选，模块 research/families/r3_seat_v1.py）存在
+  席位分类标签缺陷：_is_institution 把整个匿名名单 _ANON_EXACT 当作机构，使「沪股通专用 /
+  深股通专用」被并进机构桶，机制1「机构 vs 游资」实际变成「机构+北向 vs 游资」。
+  该缺陷由**覆盖率/样本量自检**（G1-G3 类检查，未计算任何 IC 或收益）在 2026-10-02 03:10
+  的首次全区间 run 中被发现；发现时 v1 的 7 个候选**没有任何一个跑完**（run 目录未落
+  run.json）、**没有 evaluate**、**没有产生任何 IC 或收益数字**，因此不构成任何试验消耗，
+  与 Round-2 ownership v1 的缺陷处理同类。v2 只把机构与北向拆成两类（并把 hot/ordinary
+  的分类口径写清楚），机制集合、窗口、方向、阈值、规范化规则全部不变；v1 的定义与模块
+  按不可变原则保留在账本中，不删除、不复用。v2 的模块 = v1 模块 + 分类修正。

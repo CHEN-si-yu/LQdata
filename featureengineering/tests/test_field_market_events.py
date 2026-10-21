@@ -1,3 +1,9 @@
+# ★ 2026-10-03 清理复审：field_markets 家族未通过并删除独立实现（mfx_* 共 9 个，
+#   市场状态相关暴露族）。本文件随之拆分：
+#   - 保留 field_events 的事件网格/均值/时钟助手测试（该家族 2 个对象获基本因子绿卡保留，
+#     其 grid/event_mean/clock_minutes/fraction_text/ratio 等共用助手仍在该模块中服役）；
+#   - 保留 fea.engine 派生层规划/并行构建的框架测试（与已删因子模块无关）；
+#   - 移除 field_markets（mk.*）的全部测试。
 import unittest
 from unittest.mock import patch
 from pathlib import Path
@@ -5,13 +11,11 @@ import tempfile
 from types import SimpleNamespace
 import numpy as np
 import pandas as pd
-import pyarrow as pa
 from fea.context import FactorContext
 from fea.panel import Panel
 from factors import field_events as ev
-from factors import field_markets as mk
 
-class FieldMarketEventTests(unittest.TestCase):
+class FieldEventTests(unittest.TestCase):
     def test_event_mean_is_independent_of_expired_history(self):
         values=np.zeros((100,3));values[:30]=1e18
         values[50:60,1]=np.nan;values[60:,2]=np.nan
@@ -43,54 +47,6 @@ class FieldMarketEventTests(unittest.TestCase):
         a=ev.fraction_text(pd.Series(['3/5','0/0','bad']),r'^(\d+)/(\d+)$')
         np.testing.assert_array_equal(a,[.6,np.nan,np.nan])
         np.testing.assert_array_equal(ev.ratio([1,2,3],[0,-1,2]),[np.nan,np.nan,1.5])
-
-    def test_daily_market_uses_historical_rows_and_source_cutoff(self):
-        rows=[]
-        for day in ['2025-01-02','2025-01-03','2025-01-06']:
-            for i in range(6):rows.append(dict(board_code=str(i),trade_date=day,open=10,high=12,low=9,close=11,vol=100+i,amount=200+i))
-        raw=pd.DataFrame(rows)
-        up=SimpleNamespace(read=lambda ds,columns,**kw:raw[columns],audit_cutoff=20250103)
-        p=Panel(np.array([20250102,20250103,20250106],np.int32),np.array(['A']))
-        c=FactorContext(p,None,up,None,np.ones(p.shape,bool))
-        x=mk.market(c,'tdx_daily')
-        self.assertEqual(list(x.index),[20250102,20250103])
-        np.testing.assert_allclose(x.pressure,1/3)
-        self.assertIs(x,mk.market(c,'tdx_daily'))
-
-    def test_market_correlation_is_stock_specific_and_prefix_invariant(self):
-        dates=pd.bdate_range('2024-01-01',periods=150)
-        days=dates.strftime('%Y%m%d').astype(int).to_numpy(np.int32)
-        signal=np.sin(np.arange(150)/5)+np.cos(np.arange(150)/13)
-        frame=pd.DataFrame({'pressure':signal},index=days)
-        def ctx(n):
-            panel=Panel(days[:n],np.array(['A','B']))
-            # ★ 2026-09-24 质检瘦身：`mfx_dc_pressure` 与 `mfx_tdx_pressure` 同批删除，
-            #   改用同族存活的 `mfx_index_pressure`（数据集 index_daily）。
-            up=SimpleNamespace(audit_cutoff=None,_expansion_market_cache={('index_daily',int(days[0]),int(days[n-1])):frame.iloc[:n]})
-            return SimpleNamespace(panel=panel,up=up,ret_clean=lambda:np.stack([signal[:n],-signal[:n]],axis=1))
-        full=mk.mfx_index_pressure(ctx(150));prefix=mk.mfx_index_pressure(ctx(100))
-        np.testing.assert_allclose(full[:100],prefix,atol=1e-12,equal_nan=True)
-        np.testing.assert_allclose(full[-1],[1,-1],atol=1e-12)
-
-    def test_minute_chunk_aggregation_and_cutoff(self):
-        rows=[]
-        for date in ['2025-01-02','2025-01-03']:
-            for board in range(30):
-                for k in range(48):
-                    rows.append(dict(board_code=str(board),trade_time=date+' 10:00:00',open=10,high=12,low=9,close=11,vol=100,amount=500,pct_change=.1,amplitude=.3))
-        batches=pa.Table.from_pandas(pd.DataFrame(rows)).to_batches(max_chunksize=101)
-        with tempfile.TemporaryDirectory() as temp:
-            p=Path(temp)/'tdx_minute/year=2025/data.parquet';p.parent.mkdir(parents=True);p.touch()
-            up=SimpleNamespace(root=Path(temp),audit_cutoff=20250102)
-            panel=Panel(np.array([20250102,20250103],np.int32),np.array(['A']))
-            ctx=FactorContext(panel,None,up,None,np.ones(panel.shape,bool))
-            with patch.object(mk.pq,'ParquetFile',return_value=SimpleNamespace(iter_batches=lambda **kw:iter(batches))):
-                result=mk._minute(ctx)
-        self.assertEqual(list(result.index),[20250102])
-        np.testing.assert_allclose(result.pressure,[1/3])
-        np.testing.assert_allclose(result.weighted_pressure,[1/3])
-        np.testing.assert_allclose(result.volume_concentration,[1])
-        np.testing.assert_allclose(result.realized_vol,[np.sqrt(48)*.1])
 
     def test_forecast_disclosure_on_weekend_maps_to_next_trading_day(self):
         raw=pd.DataFrame({'stock_code':['A'],'ann_date':['2025-01-04'],'first_ann_date':['2024-12-25']})

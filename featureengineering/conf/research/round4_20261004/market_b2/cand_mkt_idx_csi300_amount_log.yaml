@@ -1,0 +1,18 @@
+name: r4n_mkt_idx_csi300_amount_log_v1
+family_id: r4n_market_b2_v1
+implementation: research.families.r4n_market_b2_v1:build
+parameters: {signal: mkt_idx_csi300_amount_log}
+units: log(元)；沪深300 指数成交额（原始单位元，实测 2025-12 约 4×10^11 元/日）取自然对数。
+availability: T 日收盘后可用；只读当日及以前的指数日线（index_daily / 000300.SH，delay=0）；无未来数据。
+missing_policy: 指数缺测 → NaN；amount ≤ 0 → NaN；不零填充、不前向填充。
+spec:
+  group: market
+  desc: "log(沪深300 成交额)（绿卡描述量，无方向）"
+  formula: "value=log(amount(000300.SH))"
+  deps: [index_daily]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  is_market: true
+  note: "绿卡通道预登记（无方向承诺）；指数直接行情统计量（绿卡列举项『直接指数行情』）+ log 值域压缩变换；不限制为固定股票池（指数按官方编制范围）；已删同族（mkt_idx_csi300_amount_ratio20 / mkt_idx_csi300_amount_share 均为比值构造）差异见 report.md 防重蹈检查；当日收盘后可用；缺失保持NaN；不做截面rank；未做收益有效性承诺。"

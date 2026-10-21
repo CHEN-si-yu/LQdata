@@ -1,0 +1,26 @@
+{
+  "name": "mka26_mkt_full_up_change5_v1",
+  "family_id": "mkta26_limit_family_v1",
+  "implementation": "research.families.market_gate_audit_v1:build",
+  "parameters": {
+    "original_name": "mkt_full_up_change5",
+    "definition_sha256": "cb3ac53feeca5920925eed70b2f283ed78dc34a042098dc00725fc6b2c4e883c"
+  },
+  "units": "与正式因子 mkt_full_up_change5 完全一致（本候选仅做逐值复算，不改变任何口径）；单位与可用性详见其正式 note。",
+  "availability": "与正式因子 mkt_full_up_change5 一致：T 日值于 T 日收盘后可用；无额外滞后；上午族截面时点 11:30 但生产可用时点为收盘后。",
+  "missing_policy": "与正式因子一致：缺失保持 NaN，不用未来值回填；对齐前缀按正式声明（align_fill 或 NaN）。",
+  "spec": {
+    "group": "market",
+    "desc": "上涨家数占比的 5 日变化",
+    "formula": "up_ratio-lag(up_ratio,5)；取每日 15:00 那一行",
+    "deps": [
+      "stock_market_distribution_history"
+    ],
+    "start": "2018-01-01",
+    "warmup_days": 40,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "市场审计别名（mka26 复审）：逐值复算正式因子 mkt_full_up_change5@v1；市场标量，每天恰好一行、无股票列、无横截面 rank；未做收益有效性承诺。★ 全市场口径：源表是上游按全市聚合好的家数，没有个股明细，还原不到 2115 池；名字带 mkt_full_ 前缀以示区别，与固定池口径的数字不可直接比较。 缺失保持 NaN，不用未来值回填。",
+    "is_market": true
+  }
+}

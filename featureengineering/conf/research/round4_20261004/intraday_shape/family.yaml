@@ -1,0 +1,15 @@
+family_id: r4b_intraday_shape_v1
+idea_id: r4b_intraday_shape_v1
+trial_budget: 7
+baseline: 朴素基线 = idt_rv_daily（波动水平）与 idt_vol_stability（波动随时间）；机制 2 的朴素对照
+  = |5 日收益|（纯幅度）；另按 RESEARCH_BRIEF_B1.md §4-U2 的定向相关对照逐项报告：
+  idt_rv_daily、id2_parkinson_vol、idt_vol_stability、r3b_intraday_rv_skewness_v2、close30_ret、
+  idt_overnight_minus_intraday，并对全库正式因子做相关性筛查。
+allowed_variants:
+  - {signal: intraday_volume_hhi_20}
+  - {signal: intraday_path_inefficiency_20}
+  - {signal: close30_volume_share_20}
+  - {signal: upbar_volume_share_20}
+  - {signal: close_location_value_20}
+note: 五个机制、方向与期限由 RESEARCH_BRIEF_B1.md §4-U2 事前冻结；本族只登记这 5 个候选，
+  预算 7 中的变体槽位不使用（避免看过结果后扩大搜索空间）。

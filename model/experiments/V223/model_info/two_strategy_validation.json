@@ -1,0 +1,73 @@
+{
+  "run_name": "research_20261006",
+  "checked_at": "2026-10-06 16:38:50",
+  "score_source": "training_predictions",
+  "reads_model_train": true,
+  "loads_model_weights": true,
+  "strategies": [
+    "top5_5d",
+    "top1_1d"
+  ],
+  "strategy_rows": 2,
+  "quarterly_rows": 8,
+  "evaluation_days": 242,
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 644339,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 639937,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 635558,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 624824,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 603712,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "quarterly_returns_compound": true,
+  "date_axis_matches_price_axis": true,
+  "realized": {
+    "top5_5d": {
+      "return_value": 0.3275745390804514,
+      "max_drawdown": -0.18994524135307322,
+      "sharpe": 1.476038766580617,
+      "trades": 114,
+      "total_fees": 1379.515691955,
+      "gross_return_same_positions": 0.3494000000000004,
+      "fee_drag": 0.01379515691955,
+      "slippage_drag": 0.008030303999999015,
+      "avg_exposure": 0.44055513170671123,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    },
+    "top1_1d": {
+      "return_value": 0.9766432534319629,
+      "max_drawdown": -0.3152157989753108,
+      "sharpe": 1.695680520017031,
+      "trades": 272,
+      "total_fees": 23974.124356806,
+      "gross_return_same_positions": 1.3572300000000035,
+      "fee_drag": 0.23974124356806006,
+      "slippage_drag": 0.14084550299998053,
+      "avg_exposure": 0.9936012290659758,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    }
+  }
+}

@@ -1,0 +1,54 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "name": "s26_structure_block_split_v1",
+  "family_id": "s26_structure_family_v1",
+  "implementation": "research.families.selection_20261001_v1:build",
+  "parameters": {
+    "signal": "block_buy_large_sell_close"
+  },
+  "units": "stock_daily的OHLC、vol、amount保留供应商原始尺度；四档买卖amount/vol保留供应商原始尺度；本信号仅使用同字段时序比值、对数创新/标准化或同表同尺度比值，单位相消，不做跨表金额/成交量换算；不据字段名或跨表比例认定物理单位。",
+  "availability": "日终信号，仅T日及以前原始记录；拟合/历史基线若存在均止于T-1。四档资金遵循本项目delay_days=0合同，原始可见日期由审计cutoff控制。固定池偏离使用ctx.universe的当日有效样本，含ST屏蔽。",
+  "missing_policy": "当日不成交或实际必需源字段缺行/非法值为NaN；不前向填充资金流，不用未来标签有效性筛股票。仅当日四档买卖金额、当日OHLC及当日/上一交易日HFQ收益有效性；无滚动历史要求。完整输入但超大单买入/大单卖出条件不成立为0。用于lag/rolling的HFQ价格和成交额先按当日真实成交及OHLC/量额有效性屏蔽；收益/开盘缺口还要求前一交易日有效HFQ收盘，不把无效正价作为上一日观察。进入创新/拟合历史的资金档位须当日实际成交、八列金额有效且总额>0；完整输入下的合法未触发条件0仍保留。",
+  "closest_existing_baselines": [
+    "mf_elg_lg_split_20",
+    "mf_tier_flow_agreement_20"
+  ],
+  "semantic_difference": "同时要求elg买与lg卖并以收盘位置确认，连续非线性交互不同于净额差或符号同向频率。",
+  "source_fields": [
+    "stock_daily.open",
+    "stock_daily.high",
+    "stock_daily.low",
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_daily.amount",
+    "stock_adj_factor.adj_factor",
+    "stock_main_fund_flow.buy_sm_amount",
+    "stock_main_fund_flow.sell_sm_amount",
+    "stock_main_fund_flow.buy_md_amount",
+    "stock_main_fund_flow.sell_md_amount",
+    "stock_main_fund_flow.buy_lg_amount",
+    "stock_main_fund_flow.sell_lg_amount",
+    "stock_main_fund_flow.buy_elg_amount",
+    "stock_main_fund_flow.sell_elg_amount",
+    "stock_main_fund_flow.buy_lg_vol",
+    "stock_main_fund_flow.sell_lg_vol",
+    "stock_main_fund_flow.buy_elg_vol",
+    "stock_main_fund_flow.sell_elg_vol"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "s26_structure",
+    "desc": "超大单买入、大单卖出的收盘确认",
+    "formula": "max(elg_net_ratio,0)*max(-lg_net_ratio,0)*close_location",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor",
+      "stock_main_fund_flow"
+    ],
+    "start": null,
+    "warmup_days": 180,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "selection_20261001_v1；当日超大单净买与大单净卖的交互乘收盘位置；不称其为投资者身份识别。池偏离为固定池当日有效样本等权去均值，不是行业或完整beta中性。所有方向事前冻结，候选注册不等于生产批准。"
+  }
+}

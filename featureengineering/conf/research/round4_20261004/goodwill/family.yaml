@@ -1,0 +1,10 @@
+family_id: r4p_goodwill_v1
+idea_id: r4p_goodwill_v1
+trial_budget: 6
+baseline: 定向对照 bs_other_receiv_to_assets / roe_ttm / asset_growth_qoq / log_mv / bp（任务书 §V1）；另做全库正式因子相关筛查（G5）与 G7 八控制集（含 bp、roe_ttm、log_mv）。已删同名先行者 goodwill_to_assets（机制2）仅作防重蹈对照记录、不登记不产出。
+allowed_variants:
+  - {signal: goodwill_to_equity}
+  - {signal: goodwill_to_equity_win}
+  - {signal: goodwill_growth_yoy}
+  - {signal: goodwill_growth_yoy_win}
+note: 2 机制 + 2 winsor 敏感性变体（事前登记，未看结果扩网格）；机制2 goodwill_to_assets 按防重蹈检查停止（同名已删先行者，说不出对象/口径/机制差异）、不占预算。变体理由——_win：固定阈值 winsor（比率上帽 1.0；增速帽 [−1,2]），检验结论是否由极端样本（商誉>净资产；并购冲刺）驱动。帽值在首个 run 之前固定。

@@ -40,23 +40,6 @@ def _history_quantile(ctx, amount: np.ndarray, q: float) -> np.ndarray:
     return np.where(np.isfinite(amount), value, np.nan)
 
 
-@register(FactorSpec(
-    name="open5_capacity_p20_log",
-    group="intraday",
-    desc="截至 T 日的近 20 个交易日首根成交额 20% 分位对数，估 T+1 开盘保守容量",
-    formula="log(Quantile_0.20(amt_open5[T-19:T]))，窗口至少 15 个有效日",
-    deps=DEPS,
-    warmup_days=WARMUP_DAYS,
-    higher_is_better=True,
-    version=1,
-    note=("执行容量口径，金额单位元。T 日收盘可得；不读取 T+1 数据。"
-          "可按 exp(value) 还原历史开盘池子下分位，再乘交易参与率；"
-          "这是容量基准而非成交保证。停牌和无效分钟棒为 NaN，窗口内不补零。"),
-))
-def open5_capacity_p20_log(ctx):
-    amount = _open_amount(ctx)
-    p20 = _history_quantile(ctx, amount, 0.20)
-    return ctx.safe_log(np.where(p20 > 0, p20, np.nan))
 
 
 @register(FactorSpec(
@@ -67,7 +50,7 @@ def open5_capacity_p20_log(ctx):
     deps=DEPS,
     warmup_days=WARMUP_DAYS,
     higher_is_better=True,
-    version=1,
+    version=2,
     note=("执行稳定度口径，值越低表示历史开盘池子更容易塌缩。"
           "与绝对容量对数分工：同样大金额的两只股票可有不同下尾风险。"
           "分子分母同为首根成交额，单位相消；停牌和无效分钟棒为 NaN。"),

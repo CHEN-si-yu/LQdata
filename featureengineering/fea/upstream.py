@@ -22,7 +22,7 @@ from .dates import year_of
 
 class Upstream:
     def __init__(self, root: Path, project_root: Path | None = None):
-        self.root = Path(root)
+        self.root = Path(root).resolve()
         # ★ 2026-09-25：输入身份缓存回归项目内 `state/input_hashes/`。
         #   原来写 `self.root.parent.parent / "CodeX" / ...` —— 那是「上游目录的祖父」，
         #   既与项目位置隐式耦合、又指向本项目单元之外。改为显式接收项目根，
@@ -30,12 +30,19 @@ class Upstream:
         #   所以调用方应传 cfg.root）。
         if project_root is None:
             from .config import ROOT as project_root          # 延迟导入，避免循环
-        self.project_root = Path(project_root)
+        self.project_root = Path(project_root).resolve()
         self._cache: dict[tuple, pd.DataFrame] = {}
+        self.audit_cutoff: int | None = None
 
     # ---------------------------------------------------------------- 路径
     def _dir(self, name: str) -> Path:
-        return self.root / name
+        import re
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", str(name)):
+            raise ValueError(f"非法上游数据集名称：{name!r}")
+        path = (self.root / name).resolve()
+        if not path.is_relative_to(self.root):
+            raise ValueError(f"上游数据集越出原始数据目录：{path}")
+        return path
 
     def clear_cache(self) -> None:
         """丢掉缓存的上游表。
@@ -69,10 +76,71 @@ class Upstream:
         return sorted(out)
 
     # ---------------------------------------------------------------- 读取
+    def _audit_limit(self) -> int | None:
+        """Audit visibility is a calendar date; normal production has no cap."""
+        cutoff = self.audit_cutoff
+        if cutoff is None:
+            return None
+        import datetime
+        if isinstance(cutoff, bool) or not isinstance(cutoff, int) or len(str(cutoff)) != 8:
+            raise ValueError("audit_cutoff 必须是 YYYYMMDD 整数日期")
+        try:
+            datetime.datetime.strptime(str(cutoff), "%Y%m%d")
+        except ValueError as error:
+            raise ValueError("audit_cutoff 必须是有效的 YYYYMMDD 日期") from error
+        return cutoff
+
+    @staticmethod
+    def _audit_dates(values: pd.Series):
+        """Parse real calendar dates, including the date part of minute bars."""
+        text = values.astype("string").str.slice(0, 10)
+        parsed = pd.to_datetime(text, format="%Y-%m-%d", errors="coerce")
+        compact = text.str.fullmatch(r"\d{8}", na=False)
+        if compact.any():
+            parsed.loc[compact] = pd.to_datetime(text.loc[compact], format="%Y%m%d", errors="coerce")
+        return (parsed.dt.year * 10000 + parsed.dt.month * 100 + parsed.dt.day).fillna(0).to_numpy(dtype="int32")
+
+    @staticmethod
+    def _audit_columns(name: str, names: list[str]) -> tuple[str, list[str]]:
+        # These fixed contracts define the calendar and stock axis, not a
+        # historically captured information snapshot.
+        if name in {"basic_calendar", "stock_list"}:
+            return "contract", []
+        announcements = [column for column in ("ann_date", "f_ann_date") if column in names]
+        if name in {"stock_income", "stock_balancesheet", "stock_cashflow", "stock_financial_indicator"}:
+            if announcements and "end_date" in names:
+                return "financial", [*announcements, "end_date"]
+        elif announcements:
+            # Forecast end_date may be in the future: a forecast is visible at
+            # this announcement, not at first_ann_date or its predicted period.
+            return "announcement", announcements
+        else:
+            for column in ("trade_time", "trade_date", "suspend_date", "date"):
+                if column in names:
+                    return "dated", [column]
+        raise ValueError(f"{name} 缺少可用于审计截断的有效日期列；不能将报告期或当前快照当作历史可得日期")
+
+    @classmethod
+    def _audit_frame(cls, frame: pd.DataFrame, mode: str, dates: list[str], cutoff: int) -> pd.DataFrame:
+        if mode == "contract":
+            return frame
+        values = [cls._audit_dates(frame[column]) for column in dates]
+        import numpy as np
+        effective = np.maximum.reduce(values)
+        if mode in {"financial", "announcement"}:
+            announcements = values[:-1] if mode == "financial" else values
+            known = np.logical_or.reduce([value >= 19900101 for value in announcements])
+        else:
+            known = effective > 0
+        return frame.loc[known & (effective <= cutoff)].copy()
+
     def read(self, name: str, columns: list[str] | None = None,
              years: tuple[int, int] | None = None, use_cache: bool = True) -> pd.DataFrame:
         """读取一个数据集。`years=(y0, y1)` 闭区间裁剪年份分区。"""
         key = (name, tuple(columns) if columns else None, years)
+        cutoff = self._audit_limit()
+        if cutoff is not None:
+            key = (name, tuple(columns) if columns is not None else None, years, cutoff)
         if use_cache and key in self._cache:
             return self._cache[key]
 
@@ -92,11 +160,16 @@ class Upstream:
         else:
             parts = []
             for f in files:
-                try:
+                # Missing columns are an explicit schema error; never silently
+                # expand a narrow financial read into an entire wide table.
+                if cutoff is None:
                     parts.append(pd.read_parquet(f, columns=columns))
-                except Exception:                       # 列不存在等情况：整读再裁
-                    t = pd.read_parquet(f)
-                    parts.append(t[columns] if columns else t)
+                else:
+                    mode, dates = self._audit_columns(name, pq.ParquetFile(f).schema_arrow.names)
+                    needed = None if columns is None else list(dict.fromkeys([*columns, *dates]))
+                    frame = pd.read_parquet(f, columns=needed)
+                    frame = self._audit_frame(frame, mode, dates, cutoff)
+                    parts.append(frame if columns is None else frame[columns])
             df = pd.concat(parts, ignore_index=True) if len(parts) > 1 else parts[0]
 
         if use_cache:
@@ -141,6 +214,8 @@ class Upstream:
         col = pit_col or "trade_date"
         rows, mx, parts = 0, 0, {}
         cache_root = self.project_root / "state" / "input_hashes"
+        if not cache_root.resolve().is_relative_to(self.project_root):
+            raise ValueError(f"输入身份缓存越出因子项目：{cache_root}")
         cache_root.mkdir(parents=True, exist_ok=True)
         cache_file = cache_root / (name + ".json")
         try: cached = json.loads(cache_file.read_text())
@@ -182,12 +257,9 @@ class Upstream:
         if changed_cache:
             from .manifest import _atomic_json
             _atomic_json(cached, cache_file)
-        # 直接读取上游发布的逐日台账，不 import 上游工程代码。
-        ledger = self.root.parent.parent / "everyday_tasks/state/dayhash" / (name + ".parquet")
+        # All content identities above are derived directly from raw Parquet.
+        # No external updater ledger is consulted. A file revision is reported
+        # conservatively by the engine and bounded by its historical policy.
         date_hashes, fresh = {}, False
-        if ledger.exists():
-            frame = pd.read_parquet(ledger, columns=["date", "md5"])
-            date_hashes = dict(zip(frame["date"].astype(str), frame["md5"].astype(str)))
-            fresh = ledger.stat().st_mtime_ns >= newest_mtime
         return {"exists": True, "rows": int(rows), "max_pit": int(mx), "files": parts,
                 "date_hashes": date_hashes, "ledger_fresh": fresh}

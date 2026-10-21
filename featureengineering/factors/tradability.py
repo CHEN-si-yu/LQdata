@@ -129,19 +129,10 @@ def limit_days_since_up_20(ctx):
     return np.where(d <= 20, d, np.nan)
 
 
-def limit_open_pressure_20(ctx):
-    ev = _limit_events(ctx)
-    # 同上：分母是涨停日数
-    return _ratio(ctx.roll_sum(ev["open_times"], 20), ctx.roll_sum(ev["up"], 20))
 
 
-def limit_seal_to_float_20(ctx):
-    ev = _limit_events(ctx)
-    return _ratio(ctx.roll_sum(ev["seal_to_float"], 20), ctx.roll_sum(ev["up"], 20))
 
 
-def limit_streak_max_60(ctx):
-    return ctx.roll_max(_limit_events(ctx)["streak"], 60)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -154,7 +145,7 @@ def _register(name: str, desc: str, formula: str, deps: tuple, fn, *,
     compute.__name__ = name
     register(FactorSpec(
         name=name, group="tradability", desc=desc, formula=formula, deps=deps,
-        start=start, warmup_days=warmup, version=1,
+        start=start, warmup_days=warmup, version=2,
         note="池外股票不产出；缺失保持 NaN，不用未来值回填。" + note))(compute)
 
 
@@ -166,11 +157,5 @@ for _n, _d, _f, _w, _fn in (
      "sum(Z,20)/(sum(Z,20)+sum(U,20))", 60, limit_broken_ratio_20),
     ("limit_days_since_up_20", "距最近一次涨停的交易日数", "t-last(limit=U)，超过 20 日记 NaN",
      60, limit_days_since_up_20),
-    ("limit_open_pressure_20", "近 20 日涨停的日均开板次数", "mean(open_times | limit=U, 20日)",
-     60, limit_open_pressure_20),
-    ("limit_seal_to_float_20", "近 20 日涨停日封单额占流通市值比均值",
-     "mean(fd_amount/float_mv | limit=U, 20日)", 60, limit_seal_to_float_20),
-    ("limit_streak_max_60", "近 60 日最高连板数",
-     "max(limit_times | limit=U, 60日)", 120, limit_streak_max_60),
 ):
     _register(_n, _d, _f, LIMIT_DEPS, _fn, start=START_LIMIT, warmup=_w, note=_LIMIT_NOTE)

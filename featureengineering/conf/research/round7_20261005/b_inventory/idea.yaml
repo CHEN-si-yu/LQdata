@@ -1,0 +1,19 @@
+{
+  "idea_id": "r7b_inventory_accumulation_v1",
+  "hypothesis": "Inventory accumulation beyond revenue-scaled historical need may signal operating demand imbalance; weak negative 1/5-day prior, accrual component decomposition not a wholly new source.",
+  "mechanism": "[I(q)-I(q-4)*strict_TTM(revenue,q)/strict_TTM(revenue,q-4)]/A(q-4); q is latest jointly disclosed income/balance report frontier",
+  "expected_direction": "higher_is_better=false; no reversal",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "G1-G7 and preregistered additional controls; failure=>reject, no formula/window/sign rescue.",
+  "fields": [
+    "revenue",
+    "inventories",
+    "total_assets",
+    "stock_daily real-traded mask"
+  ],
+  "origin": "Lead-approved R7 proposals and tax_control_algebra_amendment before implementation/returns",
+  "status": "unvalidated_hypothesis"
+}

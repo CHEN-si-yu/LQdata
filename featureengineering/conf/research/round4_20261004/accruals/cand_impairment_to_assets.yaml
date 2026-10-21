@@ -1,0 +1,17 @@
+name: r4c_impairment_to_assets_v1
+family_id: r4c_accruals_v1
+implementation: research.families.r4c_accruals_v1:build
+parameters: {signal: impairment_to_assets}
+units: 无量纲比率（单季减值/总资产）。正值=单季净计提减值损失，负值=单季净转回。
+availability: assets_impair_loss（利润表）累计值取 pit≤信号日最新版本，单季=|cum(q)|−|cum(q−1)|（q 为 Q1 时单季=|cum(q)|）；总资产取公告时点值；无未来信息。
+missing_policy: 累计减值 q 或 q−1 不可考（Q1 只需 q）、总资产不可考或 |总资产|≤1e6 元时为 NaN；非有限值输出为 NaN。
+spec:
+  group: research_accruals
+  desc: 未验证候选（U3 机制4）：资产减值损失强度，|累计|单季变动/总资产。
+  formula: (|cum(assets_impair_loss, Q)| − |cum(assets_impair_loss, Q−1)|) / point(total_assets)
+  deps: [stock_income, stock_balancesheet]
+  fin_fields: [total_assets]
+  warmup_days: 500
+  higher_is_better: false
+  version: 1
+  note: 方向事前冻结 false（大额减值→低预期收益）；|·| 为消除实测的字段符号口径翻转（2018 及以前以正号为主、2019 报表格式切换后以负号为主，少数公司如 601668.SH 不翻转）；累计差分口径与机制2共用自算机制。

@@ -11,10 +11,15 @@ numpy 的 float32 核与正确舍入在 24.76% 的输入上不一致（float64 �
 
 用法：python env_invariance_test.py <输出.json> [因子名 ...]
 """
+import argparse
 import json
 import sys
 import time
 from pathlib import Path
+if __package__:
+    from ._project_paths import project_output
+else:
+    from _project_paths import project_output
 
 import numpy as np
 
@@ -32,13 +37,10 @@ from fea.spec import all_specs, get
 KERNELS = ("arcsinh", "log", "log1p", "log2", "log10", "exp", "expm1", "power",
            "tanh", "sinh", "cosh", "arctanh", "sin", "cos", "arcsin", "arccos", "arctan")
 
-DEFAULT = ["afx_bs_cap_rese", "afx_bs_div_payable", "afx_is_basic_eps", "afx_fi_bps",
-           "momentum_20", "momentum_120", "reversal_2d", "short_term_reversal_5",
-           "rel_mom_ind_250d", "rel_turnover_ind_20d", "chip_peak_distance",
-           "roe_ttm", "turnover_std_20", "liquidity_shock_20", "bollinger_width_20",
-           "amount_ratio_20", "winner_rate_reversal_signal", "id2_am_ret",
-           "open5_amt_log", "mkt_up_ratio", "mkt_am_ew_return", "label_ret_5d",
-           "efx_limit_streak", "high_open_low_close_frac_20", "gap_event_decay_5"]
+DEFAULT = ["afx_fi_q_ocf_to_or", "cp_momentum_lowvol_20", "cp_value_momentum_div",
+           "reversal_2d", "short_term_reversal_5", "rsi_14", "turnover_std_20",
+           "amount_ratio_20", "limit_broken_ratio_20", "overnight_ma_5d",
+           "ocf_to_profit", "mkt_up_ratio", "mkt_am_ew_return", "label_ret_5d"]
 
 
 def patch_kernels():
@@ -106,15 +108,21 @@ def run_all(specs, cfg, patch: bool, end):
 
 
 def main():
-    out_path = Path(sys.argv[1])
-    names = sys.argv[2:] or DEFAULT
+    parser = argparse.ArgumentParser(description="环境不变性审计（写入项目内报告）")
+    parser.add_argument("output", nargs="?", default="artifacts/audits/env/report.json")
+    parser.add_argument("factors", nargs="*")
+    args = parser.parse_args()
+    out_path = project_output(args.output)
+    names = args.factors or DEFAULT
     cfg = cfg_mod.load()
     # ★ 审计工具绝不能写生产 state/：`Engine.prebuild` 在检测到 recipe 变化时会把
     #   "已清空的 manifest" 落盘（引擎的有意行为：中途崩了也不能让旧 coverage 冒充完成）。
     #   实测踩过（2026-09-25）：审计脚本没隔离 state，直接把 544 个生产台账清空了。
     #   这里把 state 重定向到临时目录 —— 审计只读生产产物，不碰任何状态。
     import tempfile
-    cfg.raw["paths"]["state"] = str(Path(tempfile.mkdtemp(prefix="fea_audit_state_")) / "state")
+    parent=ROOT/'artifacts/audits/env/tmp'
+    parent.mkdir(parents=True,exist_ok=True)
+    cfg.raw["paths"]["state"] = str(Path(tempfile.mkdtemp(prefix="fea_audit_state_",dir=parent)) / "state")
     specs = [get(n) for n in names]
     end = Engine(cfg).baseline_last_day()
     print(f"环境不变性测试：{len(specs)} 个因子 · 双引擎各建一次层 · 截止 {end}", flush=True)
@@ -143,6 +151,7 @@ def main():
               "", flush=True)
     summary = {"objects": len(recs), "bad": bad, "patch": "float32 kernel -> float64 then round"}
     print(json.dumps(summary, ensure_ascii=False))
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps({"summary": summary, "records": recs}, ensure_ascii=False, indent=1))
     return 1 if bad else 0
 

@@ -1,0 +1,44 @@
+name: r9e_fc_peer_lateness_v1
+family_id: r9e_forecast_timing_v1
+implementation: research.families.r9e_forecast_timing_v1:build
+parameters: {signal: peer_lateness}
+units: 日历天（late 减去同队列扩张中位数），无量纲化前为天数量纲；截面排序在评价层做。
+availability: >
+  stock_forecast（conf/frequency.yaml：date_field=ann_date, delay_days=0）的行自 ann_date 起可见；
+  同交易日的公告在 T 日收盘后（含当晚）全部可得，因子 T 日取值用于 T+1 开盘起的标签。
+  队列扩张中位数只用公告日 ≤ 本公告日的同 (end_date, type) 成员，无未来公告。
+  PIT/截断自证见 artifacts/research/round9_20261005/e_forecast_margin/probe_truncation.txt。
+missing_policy: >
+  同 (end_date, type) 队列截至本公告的成员数 < 5（min_periods）→ NaN；ann_date/end_date 缺失或
+  ann_date < 19900101（哨兵）→ NaN；type ∈ {不确定, 其他} → 排除（无方向含义，不默认给 0）；
+  该股在该交易日之前没有任何可用预告 → NaN。**不零填充、不前向填充、不跨股票借用**；
+  正向 as-of 前向填充只把「最近一次已公开的预告」延续到下一次预告（与 r4a 同口径）。
+spec:
+  group: research_forecast_timing
+  desc: >
+    预告披露时点的同类同伴相对位置：late = ann_date − end_date 减去同 (报告期, 预告类型)
+    队列截至该公告日的扩张中位数；相对同类同伴披露越晚，预期未来 1/5 日收益越低
+    （higher_is_better=false）。
+  formula: >
+    late = (ann_date − end_date).days；cohort = (end_date, type)，type ∉ {不确定, 其他}；
+    peer = expanding_median(late over cohort, min_periods=5)（含本公告，按 ann_date 升序）；
+    rel = late − peer；同 (stock, ann_date) 多条取 rel 中位数；
+    value = asof_daily(stock, ann_date, rel)
+  deps: [stock_forecast]
+  start: '2018-01-01'
+  warmup_days: 700
+  higher_is_better: false
+  version: 1
+  note: >
+    §8.8 重蹈检查（doc/因子清理记录_20261003.md，374 个已删股票因子）：disclosure_detail 族的
+    forecast_profit_midpoint_change（幅度/惊喜轴，r4a 的 forecast_implied_surprise 正因此被撤销）与
+    forecast_profit_range_uncertainty（区间宽度轴）、event 族的 forecast_type_score（类型打分 +
+    按 ann_date 前向填充）均已删除——本单元任务书原定的 E1 两个想法正是后两者，已放弃、不登记。
+    本因子的差异化：**没有任何已删因子用到 ann_date − end_date，也没有任何一个用 type 做分组中位数**；
+    late 与 type 在本因子里是「归一化基准」，不是被排序的信号本身。
+    实测（2026-10-05，全池）：stock_forecast 全表 110,918 行 / 池内 52,245 行 / 覆盖 2,099 只
+    （★ 手册与任务书写的「约 5,195 行」实为 year=2026 单分区的行数，不是全表）；late 分位
+    p1 −74 / p50 +10 / p99 +34 天；队列规模 p10=4 / p50=55 / p90=212；同 (code,end_date) 多版本组 3,760。
+    覆盖率：池内「至少有一条可用预告」的交易日 2,110/2,123 = 99.39%，每日可用票数中位数 1,910
+    ⇒ 任务书预判「G2 很可能失败」在本机制上不成立（如实报告，未放宽任何闸门）。
+    环境指纹: python 3.14.7 / numpy 2.5.3 / 数值指纹 7c7d05c7564f。

@@ -1,0 +1,39 @@
+# 事前登记假设，不构成收益证明；机制集合、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r2_pledge_level_v1",
+  "family_id": "r2_pledge_family_v1",
+  "implementation": "research.families.r2_pledge_v1:build",
+  "parameters": {
+    "signal": "pledge_level"
+  },
+  "units": "质押股数与总股本同表同单位（万股），比值无量纲；log1p 化不改变排序与符号。不使用 pledge_ratio（厂商四舍五入到 0.01%）。",
+  "availability": "周频快照，end_date 是截止日而非公开时刻。保守假设：快照在其覆盖周结束后的第 15 个交易日收盘才可用（ctx.asof_daily 只做前向填充，再 ctx.lag_grid 15）。依据：2026-09-30 的上游落盘里最新 end_date 是 2026-09-11（相距 13 个交易日），15 > 13。本项目 conf/frequency.yaml 对该表标的 delay_days=0 无实测支撑（该表 gap_checkable=false），不采用。",
+  "missing_policy": "本表只在整截面日给全池 2114 只（含显式 0），其余周只报有正质押的股票。实测「本周为正质押者下周仍被报告」概率 0.9964，故 (股票×周) 缺席记 0（有字段行为证据的零填充，不是默认推断）。total_share<=0 或字段非有限的记录视为不可用，其记录被排除在网格之外；as-of 只向前取最近一条，绝不用未来值回填。",
+  "closest_existing_baselines": [
+    "total_leverage_ratio",
+    "bp",
+    "log_mv"
+  ],
+  "semantic_difference": "质押是股东层面的杠杆，与公司层面 total_leverage_ratio / debt_to_assets 不是同一负债；本候选对照二者做定向相关。",
+  "source_fields": [
+    "stock_pledge_stat.stock_code",
+    "stock_pledge_stat.end_date",
+    "stock_pledge_stat.unrest_pledge",
+    "stock_pledge_stat.rest_pledge",
+    "stock_pledge_stat.total_share"
+  ],
+  "pre_registered_direction": "lower_is_better",
+  "spec": {
+    "group": "r2_pledge",
+    "desc": "质押比例水平（大股东质押压力）",
+    "formula": "log1p(100*(unrest_pledge+rest_pledge)/total_share)，周频稠密网格 as-of 前向填充后再整体滞后 15 个交易日",
+    "deps": [
+      "stock_pledge_stat"
+    ],
+    "start": null,
+    "warmup_days": 120,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "R2-I1 机制 1；方向事前冻结 higher_is_better=false。"
+  }
+}

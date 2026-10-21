@@ -1,0 +1,17 @@
+name: r4p_goodwill_growth_yoy_v1
+family_id: r4p_goodwill_v1
+implementation: research.families.r4p_goodwill_v1:build
+parameters: {signal: goodwill_growth_yoy}
+units: 无量纲增速（商誉同比 g_t/g_{t−4}−1）。−1=本期商誉归零（全额减值/处置）；0=持平；正值=并购扩张；NaN=不可考（含基期商誉≤1e6 元）。
+availability: 本期与去年同季商誉均取公告时点 pit≤信号日的最新可考版本；同比为 ctx.point(goodwill, lag=4)=同一公告 pit 上「最新报告期−4 期」的 as-of 值（严格同季对比，不跨报告期边界、非日频 shift）；财报数据无未来信息；公告日当天可用。
+missing_policy: 本期商誉不可考、或去年同季商誉不可考/≤1e6 元（min_abs_den=1e6）时为 NaN——0→新增并购的从零起步样本不在增速口径内（披露）；本期商誉=0（全部减值/处置）时增速=−1 为有效值；不做零填充、不向旧报告回退；非有限值输出为 NaN。
+spec:
+  group: research_goodwill
+  desc: 未验证候选（V1 机制3）：商誉同比增速（并购扩张强度），高扩张→未来减值/商誉消化压力→低预期收益。
+  formula: point(goodwill) / point(goodwill, lag=4) − 1
+  deps: [stock_balancesheet]
+  fin_fields: [goodwill]
+  warmup_days: 500
+  higher_is_better: false
+  version: 1
+  note: 方向事前冻结 false；同比=同季对比（报告期−4 的 as-of 值，见 deriv.Derivative.lag）；分母保护 min_abs_den=1e6（基期近零→NaN 而非 +∞）；增速无上界（基期近 1e6 元时可达 1e4 量级）。

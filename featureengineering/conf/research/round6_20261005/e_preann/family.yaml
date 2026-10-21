@@ -1,0 +1,26 @@
+{
+  "family_id": "r6e_preann_propensity_v1",
+  "idea_id": "r6e_preann_propensity_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "completed_preann_turnover_propensity",
+      "events": 4,
+      "max_age_days": 730,
+      "fast": 5,
+      "base": 60
+    }
+  ],
+  "baseline": "base8 + turnover_anomaly_20 + diagnostic mean turnover20 + latest report age + current prospective announcement-window state; window-outside and latest-event-age>20TD mechanism diagnostic.",
+  "variants": "none",
+  "initial_single_task_budget_gb": 3,
+  "parameters_frozen": {
+    "signal": "completed_preann_turnover_propensity",
+    "events": 4,
+    "max_age_days": 730,
+    "fast": 5,
+    "base": 60,
+    "direction": false,
+    "warmup_days": 1100
+  }
+}

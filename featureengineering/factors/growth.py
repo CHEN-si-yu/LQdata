@@ -85,25 +85,8 @@ def _f64(x) -> np.ndarray:
     return np.asarray(x, dtype=np.float64)
 
 
-def _yoy(ctx, cur, prev, floor: float = 1e-6) -> np.ndarray:
-    """同比 = (本期 − 基期) / |基期|。
-
-    分母取**绝对值**：净利润 / 经营现金流 / 营业利润都可能为负，
-    「亏损收窄」应记成正增长（与 `fundamental.yoy_net_profit` 同口径）。
-    `min_abs_den` 挡住近零分母（壳公司的营收、经营性现金流为零的年份）。
-    """
-    c = _f64(cur)
-    p = _f64(prev)
-    return _f64(ctx.safe_div(c - p, np.abs(p), min_abs_den=floor))
 
 
-def _yoy_of_ttm(ctx, field: str, k: int = 0) -> np.ndarray:
-    """报告期 (p − k) 上的 TTM 同比：`TTM_{p−k} / TTM_{p−k−4} − 1`。
-
-    ★ `k` 是**报告期**个数（lag_ttm 内部按 period 做 as-of），不是交易日。
-    k=0 即当期同比；k=1 即「上期同比」（用于加速度）。
-    """
-    return _yoy(ctx, ctx.lag_ttm(field, k), ctx.lag_ttm(field, k + 4))
 
 
 def _cagr(ctx, cur, prev, years: int = 3, floor: float = 1e-6) -> np.ndarray:
@@ -125,33 +108,8 @@ def _cagr(ctx, cur, prev, years: int = 3, floor: float = 1e-6) -> np.ndarray:
         return np.power(r, 1.0 / float(years)) - 1.0
 
 
-def _roe_at(ctx, k: int) -> np.ndarray:
-    """报告期 (p − k) 上的 ROE(TTM) = 归母净利TTM / 期末归母权益。
-
-    与 `fundamental.roe_ttm` 完全同口径（期末权益，不做平均），
-    这样 `roe_trend` 与既有的 `roe_ttm` / `yoy_roe` 三个因子是可加的。
-    """
-    return _f64(ctx.safe_div(ctx.lag_ttm(NP, k), ctx.point(EQ, lag=k)))
 
 
-def _vendor(ctx, field: str) -> np.ndarray:
-    """供应商 `stock_finance` 的日频字段 → (T,C)，按 (code, trade_date) as-of 前向填充。
-
-    与 `valuation._sf` 同一手法：`dv_ttm` / `pe_ttm` 是**状态量**
-    （停牌期间「最后一个已知估值」仍然成立），用 as-of 前向填充而不是补 0。
-    ★ 面板头部（warmup 区）需要面板起点**之前**的最近一条记录，
-      否则上市早、窗口头停牌久的股票会凭空变 NaN，增量与全量就不一致。
-    """
-    d0 = int(ctx.panel.dates[0]) // 10000
-    d1 = int(ctx.panel.dates[-1]) // 10000
-    df = ctx.dataset("stock_finance",
-                     columns=["stock_code", "trade_date", "pe_ttm", "dv_ttm"],
-                     years=(d0 - 1, d1))
-    if df.empty:
-        return np.full(ctx.panel.shape, np.nan, dtype=np.float64)
-    return _f64(ctx.asof_daily(df["stock_code"].to_numpy(),
-                               ctx.date_col(df["trade_date"]),
-                               df[field].to_numpy(dtype=np.float64)))
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -195,7 +153,7 @@ def _vendor(ctx, field: str) -> np.ndarray:
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="revenue_cagr_3y", group="growth", deps=DEP_INC,
+    name="revenue_cagr_3y", version=2, group="growth", deps=DEP_INC,
     desc="3 年营业收入复合增速 = (营收TTM_t / 营收TTM_{t−12Q})^(1/3) − 1",
     formula="EPS_Growth_5Y = (BasicEPS_Y_t / BasicEPS_Y_{t-1260})^(1/5) - 1  "
             "（因子库.md #2 Growth 章节 PEG 系 pegh5 的复合增速式，逐字；"
@@ -230,37 +188,6 @@ def revenue_cagr_3y(ctx):
 # 六、增速的稳定性 与 利润率变化
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="growth_stability", group="growth", deps=DEP_INC,
-    desc="营收增速的稳定性 = 近 8 个报告期同比增速的均值 / 标准差",
-    formula="Stability = mean(YoY_{t-i}, i=0..7) / std(YoY_{t-i}, i=0..7) , "
-            "YoY_{t-i} = Revenue_TTM_{t-i} / Revenue_TTM_{t-i-4} - 1",
-    start=DEEP_LAG_START, warmup_days=FIN_WARMUP, higher_is_better=True,
-    fin_fields=(REV,),
-    note="★★ 实现要点：8 期同比**全部由 lag_ttm 在报告期粒度上构造**（lag 0..11："
-         "第 i 期同比 = lag_ttm(REV,i)/lag_ttm(REV,i+4)−1），再逐格做 mean/std。"
-         "**没有**在日频上做 rolling —— 日频 rolling 会把同一个报告期的值重复计入"
-         "200 多次，而且窗口边界横跨报告期，得到的既不是「8 期」也不是任何可解释的量。"
-         "★ 起点显式写 2014-01-01（不是 default_start）：本因子要 lag_ttm(REV, 11)，"
-         "而上游财报最早只到 2010Q1、TTM 最早算到第 83 期（2010FY）→ "
-         "lag 11 最早在当期报告期 >= 94（2013Q3）时可达，实测首个有效日 2013-10-11、"
-         "2014-03 起覆盖才稳定。2012 整年会是全 NaN，而引擎目前在整年全 NaN 时会崩"
-         "（见文件头 DEEP_LAG_START 的说明）。"
-         "★ 性质：这不是「纯稳定性」，而是成长的**信息比**（均值/标准差）——"
-         "它同时奖励高增速与低波动；稳定下滑的公司（均值 −0.2、标准差 0.05）得 −4，"
-         "排在最末。若要纯波动率口径请取 `-std`（本因子不含）。"
-         "★ 标的选营业收入而非净利润：净利润同比在亏损时符号会翻转，"
-         "均值与标准差都会被「正负跳变」主导，得到一个与经营无关的巨值。"
-         "★ 分母 std 有 min_abs_den=1e-3 的地板：8 期增速高度一致时（真实存在的，"
-         "如公用事业/高速公路）std 近零会让比值爆掉。"
-         "★ 传播规则：8 期里任何一期为 NaN（早期数据不足），结果即 NaN"
-         "（与 `roll_sum` 的 NaN 策略一致，不做 min_count 放松）。",
-))
-def growth_stability(ctx):
-    ys = np.stack([_yoy_of_ttm(ctx, REV, k) for k in range(8)], axis=0)  # (8, T, C)
-    mu = ys.mean(axis=0)
-    sd = ys.std(axis=0, ddof=0)
-    return ctx.safe_div(mu, sd, min_abs_den=1e-3)
 
 
 

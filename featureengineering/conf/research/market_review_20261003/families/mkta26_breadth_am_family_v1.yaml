@@ -1,0 +1,55 @@
+{
+  "family_id": "mkta26_breadth_am_family_v1",
+  "idea_id": "mkta26_breadth_am_idea_v1",
+  "trial_budget": 10,
+  "allowed_variants": [
+    {
+      "original_name": "mkt_am_up_ratio",
+      "definition_sha256": "1606df5c6d334ede2d9f189d3b3840a029678b4adc301cc1d7ad0da8ff4b1529"
+    },
+    {
+      "original_name": "mkt_am_strong_up_ratio",
+      "definition_sha256": "e2430ed3f623d8498b707f511296f0ab82180f30e7ae31de5b0996b171042703"
+    },
+    {
+      "original_name": "mkt_am_strong_down_ratio",
+      "definition_sha256": "7391d2d90a293a90676d74c14974f350629b19f4f0168c441a3f8de7f1a77c9e"
+    },
+    {
+      "original_name": "mkt_am_ew_return",
+      "definition_sha256": "ab2028ef501afb8c4c40dc4bbf819f38942fa4710fd6bf50b22d53444ebd9136"
+    },
+    {
+      "original_name": "mkt_am_dispersion",
+      "definition_sha256": "c80004c3fee46fc4f6465d8a98e14592216a021f288f0783dd11cfd2e51236ee"
+    },
+    {
+      "original_name": "mkt_am_downside_rms",
+      "definition_sha256": "4fd8e650fae562912dc9d5c1d5e9efce2e204ea8f1833b5cefcaae43630408a9"
+    },
+    {
+      "original_name": "mkt_am_up_amount_share",
+      "definition_sha256": "a809ca38120527b9110d73fa4744ea40053f80471de4fd1d8f5b337b04b8bdf6"
+    },
+    {
+      "original_name": "mkt_am_amount_ratio20",
+      "definition_sha256": "7b53947a1caed510962af565a20fc60be8814912ddd1cc2f44aaf82b2acf1788"
+    },
+    {
+      "original_name": "mkt_am_reversal_ratio",
+      "definition_sha256": "6bb75918a479b214dc9f1a2d9918ffa2523738a31fea4f3c39e919e71d670257"
+    },
+    {
+      "original_name": "mkt_am_range_mean",
+      "definition_sha256": "ba3166cc40cc8539ab2aad8247e36d54c462d28efd645a363020759fec9bd94c"
+    }
+  ],
+  "baseline": [
+    "mkt_up_ratio",
+    "mkt_dispersion",
+    "mkt_am_ew_return"
+  ],
+  "hypothesis_boundary": "上午截面是 D 日先验信息的首个完整消化窗口；其结构量刻画日内情绪与承接。上游为日终文件，生产可用时点仍为收盘后（D+1 可用性约定不变）。",
+  "search_policy": "只登记既有正式因子的逐值审计别名，不扩窗口、不改参数、不新增变体",
+  "registration_note": "本文件为 2026-10-03 市场因子复审的**追溯登记**（既有正式因子的逐值审计别名），非事前研究登记；方向与先验强度的预登记见 freeze 方向表，检验为回顾性筛选，不构成未触碰留出样本上的结论（retrospective_screening;historical_selection_is_not_untouched_holdout）。"
+}

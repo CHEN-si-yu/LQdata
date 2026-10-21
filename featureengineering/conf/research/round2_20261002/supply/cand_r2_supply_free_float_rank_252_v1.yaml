@@ -1,0 +1,36 @@
+# 事前登记定义；方向与机制在计算前冻结。
+{
+  "name": "r2_supply_free_float_rank_252_v1",
+  "family_id": "r2_supply_family_v2",
+  "implementation": "research.families.r2_supply_v1:build",
+  "parameters": {
+    "signal": "free_float_ratio_rank252"
+  },
+  "units": "自身 252 交易日窗口内 free_share/total_share 的百分位，取值 [0,1]。",
+  "availability": "同自由流通比例水平；窗口只用 T 日及以前的观测。",
+  "missing_policy": "窗口内 252 个观测必须全部有效，否则 NaN；不成交日输出 NaN。",
+  "closest_existing_baselines": [
+    "circ_mv",
+    "turnover_std_20",
+    "efx_free_turnover"
+  ],
+  "semantic_difference": "同一机制的时间序列位置表达：捕捉自身自由流通比例的抬升，而不是截面高低。",
+  "source_fields": [
+    "stock_finance.free_share",
+    "stock_finance.total_share"
+  ],
+  "pre_registered_direction": "higher_is_better=false",
+  "spec": {
+    "group": "research_round2_supply",
+    "desc": "自由流通比例的自身历史分位（252 日）",
+    "formula": "roll_rank(free_share/total_share,252)",
+    "deps": [
+      "stock_finance"
+    ],
+    "start": null,
+    "warmup_days": 450,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "机制 3 的预登记表达变体。"
+  }
+}

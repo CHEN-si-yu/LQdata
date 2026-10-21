@@ -1,0 +1,23 @@
+name: r2own_v2_per_capita_change_v1
+family_id: r2_ownership_family_v2
+implementation: research.families.r2_ownership_v2:build
+parameters: {signal: per_capita_value_change}
+units: 两次公告日户均市值的自然对数差，无量纲。
+availability: 两次端点都用各自的 ann_date 当天的 circ_mv 与当时已披露户数；T 日只使用 ann_date<=T 的记录。间隔必须落在 (0,400] 日历天，否则 NaN。
+missing_policy: holder_num<=0 或 circ_mv 缺失/非正 -> 该端点无效，差值 NaN；首次披露（无上一期）-> NaN。
+closest_existing_baselines: [holder_number_chg, log_mv, turnover_std_20, chip_concentration]
+semantic_difference: 机制1b；holder 变化与价格变化都进入该差值，报告中必须给出与 holder_number_chg 及动量类的实测相关。
+source_fields:
+  - stock_holder_number.ann_date
+  - stock_holder_number.end_date
+  - stock_holder_number.holder_num
+  - stock_finance.circ_mv
+spec:
+  group: r2_ownership
+  desc: R2-I3 机制1b：户均持股市值的变化（相邻两次状态变更公告之间）
+  formula: value(T) = asof_ann( log(circ_mv(a_e)/holder_e) - log(circ_mv(a_prev)/holder_prev) )，a=ann_date
+  deps: [stock_holder_number, stock_finance]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: v2 修正日期差单位（YYYYMMDD 相减 -> 真实日历天），机制/窗口/方向/阈值与 v1 完全相同；机制1b；holder 变化与价格变化都进入该差值，报告中必须给出与 holder_number_chg 及动量类的实测相关。

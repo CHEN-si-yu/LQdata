@@ -1,0 +1,16 @@
+name: r4a_forecast_implied_surprise_v1
+family_id: r4a_earnings_surprise_v1
+implementation: research.families.r4a_earnings_surprise_v1:build
+parameters: {signal: forecast_implied_surprise}
+units: net_profit_min/max 与 last_parent_net 同为万元，比值无量纲后 arcsinh 压缩。
+availability: 只用 ann_date ≥ 19900101 的预告行、自 ann_date 起可见；取最近一次预告公告（同日多报告期取较新报告期）；asof 前向填充到下次预告。
+missing_policy: 缺预告、net_profit_min/max 或 last_parent_net 缺失、base=0 时为 NaN；最新版本字段缺失时不回退旧版本；不零填充（无预告不等于预告为零）。
+spec:
+  group: research_earnings
+  desc: 预告隐含盈余惊喜：预告净利中点相对去年同期实际净利的相对变化，arcsinh 压缩。
+  formula: "arcsinh(((net_profit_min+net_profit_max)/2 - last_parent_net) / |last_parent_net|), placed at ann_date"
+  deps: [stock_forecast]
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: 2026-10-04 实测：last_parent_net ≤0 占池内 16%，厂商对负基数的 p_change 口径 = (mid−base)/|base|（中位差 2.8e-5），本因子沿用同一口径；预告事件每年覆盖池的 60–68%。

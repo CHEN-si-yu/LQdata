@@ -1,0 +1,16 @@
+name: r4e_max_ret_20_v1
+family_id: r4e_lottery_max_v1
+implementation: research.families.r4e_lottery_max_v1:build
+parameters: {signal: max_ret_20}
+units: 因子值 = 后复权单日简单收益的最大值（分数，量纲与日收益相同）；不含成交额/手数口径。
+availability: 只用到信号日 T 收盘及以前（含 T）的真实成交日线行情与截至 T 的累计复权因子；hfq 价只用 <=T 的 adj_factor，历史值不随未来分红变化。stock_daily / stock_adj_factor 不在 fea/delay.py 可得性滞后名单（实测 LAGGED_DATASETS 仅含 stock_margin_detail，延迟 1 日），无需位移。
+missing_policy: 窗口内有效（真实成交）交易日 <15 个 → NaN；停牌/未上市/当日无成交不参与窗口（不是 0 收益）；不填充、不外推。
+spec:
+  group: research_lottery
+  desc: Lead 预登记机制 1：过去 20 个交易日（含 T）最大单日后复权收益；彩票偏好 → 预期收益更低。
+  formula: r = ret_clean(1); value = roll_max(r, 20, min_count=15)
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 56
+  higher_is_better: false
+  version: 1
+  note: 窗口完整性 min_count=15=ceil(0.75*20)，与库内 ret_skew_20 的 15/20 同口径；停牌日置 NaN（不按 0 参与 max）；|r|>60% 的复权脏数据由价格层置 NaN。

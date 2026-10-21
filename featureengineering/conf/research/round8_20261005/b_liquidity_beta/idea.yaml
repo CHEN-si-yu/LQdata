@@ -1,0 +1,19 @@
+{
+  "idea_id": "r8b_local_amihud_shock_beta_v1",
+  "hypothesis": "Bad aggregate local Amihud surprises load negatively on vulnerable stocks; raw negative conditional liquidity exposure receives risk compensation, weak1/5TD prior only.",
+  "mechanism": "systematic liquidity cost risk; not PS monthly factor replication and not exogenous causal shock",
+  "expected_direction": "higher_is_better=false",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "Raw G4 plus incremental G7 versus fixed registered controls and frozen diagnostics; reject stable opposite direction, redundant risk/state exposure, failed source/warm/coverage.",
+  "fields": [
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_daily.amount",
+    "stock_adj_factor.adj_factor"
+  ],
+  "origin": "round8_lead_approved_20261005",
+  "status": "unvalidated_hypothesis"
+}

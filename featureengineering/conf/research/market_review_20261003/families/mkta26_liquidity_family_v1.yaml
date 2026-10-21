@@ -1,0 +1,17 @@
+{
+  "family_id": "mkta26_liquidity_family_v1",
+  "idea_id": "mkta26_liquidity_idea_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "original_name": "mkt_no_trade_ratio",
+      "definition_sha256": "94dd445d13570522fa7cdce1f6dceac2dbfefbaf72b9e2a921ee1d02fbb935d9"
+    }
+  ],
+  "baseline": [
+    "mkt_illiquidity_median"
+  ],
+  "hypothesis_boundary": "无成交占比度量流动性冻结的程度（停牌/极端无量），是市场可交易性的直接状态量。",
+  "search_policy": "只登记既有正式因子的逐值审计别名，不扩窗口、不改参数、不新增变体",
+  "registration_note": "本文件为 2026-10-03 市场因子复审的**追溯登记**（既有正式因子的逐值审计别名），非事前研究登记；方向与先验强度的预登记见 freeze 方向表，检验为回顾性筛选，不构成未触碰留出样本上的结论（retrospective_screening;historical_selection_is_not_untouched_holdout）。"
+}

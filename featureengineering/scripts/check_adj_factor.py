@@ -43,6 +43,10 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+if __package__:
+    from ._project_paths import project_output
+else:
+    from _project_paths import project_output
 
 import pandas as pd
 
@@ -153,6 +157,9 @@ def main() -> int:
     ap.add_argument("--tol", type=float, default=1e-3)
     ap.add_argument("--out", default="", help="可选独立导出路径；默认记入 README.md")
     a = ap.parse_args()
+    output = project_output(a.out) if a.out else None
+    if output == (ROOT / "README.md").resolve():
+        raise ValueError("不要通过 --out 覆盖总手册；省略该参数即可追加报告")
     print(f"[{datetime.now():%H:%M:%S}] adj_factor 体检（年份：{a.years or '全历史'}，容差 {a.tol:g}）")
     prob, bad = run(a.years, a.tol)
 
@@ -180,9 +187,8 @@ def main() -> int:
     txt = "\n".join(lines) + "\n"
     print("\n" + txt)
     if a.out:
-        out = Path(a.out)
-        if out.resolve() == (ROOT / "README.md").resolve():
-            raise ValueError("不要通过 --out 覆盖总手册；省略该参数即可追加报告")
+        out = output
+        out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(txt, encoding="utf-8")
     else:
         from fea.documentation import append_report

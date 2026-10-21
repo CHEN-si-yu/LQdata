@@ -1,0 +1,32 @@
+family_id: r11u1b_p2screened_v1
+idea_id: r11u1b_p2screened_v1
+trial_budget: 3
+allowed_variants:
+  - {signal: valuation_x_flow_surprise}
+  - {signal: quality_x_net_inflow}
+  - {signal: growth_x_intraday_overnight_vol}
+baseline: >
+  冻结 base-8（doc/AGENTS.md §B）= momentum_120, short_term_reversal_5, vol_120,
+  idio_vol_60, log_mv, turnover_std_20, bp, roe_ttm。
+  ★ 规则 3（强制）：跨族交互的腿**与**状态都来自在产因子，故每条候选必须**并报两套**增量 ——
+  「冻结 base-8」与「冻结 base-8 + 腿 + 状态」。缺省不在冻结集**从不是**省略该控制的理由
+  （Round 9 教训：某候选过全部冻结门后，加入其源表在产因子 holder_number_chg
+   即从 t = −4.01/−2.79 崩到 +0.04/+0.81）。
+  实测：ep_ttm / roa_ttm / revenue_cagr_3y **均不在** base-8 内 ⇒ 状态列是真实增量；
+  但 bp、roe_ttm 在 base-8 内，须报状态与它们的截面相关度（潜在代理）。
+  朴素对照 = 两条腿各自的单因子 panel（本族已实测其无条件 RankIC 与 t，见 library_ic_scan.json）；
+  不把模型贡献视为已完成。
+parameters_frozen: true
+variants: []
+search_policy: >
+  每机制恰一个候选、无参数变体：状态固定、腿由任务书强制的 P2 判据（|t(IC_1d)| ≤ 2.0）
+  在**全部 42 个交易行为在产因子**上机械筛出（全库仅 3 条通过），阈值沿用 idea
+  `r11u1_crossfamily_v1` 已登记值；方向在 idea `r11u1b_p2screened_v1` 登记时（09:30:06Z）
+  冻结为 True。登记后不看结果改方向、改窗口、改腿。
+trial_budget_note: >
+  3 = 三个机制各一个候选。若某机制不过 P1/P1b/P3 则**不登记**，以 not-registered 记录在
+  report.md；不为凑数降格，也不事后补腿。
+registration_note: >
+  本族为 Round 11 单元 U1 的事前研究登记。候选是**股票级 (T, C) 交互因子**
+  （is_market 保持默认 False）：状态与腿都经 `ctx.load_factor` 读在产因子，
+  故 `deps` 里写的是**因子名**（不是上游表名），引擎据此做水位失效传播并物化父因子历史。

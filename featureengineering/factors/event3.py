@@ -101,9 +101,7 @@ k = 0..N−1 个交易日，越近的事件权重越大（k=0 → 1.0，k=H → 
 
 `fea/delay.py` 的实测名单（`load()` 打印核对过）里**没有** `stock_limit_list` /
 `stock_limit_up` / `stock_suspension`，即这三张表的 `trade_date = d` 的行当天就能
-拿到（名单里是 `stock_margin_detail` / `index_ths_daily` / `stock_st_info` /
-`stock_adj_factor_changes` / `stock_top_list` / `stock_dragon_tiger` / `dc_daily` /
-`stock_report_rc`）。本文件**不需要 `lag_grid`**，也没有声明 `lagged_ok`。
+拿到。本文件**不需要 `lag_grid`**，也没有声明 `lagged_ok`。
 """
 
 from __future__ import annotations
@@ -188,9 +186,6 @@ class _Ev:
         return ctx.event_grid(c, d, v)
 
 
-def _traded(ctx) -> np.ndarray:
-    """当日真有成交。★ 必须挡掉停牌日：见模块 docstring 三.1。"""
-    return np.asarray(ctx.traded(), dtype=bool)
 
 
 def _limit_grid(ctx, up: bool) -> np.ndarray:
@@ -251,7 +246,7 @@ def _run_len(x: np.ndarray) -> np.ndarray:
 # A. 跌停事件（3 个）
 # ══════════════════════════════════════════════════════════════════════════
 @register(FactorSpec(
-    name="limit_down_event_5", group=GROUP, deps=(LL, *PX),
+    name="limit_down_event_5", version=2, group=GROUP, deps=(LL, *PX),
     desc="近 5 个交易日跌停事件的指数衰减加权值（半衰期 3 日）",
     formula='down = daily["pct_chg"].le(-9.8)\n'
             'event = down.astype(float).where(down, np.nan)\n'
@@ -289,150 +284,18 @@ def limit_down_event_5(ctx):
 
 
 
-@register(FactorSpec(
-    name="one_word_limit_down_freq_20", group=GROUP, deps=(LL, *PX),
-    desc="一字跌停占比 = 20 日内「全天无波动且跌停」的天数占比",
-    formula='no_range = (daily["high"] - daily["low"]).abs().lt(1e-6)\n'
-            'one_word = (no_range & daily["pct_chg"].le(-9.8)).astype(float)\n'
-            'freq = _roll_mean(one_word, 20, 5)\n'
-            'return cross_sectional_rank(-freq)',
-    start=None, warmup_days=W20, higher_is_better=False,
-    note="★ 与 event2.py 的 `one_word_limit_up_freq_20` **镜像**（那边是一字**涨停**），"
-         "唯一的结构差异是跌停判定：那边用 `pct_chg >= 9.8`，本因子用 "
-         "**LL 优先（`limit == 'D'`）+ 价格近似回退**（与同文件 `limit_down_event_5` 共用"
-         "`_limit_grid`），因为一字跌停的样本比一字涨停少一个量级，"
-         "供应商标记带来的判定差更容易影响分布。"
-         "`high == low` 是一字板的**定义**（全天只成交在一个价位），"
-         "除权日不产生假值（high/low 是同日同尺度量）。"
-         "停牌日 `pct_chg` 为 NaN → 该日按「无观测」记 NaN（不参与均值），"
-         "故 `min_count=5`（对齐参考库 min_periods=5，与 event2 的同款因子一致）。"
-         "值域严格 [0,1]；**零膨胀（固有）**：从没打过一字跌停的股票恒为 0 —— "
-         "这是正确的 0，不是缺失（event2 对一字涨停同款因子给了同样的结论）。"
-         "**实测**：零值占比 94.31%、|value|max = 0.30（20 天里 6 个一字跌停）、"
-         "非空率 100.00% —— 刚好压在「>95% 说明口径太稀」的红线之内。"
-         "注意 20 日窗口内有效观测不足 5 天时是 NaN（次新股/长期停牌），"
-         "沙箱实测有 167 行 NaN（518,591 / 518,758 行）。"
-         "与 `consecutive_limit_down` 的区别：那个数「连续几个跌停」（不要求一字），"
-         "本因子数「跌停里有多少是一字」（流动性冻结的指纹）。",
-))
-def one_word_limit_down_freq_20(ctx):
-    hi, lo, pc = ctx.px("high"), ctx.px("low"), ctx.px("pct_chg")
-    ld = _limit_grid(ctx, up=False)
-    one_word = (np.abs(hi - lo) < 1e-6) & (ld > 0.0)
-    ok = np.isfinite(hi) & np.isfinite(lo) & np.isfinite(pc)
-    return ctx.roll_mean(np.where(ok, one_word.astype(np.float64), np.nan),
-                         20, min_count=5)
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # B. 新低 / 新高事件（2 个）—— 参考库 `new_low_60_event` / `new_high_60_event`
 # ══════════════════════════════════════════════════════════════════════════
-@register(FactorSpec(
-    name="new_low_60_event", group=GROUP, deps=PX,
-    desc="近 60 个交易日新低事件的指数衰减加权（当日最低价 = 60 日最低，半衰期 5 日）",
-    formula='adj = _adjusted_close(daily)\n'
-            'is_low = adj.eq(adj.groupby(level="Code").transform(\n'
-            '    lambda s: s.rolling(60, min_periods=30).min()))\n'
-            'event = is_low.astype(float).where(is_low, np.nan)\n'
-            'decayed = event_decay(event, half_life=5)      # 参考库原文\n'
-            '# 本实现：\n'
-            '#   is_low  = hfq(low) == min(hfq(low), 60)  且 当日有成交\n'
-            '#   decayed = Σ_{k=0}^{9} is_low(t-k) × 0.5^(k/5)',
-    start=None, warmup_days=W80, higher_is_better=False,
-    note="★ 与参考库的三处偏离："
-         "① 参考库用**复权收盘价**判定新高/新低（`adj.eq(rolling(60).min())`），"
-         "本因子按任务书用**当日最低价**（`hfq(low) == 60 日 hfq(low) 的最低`）——"
-         "「新低」在技术分析里指**盘中**创出的低点，用 low 更贴定义；"
-         "副作用是触发更频繁（盘中破位后收回也算），故零值占比反而更低（见下）。"
-         "② 复权基座必须是**后复权** `ctx.hfq`：参考库的 `daily_adj.parquet` 是前复权"
-         "（历史值随未来分红重算，违反 PIT 红线）。后复权锚定序列起点，"
-         "除权日不产生假新低。"
-         "③ **显式挡停牌日**（`ctx.traded()`）：`hfq(low)` 在停牌日被前向填充，"
-         "若停牌前一天正好创了新低，停牌期间每一天都会重复触发一次事件、"
-         "把 10 日衰减窗口灌满（模块 docstring 三.1）。参考库没有这个问题"
-         "是因为它对每只股票独立滚动、且没有停牌行的概念。"
-         "★ 窗口/半衰期：参考库 `event_decay(half_life=5)` 是**无限记忆**"
-         "（衰减到下一次事件为止），本实现必须有限窗口，取 N=10 = 2 个半衰期"
-         "（尾部权重 0.25，截断误差 ≤ 25%，且事件在本窗口内多次触发会累积）。"
-         "取 half_life=5 而不是 _5 系列的 3：60 日新高/新低是**结构性**突破，"
-         "信息比单日涨跌停持久（参考库对这两个事件也用 5）。"
-         "`min_count=30` 对齐参考库 `min_periods=30`（次新股上市满 30 个交易日后才有值）。"
-         "★ 零膨胀：**实测零值占比 71.31%**（8 个因子里最低）—— 因为 10 日窗口里"
-         "只要盘中破过一次 60 日低点就有值，震荡市里这很常见；"
-         "|value|max = 5.7938 = 10 天连续新低的完整和 ∑_{k=0}^{9}0.5^(k/5)"
-         "（说明确实有股票连续 10 天创 60 日新低，长尾是真实的）。"
-         "★ 该因子与 8 个兄弟因子的截面秩相关最高只有 −0.238（`new_high_60_event`），"
-         "与涨跌停/极端波动的相关性都 < 0.15 —— **信息独立度高**，建议下游重点看。",
-))
-def new_low_60_event(ctx):
-    low = ctx.hfq("low")
-    min60 = ctx.roll_min(low, 60, min_count=30)
-    is_low = (np.isfinite(low) & np.isfinite(min60) & (low <= min60) & _traded(ctx))
-    return _decay(ctx, is_low.astype(np.float64), 10, 5.0)
 
 
-@register(FactorSpec(
-    name="new_high_60_event", group=GROUP, deps=PX,
-    desc="近 60 个交易日新高事件的指数衰减加权（当日最高价 = 60 日最高，半衰期 5 日）",
-    formula='adj = _adjusted_close(daily)\n'
-            'is_high = adj.eq(adj.groupby(level="Code").transform(\n'
-            '    lambda s: s.rolling(60, min_periods=30).max()))\n'
-            'event = is_high.astype(float).where(is_high, np.nan)\n'
-            'decayed = event_decay(event, half_life=5)      # 参考库原文\n'
-            '# 本实现：\n'
-            '#   is_high = hfq(high) == max(hfq(high), 60)  且 当日有成交\n'
-            '#   decayed = Σ_{k=0}^{9} is_high(t-k) × 0.5^(k/5)',
-    start=None, warmup_days=W80, higher_is_better=True,
-    note="`new_low_60_event` 的镜像（把 low/min 换成 high/max），偏离与理由逐条相同。"
-         "★ 与 event2.py 的 `new_high_frequency_60` **互补不重复**：那个是"
-         "「60 日内创新高的**天数占比**」（频率，无时间结构），本因子是"
-         "「新高事件的**衰减加权和**」（越近期的新高权重越大，多次新高累积）。"
-         "两者在**持续创新高**的股票上相关，但本因子对「最近才突破」的股票给更高分。"
-         "窗口/半衰期同 `new_low_60_event`（N=10, H=5）。"
-         "★ 实测零值占比 82.35%、|value|max = 5.7938（同样是 10 天连续新高）、非空率 100.00%。"
-         "与 `new_low_60_event` 的截面秩相关 −0.238（互为镜像，符号相反是预期行为）。",
-))
-def new_high_60_event(ctx):
-    high = ctx.hfq("high")
-    max60 = ctx.roll_max(high, 60, min_count=30)
-    is_high = (np.isfinite(high) & np.isfinite(max60) & (high >= max60) & _traded(ctx))
-    return _decay(ctx, is_high.astype(np.float64), 10, 5.0)
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # C. 涨停对照组（1 个）—— 涨停侧本文件只做这一个
 # ══════════════════════════════════════════════════════════════════════════
-@register(FactorSpec(
-    name="limit_up_event_5", group=GROUP, deps=(LL, *PX),
-    desc="近 5 个交易日涨停事件的指数衰减加权值（半衰期 3 日）——跌停侧的对照组",
-    formula='event = daily["pct_chg"].ge(9.8).astype(float).where(\n'
-            '    daily["pct_chg"].ge(9.8), np.nan)\n'
-            'decayed = event_decay(event, half_life=3)      # 参考库原文\n'
-            '# 本实现（与 limit_down_event_5 同一套口径，只把方向反过来）：\n'
-            '#   is_lu   = (limit == "U") if stock_limit_list 有记录\n'
-            '#             else (pct_chg >= 9.5 and close == high)\n'
-            '#   decayed = Σ_{k=0}^{4} is_lu(t-k) × 0.5^(k/3)',
-    start=None, warmup_days=W5, higher_is_better=True,
-    note="★ 涨停侧本文件**只做这一个**（任务书：与 event2.py 的 18 个涨停因子不重复）。"
-         "event2 覆盖的是计数/连板/封板时间/炸板率/龙虎榜/事件后收益，"
-         "没有「涨停事件的时间结构」——本因子补的就是这个："
-         "同样是「近 5 日涨停过」，昨天涨停得 1.0、五天前涨停得 0.397。"
-         "★ 事件判定与 `limit_down_event_5` **完全对称共用**（LL 优先 + 价格近似回退），"
-         "偏离理由同该因子。实测 2020~2026 主板 U 标记 87,071 行里 86,981 行 "
-         "pct_chg ≥ 9.5（99.9%）；U 标记比价格近似多的 169 行是 pct_chg 落在 "
-         "[9.5, 9.8) 的样本。"
-         "★ 与 `limit_up_fade_10`（event2）的区别：那个是「10 日内涨停过 × 随后 10 日"
-         "累计收益」（事件**后**的表现），本因子是「涨停事件本身的时间加权强度」"
-         "（不含任何未来信息，也不含收益）。"
-         "★ 零膨胀：**实测零值占比 91.58%**（比跌停侧的 97.54% 低，因为涨停事件"
-         "本身比跌停频繁约 3 倍 —— 2026 年主板 U 标记 8.7 万行 vs D 标记 2.8 万行），"
-         "|value|max = 3.3205（5 连板）。"
-         "★ **与 `extreme_move_event` 高度冗余（实测 |ρ|=0.887，被引擎 `dedup` 判为"
-         "重复簇）**，原因见 `extreme_move_event` 的 note —— 那是「|pct_chg| ≥ 9.5%」"
-         "阈值与主板 ±10% 涨跌幅撞车，与本因子无关。",
-))
-def limit_up_event_5(ctx):
-    return _decay(ctx, _limit_grid(ctx, up=True), 5, 3.0)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -447,7 +310,7 @@ def limit_up_event_5(ctx):
             '# 本实现（任务书口径）：\n'
             '#   ev = 1 if |pct_chg| >= 9.5 else 0      （停牌日 pct_chg 为 NaN -> 非事件）\n'
             '#   decayed = Σ_{k=0}^{4} ev(t-k) × 0.5^(k/3)',
-    start=None, warmup_days=W5, higher_is_better=False, version=2,
+    start=None, warmup_days=W5, higher_is_better=False, version=3,
     note="★ 阈值口径（**主 Agent 2026-09-15 拍板：7.0%**，取参考库原值）："
          "先按任务书的 9.5% 实现过，实测它与 `limit_up_event_5` 的逐日截面 Spearman "
          "**ρ = 0.883** —— 被引擎 `dedup` 直接判成重复簇。根因是 9.5% 与主板 ±10% 的"
@@ -469,43 +332,3 @@ def extreme_move_event(ctx):
     return _decay(ctx, ev, 5, 3.0)
 
 
-@register(FactorSpec(
-    name="gap_event_decay_5", group=GROUP, deps=PX,
-    desc="近 5 日跳空事件的衰减加权（|跳空幅度| ≥ 3% 时按跳空幅度加权，半衰期 3 日）",
-    formula='gap = safe_divide(daily["open"], daily["pre_close"]) - 1.0\n'
-            'is_gap = gap.abs().gt(0.05)\n'
-            'event = is_gap.astype(float).where(is_gap, np.nan)\n'
-            'decayed = event_decay(event, half_life=5)      # 参考库原文（0/1 事件）\n'
-            '# 本实现（任务书：跳空幅度 × 半衰期权重）：\n'
-            '#   g   = hfq(open)/hfq(pre_close) - 1        （当日有成交才有效）\n'
-            '#   decayed = Σ_{k=0}^{4} |g(t-k)| × 1[|g| >= 3%] × 0.5^(k/3)',
-    start=None, warmup_days=W5, higher_is_better=True,
-    note="★ 与参考库的四处偏离（逐条给理由）："
-         "① **事件值用跳空幅度而不是 0/1**（任务书「跳空幅度 × 半衰期权重」）："
-         "同样是「五天前跳空」，跳 9% 与跳 3% 应该不同；0/1 口径把这个信息丢了。"
-         "② 阈值 5% → **3%**：实测 5% 在 2026 年主板只有 1.38% 的 stock-day 命中，"
-         "5 日窗口内至少一次的比例 4.2% → **零值占比 95.8%，越过「>95% 说明口径太稀」"
-         "的红线**；3% 命中率 3.45%、零值占比 89.9%。而且 3% 与同族 `big_gap_reversal_5`"
-         "（event2.py，高开 >3%）的门槛一致，家族内部口径统一。"
-         "③ **显式挡停牌日**：`hfq(open)` 与 `hfq(pre_close)` 在停牌日各自被前向填充，"
-         "比值 = **停牌前那天的跳空**（不是 0、也不是 NaN）——不挡的话停牌期间会"
-         "每天重复触发同一个跳空事件（模块 docstring 三.1）。"
-         "④ 半衰期 5 → 3、窗口 5 个交易日（任务书 `_5` 系列范式）。"
-         "★ 跳空的除权日安全性：`hfq(open)/hfq(pre_close)` 的分子分母同用一个 "
-         "`adj_factor(t)`，复权在该比值上是**恒等变换**（模块 docstring 三.4）——"
-         "真正保证除权日不产生假跳空的是 `pre_close` 本身是**除权后基准价**"
-         "（实测 2026 年 93.5 万行 `close/pre_close − 1` 与 `pct_chg` 偏差 < 0.005pp）。"
-         "仍统一走 `ctx.hfq`（契约硬约束 4）。"
-         "★ 取绝对值（不保留方向）：任务书写的是「跳空幅度」，"
-         "方向信息由同族的 `big_gap_reversal_5`（高开后走势）承担。"
-         "★ **实测**：零值占比 86.97%、|value|max = 4.5838（≈ 连续 5 天 9% 跳空的加权和）、"
-         "非空率 100.00%。截面秩相关：与 `extreme_move_event` 0.464、"
-         "与 `limit_up_event_5` 0.388、与 `new_low_60_event` −0.094 —— "
-         "**不在任何重复簇里**（引擎 dedup 未报）。",
-))
-def gap_event_decay_5(ctx):
-    o, pc = ctx.hfq("open"), ctx.hfq("pre_close")
-    gap = ctx.safe_div(o, pc, min_abs_den=1e-9) - 1.0
-    mag = np.abs(gap)
-    ev = np.where(_traded(ctx) & np.isfinite(mag) & (mag >= GAP_PCT), mag, 0.0)
-    return _decay(ctx, ev, 5, 3.0)

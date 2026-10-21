@@ -1,0 +1,17 @@
+name: r4a_pead_drift_skip5_v3
+family_id: r4a_earnings_surprise_v3
+implementation: research.families.r4a_earnings_surprise_v3:build
+parameters: {signal: pead_drift_60, skip: 5}
+units: 累计对数收益之差（后复权日收益 − 池内已成交股票截面均值），无量纲。
+availability: 同 pead_drift_60；累计区间跳过公告后前 5 个交易日（隔离公告即时反应/短期反转），只含已实现收益。
+missing_policy: 公告后不足 5 个交易日或超出第 59 个交易日为 NaN；未上市/无价格为 NaN；不零填充。
+spec:
+  group: research_earnings
+  desc: PEAD 变体 A：公告后第 5–59 个交易日的累计池内超额收益，剔除即时反应段，检验漂移是否独立于公告日跳空。
+  formula: "sum_{k=5..59} shift(rel_ret, k) on days since ∈ [5,59], 其余同 pead_drift_60"
+  deps: [stock_income, stock_daily, stock_adj_factor]
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: 工程修复重发布（v3 = v1 + np.isin 一行修复，v1 版该候选因 ndarray.isin AttributeError 失败无产出）；变体与方向仍为看结果前登记的原样。skip=5 对应约一周，用于把滞后漂移与公告日即时反应区分开。
+  fin_fields: [n_income_attr_p]

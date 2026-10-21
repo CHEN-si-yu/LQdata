@@ -1,0 +1,37 @@
+family_id: r3_chipshape_family_v1
+idea_id: r3_chipshape_idea_v1
+trial_budget: 6
+allowed_variants:
+  - {signal: chip_entropy}
+  - {signal: chip_multimodality}
+  - {signal: chip_slope_asymmetry}
+  - {signal: chip_migration_speed}
+  - {signal: chip_migration_speed_w20}
+baseline:
+  - chip_concentration
+  - chip_cv_factor
+  - cost_skew_ratio
+  - chip_peak_distance
+  - chip_position
+  - chip_tail_risk
+  - chip_near_overhang_5pct
+  - chip_win_peak_frac
+  - chip_peak_growing
+  - cyqp_cost_premium_change_20
+  - cyqp_cost_width_change_20
+hypothesis_boundary: >-
+  只研究 stock_cyq_chips 这一个数据维度上的形态机制（熵 / 多峰 / 斜率不对称 / 重心迁移）。
+  19 个已生产筹码因子全部是分位点或矩的摘要，本 Family 必须论证四个形态候选不是这些摘要的重新排列。
+  不得扩到 stock_cyq_perf 的其它字段或其它数据维度。
+search_policy: >-
+  四个机制各一个候选 + 机制 4 的一个预登记 20 日窗口变体 = 5 个候选（预算 6）。
+  形态表示常数（LOG_HALF=1.60 / BIN_WIDTH=0.040 / SMOOTH_SIGMA=1.5 / NEAR_BAND=0.10 /
+  MIN_LEVELS=12 / MIN_WINDOW_MASS=0.90 / MIN_NEAR_MASS=0.05 / MIGRATION_FAST=5 /
+  MIGRATION_SLOW=20）在看到任何 IC 或收益结果之前写死在模块常量里，之后不得改动。
+  不扩参数网格、不事后调阈值、不事后改方向。机制实现不可行时如实报告并停止该机制。
+data_semantics_warning: >-
+  cyq 是供应商估算的成本分布，不是真实逐账户持仓；供应商档位是价格线性的，且同一只股票
+  不同年份档宽不同（实测 000001.SZ 2018 档宽 0.1 元、2025 档宽 0.2 元；600519.SH 档宽 23.3 元）。
+  因此本 Family 不使用 fea/chips.py 里按 n_levels 归一化的 entropy 字段，而是自建统一对数
+  相对价位直方图。price 未复权，本 Family 全部用同日比值 x=ln(price/close_raw)，该比值对
+  同日复权因子不变，等于后复权口径。

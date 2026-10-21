@@ -1,0 +1,25 @@
+family_id: r4o_market_b3_v1
+idea_id: r4o_market_b3_v1
+trial_budget: 5
+baseline: >
+  严格候选朴素对照 = 量腿与价格腿的近亲生产因子（mkt_amount_total_log 存量能水平、
+  mkt_illiquidity_median 量能/冲击水平、mkt_ew_reversal_5 的价格腿口径〔批 1 市场单元候选〕、
+  mkt_idx_csi300_ret1 / mkt_idx_csi300_momentum20 指数价格腿）与 b2 严格候选
+  mkt_breadth_price_divergence_5（宽度侧背离——本单元核心独立性的直接对照）；控制集 v1
+  （继承 r4m round4 freeze，不得改动）内 mkt_idx_csi300_momentum20 为价格腿直接近亲——
+  M6 即检验剥离价格腿与既有状态量主效应后的剩余。绿卡为描述量，M4 只记录。
+  预算 5 = 1 严格 + 4 绿卡；每机制恰一个候选、无参数变体。
+allowed_variants:
+  - {signal: mkt_amount_price_divergence_5}
+  - {signal: mkt_cs_q90_q10_spread}
+  - {signal: mkt_overnight_vol20}
+  - {signal: mkt_amount_median}
+  - {signal: mkt_cs_absret_median}
+hypothesis_boundary: >
+  市场标量没有同日股票间排序，不计算虚构的横截面 IC；有效性审核走 M0–M7（严格通道）与
+  M0∧M2∧M3（绿卡通道）；规则与控制集**继承**批 1 市场单元（r4m_market_state_v1）的
+  round4 freeze 链（b2 控制集 v1），不重开任何阈值；本单元自建 freeze b3（方向表、控制集 v1、
+  脚本哈希、预登记时点），路径独立、不覆盖 r4m/r4n。绿卡 = 描述性上下文量（未做收益有效性
+  承诺），严格通过 = 独立信号候选（仅为最低底线，不等于「有效因子」）。
+search_policy: 每机制恰一个候选；不扩窗口、不改参数、不新增变体；登记后不看结果改方向或通道；z252 口径（min_count=120）与「同比=252 交易日」解读先于结果统计冻结（freeze b3 edge_notes 含事前披露的备选解读）。
+registration_note: 本族为 Round 4 批 3 单元 V6 的事前研究登记（非追溯登记）；通道归属与方向由任务书 RESEARCH_BRIEF_B3.md §V6 预登记，并封存于本单元 freeze b3（冻结先于任何结果统计）。

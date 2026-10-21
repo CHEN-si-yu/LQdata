@@ -1,0 +1,37 @@
+# 事前登记定义；方向与机制在计算前冻结。
+{
+  "name": "r2_supply_total_dilution_252_v1",
+  "family_id": "r2_supply_family_v3",
+  "implementation": "research.families.r2_supply_v1:build",
+  "parameters": {
+    "signal": "total_share_dilution252"
+  },
+  "units": "对数股本增长率之和（无量纲），窗口 252 个交易日。",
+  "availability": "仅用 T 日及以前的 stock_finance.total_share 与 stock_adj_factor.adj_factor，均按 as-of 前向沿用；无未来位移。",
+  "missing_policy": "相对变化 <=1e-5 视为供应商舍入噪声记 0；被判定为送转（同比例复权跳变）的日子记 0；窗口 252 个观测必须全部有效，否则 NaN；不成交日输出 NaN。",
+  "closest_existing_baselines": [
+    "circ_mv",
+    "total_leverage_ratio"
+  ],
+  "semantic_difference": "现有因子没有股本稀释/回购注销维度；本候选是剔除送转后的真实净股本增长，不是市值或杠杆。",
+  "source_fields": [
+    "stock_finance.total_share",
+    "stock_adj_factor.adj_factor"
+  ],
+  "pre_registered_direction": "higher_is_better=false",
+  "spec": {
+    "group": "research_round2_supply",
+    "desc": "剔除送转后的 252 日净股本稀释",
+    "formula": "roll_sum(adj_factor_adjusted_log(total_share ratio),252)",
+    "deps": [
+      "stock_finance",
+      "stock_adj_factor",
+      "stock_daily"
+    ],
+    "start": null,
+    "warmup_days": 450,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "送转剔除规则在模块常量中冻结：adj 跳变>=1.05 且 log(股本比)<=log(复权比)+0.005 视为机械变动，记 0。 ctx.traded() 的真实成交掩码读取 stock_daily，已在 deps 显式声明。"
+  }
+}

@@ -1,0 +1,16 @@
+name: r4j_same_month_mean_ret_v1
+family_id: r4j_seasonality_v1
+implementation: research.families.r4j_seasonality_v1:build
+parameters: {signal: same_month_mean_ret}
+units: 月收益均值（无量纲，同月最多 6 个样本的简单平均）。
+availability: 只用当年本月之前已完结的历史同月：t 所在日历月 (Y,m) 的值只由 (Y−1,m)…(Y−6,m) 的月收益决定，当月内为常数、不回填本月收益；月收益由价格层单日后复权收益累乘（停牌日 r=0、|r|>60% 脏数据已置 NaN）。
+missing_policy: 有限历史同月样本 < 2 时为 NaN（值前 NaN 前缀逐股对齐）；某月整月无成交或段内任一日收益 NaN（未上市/脏数据）时该月样本为 NaN、不参与计数；不零填充。
+spec:
+  group: research_seasonality
+  desc: U10 机制 1：过去最多 6 个历年同月月收益均值（min 2），检验同月效应。
+  formula: "value(t in (Y,m)) = mean(R[(Y-j),m], j=1..6, 仅有限样本, count>=2); R[(y,m)] = prod(1+ret1) - 1 over month days"
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 2300
+  higher_is_better: true
+  version: 1
+  note: 实现冻结：当月内不得回填本月收益；2018 年任务最深需要 2011-12 月收盘（warmup 2300 日历天覆盖 6 年 1 个月回看）；防重蹈检查见模块 docstring 与 report.md。

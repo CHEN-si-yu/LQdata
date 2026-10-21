@@ -1,0 +1,15 @@
+name: fixed_mainboard_daily_v1
+expected_stocks: 2115
+output_start: '2018-01-01'
+primary_horizons: [1, 5]
+auxiliary_horizons: [3, 10, 20]
+label: open_hfq(t+1+h)/open_hfq(t+1)-1;both_endpoints_traded
+value_transform: cs_winsor_1_99_zscore_clip10_direction_v1
+initial_train_end: '2021-12-31'
+outer_start: '2022-01-01'
+inner_validation_days: 126
+min_train_days: 252
+block_days: 20
+bins: 10
+min_pairs: 30
+interpretation: retrospective_screening;historical_selection_is_not_untouched_holdout

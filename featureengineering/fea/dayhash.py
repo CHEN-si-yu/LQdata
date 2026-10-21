@@ -87,12 +87,62 @@ def _hash_one(task: tuple[str, str, tuple[str, ...]]) -> list[tuple[str, str, st
       worker 是 fork 出来的，cfg 对象不需要跨进程序列化，路径是最小依赖。
     """
     factors_dir, name, days = task
-    df = store.read_factor(Path(factors_dir), name, years=sorted({int(day[:4]) for day in days}))
-    if df.empty:
+    by_year: dict[int, set[str]] = {}
+    for day in days:
+        by_year.setdefault(int(day[:4]), set()).add(day)
+    frames = []
+    for year, selected in sorted(by_year.items()):
+        path = store.year_path(Path(factors_dir), name, year)
+        if not path.exists():
+            continue
+        # Filter in Arrow before materializing pandas rows. Row-group statistics
+        # can also skip groups outside the requested dates.
+        frame = pd.read_parquet(path, engine="pyarrow",
+                                filters=[("trade_date", "in", sorted(selected))])
+        if list(frame.columns) not in (store.COLUMNS, store.MARKET_COLUMNS):
+            raise ValueError(f"未知因子文件格式：{path}: {list(frame.columns)}")
+        dtypes = store.MARKET_DTYPES if list(frame.columns) == store.MARKET_COLUMNS else store.DTYPES
+        for column, dtype in dtypes.items():
+            if str(frame[column].dtype) != dtype:
+                frame[column] = frame[column].astype(dtype)
+        if not frame.empty:
+            frames.append(frame)
+    if not frames:
         return []
-    df = df[df["trade_date"].isin(set(days))]
-    if df.empty:
+    df = pd.concat(frames, ignore_index=True)
+    out = []
+    for d, sub in df.groupby("trade_date", sort=True):
+        md5, n = _day_md5(sub)
+        out.append((name, str(d), md5, n))
+    return out
+
+
+def _hash_all_one(task: tuple[str, str, tuple[str, ...]]) -> list[tuple[str, str, str, int]]:
+    """worker（全历史模式）：整年读一个因子的分区，按天出 MD5。
+
+    与 `_hash_one` 的区别：请求的天覆盖整年，逐日 `IN (...)`（2000+ 元素）纯属开销，
+    直接读全年再按天分组 —— 分区本身只含该年的数据，行集与过滤后完全一致。
+    """
+    factors_dir, name, days = task
+    day_set = set(days)
+    frames = []
+    for year in sorted({int(d[:4]) for d in days}):
+        path = store.year_path(Path(factors_dir), name, year)
+        if not path.exists():
+            continue
+        frame = pd.read_parquet(path, engine="pyarrow")
+        if list(frame.columns) not in (store.COLUMNS, store.MARKET_COLUMNS):
+            raise ValueError(f"未知因子文件格式：{path}: {list(frame.columns)}")
+        dtypes = store.MARKET_DTYPES if list(frame.columns) == store.MARKET_COLUMNS else store.DTYPES
+        for column, dtype in dtypes.items():
+            if str(frame[column].dtype) != dtype:
+                frame[column] = frame[column].astype(dtype)
+        if not frame.empty:
+            frames.append(frame)
+    if not frames:
         return []
+    df = pd.concat(frames, ignore_index=True)
+    df = df[df["trade_date"].isin(day_set)]
     out = []
     for d, sub in df.groupby("trade_date", sort=True):
         md5, n = _day_md5(sub)
@@ -101,17 +151,30 @@ def _hash_one(task: tuple[str, str, tuple[str, ...]]) -> list[tuple[str, str, st
 
 
 def cmd_dayhash(args, cfg) -> int:
+    all_mode = bool(getattr(args, "all", False))
     end_i = str_to_int(args.date) if args.date else None
     if end_i is None:
         from .engine import Engine
         end_i = Engine(cfg).baseline_last_day()
     requested_days = int(getattr(args, "days", N_DAYS))
-    if requested_days < 1:
+    if not all_mode and requested_days < 1:
         raise ValueError("--days 必须大于 0")
-    days = recent_trading_days(cfg, end_i, requested_days)
-    if len(days) < requested_days:
-        print(f"⚠️ 交易日历里只找到 {len(days)} 天（要求 {requested_days} 天）")
-    specs = [s for s in all_specs() if s.enabled]
+    if all_mode:
+        # 全历史模式：天集合按因子各自计算（下界 = 各自的对齐起点），见下方 days_by_spec。
+        days = []
+    else:
+        days = recent_trading_days(cfg, end_i, requested_days)
+        if len(days) < requested_days:
+            print(f"⚠️ 交易日历里只找到 {len(days)} 天（要求 {requested_days} 天）")
+    if getattr(args, "scope", None) == "production":
+        # 与正式发布同源的对象名单（顺带完成库身份校验）。
+        # ★ 必须先调 production_specs 再读 all_specs()：它会把 4 个研究锚注入
+        #   REGISTRY（release.py 的 spec_for_candidate 路径），顺序反了会漏掉它们。
+        from .release import production_specs
+        prod = {s.name for s in production_specs(cfg)}
+        specs = [s for s in all_specs() if s.enabled and s.name in prod]
+    else:
+        specs = [s for s in all_specs() if s.enabled]
     if args.factors:
         want = set(args.factors)
         unknown=want-{s.name for s in specs}
@@ -120,34 +183,53 @@ def cmd_dayhash(args, cfg) -> int:
     # 逐日 MD5 台账是运行产物：放项目内 artifacts/dayhash/（原来在 ../CodeX/featureengineering_dayhash）。
     out_dir = Path(args.out) if args.out else Path(cfg.root) / "artifacts" / "dayhash" / int_to_str(end_i)
     out_dir = out_dir if out_dir.is_absolute() else (Path(cfg.root) / out_dir)
+    out_dir=out_dir.resolve()
+    if not out_dir.is_relative_to(Path(cfg.root).resolve()):
+        raise ValueError("Dayhash output must stay inside project")
     out_dir.mkdir(parents=True, exist_ok=True)
     tsv = out_dir / "dayhash.tsv"
-    if args.verify and not tsv.with_suffix(".prev.tsv").exists():
-        print("缺少 dayhash.prev.tsv 比对基线；本次未覆盖现有台账。请先生成并留存基线。")
-        return 2
+    if args.verify:
+        _pre = Path(getattr(args, "baseline", None)) if getattr(args, "baseline", None) else tsv.with_suffix(".prev.tsv")
+        if not _pre.exists():
+            print(f"缺少比对基线（{_pre}）；本次未覆盖现有台账。请先生成并留存基线。")
+            return 2
 
     dset = {int_to_str(d) for d in days}
-    print(f"逐截面 MD5 台账 · {len(specs)} 个因子 × {len(days)} 个交易日 "
-          f"= {len(specs)*len(days)} 条 · 截止 {int_to_str(end_i)} → {out_dir}")
+    days_t = tuple(int_to_str(d) for d in days)
+    if all_mode:
+        from .engine import Engine
+        cal = Engine(cfg).cal
+        days_by_spec = {}
+        for s in specs:
+            lo_i = str_to_int(s.align_start(cfg))
+            days_by_spec[s.name] = tuple(int_to_str(int(d)) for d in cal.between(lo_i, end_i))
+        tasks = [(str(cfg.factor_root(s)), s.name, days_by_spec[s.name]) for s in specs]
+        total = sum(len(v) for v in days_by_spec.values())
+        print(f"逐截面 MD5 台账 · 全历史模式 · {len(specs)} 个因子 × 各自全部交易日 "
+              f"= {total} 条 · 截止 {int_to_str(end_i)} → {out_dir}")
+    else:
+        days_by_spec = {s.name: days_t for s in specs}
+        tasks = [(str(cfg.factor_root(s)), s.name, days_t) for s in specs]
+        print(f"逐截面 MD5 台账 · {len(specs)} 个因子 × {len(days)} 个交易日 "
+              f"= {len(specs)*len(days)} 条 · 截止 {int_to_str(end_i)} → {out_dir}")
     t0 = time.time()
     rows: list[tuple[str, str, str, int]] = []
     # ★ 多核加速（用户 2026-09-15 要求）：每个 worker 独立读一个因子、独立算 MD5，
     #   天然可并行（只读、无共享状态）。实测 264 个因子在 8 进程下从 ~35s 降到 ~6s。
     #   结果按 (因子, 日期) 排序后再写盘 —— 并行完成顺序不确定，排序保证台账可比对。
-    days_t = tuple(int_to_str(d) for d in days)
-    tasks = [(str(cfg.factor_root(s)), s.name, days_t) for s in specs]
     from .resources import safe_jobs
     jobs = safe_jobs(getattr(args, "jobs", 0))
     jobs = max(1, min(jobs, len(tasks)))
+    worker = _hash_all_one if all_mode else _hash_one
     if jobs > 1 and len(tasks) > 1:
         import multiprocessing as mp
         from concurrent.futures import ProcessPoolExecutor
         with ProcessPoolExecutor(max_workers=jobs, mp_context=mp.get_context("fork")) as ex:
-            for chunk in ex.map(_hash_one, tasks, chunksize=2):
+            for chunk in ex.map(worker, tasks, chunksize=2):
                 rows.extend(chunk)
     else:
         for t in tasks:
-            rows.extend(_hash_one(t))
+            rows.extend(worker(t))
     rows.sort(key=lambda r: (r[0], r[1]))
     got = {r[0] for r in rows}
     missing = [s.name for s in specs if s.name not in got]
@@ -156,10 +238,13 @@ def cmd_dayhash(args, cfg) -> int:
     #   `label_ret_20d` 在最后 21 个交易日无定义（T+21 的未来行情还没发生）。
     #   列出来才能让 `264 × 7` 每一格都有交代，而不是"莫名少了几条"。
     have = {(r[0], r[1]) for r in rows}
-    empty_pairs = [[s.name, d] for s in specs for d in days_t if d >= s.resolved_start(cfg) and (s.name, d) not in have]
+    empty_pairs = [[s.name, d] for s in specs for d in days_by_spec[s.name]
+                   if d >= s.resolved_start(cfg) and (s.name, d) not in have]
     stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    days_desc = (f"ALL({len(specs)} 因子各自对齐起点..{int_to_str(end_i)})" if all_mode
+                 else ",".join(int_to_str(d) for d in days))
     header = (f"# 逐截面 MD5 台账（factor / trade_date / md5 / rows）\n"
-              f"# computed_at={stamp}  cutoff={int_to_str(end_i)}  days={','.join(int_to_str(d) for d in days)}\n"
+              f"# computed_at={stamp}  cutoff={int_to_str(end_i)}  days={days_desc}\n"
               f"# 语义：每个 (因子, 交易日) 的横截面一个 MD5；位级比较（float32 原始位）。\n")
     with tsv.open("w", encoding="utf-8") as fh:
         fh.write(header)
@@ -167,10 +252,12 @@ def cmd_dayhash(args, cfg) -> int:
             fh.write("\t".join(map(str, r)) + "\n")
     (out_dir / "meta.json").write_text(json.dumps({
         "computed_at": stamp, "cutoff": int_to_str(end_i),
+        "mode": "all" if all_mode else f"recent-{len(days)}",
         "days": [int_to_str(d) for d in days], "factors": len(specs),
         "entries": len(rows), "factors_missing": missing,
-        "expected_pairs": len(specs) * len(days), "empty_pairs": empty_pairs,
-        "note": f"这 {len(days)} 个断面是在 {int_to_str(end_i)} 这天计算得到的",
+        "expected_pairs": sum(len(v) for v in days_by_spec.values()), "empty_pairs": empty_pairs,
+        "note": ("全历史模式：天集合按各因子对齐起点逐因子计算" if all_mode
+                 else f"这 {len(days)} 个断面是在 {int_to_str(end_i)} 这天计算得到的"),
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"已写入 {tsv}（{len(rows)} 条）· 用时 {time.time()-t0:.1f}s")
     if missing:
@@ -187,14 +274,15 @@ def cmd_dayhash(args, cfg) -> int:
             print(f"    …另有 {len(by)-6} 个因子")
 
     if args.verify:
-        result=_verify(tsv, rows)
+        _bl = Path(getattr(args, "baseline", None)) if getattr(args, "baseline", None) else None
+        result=_verify(tsv, rows, _bl)
         return result or int(bool(empty_pairs))
     return int(bool(empty_pairs))
 
 
-def _verify(tsv: Path, rows: list[tuple[str, str, str, int]]) -> int:
+def _verify(tsv: Path, rows: list[tuple[str, str, str, int]], baseline: Path | None = None) -> int:
     """与已存档台账比对（**先读旧的，再比新的** —— 生成时已覆盖旧文件）。"""
-    old = tsv.with_suffix(".prev.tsv")
+    old = Path(baseline) if baseline else tsv.with_suffix(".prev.tsv")
     if not old.exists():
         print(f"\n没有可比的旧台账（{old}）。第一次运行请把 {tsv.name} 留档；"
               f"下次运行前先 `cp {tsv.name} {old.name}`，或直接用 git/拷贝留档。")

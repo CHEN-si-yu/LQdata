@@ -1,0 +1,39 @@
+# 事前登记假设，不构成收益证明；机制集合、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "family_id": "r2_pledge_family_v2",
+  "idea_id": "r2_pledge_idea_v1",
+  "trial_budget": 6,
+  "allowed_variants": [
+    {
+      "signal": "pledge_level"
+    },
+    {
+      "signal": "pledge_change"
+    },
+    {
+      "signal": "pledge_price_stress"
+    },
+    {
+      "signal": "pledge_structure"
+    },
+    {
+      "signal": "pledge_change_fast"
+    },
+    {
+      "signal": "pledge_level_lag5"
+    }
+  ],
+  "baseline": [
+    "total_leverage_ratio",
+    "bp",
+    "log_mv",
+    "momentum_20",
+    "price_to_52w_high",
+    "max_drawdown_120",
+    "turnover_std_20",
+    "short_term_reversal_5"
+  ],
+  "hypothesis_boundary": "只要 stock_pledge_stat 这一个数据维度的四类机制；预算 6 = 4 机制 + 2 个必要变体（变化窗口 1 个、发布滞后敏感性 1 个）。不扩到其它机制、不搜索窗口、不搜索方向。",
+  "search_policy": "只登记六个 signal 标识，不扩窗口或方向搜索；定义注册后不可变。",
+  "notes": "v2 与 v1 机制/窗口/方向逐字相同；v1 六个候选因框架 _audit_columns 白名单不接受 end_date 而无法计算（零 run、零 IC），v2 只在实现模块内为该表声明可得日期列后重新登记。v1 保留在账本中不删除。原 notes：定向相关对照 total_leverage_ratio / debt_to_assets / bp / circ_mv 中，debt_to_assets 与 circ_mv 在本库没有同名正式因子：debt_to_assets 用 stock_financial_indicator.debt_to_assets（IND_SAFE 白名单内）自行按 ann_date 做 PIT 复算对照，circ_mv 用最近的正式因子 log_mv 对照。"
+}

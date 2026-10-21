@@ -1,0 +1,46 @@
+name: r9b_reason_trigger_churn_w60_v1
+family_id: r9b_reason_taxonomy_v1
+implementation: research.families.r9b_reason_taxonomy_v1:build
+parameters: {signal: reason_trigger_churn, window: 60}
+units: >
+  无量纲比率 ∈ [−1, 1] =（窗口内 CHURN 类上榜记录数 − 窗口内 UP_DEV+DOWN_DEV 类记录数）
+  /（两者之和）。+1 = 窗口内只被换手率/振幅型原因带上榜；−1 = 只被方向偏离型原因带上榜。
+  无金额、无单位。
+availability: >
+  只读 stock_top_list 中 trade_date <= T 的行，且不做交易日位移。依据同 C1：
+  conf/frequency.yaml 对该表声明 delay_days: 0；fea/delay.py 只把 delay>0 的表放进
+  LAGGED_DATASETS；项目 state/delay_history.json 不存在（project root 与上游均无）；
+  已删因子 top_list_net_rate_20 的原定义备注记录 2026-09-15 晚实测当天可得
+  （delay_obs=0）并显式去掉了 v2 的 lag_grid(...,1)。
+  ⇒ 主口径不位移，报告同时给出 lag=1 的离线敏感性。
+missing_policy: >
+  NaN 原生主口径：窗口（含 T）内 churn+dev = 0（该股窗口内没有任何流动性型或方向偏离型
+  上榜记录）→ NaN（不是 0）。池外（universe 掩码）→ NaN。不做填充、不外推。
+  零填充对照口径（并列报告，不单独立主张）：把上述 NaN 格记 0（中性：无 churn 也无 dev），
+  由同一因子值离线加掩码复算；两种口径必须同号，符号翻转即判不稳健、不得准入
+  （BRIEF §8.5）。
+spec:
+  group: research_toplist
+  desc: >
+    R9-B B-new-2（reason 分类学）：窗口内换手率/振幅型上榜记录占比减去方向偏离型占比。
+    登记方向 higher_is_better=false —— 投机性换手型关注占比越高，预期未来收益越低。
+  formula: >
+    cat = classify_reason(reason)，10 条有序关键词规则（退市整理/无涨跌幅限制/异常/融资买入/
+    可转债/北交所双向40%/换手率或振幅→CHURN/涨幅→UP_DEV/跌幅→DOWN_DEV/其余→UNMAPPED）。
+    w_churn = roll_sum(event_grid(codes, days, 1[cat=CHURN]), 60, min_count=1)
+    w_dev   = roll_sum(event_grid(codes, days, 1[cat in (UP_DEV,DOWN_DEV)]), 60, min_count=1)
+    value = (w_churn − w_dev)/(w_churn + w_dev)，分母 = 0 → NaN；再套 universe 与 isfinite 掩码。
+  deps: [stock_top_list]
+  fin_fields: []
+  warmup_days: 200
+  higher_is_better: false
+  version: 1
+  note: >
+    去重论证：reason 列在 177 个正式因子与 374 个已删个股因子里零引用；已删
+    efx_dragon_ratio_balance（buy_ratio−sell_ratio）、efx_top_imbalance（l_buy/l_sell）、
+    efx_dragon_net_intensity（net/gross）、efx_top_amount_rate、top_list_net_rate_20 全部是
+    金额口径，本因子零金额；s26_structure_side_hhi_v1 用 stock_main_fund_flow 四档委托规模，
+    与 reason 无关；已删 efx_limit_* / efx_lu_* 用 stock_limit_list / stock_limit_up，
+    表与事件都不同；R3-A r3seat_*（从未执行）与 R4-I r4i_seat_closeout_v1（4/4 不晋级）
+    全部是席位金额机制。本因子与 C1 r9b_seat_identity_breadth_w60_v1 的表、键、机制均不同。
+    分类器为确定性关键词规则，全部 distinct reason 值 → 类别的映射表随报告落盘，可审计。

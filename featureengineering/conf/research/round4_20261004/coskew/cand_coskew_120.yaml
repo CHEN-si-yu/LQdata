@@ -1,0 +1,16 @@
+name: r4g_coskew_120_v1
+family_id: r4g_coskew_v1
+implementation: research.families.r4g_coskew_v1:build
+parameters: {signal: coskew_120}
+units: 无量纲（标准化偏回归系数：z_r ~ [z_m, z_m²] 的 z_m² 系数）。原始量纲 OLS 系数（对 r_m²）= 本值 × σ_r/σ_m²。
+availability: 只用信号日 T 收盘及以前（含 T）的后复权日收益与池内当日等权均值；hfq 价只用 <=T 的 adj_factor（PIT 安全）；stock_daily / stock_adj_factor 不在 fea/delay.py 的 LAGGED_DATASETS（实测仅 stock_margin_detail），无需位移。
+missing_policy: 窗口内成对有效交易日 <90 → NaN；var_m/var_r ≤ 1e-10 或偏回归分母 (Var(z_m²) − γ²) ≤ 1e-4 的退化窗口 → NaN（数值守卫，不 clip）；停牌/未上市/当日无成交不参与窗口（不是 0 收益）；不填充、不外推。
+spec:
+  group: research_coskew
+  desc: 机制 1 的窗口变体（120 日）：长窗协同偏度（对池等权市场，标准化偏回归口径）；高协偏度 → 预期收益更低。标注变体性质，不单列新机制主张。
+  formula: b2 = (S_y2 − gamma*rho) / (Var(z_m^2) − gamma^2)；z_r ~ [z_m, z_m^2] 的偏回归系数，120 日窗（含 T），成对有效日 min 90
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 240
+  higher_is_better: false
+  version: 1
+  note: coskew_60 的窗口变体（min_count = 90 = ceil(0.75×120)，与 60 日版同比例）；其余口径与 coskew_60 完全一致。

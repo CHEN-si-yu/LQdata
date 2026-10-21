@@ -1,8 +1,8 @@
 # 项目架构与独立单元规则
 
-`preparingdata.py`维护共享数据快照；实验单元分两层 —— `experiments/Vx/`（全市场截面排序）与 `experiments2/Vx/`（固定小行业池内训练排序分并优化组合策略），各自完成训练、推理和评价；`docs/`保存项目规则与实验记录；`history/`保存研究材料，不参与单元运行；`releases/`用于存放经确认的实战单元。
+`preparingdata.py`维护共享数据快照；实验单元在 `experiments/Vx/`（全市场截面排序），各自完成训练、推理和评价；`docs/`保存项目规则与实验记录；`history/`保存研究材料，不参与单元运行；`releases/`用于存放经确认的实战单元。
 
-两层是**并列的实验层，不是新旧关系**：任务不同（见下表），因此评价口径、产物名与回测引擎都不同，两层**互不调用**、只共享 `trainingdata/`。`releases/` 与它们不是同一层 —— 那是经用户明确确认后的实战单元。
+实验单元**互不调用**、只共享 `trainingdata/`。`releases/` 不是实验层 —— 那是经用户明确确认后的实战单元。
 
 ## 项目结构与职责
 
@@ -11,7 +11,6 @@
 | `preparingdata.py` | 对接上游数据并构建快照 |
 | `trainingdata/` | 所有单元共享的只读输入 |
 | `experiments/Vx/` | 相互独立的训练和评价单元（**全市场截面排序**：按打分买 TopK） |
-| `experiments2/Vx/` | 相互独立的训练和评价单元（固定小行业池内训练排序分，并据此优化组合策略） |
 | `docs/` | 架构、评价规范、逐版实验记录 |
 | `releases/` | 经明确确认的实战单元 |
 | `history/` | 历史算法与研究材料，不作为运行依赖 |
@@ -20,7 +19,7 @@
 
 ## 单元继承与训练
 
-每个单元只研究一个明确配置的交易策略。`experiments/` 使用 `top5_1d`（每日调仓）、`top5_5d`（每五个交易日调仓）以及 `top1_1d` 基线；`experiments2/` 的模型分数与组合策略由单元 RECIPE 定义，同池等权为基准。V1–V50 保留原有 action_3state 与 buy_hold 历史配置和解释口径。实际单元以自身配置和结果元数据为准。
+每个单元只研究一个明确配置的交易策略。单元使用 `top5_1d`（每日调仓）、`top5_5d`（每五个交易日调仓）以及 `top1_1d` 基线。实际单元以自身配置和结果元数据为准。
 
 创建新单元时必须明确父单元，并按改动范围选择起点：
 
@@ -37,7 +36,23 @@
 
 训练调度器在启动时探测可用内存和可见 GPU，并据此选择并发与设备；`--jobs`、`--device` 可用于显式覆盖。资源可用量随运行环境变化，不在项目规则中规定固定机器型号、显存、单折内存或并发数。
 
-实验单元只读取 `trainingdata/` 和获准的展示辅助数据。股票名称表和交易日历仅用于报告展示，不进入模型指标计算；价格从 `trainingdata/prices/` 读取。单元不得依赖其他实验目录、临时脚本或未列明的外部数据路径 —— **包括不得跨层调用**：`experiments2/` 的单元不得 import `experiments/`（反之亦然）或 `history/` 的代码，共享能力靠**复制**而不是依赖（与"单元之间只共享 `trainingdata/`"同一条规矩）。
+### 模型优先的训练与回测顺序（2026-10-06 用户要求）
+
+**尽量以一个模型的16折优先，依次完成模型，而不是先将所有模型的同一折铺开。** 标准单复本为四个季度×每季度四折；在资源和内存预算内，优先并行该模型的未完成折。该模型16折齐全后，立即执行权重重载审计、统一指标回测和记录，再根据完整结果调整后续研究方向。
+
+优先模型的未完成折均已启动时，可用后续模型填补空闲资源；并发不改变模型优先的队列顺序。回测可与下一个模型训练并行，重分析任务需控制内存和并发。当前会话的资源要求为平均利用率超过75%、实际内存严格低于150GB（服务器上限160GB）；分别记录CPU与GPU平均利用率，按实测报告是否达标，不能用瞬时利用率替代平均值。内存保护优先于追加并发。
+
+调度顺序调整保留已完成折与已有epoch检查点，不改变运行中的训练配方、数据快照或评价窗；必要时受控重启调度器，从检查点续训。不得将部分季度或未齐全的折当作完整模型成绩。补种子时每个复本也须完成自己的16折，模型级成绩按全部复本打分等权均值计算，仍遵守[baseline.md](baseline.md)的触发门槛。
+
+### 持续研究与方向调整注意事项（2026-10-06 用户要求）
+
+模型侧在`experiments/`持续迭代，以**提高稳定的收益**为主要研究目标，直到用户明确要求停止。每次训练与回测记录配方、权重来源、统一指标、资源使用、结论与局限；发现错误时保留原结论及更正依据，依据实际结果调整下一步方向。不能只保留表现好的实验或重复声称未经验证的收益改善。
+
+重点检验用户提出的新假设：**在大资金体系下训练出能捕捉正确信号的模型，可能在个人小资金交易中取得更好的收益。** 这是待检验的迁移假设，不是已经确认的普遍结论；“资金规模”与“股票市值风格”分开说明。采用同快照、同架构、配对训练目标的对照，在统一信号指标和相同小资金含费执行规则下比较，并结合季度、回撤、费用与种子稳定性评估，不能把无摩擦资金分配结果直接当作个人账户收益。
+
+允许通过不同模型/策略形成不同风格，再检验互补能否提高稳定收益；同时检查单腿、固定组合、弱势季度、风险暴露和执行成本。融合权重与候选选择遵循[baseline.md](baseline.md)的验证/测试边界与复本规则，不按测试收益最大值给出最终模型成绩。研究方向探索和调整的具体证据登记到当日研究文档及`iterations.md`。
+
+实验单元只读取 `trainingdata/` 和获准的展示辅助数据。股票名称表和交易日历仅用于报告展示，不进入模型指标计算；价格从 `trainingdata/prices/` 读取。单元不得依赖其他实验目录、临时脚本或未列明的外部数据路径 —— **包括不得 import `history/` 的代码**：共享能力靠**复制**而不是依赖（与"单元之间只共享 `trainingdata/`"同一条规矩）。
 
 ## 训练快照 `trainingdata/`
 
@@ -59,9 +74,31 @@ trainingdata/
 
 市场因子按 `trade_date` 与股票因子对齐；带 `_z252` 的列使用截至当日的滚动标准化值。价格块保存原始行情，不在快照层复权或修补停牌；复权、涨跌停、停牌和成交规则由消费该价格的回测实现负责。
 
+**特征集来源（2026-10-07 用户要求）**：`preparingdata.py` 直接扫描
+`featureengineering/data/factors/<name>/year=YYYY/data.parquet` 与并列的
+`market_factors/`，纳入全部已经落盘的因子，不读取上游 Python、配置、注册表、发布清单或状态文件。
+股票目录中 `label_ret_<h>d` 为标签，其余为特征；日期与股票轴来自股票产物主键并集。
+空目录不计入清单，缺格保留 NaN。列集、方向或股票轴变化自动重建所有年份，避免分区混用。
+
+Parquet 不包含优劣方向。默认保留本地快照 `columns.direction`，新因子保持原始方向；
+`--direction-policy raw` 可让全部因子保持原始方向。`columns.raw_direction_features` 明确记录保持原始方向的列，
+不能据此声称这些列“越大越好”。`--features-from` 仍可固定特征清单及其已有方向。
+旧 `--extra-features` 兼容为落盘名字校验，配固定清单时追加列；默认打包已无需这个参数。
+
+```bash
+python preparingdata.py --jobs 12 --progress bars
+python preparingdata.py --source-data /root/autodl-fs/featureengineering/data --factors-only --out trial
+```
+
+`--jobs` 控制扫描线程与因子工作进程。读取、对齐、标准化在工作进程内完成，默认并发最多 12，
+并尊重容器 CPU 配额；每个进程默认 1 个计算线程，可用 `MX_THREADS` 调整。
+tqdm 展示扫描、年度、股票特征、标签、市场因子和附加块进度；`--progress auto` 仅在终端显示，
+`bars` 强制显示，`off` 关闭。本地 `.source_index.json` 按源文件大小及修改时间缓存主键轴，
+源文件变化会重新扫描；`--check` 只读。`--factors-only` 可仅依赖因子 data 目录，跳过原始成交额和价格表。
+
 ## 独立单元开发强制规则
 
-1. 每个单元（两层同规）固定包含 `run.py`、`model.py`、`analysis.py` 三个实现脚本。训练调度放在 `run.py`，模型、训练、推理和路径合同放在 `model.py`，指标、回测及报告放在 `analysis.py`。
+1. 每个单元固定包含 `run.py`、`model.py`、`analysis.py` 三个实现脚本。训练调度放在 `run.py`，模型、训练、推理和路径合同放在 `model.py`，指标、回测及报告放在 `analysis.py`。
 2. 不新增、删除、移动、重命名、拆分或合并单元内的文件与目录。配置与实现直接维护在固定脚本内；临时分析工具放在单元目录之外。
 3. 单元只在固定产物路径原位写入或覆盖。不得新增独立报告、备份、日期目录、运行编号目录或未列入清单的结果文件。
 4. 季度、折数、年度分区与策略文件名属于固定文件合同。调整结构必须先得到用户明确要求，再同步更新 `model.py:fixed_files()` 和本文件中的结构说明。
@@ -69,7 +106,7 @@ trainingdata/
 
 ## 固定文件树
 
-同一层内的单元使用相同的文件类型、目录展开规则和清单定义；策略名称由单元配置决定，数据季度、折数和年度分区按项目合同展开。两层产物名不同：主族保存逐日 TopK 结果，experiments2 保留固定动作层文件合同以承载池内排序模型的组合评价。清单的唯一真源始终是该单元自己的 `model.py:fixed_files()`。
+各单元使用相同的文件类型、目录展开规则和清单定义；策略名称由单元配置决定，数据季度、折数和年度分区按项目合同展开。产物保存逐日 TopK 结果。清单的唯一真源始终是该单元自己的 `model.py:fixed_files()`。
 
 ```text
 Vx/
@@ -117,83 +154,6 @@ Vx/
 - `model_logs/`：逐折训练日志和评价日志。
 
 单元不生成 `docs/` 下的 Markdown 报告。每版研究说明由维护者写入 [iterations.md](iterations.md)；数据指标定义和判定方式见 [baseline.md](baseline.md)。
-
-## experiments2：固定小行业池训练排序与组合策略
-
-本节新规范适用于 V51 及之后的新单元。V1–V50 既有单元和结果保持不变，按各单元当时的 RECIPE、实现及 baseline.md 所列历史口径解释。
-
-本层在预先冻结的单行业小股票池内训练排序/打分模型，再用分数优化 TopK、目标仓位、缓冲区和调仓周期。模型只用池内样本训练，但允许并要求池内横截面排序；池子大小不改变固定文件合同。
-
-- **股票池冻结**：RECIPE 是池子的唯一真源，写明行业层级/代码、点时快照日期、确定性选池规则和完整成分名单。必须在查看策略收益前冻结，不得按测试窗收益挑行业、成分或池大小。运行时名单直接取自 RECIPE，不依赖临时脚本或清单外数据文件；选池来源与池子体检记入 docs/iterations2.md。
-- **模型训练**：沿用 experiments 的当前训练配方、trainingdata 因子及市场因子面板、标签、切分、purge、早停和 epoch bagging；唯一的样本域改动是只保留冻结池内样本。标签为 label_ret_hd[T] = adj_open[T+1+h] / adj_open[T+1] - 1。按四个标准季度、每季四折和四个种子训练并审计；任何配方改动仍须至少四个种子，并报告均值与种子间波动。
-- **策略优化**：TopK、目标仓位档位、阈值、缓冲区、调仓周期等候选和搜索范围写入 RECIPE。只可在训练期无前视干净验证块上选参；训练样本结束日必须早于验证块开始日。2025-07-01 至 2026-06-30 的 242 日窗仅用于冻结配置后的展示和配对评价，不得用于选池、参数或种子。
-- **运行边界**：单元只读取 trainingdata；外部成分资料只能用于开发时冻结名单，不可成为运行时依赖。单元之间及两层之间不互相 import；共享能力靠复制维护。三个实现脚本、固定文件和 validate_layout 合同继续适用。
-- **评价**：信号指标、组合账户、基准配对比较、费用与拒单字段、敏感性和可证伪判据见 baseline.md 的 experiments2 新单元规范。
-
-### 固定文件树（`experiments2/Vx/`）
-
-与主族同构（同样 3 个源码脚本 + 16 折 + 年度分区），并沿用 V1 的固定文件清单：picks.md 对应 actions.md，two_strategy_validation.json 对应 action_validation.json。action_3state 与 buy_hold CSV 名称是固定路径合同；V1–V50 的内容和含义保持原样，V51 起分别承载冻结模型策略组合账户与同池等权基准。固定清单为 **159 个文件、28 个子目录**，检查逻辑以该单元 model.py:fixed_files() 为准。
-
-```text
-Vx/
-├── run.py
-├── model.py
-├── analysis.py
-├── model_train/
-│   └── <季度>/fold<折>/
-│       ├── best.pt
-│       ├── last.pt
-│       ├── complete.json
-│       ├── history.json
-│       ├── score_predictions.npy
-│       ├── test_predictions.npy
-│       ├── split.json
-│       └── training_info.json
-├── model_pred/
-│   ├── actions.md
-│   ├── equity_curves.png
-│   └── ensemble/
-│       ├── score_meta.json
-│       ├── year=<年份>/data.parquet
-│       └── CSV/
-│           ├── cash_action_3state.csv
-│           ├── trades_action_3state.csv
-│           ├── cash_buy_hold.csv
-│           └── trades_buy_hold.csv
-├── model_logs/
-│   ├── <季度>_<折>.log
-│   └── analysis_0.log
-└── model_info/
-    ├── final_audit.json
-    └── action_validation.json
-```
-
-### 固定产物含义
-
-新单元沿用 V1 的固定 159 文件、28 子目录清单，不增删或改名路径；策略网格及比较摘要写入既有审计文件，不新增结果 CSV、日期目录或单元内报告。
-
-- model_pred/actions.md：汇总信号指标、valid/test 展示结果、冻结参数和近期池内排序/组合动作。V1–V50 仍按逐票动作口径解释。
-- model_pred/ensemble/year=<年份>/data.parquet：保存集成模型分数和池内股票代码。
-- model_pred/equity_curves.png：展示所选池内策略与同池等权基准的含费曲线。
-- 固定 cash_action_3state.csv / trades_action_3state.csv 路径用于新单元选定模型策略的组合账户与成交；cash_buy_hold.csv / trades_buy_hold.csv 用于同池等权基准。V1–V50 文件维持历史含义。
-- model_info/final_audit.json：保存池子体检、clean blocks、信号和账户指标、种子分布、参数敏感性及配对基准结果。
-- model_info/action_validation.json：保存新单元组合现金账户实现和口径校验；既有单元仍按逐票账户解释。
-- model_logs/：逐折训练日志和评价日志。
-
-### 运行命令
-
-```bash
-cd experiments2/Vx
-python -B model.py --quarter 2025Q3 --fold 1 --device cpu   # 单折（先冒烟）
-./run.py                                                     # 16 折（默认顺序）
-python -B analysis.py                                        # 评价与全部产物
-python -B analysis.py --audit                                # 权重重载与推理对拍
-python -B analysis.py --from-scores                          # 只重算已有打分的评价产物
-python -B analysis.py --actions-only                         # 只写 actions.md
-```
-
-引擎的执行时序不变量测试放在单元之外（单元内不许有清单外文件）：
-`python -B /autodl-fs/data/tmp/vlines/actions_engine_tests.py`。
 
 ## 运行命令
 

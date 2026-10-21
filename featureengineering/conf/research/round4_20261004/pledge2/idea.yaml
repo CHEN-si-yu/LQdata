@@ -1,0 +1,20 @@
+idea_id: r4s_pledge_v2_v1
+hypothesis: 质押比例的**二阶量**（变化的加速度、增质/解质的路径不对称、连续解押的持续性）携带横截面预期收益信息；R2 已证伪的水平/一阶变化/压力/结构之外的残余信号仍可能存在（R2 §9 明示授权另行预登记）。
+mechanism: |
+  记 P(t) = 100×(unrest_pledge + rest_pledge)/total_share（百分点，float64 重算），
+  经 (股票×周) 网格 as-of 前向填充并整体保守滞后 15 个交易日后得到可得水平序列。
+  1) pledge_change_accel：A(t) = P(t) − 2·P(t−S) + P(t−2S)，S=20 交易日（4 周 ≈ 1 月）。
+     度量"本期变化 − 上期变化"（月度二阶差分）：质押加杠杆加速 = 风险累积加速 → 预期收益走低。
+  2) pledge_unpledge_asym：对滞后水平序列逐日一阶差分 d，在 W=65 交易日（13 周 ≈ 1 季）窗口内
+     A = (U−D)/(U+D)，U=Σmax(d,0)（增质幅度）、D=Σmax(−d,0)（解质幅度）∈[−1,1]；
+     U+D=0 记 NaN（"无路径"不是"对称"）。度量增质主导（正不对称）→ 预期收益走低。
+  3) pledge_release_streak：(股票×周) 网格上截至最近报告的连续**严格**递减周数（cap=13 周）。
+     度量解押的持续性（风险解除过程）→ 预期收益走高。
+  防重蹈检查（B3 §0）：R2 已证伪为水平/13 周与 5 周一阶变化/高质押×回撤/限售结构；
+  本单元三个机制均为二阶或路径统计构念，与已证伪机制不重叠；lag5 前视变体不在本 family 之内。
+expected_direction: 机制 1、2 登记为 false（值越高 → 预期收益越低）；机制 3 登记为 true（值越高 → 预期收益越高）；NaN 口径候选与对应主口径同向。方向在看任何结果之前冻结。
+target_horizons: [1, 5]
+falsifiable: declared 分年同号 < 7/9；或 G7 Fama-MacBeth 控制（margin_repay_deceleration、turnover_std_20、log_mv 等）后不显著；或零填充口径与 NaN 口径符号翻转（R3 伪发现模式 5：判不支持）；或与定向对照高度重合且无增量；与正式库因子 |rho|>0.95。
+fields: [stock_pledge_stat.end_date, stock_pledge_stat.unrest_pledge, stock_pledge_stat.rest_pledge, stock_pledge_stat.total_share]
+origin: round4_lead_preregistered_2026-10-04 (RESEARCH_BRIEF_B3 §V4; R2 §9 授权)
+status: unvalidated_hypothesis

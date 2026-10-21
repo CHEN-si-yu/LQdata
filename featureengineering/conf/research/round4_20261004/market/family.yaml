@@ -1,0 +1,19 @@
+family_id: r4m_market_state_v1
+idea_id: r4m_market_state_v1
+trial_budget: 6
+baseline: >
+  严格候选朴素对照 = 现存生产市场因子的近亲（mkt_idx_csi300_ret1 / mkt_idx_csi300_momentum20 指数动量，
+  以及等权日收益口径本身）；绿卡为描述量，M4 只记录。预算 6 = 1 严格 + 5 绿卡；每机制恰一个候选、无参数变体。
+allowed_variants:
+  - {signal: mkt_ew_reversal_5}
+  - {signal: mkt_cs_skew_20}
+  - {signal: mkt_cs_kurtosis_20}
+  - {signal: mkt_turnover_median}
+  - {signal: mkt_amount_total_log}
+  - {signal: mkt_overnight_ret}
+hypothesis_boundary: >
+  市场标量没有同日股票间排序，不计算虚构的横截面 IC；有效性审核走 M0–M7（严格通道）与
+  M0∧M2∧M3（绿卡通道）；绿卡 = 描述性上下文量（未做收益有效性承诺），严格通过 = 独立信号候选
+  （仅为最低底线，不等于「有效因子」）。
+search_policy: 每机制恰一个候选；不扩窗口、不改参数、不新增变体；登记后不看结果改方向或通道。
+registration_note: 本族为 Round 4 批 1 单元 M1 的事前研究登记（非追溯登记）；方向与通道由任务书预登记并封存于 round4 freeze（freeze 先于任何结果统计）。

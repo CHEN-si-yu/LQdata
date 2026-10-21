@@ -1,0 +1,30 @@
+idea_id: r4n_market_b2_v1
+hypothesis: >
+  严格机制：宽度-价格背离——池内上涨家数占比（宽度腿）与等权池累计收益（价格腿）的
+  252 日滚动 z 之差，对未来 1/5 日等权市场收益存在正向关系（宽度改善领先价格：
+  价格腿短期落后于宽度腿时未来收益偏正）。绿卡通道（描述用途、无方向承诺）：池内单日
+  收益中位数、换手率中位数的 20 日标准差、沪深300 成交额对数、池内平均振幅——
+  市场状态描述性上下文量。
+mechanism: |
+  1) mkt_breadth_price_divergence_5（严格，方向 +1，先验弱-中）：z252(上涨家数占比 5 日均)
+     − z252(等权池 5 日累计收益)。宽度腿度量参与面、价格腿度量已实现涨跌；背离为正
+     （参与面改善未被价格充分反映）预期未来 1/5 日市场收益偏正，背离为负偏负。
+     两腿先各自 252 日滚动 z（min120）再相减（冻结口径，见 freeze b2）。
+  2) mkt_cs_median_ret1（绿卡）：池内单日收益中位数——截面中心位置（抗尾部）描述量。
+  3) mkt_turnover_median_std20（绿卡）：池内换手率中位数的 20 日滚动标准差——
+     活跃度波动的描述量（水平量的波动，非量比/变化率构造）。
+  4) mkt_idx_csi300_amount_log（绿卡）：沪深300 成交额对数——指数量能水平的
+     直接行情统计量（值域压缩变换）。
+  5) mkt_ew_amplitude（绿卡）：池内 (high−low)/pre_close 均值——等权平均振幅
+     （绿卡允许清单逐字列举「振幅」），日内价格波动幅度描述量。
+expected_direction: 严格候选 mkt_breadth_price_divergence_5 预登记 direction=+1（先验弱-中）；其余 4 个绿卡候选 direction=null（无方向先验，不做收益有效性承诺）。方向表封存于 freeze b2（先于任何结果统计），登记后不得因结果改判。
+target_horizons: [1, 5]
+falsifiable: >
+  严格候选：M5 主期限（h=1 或 5）declared HAC 95% 区间未排除 0、或同号年数 < ceil(7×有效年数/9)、
+  或有效年数 < 6 → 信号未获支持（门序 2 → 待修订）；M5 获支持但 M6 declared t<2.0 → 增量不足（待修订）；
+  M6 符号反转 → 投影特征（门序 3 → 建议剔除）；M4 |ρ|>0.95 → 重复（建议剔除）。
+  绿卡候选：M0∧M2∧M3 任一不过 → 待修订。全部裁决按 doc/市场因子审核体系.md 门序规则树
+  执行，只出结论与建议、不执行处置。
+fields: [stock_daily.open, stock_daily.high, stock_daily.low, stock_daily.close, stock_daily.pre_close, stock_daily.amount, stock_daily.vol, index_daily.amount, stock_finance.float_share, stock_adj_factor.adj_factor]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

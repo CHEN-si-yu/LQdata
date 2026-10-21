@@ -25,7 +25,7 @@ NOTE = (
 
 def _spec(name, desc, formula, high=True):
     return FactorSpec(
-        name=name, group="quarterly_quality", desc=desc, formula=formula,
+        name=name, version=2, group="quarterly_quality", desc=desc, formula=formula,
         deps=("stock_financial_indicator",), fin_fields=FIELDS,
         warmup_days=1100, higher_is_better=high, note=NOTE,
     )
@@ -66,9 +66,6 @@ def qf_sales_growth_accel(ctx):
     return _change(ctx, "q_sales_yoy", 1)
 
 
-@register(_spec("qf_sales_growth_floor_4q", "最近四季收入同比增长的最低值", "min(q_sales_yoy(P-k),k=0..3)/100"))
-def qf_sales_growth_floor_4q(ctx):
-    return _four(ctx, "q_sales_yoy", "floor")
 
 
 @register(_spec("qf_sales_growth_vol_4q", "最近四季收入同比增长波动", "std_population(q_sales_yoy(P-k),k=0..3)/100", high=False))
@@ -86,9 +83,6 @@ def qf_core_roe_vol_4q(ctx):
     return _four(ctx, "q_dt_roe", "vol")
 
 
-@register(_spec("qf_noncore_roe_gap", "单季度ROE中的非经常损益贡献差", "(q_roe(P)-q_dt_roe(P))/100", high=False))
-def qf_noncore_roe_gap(ctx):
-    return _quarter(ctx, "q_roe") - _quarter(ctx, "q_dt_roe")
 
 
 @register(_spec("qf_cash_margin_yoy_change", "单季度经营现金收入比同比改善", "(q_ocf_to_sales(P)-q_ocf_to_sales(P-4))/100"))
@@ -101,6 +95,3 @@ def qf_cash_margin_floor_4q(ctx):
     return _four(ctx, "q_ocf_to_sales", "floor")
 
 
-@register(_spec("qf_cash_margin_vol_4q", "最近四季经营现金收入比波动", "std_population(q_ocf_to_sales(P-k),k=0..3)/100", high=False))
-def qf_cash_margin_vol_4q(ctx):
-    return _four(ctx, "q_ocf_to_sales", "vol")

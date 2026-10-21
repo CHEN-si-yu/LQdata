@@ -1,0 +1,25 @@
+family_id: r11u4_field_interaction_family_v1
+idea_id: r11u4_field_interaction_idea_v1
+trial_budget: 1
+allowed_variants:
+  - {signal: flow_intensity_x_flow_surprise}
+baseline:
+  - mf_net_inflow_5d（状态腿，在产）
+  - mf_net_vol_surprise_20（腿，在产）
+  - cp_momentum_lowvol_20（在产交互先例，跨族）
+  - log_mv
+  - turnover_std_20
+  - vol_120
+hypothesis_boundary: |
+  只研究 `fundflow` 族**同族两字段**的条件交互一个机制。不扩参数网格、不事后调阈值、不事后改方向。
+  **P2/P3 是登记的前提**：腿 `mf_net_vol_surprise_20` 的无条件 IC t = −0.02（不显著）；
+  P3 斜率 HAC t = −7.42、两状态 IC 符号相反（−0.00521 t=−2.08 vs +0.00646 t=+2.42）。
+  **状态必须是 stock-varying**（附录 K）：广播态会使候选退化为自身腿的有符号置换
+  （frac_days_abs_rho_gt_0.99 对自身腿 = 1.0000）且 G4 退化为 P3 的斜率项。本候选实测
+  corr_t(X, leg) daily_abs_mean = 0.1312、frac>0.99 = 0.0000 ⇒ 该陷阱不适用。
+search_policy: 唯一口径在模块内事前冻结（SIGNALS/PAIRS），build() 拒绝任何其它参数组合；不存在被搜索的窗口。
+v1_defect_disclosure: 不适用（本 family 为 v1 首次登记；预筛在登记之前完成，无 v1 候选被废弃）。
+missing_convention_note: |
+  **附录 J 规则 4 不适用**：两腿都是稠密在产因子（实测缺失率 0.61% / 0.55%，交集覆盖率 0.9935），
+  本候选不存在可选的零填充/NaN 约定 —— 缺失一律传播为 NaN，不做填充、不插值。
+  因此不存在"符号随缺失约定翻转"的风险；该结论在报告中复述。

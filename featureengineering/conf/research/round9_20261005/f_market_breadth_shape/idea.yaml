@@ -1,0 +1,38 @@
+idea_id: r9f_breadth_shape_v1
+hypothesis: >
+  整市场分钟级收益桶分布（stock_market_distribution_history）的**形状状态**——极端尾桶的
+  净不对称、当日宽度路径的净漂移、11 个收益桶的集中度——**调制**个股特征（换手波动 / 市场 beta /
+  5 日动量）与未来 1/5 日收益的关系。三个机制的交互项方向全部预登记为 false。
+  ★ 前置事实：research/evaluation.py 对 spec.is_market=True 的对象硬编码
+  rankic=None（evaluation_type="market_context_quality_only"），独立市场标量**无法**产生
+  RankIC ⇒ 本单元交付物是**股票形状 (T, C) 交互候选**，市场状态序列只在 compute(ctx) 内部
+  作为有符号条件变量构造。已删市场因子复审的 M5 预测检验为 0/27，也不支持再登记独立标量。
+mechanism: |
+  1) breadth_tailskew_x_turnover（方向 false）：状态 = z252(15:00 尾桶不对称
+     tail_asym = (up_over_10 + up_7_to_10 − down_over_10 − down_7_to_10)/total)，
+     腿 = 换手率 20 日标准差（生产 turnover_std_20 去掉外置负号的同口径）。
+     整市场上尾占优＝投机情绪高涨期，高换手波动（注意力/投机强度高）的股票最易被推离基本面，
+     随后回吐 ⇒ 交互项对未来收益偏负。
+  2) breadth_intraday_slope_x_beta（方向 false）：状态 = z252(15:00 的 up_share 减去
+     09:30–09:59 的 up_share 均值)（**日内路径**，日线无法还原），腿 = 120 日市场 beta。
+     买压集中在后半场时，尾盘聚合需求（指数/ETF 调仓、收盘集合竞价、羊群）把市场敏感度
+     最高的股票推过均衡价，次日部分回吐 ⇒ 偏负。
+  3) breadth_concentration_x_reversal（方向 false）：状态 = z252(HHI = Σ_b p_b²，11 个收益桶，
+     取 15:00)，腿 = 5 日动量（ctx.ret(5)，其相反数是生产 short_term_reversal_5）。
+     HHI 高＝截面收益紧聚在零附近（安静盘面），个股 5 日涨跌更可能是流动性/噪声、反转更强；
+     HHI 低＝离散度大、价格移动更可能由信息驱动、倾向延续 ⇒ 交互项偏负。
+  三者的状态都做 z252(min120) 且**有符号**：恒正的状态会让交互因子在每一天的截面秩恒等于
+  个股腿本身（结构性同构），所以必须用有符号 z，让「状态为正/为负」在时间序列上切换排序方向。
+expected_direction: >
+  三个机制全部预登记为 false（higher_is_better=false，declared = −raw）。
+  方向先于任何结果统计冻结；登记后不得反号、不得改 higher_is_better、不得换版本扳方向。
+target_horizons: [1, 5]
+falsifiable: >
+  declared 分年同号 < 7/9；或 G7 控制集（momentum_120, short_term_reversal_5, vol_120,
+  idio_vol_60, log_mv, turnover_std_20, bp, roe_ttm）后 FM 系数不显著 / 符号与登记方向不一致；
+  或 G2/G3 不达标（状态广播导致大面积退化截面）；或与个股腿的生产因子面板合并相关 > 0.95。
+  静态事实面：limit_up_count / limit_down_count 在 2018–2019 恒为 0（实测），任务书 F4
+  （涨跌停不对称）在全窗口不可运行，本单元不登记该机制、以 not-run 记录。
+fields: [stock_market_distribution_history.trade_time, stock_market_distribution_history.up_count, stock_market_distribution_history.down_count, stock_market_distribution_history.flat_count, stock_market_distribution_history.up_over_10, stock_market_distribution_history.up_7_to_10, stock_market_distribution_history.down_over_10, stock_market_distribution_history.down_7_to_10, stock_daily.close, stock_daily.vol, stock_daily.amount, stock_finance.float_share, stock_adj_factor.adj_factor]
+origin: round9_lead_preregistered_2026-10-05
+status: unvalidated_hypothesis

@@ -1,36 +1,41 @@
-"""只按真实 Python 入口和工作目录识别上游进程，不把命令参数中的引用误当成写入任务。"""
+"""Detect active raw-data writers through writable file descriptors.
+
+No other project's entrypoints, configuration or state are inspected. Only
+process metadata and paths beneath the supplied raw upstream directory matter.
+"""
 from pathlib import Path
+import os
 
-def _entry(argv):
-    if not argv:return None
-    exe=Path(argv[0]).name.lower()
-    if exe.endswith(".py"):return ("file",argv[0])
-    if not exe.startswith(("python","pypy")):return None
-    i=1
-    while i<len(argv):
-        arg=argv[i]
-        if arg=="-c":return None
-        if arg=="-m":return ("module",argv[i+1]) if i+1<len(argv) else None
-        if arg in ("-W","-X"):i+=2;continue
-        if arg=="--":return ("file",argv[i+1]) if i+1<len(argv) else None
-        if arg.startswith("-"):i+=1;continue
-        return ("file",arg)
-    return None
 
-def upstream_writer_pids(proc_root=None,upstream_root=None):
-    proc_root=Path("/proc") if proc_root is None else Path(proc_root)
-    root=(Path(__file__).resolve().parents[2]/"everyday_tasks" if upstream_root is None else Path(upstream_root)).resolve()
-    target=root/"main.py";busy=[]
+def upstream_writer_pids(upstream_root=None, *, proc_root=None):
+    if upstream_root is None:
+        from .config import load
+        upstream_root = load().upstream
+    root = Path(upstream_root).resolve()
+    proc_root = Path(proc_root or "/proc")
+    if not proc_root.exists():
+        return []
+    busy = []
     for process in proc_root.iterdir():
-        if not process.name.isdigit():continue
+        if not process.name.isdigit() or int(process.name) == os.getpid():
+            continue
         try:
-            argv=[a.decode("utf-8",errors="replace") for a in (process/"cmdline").read_bytes().split(b"\0") if a]
-            entry=_entry(argv)
-            if entry is None:continue
-            cwd=(process/"cwd").resolve()
-            kind,value=entry
-            same=(cwd/value).resolve()==target if kind=="file" else (
-                value=="everyday_tasks.main" and cwd==root.parent or value=="main" and cwd==root)
-            if same:busy.append(int(process.name))
-        except OSError:continue
-    return sorted(busy)
+            descriptors = list((process / "fd").iterdir())
+        except OSError:
+            continue
+        for descriptor in descriptors:
+            try:
+                target = descriptor.resolve()
+                if not target.is_relative_to(root):
+                    continue
+                info = (process / "fdinfo" / descriptor.name).read_text()
+                flags = next(line.split()[1] for line in info.splitlines()
+                             if line.startswith("flags:"))
+                # Linux fdinfo flags are octal: O_RDONLY=0, O_WRONLY=1,
+                # O_RDWR=2. Directory/read-only factor readers never match.
+                if int(flags, 8) & os.O_ACCMODE in (os.O_WRONLY, os.O_RDWR):
+                    busy.append(int(process.name))
+                    break
+            except (OSError, ValueError, StopIteration):
+                continue
+    return sorted(set(busy))

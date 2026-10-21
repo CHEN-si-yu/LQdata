@@ -1,0 +1,21 @@
+{
+  "family_id": "r6c_project_completion_v1",
+  "idea_id": "r6c_project_completion_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "cash_supported_project_completion",
+      "window": 4
+    }
+  ],
+  "baseline": "基础8正式G7；现库asset_growth_qoq、roa_ttm、qf_cash_margin_floor_4q只作为邻近增量诊断，原值秩与消费变换分列。",
+  "parameters_frozen": {
+    "window": 4,
+    "warmup_days": 1100,
+    "max_common_report_age_days": 550,
+    "amount_floor_yuan": 1000000,
+    "positive_strict_ocf_ttm": true,
+    "direction": true
+  },
+  "variants": "none"
+}

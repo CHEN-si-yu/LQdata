@@ -1,0 +1,25 @@
+# 事前登记假设，不构成收益证明；机制集合、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "idea_id": "r2_pledge_idea_v1",
+  "hypothesis": "大股东质押融资等于加杠杆：质押比例高时股价下跌逼近平仓线，触发补质押/被动减持/强平，形成下跌负反馈；高质押同时是大股东资金紧张的信号。",
+  "mechanism": "四个固定机制：(1) pledge_level 质押比例水平；(2) pledge_change 质押比例变化速度；(3) pledge_price_stress 高质押×相对一年高点的深度回撤交互；(4) pledge_structure 限售质押占比。全部预期方向 higher_is_better=false。",
+  "expected_direction": "四个机制全部预登记为 higher_is_better=false（值越高，预期随后收益越低），不依据事后 IC 翻转。",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "若 h=1/5 的评价落在 HAC 95% 区间内，或分年度同号少于 7/9 年，或与 total_leverage_ratio / debt_to_assets / bp / 规模因子 |rho| > 0.9，则不支持本假设。",
+  "fields": [
+    "stock_pledge_stat.stock_code",
+    "stock_pledge_stat.end_date",
+    "stock_pledge_stat.pledge_count",
+    "stock_pledge_stat.unrest_pledge",
+    "stock_pledge_stat.rest_pledge",
+    "stock_pledge_stat.total_share",
+    "stock_pledge_stat.pledge_ratio",
+    "stock_daily.close",
+    "stock_adj_factor.adj_factor"
+  ],
+  "origin": "round2_preregistered_r2_i1",
+  "status": "unvalidated_hypothesis"
+}

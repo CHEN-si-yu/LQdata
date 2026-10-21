@@ -1,0 +1,16 @@
+name: r4r_log_price_level_ma60_v1
+family_id: r4r_price_level_v1
+implementation: research.families.r4r_price_level_v1:build
+parameters: {signal: log_price_level_ma60}
+units: 价格单位为元（原始名义价，未复权）；因子值 = ln(close_raw 的 60 交易日均值)，量纲为 log 元。
+availability: 只用信号日 T 及之前 60 个交易日（含 T）的原始收盘价；严格当日原始值，不沿用停牌前旧价；stock_daily 不在可得性滞后名单，无需 lagged_ok。
+missing_policy: 60 日窗口内真实成交日的有效原始收盘价 <48 个（80%）→ NaN；停牌日不贡献价格（skip）；不零填充。
+spec:
+  group: research_price_level
+  desc: 未验证候选：60 日平均名义价的对数（机制 1 的 60 日均价口径变体，预登记方向 true）。
+  formula: ln(mean_60d(close_raw))
+  deps: [stock_daily]
+  warmup_days: 130
+  higher_is_better: true
+  version: 1
+  note: 60 交易日 ≈ 84–95 日历日，warmup 取 130 日历日保余量；窗口内送转/拆股会在原始价上留一次台阶（事前披露的已知噪声，不改用后复权）。

@@ -1,0 +1,44 @@
+# 事前登记假设，不构成收益证明；机制、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r3rc_ca_rate_w250",
+  "family_id": "r3_reverse_confirm_family_v1",
+  "implementation": "research.families.r3_reverse_confirm_v1:build",
+  "parameters": {
+    "signal": "ca_rate_w250"
+  },
+  "units": "D1 为无量纲的池内相对收益（比值差或加权日均对数收益）；D2 为事件次数或事件率（无量纲）。全部同表同尺度比值，无跨表单位换算。",
+  "availability": "同 D2-P1。",
+  "missing_policy": "分母为 0 -> NaN；有效上市日不足 200 -> NaN；非交易日 -> NaN。事件率把『上市时长』从计数里除掉，是对 R2 计数的独立参数化。",
+  "closest_existing_baselines": [
+    "dividend_yield_3y_avg",
+    "efx_dividend_gap",
+    "log_mv"
+  ],
+  "semantic_difference": "过去 250 交易日事件数 / 有效上市日数（D2-P2，不同归一化）",
+  "source_fields": [
+    "stock_adj_factor_changes.stock_code",
+    "stock_adj_factor_changes.date",
+    "stock_adj_factor.stock_code",
+    "stock_adj_factor.trade_date",
+    "stock_adj_factor.adj_factor",
+    "stock_daily.stock_code",
+    "stock_daily.trade_date",
+    "stock_daily.close"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r3_reverse_confirm",
+    "desc": "过去 250 交易日事件数 / 有效上市日数（D2-P2，不同归一化）",
+    "formula": "roll_sum(event,250) / roll_count(listed,250)，listed = 原始 adj_factor 有效",
+    "deps": [
+      "stock_adj_factor_changes",
+      "stock_adj_factor",
+      "stock_daily"
+    ],
+    "start": null,
+    "warmup_days": 700,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R3-E 独立确认；值本身即反向信号量，declared==raw。任一条确认设计不过即判不可确认。"
+  }
+}

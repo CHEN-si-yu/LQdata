@@ -1,0 +1,25 @@
+{
+  "name": "r6d_cash_supported_maturity_migration_v1",
+  "family_id": "r6d_maturity_migration_v1",
+  "implementation": "research.families.r6d_maturity_migration_v1:build",
+  "parameters": {
+    "signal": "cash_supported_maturity_migration",
+    "window": 4
+  },
+  "units": "无量纲；raw可为零或负值，不改号",
+  "availability": "仅季度末报表。pit=max(ann_date,f_ann_date,end_date)；须有可考公告日期，保留同报告期不同公告日版本。两表每期共同可得日=max(首BS pit,首CF pit)，Q=当前已共同披露报告期的前缀最大值；全BS/CF后续公告与修订事件用同一Q和当时pit重查每个所需历史期，旧期修订不使Q倒退。BS多个科目按同一整行报告版本汇合，不能分别沿用旧的非空分量。公告后的交易消费遵循官方协议，供应商未留旧版不能重构。每日以Q季度末到ctx面板日的自然日年龄>550置NaN。",
+  "missing_policy": "至少5个连续BS季度末点和4个连续单季经营净现金流有效；CF按财年YTD差分，Q1=当期累计，其他季度=当期累计-同财年前季累计，缺中间季即NaN，即使三行TTM可得也禁止fallback。严格4单季OCF和>0为资格条件；缺失不零填充、窗口不删行、不回退较旧有效Q；新无效公告/修订事件明确NaN覆盖旧信号。五个连续报告期四项债务均有限非负；四个前期D均>1e6元，Q-4期N/D>=0.25。差分式允许最新D=0，migration=0，此时不定义最新long_share；份额代数恒等式只在当期D>0成立。",
+  "spec": {
+    "group": "research_financial_dynamics",
+    "desc": "起始近端债务份额至少25%、经营现金为正时，债务期限配置向长端迁移可以降低近期偿付与滚续压力，预期横截面收益更高；方向为事前机制先验，未验证。",
+    "formula": "N_k=st_borr_k+non_cur_liab_due_1y_k; L_k=lt_borr_k+bond_payable_k; D_k=N_k+L_k; migration_k=(L_k-L_(k-1))-(L_(k-1)/D_(k-1))*(D_k-D_(k-1))=D_k*(L_k/D_k-L_(k-1)/D_(k-1)); raw=sum(migration_k)/sum(D_(k-1))",
+    "deps": [
+      "stock_balancesheet",
+      "stock_cashflow"
+    ],
+    "warmup_days": 1100,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "已删bs_near_term_debt_share是静态近端份额，已删cf_net_borrowing_intensity是融资现金流。本项只用BS期限配置变化和债务规模权重；同比例债务增减的迁移为0，但长期新借款仍能造成份额改变，不能宣称完全排除融资。不同于借还重叠周转及R5持久性。 严格float64计算，官方Store转float32；保留2018起完整交易日轴和冻结2115股键，不可删NaN行。raw/declared方向同正；rank FM和消费变换FM双口径。"
+  }
+}

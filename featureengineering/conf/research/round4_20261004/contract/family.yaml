@@ -1,0 +1,11 @@
+family_id: r4q_contract_liab_v1
+idea_id: r4q_contract_liab_v1
+trial_budget: 6
+baseline: 营收增长类正式因子 yoy_revenue（机制1的朴素对照）、qf_sales_growth_accel、revenue_cagr_3y、asset_growth_qoq（定向对照）；另对全库正式因子做相关筛查（G5）。
+allowed_variants:
+  - {signal: contract_liab_growth_yoy}
+  - {signal: contract_liab_to_revenue}
+  - {signal: contract_liab_accel}
+  - {signal: adv_recv_cl_growth_yoy}
+  - {signal: adv_recv_cl_to_revenue}
+note: 3 机制 + 2 变体（事前登记，未看结果扩网格）。变体理由——合计口径（adv_receipts+contract_liab）修复 2020 新收入准则科目切换：合同负债纯口径 2018–2019 仅早采用者（106/126 家）>0、2021-04 起才全池可算；合计口径自 2018 起全池连续（实测日频模拟 100% 交易日 ≥100 有效票）。字段语义实测见 delivery/r4q_contract_liab_v1/report.md：prepayment=预付款项（资产侧）已排除，不采用合计口径中的 prepayment。

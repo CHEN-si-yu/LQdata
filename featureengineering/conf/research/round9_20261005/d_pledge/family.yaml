@@ -1,0 +1,23 @@
+family_id: r9d_abnormal_pledge_shift_family_v1
+idea_id: r9d_abnormal_pledge_shift_v1
+trial_budget: 1
+allowed_variants:
+  - {signal: abnormal_pledge_shift, lag: 15, step: 65, z_lookback: 4, z_min_prior: 3}
+baseline:
+  - r2_pledge_change 构造（100 × (P(t) − P(t−65))，R2 模块同式；**重蹈判据的对照**）
+  - log_mv
+  - turnover_std_20
+  - vol_120
+  - momentum_120
+  - short_term_reversal_5
+hypothesis_boundary: 只研究 stock_pledge_stat 一个数据维度上的「自身历史标准化的异常质押位移」一个机制。
+  R2 已关闭水平与裸一阶差分，R4s 已关闭二阶加速度与路径不对称；本 family 必须实测论证与这些的差异。
+  不扩参数网格、不事后调阈值、不事后改方向。**不含任何比 lag=15 更短的敏感性变体**——
+  R2 的 pledge_level_lag5 已被判定为前视变体（发布滞后实测约 13 个交易日，缩短滞后会用到当时读不到的数据）。
+search_policy: 唯一口径在模块内事前冻结（FROZEN 字典），build() 拒绝任何其它参数组合；不存在被搜索的窗口。
+v1_defect_disclosure: 不适用（本 family 为 v1 首次登记）。
+availability_limitation: |
+  stock_pledge_stat 只有 end_date（周频快照截止日），上游**没有发布时刻合同**：
+  conf/frequency.yaml 的 delay_days: 0 是没有实测支撑的默认值，本表 gap_checkable: false。
+  因此本表数据的真实可得时刻**未知**。本 family 采用保守假设 LAG_DEFAULT = 15 个交易日
+  （> R2 实测的最大陈旧度 13 个交易日），并把它声明为**局限而非已证事实**。

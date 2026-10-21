@@ -1,0 +1,21 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "idea_id": "s26_impact_idea_v1",
+  "hypothesis": "方向冲击创新与跨日流动性修复可能改善固定2115股的下一开盘1/5日排序",
+  "mechanism": "以个股相对过去成交额的量能归一化价格冲击，区分下跌失衡、上涨脆弱、下一日修复和历史流动性枯竭时的跳空。",
+  "expected_direction": "按每个机制独立预登记，不依据事后IC翻转",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "若多年度1/5日配对评价无稳定信息、接近已生产基线或工程截断/增量不一致则拒绝准入",
+  "fields": [
+    "stock_daily.open",
+    "stock_daily.high",
+    "stock_daily.low",
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_daily.amount",
+    "stock_adj_factor.adj_factor"
+  ]
+}

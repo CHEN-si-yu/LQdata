@@ -5,12 +5,10 @@
 """
 
 from . import event          # noqa: F401
-from . import event2         # noqa: F401
 from . import fundamental    # noqa: F401
 from . import labels         # noqa: F401
 
 # —— 第二批（2026-09-14，多 Agent 并行开发，一个家族一个文件）——
-from . import chips          # noqa: F401
 from . import fundflow       # noqa: F401
 from . import growth         # noqa: F401
 from . import intraday       # noqa: F401
@@ -34,7 +32,6 @@ from . import coupling       # noqa: F401
 #      · event3            —— 跌停/新低事件 + 指数衰减
 #      · fundamental2      —— 财务补漏（PEG / 现金流 / EBITDA / 环比变化）
 from . import overnight_pattern   # noqa: F401
-from . import chips2              # noqa: F401
 from . import fundflow2           # noqa: F401
 from . import event3              # noqa: F401
 from . import fundamental2        # noqa: F401
@@ -49,30 +46,28 @@ from . import fundamental2        # noqa: F401
 #      · fundamental3—— 财务明细：per-unit 比率 YoY / 盈利构成 / 现金流质量（18 个）
 from . import intraday2           # noqa: F401
 from . import breadth             # noqa: F401
-from . import sector              # noqa: F401
 from . import fundflow3           # noqa: F401
 from . import fundamental3        # noqa: F401
 
-from . import cyq_perf, financial_detail, disclosure_detail  # noqa: F401
+from . import financial_detail  # noqa: F401
 from . import quarterly_quality  # noqa: F401
-from . import annual_field_expansion, field_events, field_markets  # noqa: F401
+from . import annual_field_expansion, field_events  # noqa: F401
 
 # —— 第五批（2026-09-21，S-07：开盘首段流动性 / 执行容量口径）——
 #   数据源是新开的派生层 `data/derived/open5/`（`fea/open5.py`），
 #   **不动** `IntradayLayer` —— 改那一层的 version 会让现有 33 个日内因子的输入
 #   集体换版本、触发一次无谓的全量重建。理由写在 `fea/open5.py` 的模块 docstring。
 #   ★ 这三个是**执行/容量**口径，不是 alpha 声称；`higher_is_better` 只用于符号统一。
-from . import open5  # noqa: F401
 
 # 新增的收盘前 30 分钟、局部筹码供给与开盘容量因子。
-from . import closing30, chipwall, open_capacity  # noqa: F401
+from . import closing30, open_capacity  # noqa: F401
 
-__all__ = ["annual_field_expansion", "field_events", "field_markets", "quarterly_quality", "cyq_perf", "financial_detail", "disclosure_detail","fundamental", "event", "labels", "chips", "fundflow", "growth",
-           "intraday", "liquidity", "margin", "momentum", "quality", "technical",
-           "valuation", "volatility", "coupling", "overnight_pattern", "chips2",
-           "fundflow2", "event3", "fundamental2",
-           "intraday2", "breadth", "sector", "fundflow3", "fundamental3", "open5",
-           "closing30", "chipwall", "open_capacity"]
+# ★ 2026-10-03 清理复审：chips、chips2、chipwall、cyq_perf、disclosure_detail、field_markets、open5、sector 未通过并删除独立实现；
+#   上方的批次注释保留为历史记录。
+__all__ = ["annual_field_expansion", "field_events", "quarterly_quality", "financial_detail", "fundamental",
+           "event", "labels", "fundflow", "growth", "intraday", "liquidity", "margin", "momentum", "quality",
+           "technical", "valuation", "volatility", "coupling", "overnight_pattern", "fundflow2", "event3",
+           "fundamental2", "intraday2", "breadth", "fundflow3", "fundamental3", "closing30", "open_capacity"]
 
 # ★ 兜底：核对 `register(...)` 的调用次数与注册表大小。
 #   防的是「把装饰器写成普通调用」——那是个**静默 no-op**，不报错也不注册，

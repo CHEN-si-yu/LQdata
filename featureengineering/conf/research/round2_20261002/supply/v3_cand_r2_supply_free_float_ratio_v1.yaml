@@ -1,0 +1,37 @@
+# 事前登记定义；方向与机制在计算前冻结。
+{
+  "name": "r2_supply_free_float_ratio_v1",
+  "family_id": "r2_supply_family_v3",
+  "implementation": "research.families.r2_supply_v1:build",
+  "parameters": {
+    "signal": "free_float_ratio_level"
+  },
+  "units": "free_share/total_share 无量纲比例。",
+  "availability": "仅用 T 日及以前的 stock_finance.free_share/total_share（as-of 前向沿用）。",
+  "missing_policy": "非正 free_share 视为供应商异常并从 as-of 源剔除（沿用上一有效值）；不成交日输出 NaN。",
+  "closest_existing_baselines": [
+    "circ_mv",
+    "turnover_std_20",
+    "efx_free_turnover"
+  ],
+  "semantic_difference": "现有因子用市值/换手代理规模与流动性，没有直接度量自由流通股占总股本的比例。",
+  "source_fields": [
+    "stock_finance.free_share",
+    "stock_finance.total_share"
+  ],
+  "pre_registered_direction": "higher_is_better=false",
+  "spec": {
+    "group": "research_round2_supply",
+    "desc": "自由流通比例的截面水平",
+    "formula": "free_share/total_share",
+    "deps": [
+      "stock_finance",
+      "stock_daily"
+    ],
+    "start": null,
+    "warmup_days": 30,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "慢变量；截面可比，不做全样本标准化。 ctx.traded() 的真实成交掩码读取 stock_daily，已在 deps 显式声明。"
+  }
+}

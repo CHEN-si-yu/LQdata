@@ -1,0 +1,17 @@
+name: r4q_adv_recv_cl_growth_yoy_v1
+family_id: r4q_contract_liab_v1
+implementation: research.families.r4q_contract_liab_v1:build
+parameters: {signal: adv_recv_cl_growth_yoy}
+units: 无量纲增速（比率）。正值=预收款项+合同负债合计口径同比增长（订单储备扩张）。
+availability: 合计口径=point(contract_liab)+point(adv_receipts)（两者同为负债侧「已收款待履约」科目；旧准则预收款项 2020 起重分类进合同负债）；同 pit 口径；同比=同一公告时点的 p 与 p−4 期；无未来信息。
+missing_policy: 当期或四季度前合计不可考、或四季度前合计 ≤1e6 元时为 NaN；当期合计为 0（两科目都归零）而基期>1e6 保留为真实 −100%；非有限值 NaN；不零填充。
+spec:
+  group: research_contract_liab
+  desc: 未验证候选（V2 变体）：预收款项+合同负债合计口径同比增速——跨 2020 科目切换的历史连续版本。
+  formula: (CL(p)+AR(p))/(CL(p−4)+AR(p−4)) − 1，AR=point(adv_receipts)
+  deps: [stock_balancesheet]
+  fin_fields: [contract_liab, adv_receipts]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: 方向事前冻结 true。变体理由：纯 CL 口径 2018–2019 未启用（仅 106/126 早采用者），合计口径自 2018 起全池连续（comb20/comb19 中位数 1.13，实测）；字段语义：prepayment=预付款项（资产侧）已排除，合计不含它。

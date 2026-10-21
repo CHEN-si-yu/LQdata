@@ -1,0 +1,30 @@
+idea_id: r11u2_gated_intraday_shape_v1
+hypothesis: >
+  `stock_history_5min` 的日内**形状**（尤其是放量时点）在无条件意义上几乎没有预测力，
+  但在特定的**会话状态**下会获得方向明确的条件预测力；这种条件结构是本轮之前
+  在产库里几乎空白的形态（结构扫描：条件/门控结构仅占 3.2%）。
+mechanism: >
+  成交量峰值时点是「当日边际成交发生在什么时候」的代理。当池内等权午后收益为正时，
+  尾盘聚集的成交更可能是趋势跟随/聚合需求推动的**延续**；当午后收益为负时，
+  同一时点的放量更可能是**派发**，次日继续走弱。leg 与 state 都是当日 T 收盘后可得，
+  用于 T+1 开盘起的标签，无前视、无跨日复权相除。
+expected_direction: higher_is_better=true
+target_horizons: [1, 5]
+falsifiable: >
+  预筛 P1/P2/P3 实测（tools/prescreen.py, struct_screen.py, struct2.py）:
+  P2 — leg `vol_peak_pos` 无条件日度 RankIC h=1 = +0.00086 (HAC t=+0.60, n=2,121)，
+       26 条日内形状腿中唯一不显著者；
+  P3 — 650 组 (leg, state) 中唯一严格通过者：leg `vol_peak_pos` × state
+       z252(市场午后收益)，IC+ = +0.00580 (t=+2.73) vs IC− = −0.00457 (t=−2.12)，
+       斜率 HAC t = +3.32；
+  P1 — 纯交互 `sign(state)×(vol_peak_pos−0.5)` 与腿逐日 |ρ| **恒为 1.0000**（秩置换），
+       **不登记**；登记的每个变体都带逐股门控，逐日 |ρ| 分别降到 0.547 / 0.127。
+  证伪条件：G4 declared RankIC 不显著或分年同号 < 7/9；或 G7 加入 base8 后系数不显著/符号相反；
+  或 G5 出现 |ρ|>0.95 的在产因子；或 P1 复算显示与腿逐日 |ρ| ≡ 1。
+fields:
+  - stock_history_5min.trade_time
+  - stock_history_5min.vol
+  - stock_history_5min.close
+  - stock_history_5min.open
+origin: round11_lead_assigned_unit_u2
+status: unvalidated_hypothesis

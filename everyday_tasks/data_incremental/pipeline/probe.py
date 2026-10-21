@@ -230,7 +230,7 @@ def probe_payload(ds: R.DS, date: str, cal: list[str],
       · `range` 分支**不透传 `variants[0]`** → `stock_kline` 的 `period` 是必填，
         实测 monitor 里它 `server_max=None`（探测异常被吞成"未知"）。
       · `per_entity` 分支不认 `entity_range=False` → 对无日期轴的纯快照表
-        （`tdx_block_stocks` / `index_ths_constituent_stocks`）造出
+        （`tdx_block_stocks`）造出
         `{code_param, start_time, end_time}` 这种**语义不对**的请求。
       · `per_entity` 不认 `date_step="month"` → 月频表要的是 `date_param=YYYY-MM`，
         给 `start_time/end_time` 必然返回 0 行。

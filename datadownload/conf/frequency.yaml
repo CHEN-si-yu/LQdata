@@ -45,16 +45,6 @@ datasets:
   dc_daily:                 {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
   tdx_daily:                {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
   index_daily:              {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true}
-  # ★ 2026-09-15 深夜更正：这三张表是**当天深夜发布**，不是次日 —— 同晚 7 次采样的
-  #   滞后序列（新→旧）0,1,1,1,0,0,0：21:22 还观测到滞后 1，23:32 服务端就有当天数据了。
-  #   与日更侧 registry._DELAY 同步：1 → 0（"发布晚 ≠ 不发布"）。
-  index_ths_daily:          {freq: daily_full,    date_field: trade_date,  delay_days: 0, gap_checkable: true,
-                             note: "★ 2026-09-15 深夜定稿 delay_days=0（当天深夜发布，非次日；见上方 1→0 的注释）。\
-09-13（周日）观测时 09-11 还是空的，09-14 晚上 09-11 已可拉取（抽 25 个实体 25/25 命中），\
-已补回 1,586 行、max_date 追平 09-11。★ 2026-09-15 深夜据同晚 7 次采样改为 0。\
-但 audit.py 的 (D) 新鲜度检查会在补齐后报『滞后 0 != 声明 1』—— **那是正常现象，不是错误**。\
-⚠️ 该表是 per_entity、done 为实体级不分年份，所以**补齐后必须手工回填**，增量不会自动补。\
-另：09-08/09-09 两天真实缺口已于 2026-09-13 修复"}
   stock_margin_detail:      {freq: daily_full,    date_field: trade_date,  delay_days: 1, gap_checkable: true,
                              note: "实测滞后 1 个交易日"}
 
@@ -67,7 +57,7 @@ datasets:
   stock_top_list:           {freq: daily_sparse,  date_field: trade_date,  delay_days: 0, gap_checkable: true}
   stock_suspension:         {freq: daily_sparse,  date_field: suspend_date, delay_days: 0, gap_checkable: true,
                              note: "停牌是事件，很多交易日没有停牌 → 空值是正常的"}
-  # ★ 2026-09-15 深夜更正：这三张表是**当天深夜发布**，不是次日 —— 同晚 7 次采样的
+  # ★ 2026-09-15 深夜更正：stock_st_info 是**当天深夜发布**，不是次日 —— 同晚 7 次采样的
   #   滞后序列（新→旧）0,1,1,1,0,0,0：21:22 还观测到滞后 1，23:32 服务端就有当天数据了。
   #   与日更侧 registry._DELAY 同步：1 → 0（"发布晚 ≠ 不发布"）。
   stock_st_info:            {freq: daily_sparse,  date_field: trade_date,  delay_days: 0, gap_checkable: true,
@@ -137,7 +127,6 @@ datasets:
   stock_list:                      {freq: snapshot, date_field: trade_date, delay_days: 0, gap_checkable: false}
   tdx_blocks:                      {freq: snapshot, date_field: trade_date, delay_days: 0, gap_checkable: false}
   dc_blocks:                       {freq: snapshot, date_field: trade_date, delay_days: 0, gap_checkable: false}
-  # index_ths_sector_categories / index_ths_constituent_stocks / tdx_block_stocks
   # 已于 2026-09-19 彻底删除（快照表，无历史版本，回测必然前视）
 
 # 已禁用（enabled=False，不下）—— 列在这里是为了「任务 4」的增量闸门能识别并跳过它们

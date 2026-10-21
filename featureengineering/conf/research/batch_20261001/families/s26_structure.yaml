@@ -1,0 +1,32 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "family_id": "s26_structure_family_v1",
+  "idea_id": "s26_structure_idea_v1",
+  "trial_budget": 4,
+  "allowed_variants": [
+    {
+      "signal": "buy_sell_concentration_gap"
+    },
+    {
+      "signal": "block_buy_large_sell_close"
+    },
+    {
+      "signal": "size_ladder_innovation"
+    },
+    {
+      "signal": "big_buy_sell_price_gap"
+    }
+  ],
+  "baseline": [
+    "order_size_concentration",
+    "mf_order_size_entropy",
+    "mf_elg_lg_split_20",
+    "mf_tier_flow_agreement_20",
+    "mf_amount_weighted_direction",
+    "mf_order_size_entropy_chg_5d",
+    "mf_large_order_avg_price",
+    "mf_avg_trade_price_momentum"
+  ],
+  "hypothesis_boundary": "分别保留买方与卖方的供应商档位构成，研究集中差、分层对立、梯度创新与分侧成交价，避免双记导致四档总买额减总卖额恒零。",
+  "search_policy": "只登记四种机制，不扩窗口或方向搜索"
+}

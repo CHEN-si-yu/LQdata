@@ -1,0 +1,29 @@
+idea_id: r11u4_field_interaction_idea_v1
+hypothesis: |
+  同一族内两个字段之间存在**条件关系**：资金流的强度（`mf_net_inflow_5d`，逐股变化）会显著翻转
+  资金流意外度（`mf_net_vol_surprise_20`）与未来收益的关系；单独看，两个字段各自对未来收益都没有
+  稳定的无条件预测力。
+mechanism: |
+  唯一事前固定机制 `flow_intensity_x_flow_surprise`（同族两字段的字段级条件交互）：
+    X(t,i) = z_cs(state)(t,i) × z_cs(leg)(t,i)
+    state = mf_net_inflow_5d        （资金净流向的强度/方向）
+    leg   = mf_net_vol_surprise_20  （资金流量的意外度 = 持续性/波动维度）
+  两者同号且幅度都大时＝"大额且方向明确的意外流入"，属拥挤/情绪驱动的需求冲击，随后回吐；
+  异号时该"意外"缺少方向确认，信息含量低 ⇒ 预期收益随乘积**递减** ⇒ higher_is_better=false。
+  与 U1（跨族状态×腿）**机制不同**：本候选的两腿同属 `fundflow` 族。
+  已完成的重蹈审计（§8.8 三重去重）：清理记录无 fundflow 族字段级交互；`doc/历史报告.md` 无该构念；
+  `conf/research/roundN_*/` 下无同名机制。在产同构先例仅 `cp_momentum_lowvol_20`
+  （momentum × −idio_vol，**跨族**），且本候选与它的实测 |ρ| 已在报告中给出。
+expected_direction: higher_is_better = false（乘积越大，预期收益越低）。方向在写第一行代码前固定，
+  未按任何 IC 或收益结果翻转。
+target_horizons: [1, 5]
+falsifiable: 若 P1（与任一在库因子 frac_days_abs_rho_gt_0.99 显著 >0）或 P2（腿自身 |t| ≥ 2）
+  或 P3（IC_leg ~ sign(state) 斜率 HAC |t| < 3，或两状态符号不相反）不成立；或 declared RankIC
+  在 h=1 与 h=5 的 HAC95 区间均跨 0；或分年一致为负的年数 < 7/9；或与同源在产因子
+  （冻结 base8 + 该因子）的增量 t 归零；或 verify 截断/增量不一致 ⇒ 该机制不支持本假设。
+fields:
+  - mf_net_inflow_5d（在产因子，ctx.load_factor）
+  - mf_net_vol_surprise_20（在产因子，ctx.load_factor）
+  - conf/universe_frozen.tsv（固定 2115 只主板池）
+origin: Lead 事前登记 R11-U4（字段级条件交互）；执行者先跑强制预筛 P1/P2/P3 后才登记
+status: unvalidated_hypothesis

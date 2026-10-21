@@ -38,6 +38,10 @@ import csv
 import json
 import sys
 from pathlib import Path
+if __package__:
+    from ._project_paths import project_output
+else:
+    from _project_paths import project_output
 
 import numpy as np
 
@@ -336,13 +340,13 @@ def _counts(rows, corr, names, theta, cov_thr, parents, protected, structural):
 def main() -> int:
     ap = argparse.ArgumentParser(description="把质检数据转成删除候选清单（不删东西）")
     ap.add_argument("--screen", required=True, help="run_screen.py 的输出目录")
-    ap.add_argument("--out", required=True, help="交付目录")
+    ap.add_argument("--out", default="artifacts/audits/screen_plan", help="项目内交付目录")
     ap.add_argument("--theta", type=float, default=None, help="直接指定相关阈值")
     ap.add_argument("--cov-thr", type=float, default=None, help="直接指定覆盖率阈值")
     args = ap.parse_args()
 
     sd = Path(args.screen)
-    out = Path(args.out)
+    out = project_output(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
     rows = json.loads((sd / "screen_metrics.json").read_text(encoding="utf-8"))

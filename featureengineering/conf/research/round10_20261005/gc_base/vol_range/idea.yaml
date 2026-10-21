@@ -1,0 +1,18 @@
+{
+  "idea_id": "r10gc_vol_range_v1",
+  "hypothesis": "收益波动与振幅的期限结构（21/63/252 个交易日）是对「价格路径的剧烈程度与窗口内极值跨度」的透明观测描述量；本批只主张三项基础门槛成立，**不主张它改善收益排序**（G4–G7 未主张）。",
+  "mechanism": "单条后复权价格/收益序列的因果滚动标准差与窗口极值比。无跨序列复合、无滚动回归、无矩比。",
+  "expected_direction": "不主张方向：全部 higher_is_better=true 仅表示 declared=raw、不做反号。",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "三项基础门槛各自的实测值：非空（coverage_mean 与 rows/day）、非常数（截面 std>0 占比 + constant_cross_section 计数）、无泄露（输入 delay_days 声明 + 无 shift/前向填充 + verify 截断复算逐值一致）。任一不达标即不合格。",
+  "fields": [
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_adj_factor.adj_factor"
+  ],
+  "origin": "用户 2026-10-05 指令；Lead R10 立项 + 独立资格分类表（Lead 已裁定全部 beta_*/sigma_*/sharpe_* 为 OUT）",
+  "status": "unvalidated_hypothesis"
+}

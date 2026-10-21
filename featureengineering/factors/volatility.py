@@ -71,22 +71,8 @@ def _ret(ctx) -> np.ndarray:
     return np.where(ctx.traded(), ctx.ret(1), np.nan)
 
 
-def _valid_count(ctx, ret: np.ndarray, n: int) -> np.ndarray:
-    """窗口内「真有成交」的收益个数（停牌 / 复权脏数据日是 NaN，不计入）。"""
-    return ctx.roll_count(np.where(np.isfinite(ret), 1.0, np.nan), n)
 
 
-def _run_length(flag: np.ndarray) -> np.ndarray:
-    """连续 True 的天数（含当日）；当日 False 则为 0。
-
-    全向量化：`last_false(t) = max{ s <= t : flag(s) == False }`，
-     streak = t − last_false（True 的位置），首行之前没有 False 时用 −1 哨兵
-     保证「从面板第一行就开始的连续段」计数正确。O(T·C)，无 Python 逐日循环。
-    """
-    T = flag.shape[0]
-    ar = np.arange(T, dtype=np.float64)[:, None]
-    last_false = np.maximum.accumulate(np.where(flag, -1.0, ar), axis=0)
-    return np.where(flag, ar - last_false, 0.0)
 
 
 def _degenerate_guard(x: np.ndarray, lim: float) -> np.ndarray:
@@ -145,7 +131,7 @@ def _beta(ctx, ret: np.ndarray, mkt: np.ndarray, n: int, mc: int) -> np.ndarray:
 
 
 @register(FactorSpec(
-    name="vol_120", group="risk", deps=PRICE_DEPS,
+    name="vol_120", version=2, group="risk", deps=PRICE_DEPS,
     desc="120 个交易日已实现波动率（日收益滚动标准差）",
     formula="ReturnStd = StdDev(DailyReturn) over 6*21 trading days",
     start=None, warmup_days=W120, higher_is_better=False,
@@ -159,172 +145,31 @@ def vol_120(ctx):
 
 
 # ══════════════════════════════════════════════════════════════ 下行 / 不对称
-@register(FactorSpec(
-    name="downside_vol_ratio_20", group="risk", deps=PRICE_DEPS,
-    desc="下行波动占比 = 20 日下行半波动 / 总波动（反向）",
-    formula="neg = wide.clip(upper=0.0); var_all = (wide ** 2).rolling(20, min_periods=15).mean(); "
-            "var_neg = (neg ** 2).rolling(20, min_periods=15).mean(); "
-            "ratio = var_neg.pow(0.5) / var_all.pow(0.5).replace(0, np.nan)",
-    start=None, warmup_days=W20, higher_is_better=False,
-    note="逐字抄自 Class1 risk / downside_vol_ratio_20。口径注意：参考的 clip(upper=0) 把**上涨日**"
-         "置 0（不是 NaN），所以分母是「窗口内所有交易日」而不是「下跌日个数」——即标准半方差比，"
-         "不是「下跌日条件波动」。min_count=15 = min_periods；停牌日 ret 是 NaN，会随 r² 一起毒化窗口。",
-))
-def downside_vol_ratio_20(ctx):
-    r = _ret(ctx)
-    neg = np.minimum(r, 0.0)
-    var_all = ctx.roll_mean(r * r, 20, min_count=15)
-    var_neg = ctx.roll_mean(neg * neg, 20, min_count=15)
-    ratio = ctx.safe_div(ctx.safe_sqrt(var_neg), ctx.safe_sqrt(var_all), min_abs_den=1e-12)
-    # ★ clip 到 [0,1]：两个窗口的 NaN 模式完全相同（neg*neg 与 r*r 同时为 NaN），
-    #   所以数学上 var_neg ≤ var_all、比值必在 [0,1]。实测 2012 年有 141/495019 个格子
-    #   因两条 cumsum 路径的浮点残差略微 >1（最大 1.38），clip 不会伤到任何真实值。
-    return np.clip(ratio, 0.0, 1.0)
 
 
-@register(FactorSpec(
-    name="downside_upside_vol_60", group="risk", deps=PRICE_DEPS,
-    desc="下行/上行波动比 = 60 日负收益标准差 / 正收益标准差（反向）",
-    formula="down = ret.where(ret < 0); up = ret.where(ret > 0); "
-            "down_std = down.groupby(level=\"Code\").transform(lambda s: s.rolling(60, min_periods=5).std()); "
-            "up_std = up.groupby(level=\"Code\").transform(lambda s: s.rolling(60, min_periods=5).std()); "
-            "ratio = safe_divide(down_std, up_std + 1e-10)",
-    start=None, warmup_days=W60, higher_is_better=False,
-    note="逐字抄自 Class1 risk / downside_upside_vol_60。min_count=5 是**必须**的放松：正/负收益各自"
-         "稀疏（60 日里约各 28 天），参考库自己也写「正/负样本各自稀疏:60日窗口内 min_periods=5 即可估计」。"
-         "★ 框架语义：min_count 下分母仍是满窗 60，而分子分母同缩放，比值本身仍然成立。",
-))
-def downside_upside_vol_60(ctx):
-    r = _ret(ctx)
-    down = ctx.roll_std(np.where(r < 0, r, np.nan), 60, min_count=5)
-    up = ctx.roll_std(np.where(r > 0, r, np.nan), 60, min_count=5)
-    return ctx.safe_div(down, up, min_abs_den=1e-12)
 
 
-@register(FactorSpec(
-    name="gain_loss_asymmetry_60", group="risk", deps=PRICE_DEPS,
-    desc="涨跌幅度不对称 = 60 日平均涨幅 / |平均跌幅|（涨多跌少排前）",
-    formula="mean_up = ret_w.where(ret_w > 0).rolling(60, min_periods=10).mean(); "
-            "mean_down = ret_w.where(ret_w < 0).rolling(60, min_periods=10).mean(); "
-            "asym = safe_divide(mean_up, mean_down.abs() + 1e-10)",
-    start=None, warmup_days=W60, higher_is_better=True,
-    note="逐字抄自 Class1 risk / gain_loss_asymmetry_60。min_count=10 = 参考库 min_periods"
-         "（涨/跌样本各自稀疏）。与 downside_upside_vol_60 互补：这个是**一阶矩**比，那个是二阶矩比。",
-))
-def gain_loss_asymmetry_60(ctx):
-    r = _ret(ctx)
-    up = ctx.roll_mean(np.where(r > 0, r, np.nan), 60, min_count=10)
-    down = ctx.roll_mean(np.where(r < 0, r, np.nan), 60, min_count=10)
-    return ctx.safe_div(up, np.abs(down), min_abs_den=1e-12)
 
 
 # ══════════════════════════════════════════════════════════════ 回撤 / 尾部
-@register(FactorSpec(
-    name="max_drawdown_120", group="risk", deps=PRICE_DEPS,
-    desc="120 日回撤深度 = 后复权价 / 最近 120 日最高价 − 1（≤0）",
-    formula="peak = adj.groupby(level=\"Code\").transform(lambda s: s.rolling(120, min_periods=60).max()); "
-            "drawdown = adj / peak.replace(0, np.nan) - 1.0  # ≤ 0",
-    start=None, warmup_days=W120, higher_is_better=True,
-    note="★ 窗口口径（想清楚后写在这里）：dd = hfq_close / roll_max(hfq_close,120) − 1，"
-         "即「当前价相对**含当日在内的最近 120 个交易日**最高价」的回撤，恒 ≤0（roll_max 的窗口含当日，"
-         "故比值 ≤1；停牌期间 hfq 前向填充，不会造假回撤）。"
-         "**不用**教科书式的「窗口内峰谷最大回撤」：那个要窗口内的运行最大值（峰值可早于窗口起点），"
-         "一次 roll_max 表达不了，得物化 (T,C,120) 张量；而且参考库明说 drawdown_120 是"
-         "「8.10 删除的 max_drawdown_120 的合规重建」，口径就是本文这个。min_count=60 = min_periods。",
-))
-def max_drawdown_120(ctx):
-    px = ctx.hfq("close")
-    peak = ctx.roll_max(px, 120, min_count=60)
-    return ctx.safe_div(px, peak, min_abs_den=1e-12) - 1.0
 
 
-@register(FactorSpec(
-    name="max_drawdown_60", group="risk", deps=PRICE_DEPS,
-    desc="60 日回撤深度 = 后复权价 / 最近 60 日最高价 − 1（≤0）",
-    formula="peak = adj.groupby(level=\"Code\").transform(lambda s: s.rolling(60, min_periods=30).max()); "
-            "drawdown = adj / peak.replace(0, np.nan) - 1.0  # ≤ 0",
-    start=None, warmup_days=W60, higher_is_better=True,
-    note="逐字抄自 Class1 risk / drawdown_60（即被删除的 max_drawdown_60 的合规重建），"
-         "窗口口径同 max_drawdown_120。min_count=30 = min_periods。",
-))
-def max_drawdown_60(ctx):
-    px = ctx.hfq("close")
-    peak = ctx.roll_max(px, 60, min_count=30)
-    return ctx.safe_div(px, peak, min_abs_den=1e-12) - 1.0
 
 
-@register(FactorSpec(
-    name="drawdown_duration_120", group="risk", deps=PRICE_DEPS,
-    desc="回撤持续期 = 价格低于 120 日滚动前高的连续天数（上限 120）",
-    formula="rolling_high = adj.groupby(level=\"Code\").transform(lambda s: s.rolling(120, min_periods=1).max()); "
-            "in_dd = adj.lt(rolling_high * 0.999); duration = _consecutive_count(in_dd).clip(upper=120)",
-    start=None, warmup_days=500, higher_is_better=False,
-    note='120日滚动高点之下的连续天数，上限120；嵌套依赖最多239个交易日，预热500日历天。',
-version=2,))
-def drawdown_duration_120(ctx):
-    px = ctx.hfq("close")
-    high = ctx.roll_max(px, 120, min_count=1)
-    in_dd = np.isfinite(px) & (px < high * 0.999)
-    dur = np.minimum(_run_length(in_dd), 120.0)
-    return np.where(np.isfinite(px), dur, np.nan)
 
 
-@register(FactorSpec(
-    name="ulcer_index_20", group="risk", deps=PRICE_DEPS,
-    desc="溃疡指数 = 20 日窗口内回撤平方均值的平方根（回撤面积，反向）",
-    formula="peak = adj.groupby(level=\"Code\").transform(lambda s: s.rolling(20, min_periods=10).max()); "
-            "dd = adj / peak.replace(0, np.nan) - 1.0; "
-            "dd_sq = (dd ** 2).groupby(level=\"Code\").transform(lambda s: s.rolling(20, min_periods=10).mean()); "
-            "ulcer = dd_sq.pow(0.5)",
-    start=None, warmup_days=92, higher_is_better=False,
-    note="逐字抄自 Class1 risk / ulcer_index_20。回撤口径同 max_drawdown_*（对 20 日滚动前高）。"
-         "嵌套窗口：前高 20 日 + 回撤均值 20 日 = 40 个交易日，故 warmup=40×1.8+20≈92（比单窗口的大）。"
-         "min_count=10 = 参考 min_periods。",
-))
-def ulcer_index_20(ctx):
-    px = ctx.hfq("close")
-    dd = ctx.safe_div(px, ctx.roll_max(px, 20, min_count=10), min_abs_den=1e-12) - 1.0
-    return ctx.safe_sqrt(ctx.roll_mean(dd * dd, 20, min_count=10))
+
+
+
+
+
+
 
 
 
 
 @register(FactorSpec(
-    name="var_95_20", group="risk", deps=PRICE_DEPS,
-    desc="20 日 VaR(95%) = 日收益的 5% 历史分位（≤0，越负尾部越厚）",
-    formula="var = _ret(daily).groupby(level=\"Code\").transform("
-            "lambda s: s.rolling(20, min_periods=10).quantile(0.05))",
-    start=None, warmup_days=W20, higher_is_better=True,
-    note="逐字抄自 Class1 risk / var_95_20。★ 用**历史分位数**（线性插值，与 pandas rolling.quantile 同口径），"
-         "不假设正态。min_count=10 = 参考 min_periods。"
-         "实现走 `fea.mathx.roll_quantile`（mathx 里有、但 FactorContext 没转发，见模块 docstring）；"
-         "它对窗口内的 NaN 是**忽略**而不是毒化，与 pandas 的 min_periods 语义一致。",
-))
-def var_95_20(ctx):
-    return mx.roll_quantile(_ret(ctx), 20, 0.05, min_count=10)
-
-
-
-
-@register(FactorSpec(
-    name="tail_risk_pct_60", group="risk", deps=PRICE_DEPS,
-    desc="尾风险频率 = 60 日内 |z|>2 的极端收益占比（反向）",
-    formula="z = safe_divide(ret - mean60, std60 + 1e-10); "
-            "freq = z.abs().gt(2).groupby(level=\"Code\").transform(lambda s: s.rolling(60, min_periods=30).mean())",
-    start=None, warmup_days=W120, higher_is_better=False,
-    note='60日标准化收益再统计60日极端值频率；分子分母均只计有效z，至少30个有效z。',
-version=2,))
-def tail_risk_pct_60(ctx):
-    r = _ret(ctx)
-    z = ctx.safe_div(r - ctx.roll_mean(r, 60, min_count=30),
-                     ctx.roll_std(r, 60, min_count=30), min_abs_den=1e-12)
-    freq = ctx.roll_mean(np.where(np.isfinite(z), (np.abs(z) > 2).astype(np.float64), np.nan), 60, min_count=30)
-    # 同 loss_probability_20：概率必须落在 [0,1]，挡掉 cumsum 差分的 −1e−16
-    return np.where(_valid_count(ctx, r, 60) >= 30, np.clip(freq, 0.0, 1.0), np.nan)
-
-
-@register(FactorSpec(
-    name="ret_skew_20", group="risk", deps=PRICE_DEPS,
+    name="ret_skew_20", version=2, group="risk", deps=PRICE_DEPS,
     desc="20 日收益偏度（日收益滚动三阶矩，反向）",
     formula="skew = _ret_wide(daily).rolling(20, min_periods=15).skew()",
     start=None, warmup_days=W20, higher_is_better=False,
@@ -337,19 +182,6 @@ def ret_skew_20(ctx):
     return _degenerate_guard(ctx.roll_skew(_ret(ctx), 20, min_count=15), 100.0)
 
 
-@register(FactorSpec(
-    name="ret_kurt_20", group="risk", deps=PRICE_DEPS,
-    desc="20 日收益峰度（日收益滚动四阶矩，反向）",
-    formula="kurt = _ret_wide(daily).rolling(20, min_periods=15).kurt()",
-    start=None, warmup_days=W20, higher_is_better=False,
-    note="逐字抄自 Class1 risk / ret_kurt_20。min_count=15 = 参考 min_periods。"
-         "★ 返回的是**超额**峰度（减 3 之后，正态 ≈ 0），与 pandas `.kurt()` 同口径；"
-         "不是原始的四阶矩比。"
-         "★ 数值守卫 |kurt| > 1e4 → NaN：同 ret_skew_20 的退化窗口（m2→0 → m4/m2² 爆炸），"
-         "实测垃圾值全部 >1e8（含 ±inf），真实值 <1e3，中间同样是空的。",
-))
-def ret_kurt_20(ctx):
-    return _degenerate_guard(ctx.roll_kurt(_ret(ctx), 20, min_count=15), 1e4)
 
 
 
@@ -360,7 +192,7 @@ def ret_kurt_20(ctx):
     desc="60 日市场贝塔（对沪深300，反向）",
     formula="beta = _rolling_beta(wide, mkt, 60, 30)  # "
             "Beta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window",
-    start=None, warmup_days=W60, higher_is_better=False, version=3,
+    start=None, warmup_days=W60, higher_is_better=False, version=4,
     note='Cov与Var均使用股票收益、指数收益成对有效的同一窗口，min_count=30。',
 ))
 def beta_60(ctx):
@@ -374,7 +206,7 @@ def beta_60(ctx):
     desc="60 日特质波动率 = 剔除市场暴露后残差的标准差（反向）",
     formula="beta = _rolling_beta(wide, mkt, 60, 30); resid = wide - beta.multiply(mkt, axis=0); "
             "idio = resid.rolling(60, min_periods=30).std()",
-    start=None, warmup_days=260, higher_is_better=False, version=3,
+    start=None, warmup_days=260, higher_is_better=False, version=4,
     note='滚动60日beta残差再取60日标准差；119日有效预热。Beta使用成对样本。',
 ))
 def idio_vol_60(ctx):
@@ -387,7 +219,7 @@ def idio_vol_60(ctx):
 
 
 @register(FactorSpec(
-    name="vol_clustering_20", group="risk", deps=PRICE_DEPS,
+    name="vol_clustering_20", version=2, group="risk", deps=PRICE_DEPS,
     desc="波动聚集 = |日收益| 的 20 日 lag-1 自相关（反向）",
     formula="abs_ret = _ret(daily).abs().unstack(\"Code\"); lag = abs_ret.shift(1); "
             "ac = abs_ret.rolling(20, min_periods=10).corr(lag)",
@@ -408,29 +240,6 @@ def vol_clustering_20(ctx):
 
 
 # ══════════════════════════════════════════════════════════════ 行为 / 频率
-@register(FactorSpec(
-    name="panic_selling_ratio_60", group="risk", deps=PRICE_DEPS,
-    desc="放量下跌占比 = 60 日内「放量且下跌」天数 / 放量天数（恐慌抛售排前）",
-    formula="ma20 = vol.groupby(level=\"Code\").transform(lambda s: s.rolling(20, min_periods=10).mean()); "
-            "big = vol.gt(1.5 * ma20); down = ret.lt(0); panic = (big & down).astype(float); "
-            "n_big = big.astype(float)...rolling(60, min_periods=1).sum(); "
-            "n_panic = panic...rolling(60, min_periods=1).sum(); ratio = safe_divide(n_panic, n_big)",
-    start=None, warmup_days=164, higher_is_better=True,
-    note="逐字抄自 Class1 risk / panic_selling_ratio_60。嵌套窗口：20 日均量 + 60 日统计 = 80 个交易日，"
-         "故 warmup=80×1.8+20≈164。min_count：均量 10（=参考 min_periods）、两个 sum 用 1"
-         "（参考的 min_periods=1：只要有 ≥1 个放量日就能估计占比，0 个放量日 → 0/0 → NaN）。"
-         "★ 用 `ctx.px(\"vol\")`（流量，停牌日为 NaN）—— 补 0 会把停牌当成「缩量日」。"
-         "放量日 = vol > 1.5×20 日均量，停牌日与均量为 NaN 的头部都不算放量日（与 pandas 的 NaN.gt() → False 一致）。",
-))
-def panic_selling_ratio_60(ctx):
-    r = _ret(ctx)
-    vol = ctx.px("vol")
-    big = (vol > 1.5 * ctx.roll_mean(vol, 20, min_count=10)).astype(np.float64)
-    panic = big * (r < 0).astype(np.float64)
-    # ctx.roll_sum 不转发 min_count（见汇报的引擎扩展请求），这里直接用 mathx
-    n_big = mx.roll_sum(big, 60, min_count=1)
-    n_panic = mx.roll_sum(panic, 60, min_count=1)
-    return ctx.safe_div(n_panic, n_big, min_abs_den=0.5)   # 分母 <1 无意义（0 个放量日）
 
 
 
@@ -438,17 +247,3 @@ def panic_selling_ratio_60(ctx):
 
 
 
-@register(FactorSpec(
-    name="sortino_ratio_60", group="risk",
-    desc="60 日 Sortino 比率 = 均收益 / 下行波动（正向）",
-    formula='mean60 = ret.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=30).mean()); down = ret.where(ret < 0); down_std = down.groupby(level="Code").transform(lambda s: s.rolling(60, min_periods=5).std()); sortino = safe_divide(mean60, down_std + 1e-10)',
-    deps=PRICE_DEPS, warmup_days=128, start="2018-01-01", version=1,
-    higher_is_better=True,
-    note="逐字抄自 Class1 risk / sortino_ratio_60。参考库使用原始均收益，不减无风险利率。分母为负收益子样本的 60 日 roll_std，min_count=5；分子 min_count=30。",
-))
-def sortino_ratio_60(ctx):
-    ret = _ret(ctx)
-    mean60 = ctx.roll_mean(ret, 60, min_count=30)
-    down = np.where(ret < 0, ret, np.nan)
-    down_std = ctx.roll_std(down, 60, min_count=5, ddof=1)
-    return ctx.safe_div(mean60, down_std + 1e-10)

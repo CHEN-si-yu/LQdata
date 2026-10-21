@@ -1,0 +1,44 @@
+# 事前登记假设，不构成收益证明；机制、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r3rc_ca_freq_w120",
+  "family_id": "r3_reverse_confirm_family_v1",
+  "implementation": "research.families.r3_reverse_confirm_v1:build",
+  "parameters": {
+    "signal": "ca_freq_w120"
+  },
+  "units": "D1 为无量纲的池内相对收益（比值差或加权日均对数收益）；D2 为事件次数或事件率（无量纲）。全部同表同尺度比值，无跨表单位换算。",
+  "availability": "复权因子是状态量（前向沿用后取比），只用 T 与 T-1 两个因子值；事件表 date_field=date、delay_days=0（项目内合同）。除权除息日是事前公告的公司行动。无未来位移。",
+  "missing_policy": "窗口内无事件记为 0 —— 这是被观测到的状态：池内 2115 只在每个 stock_daily 行上都有原始 adj_factor（R2 实测缺 0/6053645）。窗口内有效上市日不足 80% -> NaN；非交易日 -> NaN。",
+  "closest_existing_baselines": [
+    "dividend_yield_3y_avg",
+    "efx_dividend_gap",
+    "bp"
+  ],
+  "semantic_difference": "过去 120 个交易日除权除息事件次数（D2-P1）",
+  "source_fields": [
+    "stock_adj_factor_changes.stock_code",
+    "stock_adj_factor_changes.date",
+    "stock_adj_factor.stock_code",
+    "stock_adj_factor.trade_date",
+    "stock_adj_factor.adj_factor",
+    "stock_daily.stock_code",
+    "stock_daily.trade_date",
+    "stock_daily.close"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r3_reverse_confirm",
+    "desc": "过去 120 个交易日除权除息事件次数（D2-P1）",
+    "formula": "roll_sum(event,120); event = stock_adj_factor_changes 命中 且 adj_factor 跳变比-1 > 1e-3",
+    "deps": [
+      "stock_adj_factor_changes",
+      "stock_adj_factor",
+      "stock_daily"
+    ],
+    "start": null,
+    "warmup_days": 700,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R3-E 独立确认；值本身即反向信号量，declared==raw。任一条确认设计不过即判不可确认。"
+  }
+}

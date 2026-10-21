@@ -1,0 +1,24 @@
+{
+  "family_id": "r7c_self_disclosure_delay_v1",
+  "idea_id": "r7c_self_disclosure_delay_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "self_relative_report_delay",
+      "same_season_years": 3,
+      "active_trading_days": 60
+    }
+  ],
+  "baseline": "Unchanged base8; fixed rank controls current L, historical same-season B, release Age0..59, report-season observed-level dummies (largest observed quarter reference), R2 earliness_mean4, R4 SUE, SUE acceleration, forecast_landing_gap. No deletion to rescue rank deficiency. Raw D=L-B has no independent third linear dimension.",
+  "variants": "none",
+  "initial_single_task_budget_decimal_bytes": 3000000000,
+  "parameters_frozen": {
+    "signal": "self_relative_report_delay",
+    "same_season_years": 3,
+    "active_trading_days": 60,
+    "higher_is_better": false,
+    "warmup_days": 1700
+  },
+  "freeze_path": "artifacts/research/round7_20261005/freeze/c_disclosure_definition_v1.json",
+  "freeze_sha256": "60e0f39202c598e1873e0536759d8fb9e342cf3b13a70d51be2bec357851030d"
+}

@@ -1,0 +1,23 @@
+name: r2own_v2_announcement_drift10_v1
+family_id: r2_ownership_family_v2
+implementation: research.families.r2_ownership_v2:build
+parameters: {signal: announcement_drift_d10}
+units: 后复权收益之差（无量纲）。
+availability: 与5日版本相同，只改预登记窗口长度。
+missing_policy: 与5日版本相同。
+closest_existing_baselines: [holder_number_chg, log_mv, turnover_std_20, chip_concentration]
+semantic_difference: 机制3 的窗口变体（预登记），用于观察漂移衰减；不是事后挑选。
+source_fields:
+  - stock_holder_number.ann_date
+  - stock_holder_number.end_date
+  - stock_holder_number.holder_num
+  - stock_finance.circ_mv
+spec:
+  group: r2_ownership
+  desc: R2-I3 机制3 的10日窗口变体：公告日之后 10 个交易日内的池内相对漂移
+  formula: value(T)=pool_demean(hfq_close(T)/hfq_close(eff)-1), 1<=交易日数(T-eff)<=10
+  deps: [stock_holder_number, stock_daily, stock_adj_factor]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: v2 修正日期差单位（YYYYMMDD 相减 -> 真实日历天），机制/窗口/方向/阈值与 v1 完全相同；机制3 的窗口变体（预登记），用于观察漂移衰减；不是事后挑选。

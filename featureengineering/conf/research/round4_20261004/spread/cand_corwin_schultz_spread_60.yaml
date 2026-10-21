@@ -1,0 +1,16 @@
+name: r4f_corwin_schultz_spread_60_v1
+family_id: r4f_spread_micro_v1
+implementation: research.families.r4f_spread_micro_v1:build
+parameters: {signal: corwin_schultz_spread_60}
+units: 无量纲（收益率的相对比率）；high/low 均取后复权价，比值消去复权单位。
+availability: 只用信号日收盘及以前的日线（adj_factor 取截至当日累计值）经 PriceLayer 后复权；不读前复权；stock_daily/stock_adj_factor 不在可得性滞后名单，无需 lagged_ok。
+missing_policy: 相邻两日中任一日非真实成交或 high/low 缺失/非正/高<低时 pair NaN；pair 负截 0；日度序列缺 pair 即 NaN；窗口（60）内有效日 <45 为 NaN；不零填充。
+spec:
+  group: research_spread_micro
+  desc: 未验证候选：Corwin–Schultz(2012) 隐含价差 60 日窗口（窗口稳健性变体）。
+  formula: pair=2(e^α−1)/(1+e^α)，α=(√(2β)−√β)/(3−2√2)−√(γ/(3−2√2))；日度=0.5·(pair_t+pair_{t−1})；窗口 60 日均值 min_count=45
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 150
+  higher_is_better: true
+  version: 1
+  note: 窗口为预登记变体；研究候选，不进生产；无未来有效性证明。

@@ -1,0 +1,48 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "name": "s26_structure_side_price_v1",
+  "family_id": "s26_structure_family_v1",
+  "implementation": "research.families.selection_20261001_v1:build",
+  "parameters": {
+    "signal": "big_buy_sell_price_gap"
+  },
+  "units": "stock_daily.vol保留供应商原始尺度，仅作当日成交屏蔽；四档买卖amount/vol保留供应商原始尺度；本信号仅使用同字段时序比值、对数创新/标准化或同表同尺度比值，单位相消，不做跨表金额/成交量换算；不据字段名或跨表比例认定物理单位。",
+  "availability": "日终信号，仅T日及以前原始记录；四档资金遵循本项目delay_days=0合同，原始可见日期由审计cutoff控制。历史创新基线若存在均止于T-1；ST与上市窗口由ctx.universe/引擎输出屏蔽。",
+  "missing_policy": "当日不成交或实际必需源字段缺行/非法值为NaN；不前向填充资金流，不用未来标签有效性筛股票。仅当日四档买卖金额和大单/超大单买卖成交量；两侧大单金额与量均须>0，无历史样本要求。均价相同是观测到的0。进入创新/拟合历史的资金档位须当日实际成交、八列金额有效且总额>0；完整输入下的合法未触发条件0仍保留。",
+  "closest_existing_baselines": [
+    "mf_large_order_avg_price",
+    "mf_avg_trade_price_momentum"
+  ],
+  "semantic_difference": "保留大单买/卖侧成交均价；既有以买卖合并后对全市场/小单比较。本信号不把分类均价解释为L2主动买卖价格。",
+  "source_fields": [
+    "stock_daily.vol",
+    "stock_main_fund_flow.buy_sm_amount",
+    "stock_main_fund_flow.sell_sm_amount",
+    "stock_main_fund_flow.buy_md_amount",
+    "stock_main_fund_flow.sell_md_amount",
+    "stock_main_fund_flow.buy_lg_amount",
+    "stock_main_fund_flow.sell_lg_amount",
+    "stock_main_fund_flow.buy_elg_amount",
+    "stock_main_fund_flow.sell_elg_amount",
+    "stock_main_fund_flow.buy_lg_vol",
+    "stock_main_fund_flow.sell_lg_vol",
+    "stock_main_fund_flow.buy_elg_vol",
+    "stock_main_fund_flow.sell_elg_vol"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "s26_structure",
+    "desc": "大单买入均价相对卖出均价偏离",
+    "formula": "((buy_lg_amt+buy_elg_amt)/(buy_lg_vol+buy_elg_vol))/((sell_lg_amt+sell_elg_amt)/(sell_lg_vol+sell_elg_vol))-1",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor",
+      "stock_main_fund_flow"
+    ],
+    "start": null,
+    "warmup_days": 180,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "selection_20261001_v1；仅同表大单买/卖均价之比约去万元/手单位；不解释为L2主动成交价，无回归。所有方向事前冻结，候选注册不等于生产批准。"
+  }
+}

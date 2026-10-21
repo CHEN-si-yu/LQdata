@@ -1,0 +1,43 @@
+# 事前登记假设，不构成收益证明；机制、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r3rc_ca_ewma60",
+  "family_id": "r3_reverse_confirm_family_v1",
+  "implementation": "research.families.r3_reverse_confirm_v1:build",
+  "parameters": {
+    "signal": "ca_ewma60"
+  },
+  "units": "D1 为无量纲的池内相对收益（比值差或加权日均对数收益）；D2 为事件次数或事件率（无量纲）。全部同表同尺度比值，无跨表单位换算。",
+  "availability": "同 D2-P1；纯前向递推。",
+  "missing_policy": "过去 250 个交易日的有效上市日不足 200 -> NaN；非交易日 -> NaN。面板预热 700 日历天 ≈ 5.7 个半衰期，与全量重算一致（见 verify 的两阶段增量）。",
+  "closest_existing_baselines": [
+    "dividend_yield_3y_avg",
+    "efx_dividend_gap"
+  ],
+  "semantic_difference": "事件强度 EWMA（半衰期 60 交易日，D2-P3，不同时间聚合）",
+  "source_fields": [
+    "stock_adj_factor_changes.stock_code",
+    "stock_adj_factor_changes.date",
+    "stock_adj_factor.stock_code",
+    "stock_adj_factor.trade_date",
+    "stock_adj_factor.adj_factor",
+    "stock_daily.stock_code",
+    "stock_daily.trade_date",
+    "stock_daily.close"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r3_reverse_confirm",
+    "desc": "事件强度 EWMA（半衰期 60 交易日，D2-P3，不同时间聚合）",
+    "formula": "v(t)=e(t)+exp(-ln2/60)*v(t-1), e(t)=事件指示",
+    "deps": [
+      "stock_adj_factor_changes",
+      "stock_adj_factor",
+      "stock_daily"
+    ],
+    "start": null,
+    "warmup_days": 700,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R3-E 独立确认；值本身即反向信号量，declared==raw。任一条确认设计不过即判不可确认。"
+  }
+}

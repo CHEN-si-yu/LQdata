@@ -126,16 +126,6 @@ DEP_CIB = ("stock_cashflow", "stock_income", "stock_balancesheet")
 DEP_PX = ("stock_daily", "stock_finance")
 
 
-def _mktcap(ctx) -> np.ndarray:
-    """总市值（元）= 未复权收盘价 × 当期已披露总股本。
-
-    `close` 与 `total_share` 都是**状态量**，价格层已做前向填充（停牌期间沿用
-    最后一个成交价与股本）—— 这正是市值该有的语义。不用供应商
-    `stock_finance.total_mv`：日频快照表会被事后重算，自算才 PIT 可控。
-    """
-    px = np.asarray(ctx.px("close"), dtype=np.float64)
-    sh = np.asarray(ctx.px("total_share"), dtype=np.float64)
-    return px * sh
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -143,7 +133,7 @@ def _mktcap(ctx) -> np.ndarray:
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="roa_ttm", group="quality", deps=DEP_IB,
+    name="roa_ttm", version=2, group="quality", deps=DEP_IB,
     desc="总资产收益率（TTM）= 归母净利润TTM / 期末总资产",
     formula="ROA = NetProfit / TotalAssets",
     start=FIN_START, warmup_days=FIN_WARMUP, higher_is_better=True,
@@ -161,7 +151,7 @@ def roa_ttm(ctx):
 
 
 @register(FactorSpec(
-    name="ocf_to_revenue", group="quality", deps=DEP_CIB,
+    name="ocf_to_revenue", version=2, group="quality", deps=DEP_CIB,
     desc="经营现金流占营收比（TTM）= 经营现金流TTM / 营业收入TTM",
     formula="OCFtoRevenue = NetOperateCashFlow_TTM / OperatingRevenue_TTM",
     start=FIN_START, warmup_days=FIN_WARMUP, higher_is_better=True,
@@ -176,7 +166,7 @@ def ocf_to_revenue(ctx):
 
 
 @register(FactorSpec(
-    name="ocf_to_profit", group="quality", deps=DEP_CIB,
+    name="ocf_to_profit", version=2, group="quality", deps=DEP_CIB,
     desc="盈利现金保障倍数（TTM）= 经营现金流TTM / 归母净利润TTM",
     formula="OCFtoProfit = NetOperateCashFlow_TTM / NetProfit_TTM",
     start=FIN_START, warmup_days=FIN_WARMUP, higher_is_better=True,
@@ -201,7 +191,7 @@ def ocf_to_profit(ctx):
 
 
 @register(FactorSpec(
-    name="inventory_turnover", group="quality", deps=DEP_IB,
+    name="inventory_turnover", version=2, group="quality", deps=DEP_IB,
     desc="存货周转率（TTM，次/年）= 营业成本TTM / 期末存货",
     formula="InventoryTurnover = OperatingCost_TTM / Inventories",
     start=FIN_START, warmup_days=FIN_WARMUP, higher_is_better=True,
@@ -222,7 +212,7 @@ def inventory_turnover(ctx):
 
 
 @register(FactorSpec(
-    name="cash_conversion_cycle", group="quality", deps=DEP_IB,
+    name="cash_conversion_cycle", version=2, group="quality", deps=DEP_IB,
     desc="现金转换周期（天）= 存货周转天数 + 应收周转天数 − 应付周转天数（低优）",
     formula="CCC = DIO + DSO - DPO = 365×Inventories/OperatingCost_TTM "
             "+ 365×AccountsReceivable/OperatingRevenue_TTM "
@@ -262,7 +252,7 @@ def cash_conversion_cycle(ctx):
 
 
 @register(FactorSpec(
-    name="interest_coverage", group="quality", deps=DEP_I,
+    name="interest_coverage", version=2, group="quality", deps=DEP_I,
     desc="利息保障倍数（TTM）= EBIT_TTM / 利息支出TTM（值越大偿债越安全）",
     formula="ICR = EBIT_TTM / InterestExpense_TTM",
     start=RD_START, warmup_days=FIN_WARMUP, higher_is_better=True,
@@ -299,25 +289,6 @@ def interest_coverage(ctx):
 
 
 
-@register(FactorSpec(
-    name="rd_intensity", group="quality", deps=DEP_I,
-    desc="研发强度（TTM）= 研发费用TTM / 营业收入TTM",
-    formula="RDIntensity = RDExpense_TTM / OperatingRevenue_TTM",
-    start=RD_START, warmup_days=FIN_WARMUP, higher_is_better=True,
-    fin_fields=("rd_exp", "revenue"),
-    note="★ 参考库未收录（研发投入维度）。**起点 2019-05-01（偏离 start=None）**："
-         "上游 `rd_exp` 在 2012~2017 的年报行里 **97%~100% 是精确的 0.0**"
-         "（实测：2012-2014 正值占比 0.03%，2015 起 3%，2017 才 25%），"
-         "因为 2018 年新准则（财会[2018]15号）之前研发费用普遍混在管理费用里、"
-         "**不单独披露** —— 那是「没披露」而不是「没研发」。"
-         "2018 年报起披露率跳到 87%~88%。不设起点的话 2012-2017 的因子值是"
-         "「一大片 0 + 零星正值」，虽然不是常数，但截面完全没有区分度。"
-         "取 2019-05-01 = 全部主板公司 2018 年报都已公告，TTM 窗口口径统一。"
-         "口径说明：用**费用化**的 `rd_exp`；`r_and_d`（资产负债表时点字段）实测"
-         "99% 是 0（只有资本化的开发支出），不值得用。",
-))
-def rd_intensity(ctx):
-    return ctx.safe_div(ctx.ttm(RD_EXP), ctx.ttm(REV), min_abs_den=MIN_CUR)
 
 
 

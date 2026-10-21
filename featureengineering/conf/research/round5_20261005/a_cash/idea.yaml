@@ -1,0 +1,18 @@
+{
+  "idea_id": "r5a_cash_promptness_v1",
+  "hypothesis": "同期收入创新传入客户收现更及时，意味着营运资金回收迟滞更少，预期横截面收益更高；收益方向未验证。",
+  "mechanism": "16个连续报告期的单季收入和销售收款同比差，控制前一期收入同比差，取同期partial_corr；原值越大越好。收入/现金报表取共同已披露报告期，旧期修订按当时PIT重新查全窗口。",
+  "expected_direction": "higher_is_better=true; 事前冻结，禁止看收益反向或追加shock交互。",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "G1-G7原条文；declared必须显著且>=7/9分年同正，控制后无独立增量或覆盖不足即证伪；邻近同构或原数据缺失则停，不重解释门槛。",
+  "fields": [
+    "stock_income.revenue",
+    "stock_cashflow.c_fr_sale_sg"
+  ],
+  "origin": "round5_lead_frozen_20261005",
+  "status": "unvalidated_hypothesis",
+  "dedup": "cash_sales_ratio是TTM比例水平；CCC/inventory_turnover是存量流量水平；afx_fi_ar_turn/arturn_days/inv_turn年度差已删。本候选是收入惯性控制后的历史收现同期相关，无静态单调同构。"
+}

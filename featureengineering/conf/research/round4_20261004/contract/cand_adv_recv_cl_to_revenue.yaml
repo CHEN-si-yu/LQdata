@@ -1,0 +1,17 @@
+name: r4q_adv_recv_cl_to_revenue_v1
+family_id: r4q_contract_liab_v1
+implementation: research.families.r4q_contract_liab_v1:build
+parameters: {signal: adv_recv_cl_to_revenue}
+units: 无量纲比率（（预收款项+合同负债）/营收TTM）。
+availability: 合计口径=（point(contract_liab)+point(adv_receipts)）取 pit≤信号日最新可考版本；营收TTM 由财务层 ctx.ttm 同规则 PIT；无未来信息。
+missing_policy: 当期合计不可考或不 >0 时为 NaN；营收TTM 不可考或 ≤1e6 元时为 NaN；非有限值 NaN；不零填充。
+spec:
+  group: research_contract_liab
+  desc: 未验证候选（V2 变体）：合计口径订单覆盖率——跨 2020 科目切换的历史连续版本。
+  formula: (point(contract_liab)+point(adv_receipts)) / ttm(revenue)
+  deps: [stock_balancesheet, stock_income]
+  fin_fields: [contract_liab, adv_receipts, revenue]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: 方向事前冻结 true。合计口径自 2018 起全池覆盖（实测日频模拟 100% 交易日 ≥100 有效票）；prepayment=预付款项（资产侧）已排除。

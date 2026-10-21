@@ -1,0 +1,26 @@
+{
+  "name": "mka26_mkt_idx_csi500_csi300_vol_ratio20_v1",
+  "family_id": "mkta26_index_family_v1",
+  "implementation": "research.families.market_gate_audit_v1:build",
+  "parameters": {
+    "original_name": "mkt_idx_csi500_csi300_vol_ratio20",
+    "definition_sha256": "8e6868ac451c8c62d9be9afbf71148218065cfa23519e42b0152ec209c1ec9d1"
+  },
+  "units": "与正式因子 mkt_idx_csi500_csi300_vol_ratio20 完全一致（本候选仅做逐值复算，不改变任何口径）；单位与可用性详见其正式 note。",
+  "availability": "与正式因子 mkt_idx_csi500_csi300_vol_ratio20 一致：T 日值于 T 日收盘后可用；无额外滞后；上午族截面时点 11:30 但生产可用时点为收盘后。",
+  "missing_policy": "与正式因子一致：缺失保持 NaN，不用未来值回填；对齐前缀按正式声明（align_fill 或 NaN）。",
+  "spec": {
+    "group": "market",
+    "desc": "中盘相对大盘的波动比",
+    "formula": "vol20(000905.SH)/vol20(000300.SH)",
+    "deps": [
+      "index_daily"
+    ],
+    "start": "2018-01-01",
+    "warmup_days": 500,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "市场审计别名（mka26 复审）：逐值复算正式因子 mkt_idx_csi500_csi300_vol_ratio20@v1；指数按官方指数编制范围，不限制为固定股票池；均是价格指数，非全收益指数。当日收盘后可用；缺失保持NaN；不做截面rank；2018之前数据只作预热。",
+    "is_market": true
+  }
+}

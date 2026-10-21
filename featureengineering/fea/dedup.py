@@ -1,4 +1,4 @@
-"""因子冗余检测 —— `python main.py dedup`。
+"""因子冗余召回与成对精判 —— `python main.py dedup`。
 
 ## 为什么需要它
 
@@ -7,25 +7,23 @@
 一个维度就挤了 9 个（`bollinger_position_20`/`keltner_position_20`/`donchian_position_20`/
 `chandelier_position`/`williams_r_14`/`rsi_14`/`cci_20`/`stoch_slow_k`/`close_location_20d`）。
 
-在下游的**日横断面回归**里，这些共线因子只会互相抢显著性、放大过拟合，
-不会带来新信息。所以要把它们聚成簇，每簇只留一个代表。
+相关性用于提出复查候选。相同秩也可能具有不同非线性值间距，
+不能据此断言没有增量信息，更不能自动删除。
 
 ## 口径（写死在这里，避免各说各话）
 
-- 用落盘的 **`rank` 列**（已是当日截面百分位）作为因子值 —— 与下游用法一致；
+- 用落盘 rank 列作为第一层快速召回；第二层同时检查原值的日截面秩及模型值；
 - 逐日做**截面 z-score**（去均值、除以标准差），再把每天拼成一个长向量；
 - 因子 i 与 j 的相关 = `Σ x_i x_j / sqrt(Σ x_i² · Σ x_j²)`（NaN 记 0，即"缺失不参与"）。
-  这与 Pearson 在同一批有效样本上的结果一致；低覆盖因子会被**保守地**低估相关
-  （所以它只会漏报，不会误报"重复"）。
-- **秩相同 = 严格零信息**：另算一个 `identical_frac`（两因子 rank 逐格相同的比例），
-  ≥0.999 的直接判为"完全重复"（数学上保证：下游只用 rank 列）。
+  这是零填充余弦召回分数，与成对有效 Pearson 不同。
+- 相同 rank 只是诊断，不代表现代模型消费的标准化 value 具有相同信息。
   典型来源是"每日减同一个常数"（如 `rs_60 = momentum_60 − 指数收益`：
   同一天所有股票减的是同一个数，**秩完全不变**）与单调变换（`log`/`sqrt`/`zscore`）。
 
 ## 输出
 
 `state/dedup/report.json` + 屏幕上的簇清单。每簇给出：
-成员、两两 |ρ| 的范围、**建议保留的代表**（覆盖率最高、其次 |RankIC| 最大）。
+成员、召回分数、共同覆盖、逐日成对秩相关和标准化值相关。无自动删除。
 """
 
 from __future__ import annotations
@@ -43,8 +41,12 @@ from .spec import all_specs
 
 def _load_eval(path: Path) -> dict[str, dict]:
     try:
-        rows = json.loads(path.read_text(encoding="utf-8"))
-        return {r["name"]: r for r in rows}
+        if (path.parent / "latest.json").exists():
+            pointer = json.loads((path.parent / "latest.json").read_text(encoding="utf-8"))
+            path = Path(pointer["summary"])
+        content = json.loads(path.read_text(encoding="utf-8"))
+        rows = content.get("records", []) if isinstance(content, dict) else content
+        return {r["name"]: r for r in rows if int(r.get("horizon", 5)) == 5}
     except Exception:                                         # noqa: BLE001
         return {}
 
@@ -211,10 +213,78 @@ def _cluster(corr: np.ndarray, names: list[str], thr: float) -> list[list[int]]:
     return [g for g in groups.values() if len(g) > 1]
 
 
+def pairwise_redundancy(values_a, values_b, dates=None, min_n=100,
+                        higher_a=True, higher_b=True,winsor=(.01,.99)) -> pd.DataFrame:
+    """逐日成对有效相关；零填充不参与精判，方向来自声明合同。"""
+    from .eval import _pearson, _spearman, model_value_panel
+    a,b = np.asarray(values_a,dtype=float),np.asarray(values_b,dtype=float)
+    if a.shape != b.shape or a.ndim != 2:
+        raise ValueError("paired panels must have equal (T,C) shape")
+    dates = list(range(len(a))) if dates is None else dates
+    if len(dates) != len(a):
+        raise ValueError("date axis mismatch")
+    za,zb = model_value_panel(a,higher_a,winsor),model_value_panel(b,higher_b,winsor)
+    oriented_a,oriented_b = a if higher_a else -a,b if higher_b else -b
+    records=[]
+    for t,date in enumerate(dates):
+        fa,fb = np.isfinite(a[t]),np.isfinite(b[t])
+        common,union = fa&fb,fa|fb
+        n=int(common.sum())
+        rank_corr=value_corr=np.nan
+        rank_equal=model_equal=np.nan
+        if n>=min_n:
+            x,y=oriented_a[t,common],oriented_b[t,common]
+            rank_corr,value_corr=_spearman(x,y),_pearson(za[t,common],zb[t,common])
+            rx,ry=pd.Series(x).rank(method="average"),pd.Series(y).rank(method="average")
+            rank_equal=float(np.mean(np.isclose(rx,ry,atol=1e-6,rtol=0)))
+            model_equal=float(np.mean(np.isclose(za[t,common],zb[t,common],atol=1e-6,rtol=0)))
+        records.append({"trade_date":str(date),"n_pool":a.shape[1],"common":n,
+            "union":int(union.sum()),"common_fraction_pool":n/max(a.shape[1],1),
+            "jaccard":n/max(int(union.sum()),1),"rank_corr":rank_corr,"model_value_corr":value_corr,
+            "rank_equal_fraction":rank_equal,"model_equal_fraction":model_equal})
+    return pd.DataFrame(records)
+
+
+def _refine_pair(cfg,engine,years,a_spec,b_spec):
+    from .eval import _place_frame, _json_safe
+    from .panel import Panel
+    frames=[]
+    for year in years:
+        days=engine.cal.between(max(year*10000+101,int(cfg.default_start.replace("-",""))),
+                                min(year*10000+1231,engine.baseline_last_day()))
+        if not days.size:
+            continue
+        a,b=store.read_year(cfg.factors_dir,a_spec.name,year),store.read_year(cfg.factors_dir,b_spec.name,year)
+        if a.empty or b.empty:
+            continue
+        panel=Panel(days,engine.codes)
+        av,bv=_place_frame(a,panel,engine.codes),_place_frame(b,panel,engine.codes)
+        frames.append(pairwise_redundancy(av,bv,days,cfg.min_cross_section,
+                                          a_spec.higher_is_better,b_spec.higher_is_better,cfg.winsor))
+        del panel,av,bv,a,b
+    daily=pd.concat(frames,ignore_index=True) if frames else pd.DataFrame()
+    result={"a":a_spec.name,"b":b_spec.name,"days":len(daily),"years":{},"action":"manual_review_only"}
+    if not daily.empty:
+        result.update(common_fraction_pool=float(daily.common_fraction_pool.mean()),
+                      coverage_jaccard=float(daily.jaccard.mean()),common_cells=int(daily.common.sum()))
+        for metric in ("rank_corr","model_value_corr","rank_equal_fraction","model_equal_fraction"):
+            valid=daily[metric].to_numpy(dtype=float)
+            valid=valid[np.isfinite(valid)]
+            result[metric]={"days":len(valid),"mean":float(valid.mean()) if valid.size else None,
+                "median":float(np.median(valid)) if valid.size else None,
+                "abs_p90":float(np.quantile(np.abs(valid),.9)) if valid.size else None,
+                "positive_fraction":float(np.mean(valid>0)) if valid.size else None}
+        for year,group in daily.groupby(daily.trade_date.str[:4]):
+            result["years"][year]={"days":len(group),"common_fraction_pool":float(group.common_fraction_pool.mean()),
+                "rank_corr_mean":float(group.rank_corr.mean()),"model_value_corr_mean":float(group.model_value_corr.mean())}
+    return _json_safe(result)
+
+
 def cmd_dedup(args, cfg) -> int:
     from .engine import Engine
     engine = Engine(cfg)
-    specs = [s for s in all_specs() if s.enabled and not s.is_label and not s.is_market]
+    from .release import production_specs
+    specs = [s for s in production_specs(cfg) if not s.is_label and not s.is_market]
     if getattr(args, "factors", None):
         want = set(args.factors)
         specs = [s for s in specs if s.name in want]
@@ -226,9 +296,11 @@ def cmd_dedup(args, cfg) -> int:
         return 1
 
     thr = float(getattr(args, "threshold", 0.95))
-    print(f"\n因子冗余检测 · {len(specs)} 个因子 · {years[0]}~{years[-1]} · |ρ| ≥ {thr} 视为重复")
-    print("（口径：落盘 rank 列 → 逐日截面 z-score → 长向量 Pearson；缺失记 0，保守估计）")
+    print(f"\n冗余复查 · {len(specs)} 个因子 · {years[0]}~{years[-1]} · |召回分数| ≥ {thr}")
+    print("秩零填充余弦仅用于召回；精判使用共同有效股票、真实模型值及覆盖重叠。")
     if getattr(args, "matrix", False):
+        if len(years) > 1 or len(specs) > 128:
+            raise ValueError("--matrix 对拍仅允许一个年份、至多128个因子；常规使用年块路径")
         # 老路径：一次性长矩阵。全历史 658 因子峰值约 23 GB —— 只在与小样本对拍时用。
         print("（--matrix：一次性长矩阵路径，仅用于与分块路径对拍；全量跑会吃 ~23 GB）")
         X, meta = _matrix(specs, cfg, engine, years)
@@ -252,6 +324,16 @@ def cmd_dedup(args, cfg) -> int:
     groups = _cluster(corr, names, thr)
 
     rows = []
+    spec_lookup = {s.name:s for s in specs}
+    refined = []
+    max_pairs = max(1, int(getattr(args,"max_pairs",2000)))
+    recall_pairs = [(i,j) for i in range(len(names)) for j in range(i+1,len(names))
+                    if np.isfinite(corr[i,j]) and abs(corr[i,j]) >= thr]
+    recall_pairs.sort(key=lambda pair:-abs(corr[pair[0],pair[1]]))
+    for i,j in recall_pairs[:max_pairs]:
+        record = _refine_pair(cfg,engine,years,spec_lookup[names[i]],spec_lookup[names[j]])
+        record["recall_score"] = float(corr[i,j])
+        refined.append(record)
     print("-" * 100)
     for g in sorted(groups, key=len, reverse=True):
         members = sorted((names[i] for i in g),
@@ -262,37 +344,27 @@ def cmd_dedup(args, cfg) -> int:
             for j in g:
                 if i < j:
                     reps.append(abs(corr[i, j]))
-        # 完全重复（rank 逐格相同 —— 数学上零信息，因为下游只用 rank）
-        ident = []
-        for a in range(len(g)):
-            for b in range(a + 1, len(g)):
-                f = _identical_frac(cfg, years, names[g[a]], names[g[b]])
-                if f >= 0.999:
-                    ident.append((names[g[a]], names[g[b]], round(f, 4)))
-        # ★ 每簇算完就清缓存：簇是并查集划分出来的，一个因子只属于一个簇 ⇒
-        #   跨簇复用**本就不可能**；而每份全历史 rank 帧要几百 MB（两个字符串列），
-        #   缓存不清时簇一多就会攒成几十 GB —— 这正是 2026-09-21 全量跑
-        #   在写报告阶段地址空间耗尽的来源。清掉它不改变任何数值结果。
-        _FRAME_CACHE.clear()
-        keep = members[0]
-        drop = members[1:]
-        rows.append({"size": len(g), "keep": keep, "drop": drop,
+        representative = members[0]
+        rows.append({"size": len(g), "members":members,"review_first":representative,
                      "rho_min": round(float(min(reps)), 4),
-                     "rho_max": round(float(max(reps)), 4),
-                     "identical_pairs": ident})
-        print(f"簇 {len(g):>2} 个：保留 `{keep}`；重复：{', '.join(drop)}")
-        print(f"        |ρ| ∈ [{min(reps):.3f}, {max(reps):.3f}]"
-              + (f"   ★ 完全重复对：{ident}" if ident else ""))
+                     "rho_max": round(float(max(reps)), 4),"action":"manual_review_only"})
+        print(f"召回簇 {len(g):>2} 个：{', '.join(members)}")
+        print(f"        |召回分数| ∈ [{min(reps):.3f}, {max(reps):.3f}]；传递连接不代表所有成员成对重复")
 
     print("-" * 100)
-    total_drop = sum(r["size"] - 1 for r in rows)
-    print(f"共 {len(rows)} 簇 · 建议删除 {total_drop} 个（每簇留 1 个代表）")
+    print(f"共 {len(rows)} 个复查簇 · 精判 {len(refined)}/{len(recall_pairs)} 对 · 不自动删除")
 
     # `--out` 允许把报告写到别处（试跑/对拍时不覆盖生产报告）；默认仍是 state/dedup/。
     out = Path(getattr(args, "out", "") or (Path(cfg.state_dir) / "dedup" / "report.json"))
+    if not out.is_absolute():
+        out = cfg.root/out
+    if not out.resolve().is_relative_to(cfg.root.resolve()):
+        raise ValueError("dedup output must remain within project")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(
-        {"years": years, "threshold": thr, "clusters": rows,
+        {"years": years, "threshold": thr, "clusters": rows,"refined_pairs":refined,
+         "recall_pairs":len(recall_pairs),"truncated":len(recall_pairs)>max_pairs,
+         "deletion_policy":"manual_only; no automatic removal",
          "corr": {names[i]: {names[j]: (None if not np.isfinite(corr[i, j])
                                         else round(float(corr[i, j]), 4))
                              for j in range(len(names))} for i in range(len(names))}},

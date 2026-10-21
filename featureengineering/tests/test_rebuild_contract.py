@@ -8,7 +8,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 from fea.spec import FactorSpec
-from fea.engine import Engine
+from fea.engine import Engine, partition_content_sha256
 from fea.manifest import Manifest
 from fea.dates import Calendar
 from fea.chips import ChipLayer
@@ -29,22 +29,22 @@ class RebuildContractTests(unittest.TestCase):
     #   「历史分区缺失/被改 ⇒ 自动整年重建」。那是错的：因子必须具有
     #   「不被未来数据增量改变历史值」的固有属性 ⇒ 自动逻辑**永远不得**重算
     #   已覆盖的历史，只能记账，由人看过台账后用显式操作决定。
-    def test_covered_history_is_never_replanned_by_an_incremental_run(self):
+    def test_missing_or_corrupt_output_is_recovered_even_behind_history_freeze(self):
         with tempfile.TemporaryDirectory() as td:
             spec=FactorSpec('test','test')
             e=self._engine(td)
             man=Manifest('test',Path('/unused'),recipe=e._recipe(spec),
                          coverage=[['2018-01-02','2020-01-02']],partitions={'2018':{'file_identity':[100,1]}})
             # 2018 分区**文件根本不存在**（最"该修"的情形）—— 仍然不进计划，只记账
-            self.assertEqual(sorted(e.plan(spec,man,20200102,False)),[2020])
+            self.assertEqual(sorted(e.plan(spec,man,20200102,False)),[2018,2020])
             self.assertEqual([(b['factor'],b['year'],b['days'],b['earliest'],b['freeze_floor'])
                               for b in e.history_recompute],
-                             [('test',2018,1,20180102,20200101)])
+                             [])
             # 文件被改坏成非法内容 —— 同样只记账
             p=Path(td)/'test/year=2018/data.parquet';p.parent.mkdir(parents=True);p.write_bytes(b'changed')
             e2=self._engine(td); man.partitions['2018']['file_identity']=[100,1]
-            self.assertEqual(sorted(e2.plan(spec,man,20200102,False)),[2020])
-            self.assertEqual(len(e2.history_recompute),1)
+            self.assertEqual(sorted(e2.plan(spec,man,20200102,False)),[2018,2020])
+            self.assertEqual(len(e2.history_recompute),0)
 
     def test_explicit_operations_are_the_only_way_to_rewrite_history(self):
         with tempfile.TemporaryDirectory() as td:
@@ -84,7 +84,8 @@ class RebuildContractTests(unittest.TestCase):
             man=Manifest('test',Path('/unused'),recipe=e._recipe(spec),
                          coverage=[['2018-01-02','2020-01-02']],
                          partitions={'2018':{'file_identity':[1,1],'rows':1,
-                                             'min_date':'2018-01-02','max_date':'2018-01-02'}})
+                                             'min_date':'2018-01-02','max_date':'2018-01-02',
+                                             'content_sha256': partition_content_sha256(df)}})
             self.assertEqual(sorted(e.plan(spec,man,20200102,False)),[2020])
             st=p.stat()
             self.assertEqual(man.partitions['2018']['file_identity'],[st.st_size,st.st_mtime_ns])
@@ -100,19 +101,88 @@ class RebuildContractTests(unittest.TestCase):
         self.assertTrue(_file_changed('snapshot',[10,1],[10,2,'a']))
         self.assertTrue(_file_changed('year=2020',[10,1],[10,2]))
 
-    def test_forced_resume_does_not_trust_old_coverage(self):
-        from scripts.backfill_history import _invalidate_coverage
+    def test_rebuild_attempt_records_evidence_without_wiping_coverage(self):
+        """★ 2026-10-06 新契约：force 重建只落 coverage_before 审计证据，**不改台账**。
+
+        旧行为（`_invalidate_coverage`：清空区间内 coverage）被证明是 2026-10-05
+        全库重排事故的根源：清空 + 中断 ⇒ 后续每次日常运行被迫全量重算。
+        "必须重算"的语义现由子进程 `--refresh` 承担（`plan()` 的 force_refresh 分支）。
+        """
+        from scripts.backfill_history import _record_rebuild_attempt
         with tempfile.TemporaryDirectory() as td:
             cfg=SimpleNamespace(state_dir=Path(td))
             spec=FactorSpec('test','test')
             man=Manifest.load(cfg.state_dir,'test')
             man.coverage=[['2018-01-02','2026-09-18']];man.save()
-            _invalidate_coverage(cfg,[spec],2020,2023)
+            _record_rebuild_attempt(cfg,[spec],2020,2023)
             man=Manifest.load(cfg.state_dir,'test')
-            self.assertEqual(man.coverage,[['2018-01-02','2019-12-31'],['2024-01-01','2026-09-18']])
-            man.add_coverage('2020-01-01','2020-12-31');man.save()
-            self.assertEqual(man.missing_ranges('2020-01-01','2023-12-31'),[('2021-01-01','2023-12-31')])
-            self.assertEqual(len(list((cfg.state_dir/'rebuild_attempts').glob('*.json'))),1)
+            self.assertEqual(man.coverage,[['2018-01-02','2026-09-18']])   # 台账未被清空
+            files=list((cfg.state_dir/'rebuild_attempts').glob('*.json'))
+            self.assertEqual(len(files),1)
+            saved=json.loads(files[0].read_text())
+            self.assertEqual(saved['interval'],['2020-01-01','2023-12-31'])
+            self.assertEqual(saved['coverage_before']['test'],[['2018-01-02','2026-09-18']])
+            # force 的"重算"语义由 force_refresh 分支提供（见 test_explicit_refresh_still_rebuilds_history）
+
+    def test_coverage_heal_from_verified_partition_skips_recompute(self):
+        """★ 2026-10-06：健康分区（身份一致）⇒ coverage 回填，其日期不再进计划。"""
+        with tempfile.TemporaryDirectory() as td:
+            spec=FactorSpec('test','test')
+            e=self._engine(td)
+            df=pd.DataFrame({'trade_date':['2018-01-02'],
+                             'stock_code':['600000.SH'],
+                             'value':pd.Series([1.0],dtype='float32'),
+                             'rank':pd.Series([0.5],dtype='float32')})
+            p=Path(td)/'test/year=2018/data.parquet';p.parent.mkdir(parents=True)
+            df.to_parquet(p,index=False)
+            st=p.stat()
+            man=Manifest('test',Path('/unused'),recipe=e._recipe(spec),coverage=[],
+                         partitions={'2018':{'file_identity':[st.st_size,st.st_mtime_ns],'rows':1,
+                                             'min_date':'2018-01-02','max_date':'2018-01-02',
+                                             'content_sha256':partition_content_sha256(df)}})
+            plan=e.plan(spec,man,20200102,False)
+            self.assertNotIn(2018,sorted(plan))                      # 已验证分区不再进计划
+            self.assertIn(2020,sorted(plan))                         # 其余缺口照常补
+            self.assertEqual(man.coverage,[['2018-01-02','2018-01-02']])   # 台账已回填
+            self.assertEqual(e.coverage_healed,
+                             [{'factor':'test','year':2018,'span':['2018-01-02','2018-01-02']}])
+
+    def test_coverage_heal_skipped_for_damaged_partition(self):
+        """损坏/缺失分区不参与回填，仍走原有的"修复但记账、不自动重算历史"语义。"""
+        with tempfile.TemporaryDirectory() as td:
+            spec=FactorSpec('test','test')
+            e=self._engine(td)
+            man=Manifest('test',Path('/unused'),recipe=e._recipe(spec),coverage=[],
+                         partitions={'2018':{'file_identity':[100,1],'rows':1,
+                                             'min_date':'2018-01-02','max_date':'2018-01-02',
+                                             'content_sha256':'0'*64}})
+            plan=e.plan(spec,man,20200102,False)     # 分区文件不存在 ⇒ damaged
+            self.assertIn(2018,sorted(plan))         # 真缺口照常计划
+            self.assertEqual(e.coverage_healed,[])
+            self.assertEqual(man.coverage,[])
+            self.assertTrue(any(r['year']==2018 and r['reason']=='missing_output'
+                                for r in e.output_repairs))
+
+    def test_coverage_heal_not_applied_during_refresh(self):
+        """显式 `--refresh`（force_refresh）区间内全量重算：不做回填承诺。"""
+        with tempfile.TemporaryDirectory() as td:
+            spec=FactorSpec('test','test')
+            e=self._engine(td); e.force_refresh=True
+            df=pd.DataFrame({'trade_date':['2018-01-02'],
+                             'stock_code':['600000.SH'],
+                             'value':pd.Series([1.0],dtype='float32'),
+                             'rank':pd.Series([0.5],dtype='float32')})
+            p=Path(td)/'test/year=2018/data.parquet';p.parent.mkdir(parents=True)
+            df.to_parquet(p,index=False)
+            st=p.stat()
+            man=Manifest('test',Path('/unused'),recipe=e._recipe(spec),coverage=[],
+                         partitions={'2018':{'file_identity':[st.st_size,st.st_mtime_ns],'rows':1,
+                                             'min_date':'2018-01-02','max_date':'2018-01-02',
+                                             'content_sha256':partition_content_sha256(df)}})
+            plan=e.plan(spec,man,20200102,False)
+            self.assertEqual(sorted(plan),[2018,2019,2020])   # 区间内全量重算
+            self.assertEqual(e.coverage_healed,[])
+            self.assertEqual(man.coverage,[])
 
 
     def test_global_floor_applies_to_explicit_start_and_recipe(self):
@@ -203,26 +273,17 @@ class RebuildContractTests(unittest.TestCase):
                           "partition_rows": 0, "min_date": "", "max_date": "", "seconds": 0.0}], 0.0)
             self.assertEqual(m2.coverage, [["2018-01-02", "2018-01-03"]])
 
-    def test_resources_reject_excessive_parallelism(self):
-        """`safe_jobs` 只接受 1..cap；0 归一为串行。cap 由 `FEA_MAX_JOBS` 控制。
-
-        ★ 2026-09-25：原来写死「cap=2，所以 3/8 必须抛」。默认 cap 改成 12 之后
-          （见 `fea/resources.py::safe_jobs` 的阶梯实测）这条就假失败了。改成
-          **验证机制本身**：显式钉住 env 再断言边界，这样以后调 cap 不会再误伤。
-        """
+    def test_resources_honor_explicit_parallelism_and_cap_only_defaults(self):
+        """手动指定正整数覆盖项目/环境上限，0 保留自动选择，负数无效。"""
         import os
-        with patch.dict(os.environ, {"FEA_MAX_JOBS": "2"}):
-            self.assertEqual(safe_jobs(0), 1)      # 0 → 串行
-            self.assertEqual(safe_jobs(1), 1)
-            self.assertEqual(safe_jobs(2), 2)
-            for n in (3, 8, -1):
-                with self.assertRaises(ValueError):
-                    safe_jobs(n)
-        with patch.dict(os.environ, {"FEA_MAX_JOBS": "12"}):
-            self.assertEqual(safe_jobs(12), 12)
-            for n in (13, 16, -1):
-                with self.assertRaises(ValueError):
-                    safe_jobs(n)
+        with patch('fea.resources.available_cpus', return_value=24), patch.dict(
+                os.environ, {"FEA_MAX_JOBS": "2", "FEA_DEFAULT_JOBS": "12"}, clear=True):
+            self.assertEqual(safe_jobs(0), 2)
+            for n in (1, 2, 3, 8, 40):
+                with self.subTest(jobs=n):
+                    self.assertEqual(safe_jobs(n), n)
+            with self.assertRaisesRegex(ValueError, '正整数'):
+                safe_jobs(-1)
 
     def test_value_only_revision_in_history_is_frozen_to_the_tail(self):
         """★★ 2026-09-29 契约变更：**上游的旧年修订不再回填历史，只记录**。

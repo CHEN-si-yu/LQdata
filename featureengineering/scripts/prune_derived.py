@@ -50,8 +50,10 @@ def main() -> int:
     ap.add_argument("--keep", type=int, nargs="+", default=None,
                     help="保留哪些年份（默认 = conf/config.yaml 的 default_start 年份；"
                          "★ 通常还要带上**上一年**，它是 warmup 带，见文件头说明）")
-    ap.add_argument("--apply", action="store_true", help="真的删（默认只预览）")
+    ap.add_argument("--apply", action="store_true", help="已停用；派生缓存交由主入口管理")
     args = ap.parse_args()
+    if args.apply:
+        ap.error("旧缓存删除入口已停用。派生缓存交由 main.py 主入口管理；本脚本仅保留预览。")
 
     from fea.config import load as load_cfg
     cfg = load_cfg()

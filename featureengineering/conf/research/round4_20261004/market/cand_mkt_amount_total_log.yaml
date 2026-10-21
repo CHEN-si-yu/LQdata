@@ -1,0 +1,18 @@
+name: r4m_mkt_amount_total_log_v1
+family_id: r4m_market_state_v1
+implementation: research.families.r4m_market_state_v1:build
+parameters: {signal: mkt_amount_total_log}
+units: log(元)；成交额合计原始单位为元，取自然对数（值域压缩变换）。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily，delay=0）；无未来数据。
+missing_policy: 缺测/停牌不计（成交额为流量、停牌日保持 NaN）；有效票 < 100 的日 → NaN；合计 ≤0 的日 → NaN；不填充。
+spec:
+  group: market
+  desc: "log(池内成交额合计)（绿卡描述量·边界案例，无方向）"
+  formula: "value=log(sum(amount)) over 有效票"
+  deps: [stock_daily]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  is_market: true
+  note: "★ 边界案例：横截面求和视为直接聚合统计量、log 为值域压缩的标准变换——绿卡资格判定理由（含从严条款逐条比对）写入 round4 freeze 并随报告披露；若从严改判则本候选应转严格通道复核。固定2115只主板池；有效样本分母，少于100只为NaN；市场标量不做截面rank；缺失保持NaN；未做收益有效性承诺。"

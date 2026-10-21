@@ -1,0 +1,18 @@
+{
+  "idea_id": "r6a_sga_stickiness_v1",
+  "hypothesis": "Repeated inability to reduce SG&A when sales fall may burden future operating performance; weak negative short-horizon prior.",
+  "mechanism": "Single-quarter YoY SG&A changes regressed on sales YoY, downside sales interaction and fixed report-slot trend. F=-delta; no profit-state multiplication.",
+  "expected_direction": "higher_is_better=false; weak prior frozen before results; no reversal",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "Original G1-G7; G4/6/7 fixed direction or required incremental controls fail=>reject; no coverage-driven parameter changes.",
+  "fields": [
+    "stock_income.revenue",
+    "stock_income.sell_exp",
+    "stock_income.admin_exp"
+  ],
+  "origin": "Lead-approved Round6 2026-10-05 source designs signed before implementation",
+  "status": "unvalidated_hypothesis"
+}

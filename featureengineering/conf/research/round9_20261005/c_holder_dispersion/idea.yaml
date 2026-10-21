@@ -1,0 +1,32 @@
+idea_id: r9c_holder_dispersion_idea_v1
+hypothesis: 股东户数的一期变化相对于**该股自身**历史变化分布的异常程度（时间序列标准化后的意外分散位移），
+  可能在固定 2115 只主板池上改善下一开盘 1/5 日排序；而原始变化率与趋势持续性已被既有因子占用。
+mechanism: |
+  唯一事前固定机制 abnormal_dispersion_shift。记 d_j = log(n_j) − log(n_{j−1}) 为该股按报告期
+  排序的第 j 个户数对数变化，C1 = z = (d_0 − mean(d_{−1..−K})) / std(d_{−1..−K}, ddof=1)。
+  这是**以该股自身历史波动为尺度**的标准化意外（信息比率式对象），不是：
+   · 生产因子 holder_number_chg 的单期变化率（无历史基准、无波动率归一）；
+   · 生产因子 r2own_v2_trend_persistence_v1 的「最近 4 期下降方向 × 幅度均值」（无波动率归一）；
+   · R2 dispersion_residual 的变化率对 log 市值/换手的**截面**残差
+     （实测与 holder_number_chg |rho| = 0.9534，已被 R2 判为重蹈）。
+  已完成并放弃的重蹈审计（详见交付报告 §2）：
+   · C2 分散度水平 log(holder_num/float_share) = R2-I3 机制 1a 的再参数化：
+     实测恒等式 circ_mv ≡ close × float_share ⇒ log(holder_num/float_share) = log(close) − log(circ_mv/holder_num)，
+     即「R2 已测水平轴的符号反转 + 价格项」；R2 M1a declared RankIC h1 −0.00638（3/6 年）、
+     h5 −0.01220（3/6），五期限 HAC95 全跨 0。故放弃。
+   · C3 公告时滞不对称 = r7c_self_disclosure_delay_v1 的同一机制（Round7 记录：「C 披露延迟均 G4 失败」），
+     换表不构成新机制。故放弃。
+expected_direction: 两个候选全部 higher_is_better=false（z 越大 = 户数异常增加 = 分散度异常上升 = 预期收益越低）。
+  方向在写第一行代码前固定，未按任何 IC 或收益结果翻转。
+target_horizons: [1, 5]
+falsifiable: 若 declared RankIC 在 h=1 与 h=5 的 HAC95 区间均跨 0，或分年同号为负的年数 < 7/9，
+  或与任一现有正式因子 |rho| > 0.95 且无法论证新增信息，或 verify 截断/增量不一致，
+  或控制 G7 冻结控制集后 Fama-MacBeth 系数不显著或符号与登记方向不一致，则该机制不支持本假设。
+fields:
+  - stock_holder_number.stock_code
+  - stock_holder_number.ann_date
+  - stock_holder_number.end_date
+  - stock_holder_number.holder_num
+  - conf/universe_frozen.tsv（固定 2115 只主板池）
+origin: Lead 事前登记 R9-C（股东户数与股权分散度）；执行者完成重蹈审计后收窄为单一机制 C1，C2/C3 判定为重蹈并放弃
+status: unvalidated_hypothesis

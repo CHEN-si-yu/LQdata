@@ -1,0 +1,11 @@
+family_id: r4d_state_interaction_v1
+idea_id: r4d_state_interaction_v1
+trial_budget: 6
+baseline: |
+  四条单腿正式因子（short_term_reversal_5、momentum_120、vol_120、amihud_daily_5）做朴素对照；
+  关键检验 = 在两腿主效应都进入截面回归控制后交互项的剩余显著性（Fama-MacBeth 斜率×状态）。
+allowed_variants:
+  - {signal: rev5_x_mktvol}
+  - {signal: mom120_x_trendstate}
+  - {signal: lowvol_x_mktvol}
+  - {signal: illiq_x_dispstate}

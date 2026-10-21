@@ -85,9 +85,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="从磁盘重建 manifest 的 coverage/partitions")
     ap.add_argument("factors", nargs="*", help="只处理指定因子（默认全部）")
     ap.add_argument("--dry-run", action="store_true", help="只打印，不写盘")
-    ap.add_argument("--backup", action="store_true", default=True,
-                    help="先把 state/*.json 备份到 artifacts/archive/backtest/（默认开）")
+    ap.add_argument("--backup", action="store_true", default=False,
+                    help="显式开启：先把 state/*.json 备份到 artifacts/archive/backtest/")
     args = ap.parse_args()
+    if not args.dry_run:
+        ap.error("旧清单认证入口已停用，不能将未经重算的文件认证为完成。请通过 main.py 执行重算；本脚本仅支持 --dry-run。")
 
     cfg = cfg_mod.load()
     factors_dir, state_dir = Path(cfg.factors_dir), Path(cfg.state_dir)

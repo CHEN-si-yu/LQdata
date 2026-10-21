@@ -1,0 +1,225 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-10-08 22:16:18",
+  "mode": "live",
+  "live_quarter": "2026Q4",
+  "folds": [
+    {
+      "fold": 1,
+      "complete": true,
+      "best_epoch": 6,
+      "test_dates": [],
+      "checkpoints": {
+        "loaded": true,
+        "keys": [
+          "epoch",
+          "features",
+          "model",
+          "ridge"
+        ]
+      },
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 1,
+        "train": [
+          {
+            "start": "2020-04-03",
+            "end": "2026-08-31",
+            "days": 1555
+          }
+        ],
+        "valid": [
+          {
+            "start": "2018-01-02",
+            "end": "2020-02-04",
+            "days": 505
+          }
+        ],
+        "test": [],
+        "score": []
+      }
+    },
+    {
+      "fold": 2,
+      "complete": true,
+      "best_epoch": 13,
+      "test_dates": [],
+      "checkpoints": {
+        "loaded": true,
+        "keys": [
+          "epoch",
+          "features",
+          "model",
+          "ridge"
+        ]
+      },
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 2,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2020-02-04",
+            "days": 505
+          },
+          {
+            "start": "2022-06-08",
+            "end": "2026-08-31",
+            "days": 1029
+          }
+        ],
+        "valid": [
+          {
+            "start": "2020-03-05",
+            "end": "2022-03-31",
+            "days": 505
+          }
+        ],
+        "test": [],
+        "score": []
+      }
+    },
+    {
+      "fold": 3,
+      "complete": true,
+      "best_epoch": 9,
+      "test_dates": [],
+      "checkpoints": {
+        "loaded": true,
+        "keys": [
+          "epoch",
+          "features",
+          "model",
+          "ridge"
+        ]
+      },
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 3,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2022-03-31",
+            "days": 1031
+          },
+          {
+            "start": "2024-08-02",
+            "end": "2026-08-31",
+            "days": 504
+          }
+        ],
+        "valid": [
+          {
+            "start": "2022-05-09",
+            "end": "2024-06-03",
+            "days": 504
+          }
+        ],
+        "test": [],
+        "score": []
+      }
+    },
+    {
+      "fold": 4,
+      "complete": true,
+      "best_epoch": 6,
+      "test_dates": [],
+      "checkpoints": {
+        "loaded": true,
+        "keys": [
+          "epoch",
+          "features",
+          "model",
+          "ridge"
+        ]
+      },
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 4,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2024-06-03",
+            "days": 1556
+          }
+        ],
+        "valid": [
+          {
+            "start": "2024-07-04",
+            "end": "2026-07-31",
+            "days": 504
+          }
+        ],
+        "test": [],
+        "score": []
+      }
+    }
+  ],
+  "test_dates": [],
+  "score_dates": [],
+  "status": "folds_ready_awaiting_data",
+  "note": "评分窗 = 伪季度首日→数据末日；数据未覆盖时为空。数据更新后按评分流程重出打分，再重跑本报告。",
+  "weight_reload_audit": {
+    "passed": true,
+    "checked_at": "2026-10-08 22:38:23",
+    "folds": [
+      {
+        "fold": 1,
+        "strict_weight_reload": true,
+        "reload_max_error": 0.0,
+        "row_batch_max_error": 2.1457672119140625e-06,
+        "score_formula_checked": true,
+        "checked_days": [
+          "2026-09-16",
+          "2026-09-22",
+          "2026-09-30"
+        ],
+        "feature_count": 260,
+        "snapshot_meta_sha256": "81fd6a03498da7f195c42f4c8d52aa8e396888100d914a9e17b0fa3b0f60029d"
+      },
+      {
+        "fold": 2,
+        "strict_weight_reload": true,
+        "reload_max_error": 0.0,
+        "row_batch_max_error": 1.6689300537109375e-06,
+        "score_formula_checked": true,
+        "checked_days": [
+          "2026-09-16",
+          "2026-09-22",
+          "2026-09-30"
+        ],
+        "feature_count": 260,
+        "snapshot_meta_sha256": "81fd6a03498da7f195c42f4c8d52aa8e396888100d914a9e17b0fa3b0f60029d"
+      },
+      {
+        "fold": 3,
+        "strict_weight_reload": true,
+        "reload_max_error": 0.0,
+        "row_batch_max_error": 1.6689300537109375e-06,
+        "score_formula_checked": true,
+        "checked_days": [
+          "2026-09-16",
+          "2026-09-22",
+          "2026-09-30"
+        ],
+        "feature_count": 260,
+        "snapshot_meta_sha256": "81fd6a03498da7f195c42f4c8d52aa8e396888100d914a9e17b0fa3b0f60029d"
+      },
+      {
+        "fold": 4,
+        "strict_weight_reload": true,
+        "reload_max_error": 0.0,
+        "row_batch_max_error": 2.384185791015625e-06,
+        "score_formula_checked": true,
+        "checked_days": [
+          "2026-09-16",
+          "2026-09-22",
+          "2026-09-30"
+        ],
+        "feature_count": 260,
+        "snapshot_meta_sha256": "81fd6a03498da7f195c42f4c8d52aa8e396888100d914a9e17b0fa3b0f60029d"
+      }
+    ],
+    "note": "Three recent days; strict checkpoint reload, delivered score formula, and independent row heads. Q4 test window is empty."
+  }
+}

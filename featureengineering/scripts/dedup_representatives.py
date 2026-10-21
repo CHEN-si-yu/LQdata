@@ -33,6 +33,10 @@ import json
 import sys
 from collections import Counter
 from pathlib import Path
+if __package__:
+    from ._project_paths import project_output
+else:
+    from _project_paths import project_output
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -65,6 +69,7 @@ def main() -> int:
     ap.add_argument("--out-dir", default="")
     ap.add_argument("--date", default="20260921")
     a = ap.parse_args()
+    output = project_output(a.out_dir) if a.out_dir else None
 
     d = json.loads(Path(a.report).read_text(encoding="utf-8"))
     clusters = d.get("clusters", [])
@@ -145,7 +150,7 @@ def main() -> int:
 
     text = "\n".join(lines)
     if a.out_dir:
-        out = ROOT / a.out_dir
+        out = output
         out.mkdir(parents=True, exist_ok=True)
         (out / "REPORT.md").write_text(text, encoding="utf-8")
         payload = {

@@ -1,0 +1,24 @@
+{
+  "name": "r5d_residual_peer_delay_126_v1",
+  "family_id": "r5d_family_v1",
+  "implementation": "research.families.r5d_peer_delay_v1:build",
+  "parameters": {
+    "signal": "residual_peer_delay_126"
+  },
+  "units": "dimensionless nested explained-variation ratio",
+  "availability": "Daily after close; same-day published sources; frozen current source availability contract. No future shift. C target endpoints <=T and training signal index <=T-2. D monthly graph ends before month start; lag fits end T-1.",
+  "missing_policy": "Missing source/no trade=NaN; fixed full keys; beta60 min45; train126 min95; no ffill in flows; opening target requires real endpoints; invalid std/rank deficiency=NaN.",
+  "spec": {
+    "group": "research_r5d",
+    "desc": "Unvalidated Round5 candidate: Positive price-delay premium for slower absorption of causal residual peer information; no industry snapshot.",
+    "formula": "e=r-alpha60[-1]-beta60[-1]*market; monthly residual top10 positive corr126/min95; p=mean peers >=max(5,ceil(.7K)); delay=1-R2restricted/R2full; full e~p0+p1+p2+p3, restricted e~p0, common rows T-126..T-1, min95; R2full>1e-4; OLS",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "warmup_days": 750,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "Daily causal learned coefficients are fixed algorithm, not a post-result direction change. Research only; no production approval."
+  }
+}

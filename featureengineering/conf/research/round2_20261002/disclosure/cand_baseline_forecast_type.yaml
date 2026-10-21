@@ -1,0 +1,25 @@
+# 朴素基线：预告类型水平（消息本身好坏），用于证明机制1/2/4 的新增信息不来自预告内容。
+{
+  "name": "r2d_baseline_forecast_type_v1",
+  "family_id": "r2_disclosure_family_v1",
+  "implementation": "research.families.r2_disclosure_v1:disclosure_timing",
+  "parameters": {"signal": "baseline_forecast_type"},
+  "units": "序数分数（无单位），由 type 的单调好消息排序映射。",
+  "availability": "ann_date 为唯一可用时点（与 fea/upstream.py 对 stock_forecast 的 announcement 截断口径一致）；ann_date < 1990-01-01 的行按哨兵值剔除；ctx.asof_daily(ann_date) 前向填充。",
+  "missing_policy": "type 不在预登记映射内 -> NaN；窗口内首次预告前 NaN，不填0。",
+  "closest_existing_baselines": ["forecast_type_score", "forecast_profit_midpoint_change"],
+  "semantic_difference": "本候选即对照本身：只用预告消息好坏，不含任何时点信息，用来检验披露时点机制是否只是预告内容的代理。",
+  "source_fields": ["stock_forecast.ann_date", "stock_forecast.type"],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r2_disclosure",
+    "desc": "业绩预告类型的好消息序数（朴素基线对照）",
+    "formula": "TYPE_SCORE[type] mapped over pre-registered monotone ordering (预增4/扭亏3/略增3/续盈1/不确定0/其他0/减亏-1/略减-2/预减-3/首亏-4/续亏-4/增亏-4); asof to daily grid at ann_date",
+    "deps": ["stock_forecast"],
+    "start": null,
+    "warmup_days": 400,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R2-I4 朴素基线；映射在计算前固定，不按 IC 调整。"
+  }
+}

@@ -21,7 +21,7 @@ from fea.spec import FactorSpec, register
     desc="股东户数变化率 = 本期 / 上期 − 1（户数减少 = 筹码集中，低者优）",
     formula="Chg = HolderNum_t / HolderNum_{t-1} - 1（两条腿都取「该公告日为止最新一版」）",
     start="2016-01-04",          # 上游 stock_holder_number 实测最早 2016-01-04
-    version=2,                   # ★ 2026-09-17 修 PIT 违规，强制重建（见 note）
+    version=3,                   # ★ 2026-09-17 修 PIT 违规，强制重建（见 note）
     warmup_days=700, higher_is_better=False,
     note="上游披露期不规律（1~12 月都有），所以对「与上一期间的间隔」做保护，"
          "间隔超过 6 个月的样本置 NaN，避免拿两个不同年份的观察值相比。"
@@ -91,18 +91,3 @@ def holder_number_chg(ctx):
     return ctx.asof_daily(np.asarray(codes), np.asarray(days, dtype=np.int32), val)
 
 
-@register(FactorSpec(
-    name="limit_up_count_20", group="event",
-    deps=("stock_limit_up",),
-    desc="过去 20 个交易日的涨停次数",
-    formula="Count = sum(IsLimitUp, window=20 trading days)",
-    start="2015-01-05",          # 上游 stock_limit_up 实测最早 2015-01-05
-    warmup_days=60, higher_is_better=True,
-    note="纯交易日滚动计数，与财务口径无关，是这批因子里唯一的行为面因子",
-))
-def limit_up_count_20(ctx):
-    lu = ctx.dataset("stock_limit_up", columns=["stock_code", "trade_date"])
-    if lu is None or lu.empty:
-        return ctx.panel.empty()
-    grid = ctx.event_grid(lu["stock_code"].to_numpy(), ctx.date_col(lu["trade_date"]))
-    return ctx.roll_sum(grid, 20)

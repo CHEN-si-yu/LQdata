@@ -1,0 +1,86 @@
+idea_id: r11u1_crossfamily_v1
+hypothesis: >
+  基本面状态（价值/质量/成长，库内 43 个）**调节**短周期交易行为腿（动量/流动性/技术/日内，
+  库内 42 个）与未来 1/5 日收益的关系。在产库仅 1 个显式 z 乘积交互（cp_momentum_lowvol_20），
+  coupling 族 9 个交互在清理记录中全灭 —— 但这不是「空白」，而是**筛掉的结果**：
+  Round 9 证明「(T,) 标量状态 × 单腿」的乘积在每个交易日的截面秩恒等于该腿本身
+  （只差当日符号），候选的全部信息只在符号的时间序列上，且 G5 的「控制了腿」增量在
+  同一日内**共线不可识别**。
+  本单元的构造因此**与 R9-F 结构性不同**：状态是**股票级**（每只股票一个基本面值，截面内变动），
+  不是市场标量。于是 X(t,i) = z_cs(S)(t,i) · z_cs(L)(t,i) 在**每个交易日内**都不是腿的单调变换，
+  交互项在两腿主效应进入控制后仍**可识别**（R9-F 不可识别）。这正是 cp_momentum_lowvol_20 的在产构造。
+mechanism: |
+  ★ 首要交付物是**事前预筛**，不是候选数量。三条硬判据（阈值先于任何候选结果冻结）：
+
+  P1  逐日对齐：与每一个在产股票因子（125 个）的 frac_days_abs_rho_gt_0.99 ≈ 0；
+      candidate_equals_signed_leg_frac ≈ 0。
+  P1b 设计约束（Round 9 的两个「最强却应拒」候选正是死在这里）：
+      frac_days_abs_rho(candidate, 自己的腿)_gt_0.99 ≈ 0 —— 候选不得是腿的逐日秩置换。
+  P2  腿自身无条件 IC 不显著：|t(IC_1d)| ≤ 2.0。R9-F 通过的参照 = −1.60。
+  P3  状态显著翻转腿的条件 IC（最强判据）。对股票级状态，其可识别形式为两条并报：
+      P3a 状态中位数双重排序：ic_leg|state_high 与 ic_leg|state_low **符号相反**、
+          各自 |t| ≥ 1.96，且差序列 d=ic_hi−ic_lo 的 HAC |t| ≥ 3；
+      P3b 逐日截面 y ~ 1 + l + s + l*s，l*s 系数的跨日 HAC |t| ≥ 3。
+      （R9-F 的字面形式 IC_leg ~ sign(state) 只在状态为 (T,) 标量时可定义；
+        股票级状态的对应物是「状态分组的条件腿 IC」，此处以 P3a 为其直接推广并作为绑定判据。）
+
+  ── 三个预登记机制（状态固定；腿按**先于扫描写死的优先序**选取，方向逐个冻结）──
+  腿的选取规则（确定性、无搜索）：按下列优先序取**第一个**满足 P2（|t(IC_1d)| ≤ 2.0）的腿；
+  若全部不满足，则该机制**不登记**（以 not-registered 记录）。优先序与其经济含义在
+  library_ic_scan.json 产出之前已写定。
+
+  M1 估值状态 × 成交活跃度异常（方向 higher_is_better = True）
+     状态 = ep_ttm（盈利收益率，hib=True，高 = 便宜）。
+     机制：Miller(1977) 分歧 + 卖空约束 —— 异常放量在**贵**（低盈利收益率）的股票里更可能是
+     情绪/注意力驱动的临时价格压力，随后回吐；在便宜股票里更可能是知情买入。
+     故 E[ret] 随 (ep_ttm × 活跃度) **递增** ⇒ X = z(ep_ttm)·z(leg)，hib=True。
+     腿优先序：1) turnover_anomaly_20  2) amount_ratio_20  3) vol_ratio_ma5_ma20
+     （三者语义统一为「高 = 成交活跃度扩张」）
+
+  M2 质量状态 × 超短反转（方向 higher_is_better = True）
+     状态 = roa_ttm（总资产收益率 TTM，hib=True，高 = 高质量）。
+     机制：反转是流动性提供的补偿（Campbell-Grossman-Wang；Nagel 2012），
+     在套利资本稀缺、噪声交易占比高的**低质量**股票里更强；高质量股票的价格移动更可能
+     由信息驱动、倾向延续。故 E[ret] 随 (roa_ttm × 近期强势) **递增** ⇒ X = z(roa_ttm)·z(leg)，
+     hib=True（腿的原始值语义 = 高 = 近期强势，反转假设下近期强势 → 未来弱，
+     再乘低质量 → 双重取负）。
+     腿优先序：1) reversal_2d（2 日收益）  2) rsi_14（Wilder RSI，高 = 超买）
+     （两者原始值语义统一为「高 = 近期强势/超买」）
+
+  M3 成长状态 × 隔夜—日内定价分歧（方向 higher_is_better = True）
+     状态 = revenue_cagr_3y（3 年营收复合增速，hib=True，高 = 高成长）。
+     机制：Berkman-Koch-Tuttle-Zhang(2012) 的「寻求刺激/注意力」通道 —— 隔夜收益溢价
+     集中在**高关注、难估值**的股票上；高成长公司的估值不确定性最大、散户隔夜挂单最多，
+     隔夜相对日内的溢价应更强。故 E[ret] 随 (成长 × 隔夜−日内) 递增 ⇒ X = z(g)·z(leg)，hib=True。
+     腿优先序：1) idt_overnight_minus_intraday（隔夜 − 日内，hib=True）
+     （单腿，无选择步骤）
+
+  ── 规则 3（强制）──
+  腿与状态**都**来自在产因子，故每条候选必须并报两套增量：
+  「冻结 base-8」与「冻结 base-8 + 腿 + 状态」。
+  base-8（doc/AGENTS.md §B）= momentum_120, short_term_reversal_5, vol_120, idio_vol_60,
+  log_mv, turnover_std_20, bp, roe_ttm。
+  ⚠ 实测事实：ep_ttm / roa_ttm / revenue_cagr_3y 均**不在** base-8 内，故状态列是真实增量；
+  但 bp、roe_ttm 在 base-8 内，须在报告中说明状态与它们的相关度（潜在代理）。
+  Round 9 的教训：某候选通过全部冻结门，一旦加入其源表在产因子（holder_number_chg）
+  便从 t = −4.01/−2.79 崩到 +0.04/+0.81。缺省不在冻结集**从不是**省略该控制的理由。
+expected_direction: >
+  三个机制全部预登记 higher_is_better = True（declared = raw；X = z(state)·z(leg) 的
+  经济取向已在机制陈述中推导）。方向在任何结果统计之前冻结；登记后不得反号、
+  不得改 higher_is_better、不得换版本把方向找回来。若预登记方向被证伪，如实报为
+  falsified，不作为下一轮的反向依据。
+target_horizons: [1, 5]
+falsifiable: >
+  P1b 不达（候选是腿的逐日秩置换：frac_days_abs_rho_gt_0.99 > 0.10）；或 P2 不达
+  （腿 |t(IC_1d)| > 2.0）；或 P3a/P3b 不达（条件腿 IC 不反号 / 差序列 HAC |t| < 3 /
+  l*s 系数 HAC |t| < 3）⇒ **不登记**，记 not-registered。
+  已登记的候选若 declared RankIC 分年同号 < 7/9、或 G7（base-8 控制后）FM 系数不显著
+  或符号与登记方向不一致、或 G2/G3 不达、或与任一在产因子 |rho| > 0.95 ⇒ 预登记假设被证伪。
+fields: [stock_daily, stock_adj_factor, stock_finance, stock_income, stock_balancesheet, stock_cashflow, stock_financial_indicator]
+origin: round11_lead_preregistered_2026-10-05
+status: unvalidated_hypothesis
+preregistration_note: >
+  ★ 本 idea 在任何交互候选结果统计**之前**登记（library_ic_scan.json 尚在运行中，
+  逐腿无条件 IC 尚未产出）。腿优先序、状态、方向、P1/P2/P3 阈值全部先于结果写定。
+  预筛 P1/P2/P3 的实测值、未登记机制、被拒候选一并进 report.md，
+  负结果与正结果同等显著地报出。

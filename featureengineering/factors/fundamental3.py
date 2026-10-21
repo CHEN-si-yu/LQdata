@@ -100,141 +100,22 @@ _DEP_IND = ("stock_financial_indicator",)
 # 工具
 # ══════════════════════════════════════════════════════════════════════
 
-def _yoy_ratio(ctx, num_ttm: str, den: str, den_mode: str = "point"):
-    """per-unit 比率的同比：`r_t / |r_{t−4}| − 1`，其中 `r = 分子_TTM / 分母`。
-
-    ★ 分母取**绝对值**：净利润可以跨零（亏损转盈利），
-      直接用带符号的前期值会让「从 −1 亿变成 +0.5 亿」算成 −150% 而不是「改善」。
-      这与 `factors/growth.py` 的既有做法一致。
-    ★ 分母加上「比值本身」的地板（1e-6）：壳公司的分母科目可能精确为 0。
-    返回**比值**、不返回排名（引擎统一做）。
-    """
-    if den_mode == "point":
-        d0 = ctx.point(den)
-        d4 = ctx.point(den, lag=4)
-    else:
-        d0 = ctx.ttm(den)
-        d4 = ctx.lag_ttm(den, 4)
-    r0 = ctx.safe_div(ctx.ttm(num_ttm), d0, 1e6)
-    r4 = ctx.safe_div(ctx.lag_ttm(num_ttm, 4), d4, 1e6)
-    return ctx.safe_div(r0 - r4, np.abs(r4), 1e-6)
 
 
 # ══════════════════════════════════════════════════════════════════════
 # 1. 利润率与盈利构成（5 个）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="opm_npm_spread",
-    group="quality",
-    deps=_DEP_IS,
-    desc="营业利润率 − 净利率（营业利润到归母之间的损耗）",
-    formula="spread = operate_profit/revenue - n_income_attr_p/revenue",
-    fin_fields=(OP, NP, REV),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=False,
-    note=("**本文件新造**。★ 为什么用一个**价差**而不是两个水平："
-          "`营业利润率` 与 `净利率` 两个水平各自都是慢变量，"
-          "但它们的**差**在截面上的离散度大得多、时序也更快 ——"
-          "差刻画的是「营业利润在非经常性损益、税、少数股东损益这一路上损耗了多少」，"
-          "而这一路的构成**每年都在变**（减值、投资收益、税率优惠），"
-          "所以价差不是慢变量的线性重标定。"
-          "被删的 `gross_margin_change` / `net_margin_change` 是**时序差分**（还是慢变量），"
-          "本因子是**同日截面内的两个水平之差**，机制不同。"
-          "方向取负：损耗越大，盈利质量越差。"),
-))
-def opm_npm_spread(ctx):
-    r = ctx.ttm(REV)
-    return ctx.safe_div(ctx.ttm(OP), r, 1e6) - ctx.safe_div(ctx.ttm(NP), r, 1e6)
+
+
+
+
+
+
 
 
 @register(FactorSpec(
-    name="invest_income_share",
-    group="quality",
-    deps=_DEP_IS,
-    desc="投资收益占利润总额的比重（非主业盈利依赖度）",
-    formula="share = invest_income_TTM / total_profit_TTM",
-    fin_fields=(II, TP),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=False,
-    note=("**本文件新造**（参考库 Quality #10 `quality_composite` 用到 TotalProfit 族的比率，"
-          "但没有单独发过投资收益占比）。"
-          "**为什么是份额而不是水平**：份额的分母（利润总额）随公司规模变化，"
-          "分子分母同报告期 ⇒ 截面离散度大、时序变化快，逃开「慢水平」的死因。"
-          "**实测可用性**：`invest_income` 的非零公司占比从 2012 的 65% 升到 2022 的 94%，"
-          "全历史可用，不是近年才有的字段。"
-          "★ 分母 `total_profit` 可以为负（亏损），此时 `safe_div` 的地板（1e6）"
-          "在金额上等价于「利润总额绝对值小于 1 百万元」⇒ NaN，"
-          "语义正确（小额度的比重没有意义）。方向取负：越依赖投资收益，主业质量越差。"),
-))
-def invest_income_share(ctx):
-    return ctx.safe_div(ctx.ttm(II), ctx.ttm(TP), 1e6)
-
-
-@register(FactorSpec(
-    name="fv_gain_share",
-    group="quality",
-    deps=_DEP_IS,
-    desc="公允价值变动收益占利润总额的比重（纸面利润依赖度）",
-    formula="share = fv_value_chg_gain_TTM / total_profit_TTM",
-    fin_fields=(FV, TP),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=False,
-    note=("**本文件新造**。公允价值变动是**未实现、会反转、不产生现金流**的收益 ——"
-          "占比高说明当期利润里有一块「纸面富贵」，是典型的盈利质量扣分项，"
-          "而全库此前没有任何因子刻画它。"
-          "⚠ **结构性零膨胀（实测，务必先知）**：`fv_value_chg_gain` 在原表上就有"
-          "**59.6% 的行恰好为 0**（另 15.0% 为负、25.4% 为正），"
-          "TTM 汇总后本因子 2012 年的零值占比 **72.4%** —— "
-          "**超过 `fea/eval.py` 的 `⚠SPARSE` 阈值（>70%），一定会被标 ⚠SPARSE**。"
-          "沙箱自检已实测确认。**保留的理由**：它是一个语义完全成立的量"
-          "（「利润里有多少是纸面重估」），零膨胀来自 A 股绝大多数公司不持有"
-          "大额以公允价值计量的资产这一**真实事实**，而不是口径错误；"
-          "同库已有 12 个因子带 ⚠SPARSE 仍在册。"
-          "⚠ 若 eval 给出的 RankIC 也同时低于 0.005（→ 同时带 ⚠NOISE），"
-          "则应删掉，不必保留。方向取负。"),
-))
-def fv_gain_share(ctx):
-    return ctx.safe_div(ctx.ttm(FV), ctx.ttm(TP), 1e6)
-
-
-@register(FactorSpec(
-    name="share_issuance_yoy",
-    group="growth",
-    deps=_DEP_BS,
-    desc="总股本同比（股本扩张 = 增发/送转/股权激励的摊薄幅度）",
-    formula="growth = total_share(T) / total_share(T-4报告期) - 1",
-    fin_fields=("total_share",),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=False,
-    note=("**本文件新造**。用 `total_share`（资产负债表时点科目，"
-          "在 `fea/deriv.py` 的 `POSITIVE_ONLY` 里 ⇒ 恒为正，比值天然安全）。"
-          "**为什么必须做**：全库此前**没有任何因子**刻画股本的**扩张** ——"
-          "`log_mv` / `free_share_ratio` 是水平、`bps_yoy` 是**扣除**股本扩张之后"
-          "的结果，而本因子正是那个被扣掉的东西。"
-          "两者构成一组完整的分解：`净资产同比 ≈ 每股净资产同比 + 股本同比`。"
-          "经济含义：股本同比高 ⇒ 增发摊薄（老股东权益被稀释）或高送转；"
-          "低/负 ⇒ 回购注销（近年才常见）。"
-          "⚠ **送转是机械事件不是估值信号**：10 送 10 会让股本翻倍但价值不变，"
-          "本因子会把它记成 +100% 的「扩张」。这是**已知的口径局限**，"
-          "写在 note 里供下游取舍 —— 若要剔除送转，需要除权事件的复权因子，"
-          "那属于另一族（`stock_adj_factor_changes`）的范畴。"
-          "★ `total_share` 是**真实日频序列**（实测每股每年 5~15 个不同取值，"
-          "变动日与 `adj_factor` 变动日同步），不是一年四次的季报值 ——"
-          "所以本因子比同族 TTM 比率的活跃度高。方向取负（摊薄越大越差）。"),
-))
-def share_issuance_yoy(ctx):
-    s0 = ctx.point("total_share")
-    s4 = ctx.point("total_share", lag=4)
-    return ctx.safe_div(s0, s4, 1e-6) - 1.0
-
-
-@register(FactorSpec(
-    name="cash_sales_ratio",
+    name="cash_sales_ratio", version=2,
     group="quality",
     deps=(*_DEP_IS, *_DEP_CF),
     desc="销售收现比 = 销售商品收到的现金(TTM) / 营业收入(TTM)",
@@ -262,7 +143,7 @@ def cash_sales_ratio(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="cfcr",
+    name="cfcr", version=2,
     group="quality",
     deps=(*_DEP_CF, *_DEP_IS),
     desc="现金流利息保障倍数 = 经营现金流(TTM) / 利息支出(TTM)",
@@ -285,61 +166,16 @@ def cfcr(ctx):
     return ctx.safe_div(ctx.ttm(OCF), ctx.ttm(INTEXP), 1e6)
 
 
-@register(FactorSpec(
-    name="ar_ap_to_revenue",
-    group="quality",
-    deps=(*_DEP_BS, *_DEP_IS),
-    desc="净预收款占收入比 = (预收款项 − 预付款项) / 营业收入(TTM)",
-    formula="Ratio = (AdvanceReceipts - AdvancePayment) / OperatingRevenue",
-    fin_fields=(ADVR, PREPAY, REV),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=True,
-    note=("参考库 `因子库.md` 5、Quality #11，公式逐字。"
-          "**经济含义**：预收款 = 客户先付钱（**下游议价力 / 订单储备**），"
-          "预付款 = 先付给上游（**被上游占用**）。两者之差是**净占款能力**。"
-          "★ 与已注册的 `cash_conversion_cycle` 的区别：那个测的是"
-          "「存货+应收−应付」的**周转天数**（营运效率），"
-          "本因子测的是预收/预付这一对**合同负债**（议价地位）——"
-          "既不与周转天数共线，也不与任何利润率水平共线。"
-          "★★ **零额外 TTM 机械**：两个分子科目都是**纯时点**（资产负债表），"
-          "只有分母是 TTM；所以本因子的活跃度高于纯 TTM 比率。"
-          "`prepayment` / `adv_receipts` 这两个字段**此前零个因子消费过**。"),
-))
-def ar_ap_to_revenue(ctx):
-    return ctx.safe_div(ctx.point(ADVR) - ctx.point(PREPAY), ctx.ttm(REV), 1e6)
 
 
 # ══════════════════════════════════════════════════════════════════════
 # 3. 债务结构（2 个）—— ★ `ctx.ind()` 白名单的**首次启用**
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="ind_currentdebt_to_debt",
-    group="risk",
-    deps=_DEP_IND,
-    desc="短期债务占总债务的比重（债务期限结构 / 展期风险）",
-    formula="ctx.ind('currentdebt_to_debt')   # 供应商时点比率",
-    fin_fields=("currentdebt_to_debt",),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=False,
-    note=("★★ **本因子是 `ctx.ind()` 白名单字段的首次启用**（此前 26 个字段零个被消费）。"
-          "字段本身是供应商算好的**时点比率**（`end_date` 上的瞬时量，"
-          "不是累计 YTD，所以能当日频用 —— 见 `factors/DEVELOPING.md` §5 的白名单）。"
-          "**为什么它是独立的维度**：已删的 `debt_asset_ratio`（负债/资产）是**杠杆水平**；"
-          "本因子是**期限结构**（短期债务/总债务）——"
-          "同样的杠杆率，全部是短期借款（一年内要还）与全部是长期债券，"
-          "风险完全不同。两者在数学上**不是**单调变换关系。"
-          "**实测覆盖**：中位 84%、q05 33%、q95 99%、100% 非空 ⇒ 填充良好且不零膨胀。"
-          "方向取负（短期债务占比越高，展期风险越大）。"),
-))
-def ind_currentdebt_to_debt(ctx):
-    return ctx.ind("currentdebt_to_debt")
 
 
 @register(FactorSpec(
-    name="ind_int_to_talcap",
+    name="ind_int_to_talcap", version=2,
     group="risk",
     deps=_DEP_IND,
     desc="有息负债占总资本的比重（融资性杠杆，剔除经营性负债）",
@@ -375,24 +211,6 @@ def ind_int_to_talcap(ctx):
 
 
 
-@register(FactorSpec(
-    name="np_to_opex_yoy",
-    group="growth",
-    deps=_DEP_IS,
-    desc="单位经营性费用创利同比 = (净利_TTM / (销售+管理+研发费用)_TTM) 的同比",
-    formula='(current_ratio - same_quarter_last_year_ratio) / abs(same_quarter_last_year_ratio)',
-    fin_fields=(NP, "sell_exp", "admin_exp", "rd_exp"),
-    start=FIN_START,
-    warmup_days=FIN_WARMUP,
-    higher_is_better=True,
-    note=('同比变化以去年同期绝对值为分母，负基期不变时变化为0，改善时为正。'),
-version=2,))
-def np_to_opex_yoy(ctx):
-    opex = ctx.ttm("sell_exp") + ctx.ttm("admin_exp") + ctx.ttm("rd_exp")
-    r0 = ctx.safe_div(ctx.ttm(NP), opex, 1e6)
-    opex4 = ctx.lag_ttm("sell_exp", 4) + ctx.lag_ttm("admin_exp", 4) + ctx.lag_ttm("rd_exp", 4)
-    r4 = ctx.safe_div(ctx.lag_ttm(NP, 4), opex4, 1e6)
-    return ctx.safe_div(r0 - r4, np.abs(r4), 1e-6)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -400,7 +218,7 @@ def np_to_opex_yoy(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="ind_dt_netprofit_yoy",
+    name="ind_dt_netprofit_yoy", version=2,
     group="growth",
     deps=_DEP_IND,
     desc="扣非净利润同比（供应商同期同比字段，季节性自动抵消）",
@@ -425,7 +243,7 @@ def ind_dt_netprofit_yoy(ctx):
 
 
 @register(FactorSpec(
-    name="ind_bps_yoy",
+    name="ind_bps_yoy", version=2,
     group="growth",
     deps=_DEP_IND,
     desc="每股净资产同比（股东权益的**每股**累积速度）",

@@ -1,0 +1,20 @@
+name: r4b_vol_lead_ret_corr_20
+family_id: r4b_intraday_shape_v2
+implementation: research.families.r4b_intraday_shape_v2:build
+parameters: {signal: vol_lead_ret_corr_20}
+units: 无量纲相关系数 ∈ [-1,1]；x=Δlog vol 对 vol 的手/股单位翻转不变（对数差在平移下不变）。
+availability: 只用信号日 15:00 收盘前当日 5min bar；不跨日、无未来数据；stock_history_5min
+  经 fea/delay.py / conf/frequency.yaml 实测 delay_days=0，无需位移。
+missing_policy: 当日有效相邻对（x 与 y 均有限）<40 或 x/y 任一方差为 0 为 NaN；停牌/无该日
+  分区为 NaN；不零填充。20 日窗内有效日 <15 为 NaN。
+spec:
+  group: research_intraday
+  desc: Lead 纠偏替换机制 v2-5：日内「量领先价」相关 corr(Δlog vol_t, r_{t+1}) 的 20 日均。
+    量领先价=知情交易痕迹 → 未来收益高（方向先验弱-中）。
+  formula: mean20( Pearson_t(Δlog vol_t, r_{t+1}) )，仅用当日 bar 内相邻 t→t+1 对
+  deps: [stock_history_5min]
+  warmup_days: 45
+  higher_is_better: true
+  version: 1
+  note: 午休跨段收益剔除（R3-B 口径）；跨午休的量变化保留（量差非价格收益）。
+    段首/段尾自动剔除（无相邻对）；corr 用当日 bar 内数据，无跨日项。

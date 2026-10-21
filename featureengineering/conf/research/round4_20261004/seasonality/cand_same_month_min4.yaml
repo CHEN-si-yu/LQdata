@@ -1,0 +1,16 @@
+name: r4j_same_month_min4_v1
+family_id: r4j_seasonality_v1
+implementation: research.families.r4j_seasonality_v1:build
+parameters: {signal: same_month_min4}
+units: 月收益均值（同 same_month_mean_ret；样本充足性变体）。
+availability: 同 same_month_mean_ret。
+missing_policy: 有限历史同月样本 < 4 时为 NaN（比核心机制更保守的样本门槛）；其余同核心机制；不零填充。
+spec:
+  group: research_seasonality
+  desc: U10 变体 A（样本充足性）：机制 1 最少 4 个历史同月（不是 2），检验 min 2 是否让早期年份的稀疏样本污染信号。
+  formula: "同 same_month_mean_ret，但 count>=4"
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 2300
+  higher_is_better: true
+  version: 1
+  note: 变体性质（非新机制主张）：预期效果是值前 NaN 前缀变长（G2 覆盖代价），换取样本更干净。

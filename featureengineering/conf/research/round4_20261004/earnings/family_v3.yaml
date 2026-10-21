@@ -1,0 +1,8 @@
+family_id: r4a_earnings_surprise_v3
+idea_id: r4a_earnings_surprise_v1
+trial_budget: 3
+baseline: 与 v1 相同（朴素对照 = yoy_revenue、roe_ttm、ep_ttm；机制 3 朴素对照 = momentum_60；定向相关对照 = momentum_60/120、short_term_reversal_5、ep_ttm、roe_ttm、yoy_revenue、qf_sales_growth_accel、qf_core_roe_yoy_change）。本族是**纯工程修复的重发布**：v1 模块 _income_rows 中 end 为 numpy.ndarray 却调用 .isin()，导致仅走该路径的 pead_drift_60 / pead_drift_skip5 / forecast_landing_gap 三个候选在首个年份即 AttributeError 失败（rc=1，无任何产出）。v3 = v1 + np.isin 一行修复；三个候选的公式、参数、方向、缺失口径与预登记时完全一致，不构成新机制、不改变有效预算计数。
+allowed_variants:
+  - {signal: pead_drift_60, skip: 0}
+  - {signal: pead_drift_60, skip: 5}
+  - {signal: forecast_landing_gap}

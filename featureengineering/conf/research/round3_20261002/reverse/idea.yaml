@@ -1,0 +1,62 @@
+# 事前登记假设，不构成收益证明；机制、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "idea_id": "r3_reverse_confirm_idea_v1",
+  "hypothesis": "R2 出现两个 declared 分年 9/9 与预登记方向相反的稳定关系；本 Idea 把**反向关系**作为新的、单独预登记的假设，用独立设计去证伪或确认它，而不是宣称 R2 候选有效。",
+  "mechanism": "D1 公告后过度反应反转（股东户数公告是离散注意力事件，公告后窗口内的相对涨幅随后回吐；与无条件短期反转不同，只在公告生效日起 N 个交易日的子集上定义）。D2 股东回报活跃度溢价（除权除息事件频次刻画持续股东回报能力与治理规范度，是事件频率而非股息率水平，也不含价格信息）。",
+  "expected_direction": "两个方向都登记为 higher_is_better = true，且因子值**直接构造成反向信号量**（D1 = 负的公告窗口相对漂移；D2 = 事件频次原值），因此 evaluation.json 的 declared RankIC 就等于反向假设的 RankIC，raw 与 declared 恒等。",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "auxiliary_horizons_unused_in_discovery": [
+    10,
+    20
+  ],
+  "falsifiable": "固定确认设计任一条不过即判『不可确认』：(a) 机制须能独立陈述；(b) 2018-2021 与 2022-2026 两块都必须同号且不能只靠单块；(c) h=10 与 h=20 也必须同号；(d) 三套参数化都要同号；(e) 对 |rho|>0.3 的现有因子正交后残差仍须同号且有量级。",
+  "fields": [
+    "stock_holder_number.ann_date",
+    "stock_holder_number.end_date",
+    "stock_holder_number.holder_num",
+    "stock_daily.close",
+    "stock_adj_factor.adj_factor",
+    "stock_adj_factor_changes.date"
+  ],
+  "origin": "round3_preregistered_r3_e",
+  "status": "unvalidated_hypothesis",
+  "background_evidence_quoted_not_recomputed": {
+    "r2own_v2_announcement_drift5_v1_f723d2670bef3894": {
+      "higher_is_better": true,
+      "interpretation": "declared == raw（未翻转）",
+      "declared_h1": -0.02127,
+      "ci95": [
+        -0.0279,
+        -0.01465
+      ],
+      "years_positive": 0,
+      "years_negative": 9,
+      "declared_h5": -0.02123,
+      "declared_h10": -0.02139,
+      "declared_h20": -0.0253,
+      "coverage_mean": 0.1341,
+      "pairs_median": 181
+    },
+    "r2ca_corpaction_frequency_w500_v1_242733c129b91c78": {
+      "higher_is_better": false,
+      "interpretation": "declared = −raw",
+      "declared_h1": -0.00691,
+      "ci95": [
+        -0.01108,
+        -0.00273
+      ],
+      "years_positive": 0,
+      "years_negative": 9,
+      "raw_h1": 0.00691,
+      "declared_h5": -0.00955,
+      "declared_h10": -0.01023,
+      "declared_h20": -0.01238,
+      "coverage_mean": 0.9954,
+      "pairs_median": 2111
+    }
+  },
+  "correction_note": "Lead 派单里把 announcement_drift5 写成『raw 稳定为正』。实测 evaluation.json：该候选 higher_is_better=true，故 declared==raw，h1 = −0.02127、分年 0 正/9 负，是**稳定为负**。本报告按实测值执行确认（确认对象是反向关系：公告窗口内相对涨幅越大、随后收益越低）。"
+}

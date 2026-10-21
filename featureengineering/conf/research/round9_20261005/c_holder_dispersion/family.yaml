@@ -1,0 +1,21 @@
+family_id: r9c_holder_dispersion_family_v1
+idea_id: r9c_holder_dispersion_idea_v1
+trial_budget: 2
+allowed_variants:
+  - {signal: abnormal_dispersion_shift, z_lookback: 8, z_min_prior: 4}
+  - {signal: abnormal_dispersion_shift_k4, z_lookback: 4, z_min_prior: 3}
+baseline:
+  - holder_number_chg
+  - r2own_v2_trend_persistence_v1
+  - log_mv
+  - turnover_std_20
+  - chip_concentration
+  - momentum_120
+  - short_term_reversal_5
+hypothesis_boundary: 只研究 stock_holder_number 一个数据维度上的「时间序列标准化的异常分散位移」一个机制。
+  holder_number_chg 占用「单期变化率」，r2own_v2_trend_persistence_v1 占用「最近 4 期下降持续性与趋势强度」，
+  两者均不含任何波动率归一；本 family 必须实测论证与这两者的差异。不扩参数网格、不事后调阈值、不事后改方向。
+  K=4 变体是**事前登记**的窗口稳健性对照（与 R2 的 announcement_drift_d5/d10 同一做法），不是事后挑选；
+  准入判定以主口径 K=8 为准，K=4 仅用于观察结论对历史窗长的敏感性。
+search_policy: 两个口径在同一模块内事前冻结（FROZEN 字典），build() 拒绝任何其它参数组合；不存在被搜索的窗口。
+v1_defect_disclosure: 不适用（本 family 为 v1 首次登记）。

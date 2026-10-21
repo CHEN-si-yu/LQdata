@@ -1,0 +1,17 @@
+name: r4p_goodwill_to_equity_win_v1
+family_id: r4p_goodwill_v1
+implementation: research.families.r4p_goodwill_v1:build
+parameters: {signal: goodwill_to_equity_win}
+units: 无量纲比率（商誉/归母净资产），固定上帽 1.0（winsor 敏感性变体）。
+availability: 同 r4p_goodwill_to_equity_v1——商誉与归母净资产均取公告时点 pit≤信号日的最新可考版本（as-of、含修订）；公告日当天可用。
+missing_policy: 同 r4p_goodwill_to_equity_v1——商誉不可考、或归母净资产不可考/≤0/≤1e6 元时为 NaN；商誉=0 保留；不零填充；非有限值输出为 NaN；min(·,1.0) 不改变 NaN。
+spec:
+  group: research_goodwill
+  desc: 变体（V1 机制1 的 winsor 敏感性）：min(商誉/归母净资产, 1.0)——若主口径结论由「商誉>净资产」的极端样本驱动，本变体应显著削弱。
+  formula: min(point(goodwill) / point(total_hldr_eqy_exc_min_int), 1.0)
+  deps: [stock_balancesheet]
+  fin_fields: [goodwill, total_hldr_eqy_exc_min_int]
+  warmup_days: 500
+  higher_is_better: false
+  version: 1
+  note: 帽值 1.0 在首个 run 之前固定（未查看数据分布）；除上帽外口径与机制1完全一致，作敏感性对照、不单列新机制主张。

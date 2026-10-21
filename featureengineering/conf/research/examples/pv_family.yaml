@@ -1,0 +1,11 @@
+family_id: pv_exhaustion_v1
+idea_id: pv_exhaustion_v1
+trial_budget: 6
+baseline: 同期涨幅、价格减速、成交量变化和现有最接近的量价表达；不把模型贡献视为已完成。
+allowed_variants:
+  - {window: 5, expression: continuous, valid_fraction: 0.8}
+  - {window: 5, expression: event, valid_fraction: 0.8}
+  - {window: 10, expression: continuous, valid_fraction: 0.8}
+  - {window: 10, expression: event, valid_fraction: 0.8}
+  - {window: 20, expression: continuous, valid_fraction: 0.8}
+  - {window: 20, expression: event, valid_fraction: 0.8}

@@ -1,0 +1,50 @@
+name: r11u4_flow_intensity_x_surprise_v1
+family_id: r11u4_field_interaction_family_v1
+implementation: research.families.r11u4_flow_interaction_v1:build
+parameters: {signal: flow_intensity_x_flow_surprise}
+units: 无量纲（两个逐日截面 z 分数的乘积）
+availability: |
+  T 日只用 T 日收盘后已可得的在产因子值：状态 `mf_net_inflow_5d` 与腿 `mf_net_vol_surprise_20`
+  经 `ctx.load_factor(name)` 读落盘 `value`（精确落格、缺失 NaN、不 asof 前向填充）。
+  两腿自身已各自满足其登记时的 PIT 契约（本候选不引入任何新的上游表或新的可得性问题）。
+  T 日取值用于 T+1 开盘起的标签。无滞后表依赖，故不涉及 LAGGED_DATASETS。
+missing_policy: |
+  · 任一腿为 NaN -> 该 (t, i) 格 NaN（缺失传播）；**不零填充、不插值、不 asof**。
+  · 池外股票 -> NaN。完整输入下乘积恰为 0 是观测到的 0，保留。
+  · **附录 J 规则 4 不适用**：本候选没有可选的缺失约定 —— 两腿都是稠密在产因子
+    （实测缺失率 0.61% / 0.55%，交集覆盖 0.9935），缺失一律传播为 NaN。
+    因此不存在"符号随缺失约定翻转"的风险，也就无所谓"与机制匹配的口径"。
+source_fields:
+  - mf_net_inflow_5d（在产因子）
+  - mf_net_vol_surprise_20（在产因子）
+spec:
+  group: r11_field_interaction
+  desc: R11-U4 同族字段级条件交互：资金流强度 × 资金流意外度（两腿均属 fundflow 族，状态逐股变化）；乘积越大 = 拥挤的方向性意外流入，预期收益越低（higher_is_better=false）
+  formula: "X(t,i) = cs_zscore(mf_net_inflow_5d) * cs_zscore(mf_net_vol_surprise_20)，逐日截面 z（mask=universe），任一腿 NaN 则 NaN"
+  deps: [mf_net_inflow_5d, mf_net_vol_surprise_20]
+  warmup_days: 600
+  higher_is_better: false
+  version: 1
+  fin_fields: [revenue]
+  note: |
+    【预筛（登记之前完成，全部实测）】
+      P1 预检 A：与全部 125 个在库因子逐日比对，FLAGGED = 0；frac|rho_t|>0.99 与 exact_perm
+        在所有 125 个因子上均为 0.000000；最大 pooled |rho| = 0.1963（volume_ratio）；
+        **没有任何因子 |rho| > 0.5**。
+      P2：腿 mf_net_vol_surprise_20 的无条件 IC t = −0.02（全库 |t| 中位数 5.10 ⇒ 弱腿是少数）。
+      P3：IC+(state 高) = −0.00521 (t=−2.08) vs IC−(state 低) = +0.00646 (t=+2.42)，
+        差值 HAC t = −7.42，两状态符号相反且各自显著 ⇒ PASS
+        （对照：已准入 r9f_breadth_intraday_slope_x_beta 斜率 t = −4.38）。
+      预检 B：p0..p100 = −12.97 / −2.19 / −0.150 / +0.052 / +0.480 / +4.95 / +8.41 / +18.88；
+        |max|/|p99| = 3.82 ⇒ 未触发尾部计数。unique/day min 1,969、0 天 ≤20 ⇒ 非阶梯。
+    【附录 K 声明】状态是**逐股变化**的，故候选在每个交易日内都不是腿的单调变换。
+      实测 corr_t(X, leg) daily_abs_mean = 0.1312、frac>0.99 = 0.0000；
+      corr_t(X, state) daily_abs_mean = 0.0671、frac>0.99 = 0.0000。
+      ⇒ **不是**自身腿/状态的有符号置换，广播态陷阱不适用，G4 不是 P3 斜率项的伪装。
+    【附录 I 规则 3】最高相关对象是 volume_ratio（pooled 0.1963，**非同源**）。
+      与两条同源腿的 pooled |rho| 分别只有 0.068（腿）与 <0.10（状态），**均未达到触发规则 3 的条件**
+      （"最高相关对象为同源在产因子"）。为完整起见，报告仍给出冻结 base8 + 两腿的增量诊断，两套并报。
+    【缺失约定】见 missing_policy：无可选约定，规则 4 不适用。
+    【fin_fields 说明】本因子不使用财务字段；fea/engine.py:1502 对"任一 spec 未声明 fin_fields"的
+      run 会退回"全建 80 个财务字段"，故按 r7c/r9c/r9d 先例声明**未使用**的占位字段 revenue。
+    【方向】higher_is_better=false，事前固定，未按结果翻转。

@@ -1,0 +1,73 @@
+{
+  "run_name": "wave2_20261005",
+  "checked_at": "2026-10-05 17:40:36",
+  "score_source": "training_predictions",
+  "reads_model_train": true,
+  "loads_model_weights": true,
+  "strategies": [
+    "top5_5d",
+    "top1_1d"
+  ],
+  "strategy_rows": 2,
+  "quarterly_rows": 8,
+  "evaluation_days": 242,
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 644339,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 639937,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 635558,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 624824,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 603712,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "quarterly_returns_compound": true,
+  "date_axis_matches_price_axis": true,
+  "realized": {
+    "top5_5d": {
+      "return_value": 0.37922860188532126,
+      "max_drawdown": -0.13586228698494718,
+      "sharpe": 1.7059897665411707,
+      "trades": 120,
+      "total_fees": 1528.363811468,
+      "gross_return_same_positions": 0.40344,
+      "fee_drag": 0.01528363811468,
+      "slippage_drag": 0.008927759999998817,
+      "avg_exposure": 0.49066929845727747,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    },
+    "top1_1d": {
+      "return_value": 0.2913824314806124,
+      "max_drawdown": -0.21111391963981063,
+      "sharpe": 0.8676161966225692,
+      "trades": 278,
+      "total_fees": 16646.45345194,
+      "gross_return_same_positions": 0.5557000000000016,
+      "fee_drag": 0.16646453451940005,
+      "slippage_drag": 0.09785303399998928,
+      "avg_exposure": 0.9934059957884661,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    }
+  }
+}

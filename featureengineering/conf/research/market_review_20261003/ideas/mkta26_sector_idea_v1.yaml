@@ -1,0 +1,18 @@
+{
+  "idea_id": "mkta26_sector_idea_v1",
+  "hypothesis": "行业板块结构（日收益离散、20 日动量离散、领涨强度、轮动速度、成交集中度、成交额量比）对未来 1/5 日等权市场收益存在可检验的（方向逐项预登记的）关系。",
+  "mechanism": "板块指数层口径：行业候选经 dc_blocks「行业板块」名称交叉核验；分化/主线强度偏延续，轮动过快与集中度过高偏结构脆弱。",
+  "expected_direction": "逐因子预登记（freeze 方向表：+1/-1/0），不依据事后结果翻转",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "若主期限 HAC 95% 区间含 0、分年同号不足、或对既有市场因子增量不显著（或符号相反），则该因子的信号主张被证伪；绿卡描述量不声称预测性。",
+  "fields": [
+    "tdx_daily.close",
+    "tdx_daily.amount",
+    "tdx_blocks.*",
+    "dc_blocks.*"
+  ],
+  "registration_note": "本文件为 2026-10-03 市场因子复审的**追溯登记**（既有正式因子的逐值审计别名），非事前研究登记；方向与先验强度的预登记见 freeze 方向表，检验为回顾性筛选，不构成未触碰留出样本上的结论（retrospective_screening;historical_selection_is_not_untouched_holdout）。"
+}

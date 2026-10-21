@@ -1,0 +1,33 @@
+{
+  "name": "r7b_sales_adjusted_inventory_accumulation_v1",
+  "family_id": "r7b_inventory_accumulation_v1",
+  "implementation": "research.families.r7b_inventory_accumulation_v1:build",
+  "parameters": {
+    "signal": "sales_adjusted_inventory_accumulation"
+  },
+  "units": "dimensionless corporate amounts / prior same-quarter assets",
+  "availability": "Latest joint income/balance report q becomes available at max of first valid source PITs. All source revision/publication events re-look up every current and lagged leg under same PIT; historical revisions only act prospectively.",
+  "missing_policy": "Both inventories finite nonnegative including real zero; A(q-4)>1e6; both strict four-single-quarter revenue TTMs finite and >1e6. No partial-sum TTM, no missing-to-zero. Invalid newly joint report or revision overwrites old state; no report fallback. Joint report end age<=550 calendar days.",
+  "resource_budget_bytes": 3000000000,
+  "resource_budget_unit": "decimal GB; 3 GB is 3000000000 bytes, not 3 GiB",
+  "statistical_controls": "base8 + inventory_turnover, cash_conversion_cycle, R4 accrual q/TTM, sales YoY/acceleration, asset growth QoQ/YoY, TTM gross margin and YoY change, lag inventory/assets and zero-inventory business indicator, qf_roa/SUE. No posterior industry snapshots.",
+  "spec": {
+    "group": "research_financial_information",
+    "fin_fields": [
+      "revenue",
+      "inventories",
+      "total_assets"
+    ],
+    "desc": "Inventory accumulation beyond revenue-scaled historical need may signal operating demand imbalance; weak negative 1/5-day prior, accrual component decomposition not a wholly new source.",
+    "formula": "[I(q)-I(q-4)*strict_TTM(revenue,q)/strict_TTM(revenue,q-4)]/A(q-4); q is latest jointly disclosed income/balance report frontier",
+    "deps": [
+      "stock_income",
+      "stock_balancesheet",
+      "stock_daily"
+    ],
+    "warmup_days": 1500,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "Both inventories finite nonnegative including real zero; A(q-4)>1e6; both strict four-single-quarter revenue TTMs finite and >1e6. No partial-sum TTM, no missing-to-zero. Invalid newly joint report or revision overwrites old state; no report fallback. Joint report end age<=550 calendar days. Float64 numerical computation, float32 Store; full fixed pool/date keys; only current traded/universe output mask. base8 + inventory_turnover, cash_conversion_cycle, R4 accrual q/TTM, sales YoY/acceleration, asset growth QoQ/YoY, TTM gross margin and YoY change, lag inventory/assets and zero-inventory business indicator, qf_roa/SUE. No posterior industry snapshots."
+  }
+}

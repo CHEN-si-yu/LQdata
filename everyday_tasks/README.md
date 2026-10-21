@@ -22,7 +22,7 @@
 
 
 > **这份是唯一文档**（2026-09-19 由 `DAILY_RUNBOOK.md` + `UPDATE_LOGIC.md` + `BACKTEST_REPORT.md`
-> 三份合并而成，三份已删）。日常照着 §1 跑即可；出问题查 §4 / §8。
+> 三份合并而成，三份已删）。日常照着 §1 跑即可；出问题查 §4 / §7。
 >
 > 配套（都不是本工程的文档，别混）：
 > `../QUANT_PLATFORM.md`（平台唯一主记录）· `state/monitor/DAILY_LOG.md`（每晚人读流水）·
@@ -101,21 +101,21 @@
 - [清理 MD5/SHA-256 清单](state/backtest/checksum_archives/20260919_173440_330394/checksums.json)、[删除日志](state/backtest/checksum_archives/20260919_173440_330394/deleted.jsonl)、[清理汇总](state/backtest/checksum_archives/20260919_173440_330394/summary.json)。
 - [清理与资源验证](state/backtest/cleanup_20260919/verification.json)、[39 项测试日志](state/backtest/cleanup_20260919/tests.log)、[本轮代码部署清单](state/backtest/cleanup_20260919/deployment.json)。
 
-## 现状（2026-09-25 核对）
+## 现状（2026-10-13 核对）
 
 | 项 | 值 |
 |:--|:--|
-| 数据水位 | **T = 2026-09-24**（周四，最新交易日；**09-25 中秋休市**，下一交易日 09-28）· 日频 **18/18** 张已跟到 |
-| 最近一轮真跑 | **2026-09-24 23:49:58 · 771 s · 539 请求 · 重试 0 · 14 条待处理告警**（全部良性，见 `state/monitor/DAILY_LOG.md`）；闸门零等待，分组全 ✔ |
-| 最近一次验收 | **2026-09-25 上午逐表与服务端比行数**：可比表 12/12 一致、per_entity 5 张抽代表实体 5/5 一致、`hash-audit`（浅）全过、33 张 manifest 全 `todo=0/failed=0`、39/39 测试通过 |
-| 注册表 | **35 个数据集**（启用 **32**）· `daily_tables()` **18** 张（= 附录 A 编号 **1–17、32**） |
+| 数据水位 | **T = 2026-10-13** · 下一交易日 2026-10-14 · 日频 **17/17** 张到位 |
+| 最近一轮真跑 | **2026-10-13 20:36:51 · 2207.5 s（含闸门 1347.0 s）· 843 请求 · 重试 0 · 11 条 MD5 告警**（10 名称、1 分钟 OHLCV；0 行数减少，已回刷下游） |
+| 最近一次验收 | **2026-10-13 晚逐层验收**：136 跑前指纹=125 一致+11 修订；原始数据哈希覆盖深检/抽样复算通过；312 因子、54 快照文件与推演对拍通过；详见 `check/incremental_20261013/LEDGER.md` |
+| 注册表 | **34 个数据集**（启用 **31**）· `daily_tables()` **17** 张 |
 | 数据接口编号 | **已于 2026-09-19 冻结 → 附录 A**（原 31 个接口编号保留，新增 32 号） |
-| 闸门 | **28 张**（`gate_tables()` 实测）= **wait 21** + **watch 7** · 另 4 张无日历轴不参与 |
-| 抓取模式（启用） | `range` **12** · `per_date` 6 · `per_stock` 5 · `per_entity` 5 · `snapshot` 4 |
+| 闸门 | **27 张**（`gate_tables()` 实测）= **wait 20** + **watch 7** · 另 4 张无日历轴不参与 |
+| 抓取模式（启用） | `range` **12** · `per_date` 6 · `per_stock` 5 · `per_entity` 4 · `snapshot` 4 |
 | 数据落点 | `/autodl-fs/data/datadownload/data/<数据集>/`（manifest 在 `.../state/<数据集>.json`） |
 
 > 上一版快照是「2026-09-19 核对」（水位 T=2026-09-18、日频 17/18、`stock_st_info` 被厂商撤回、
-> `range` 11 / 闸门 27 张）—— **那三处数字与状态现均已过时**，历史细节见附录 D 与 §13。
+> `range` 11 / 闸门 27 张）—— **那三处数字与状态现均已过时**，历史细节见附录 D 与 §12。
 >
 > ⚠️ **旧文档里的"40 张表 / 39 张 / 20 张日频"都是删表之前的数字**，别再引用。
 > 现行口径以 `registry.py` 为准，一行命令可自证：
@@ -128,6 +128,10 @@
 ---
 
 ## 1. 怎么跑（今晚要做的事）
+
+### 2026-10-13 验收工具兼容修正
+
+`scripts/day_expect.py` 的跑前日历改读正式日历与自愈日历的并集：自愈日历只包含已见过的日期，不能单独用来规划新交易日。空尾部窗口现在明确拒绝保存/验收，避免“比较 0 个指纹”被误读为通过。精确日频核查按目标日期过滤完整返回并去重业务键，不把跨日窗口、重复 total 或非日频公告日/统计日口径混比；除权代码数组按单日请求日期转换，条数失败/未知影响退出码。7 项回归测试通过。本轮曾出现空基线，已从真实跑前备份恢复 136 个指纹，保留原始基线、恢复来源及原报告；最终验收为 125 一致、11 修订、0 减少、0 数量未确认。完整证据在 `/autodl-fs/data/check/incremental_20261013/`。
 
 ### 1.1 唯一命令
 
@@ -144,8 +148,8 @@ $PY main.py            # $PY = /autodl-fs/data/miniconda3/bin/python
 1. **必须用 `$PY` 全路径**。非登录 shell 里的 `python` 会落到 `/root/miniconda3`，没有 pandas。
 2. **≥ 20:00 起跑；想当晚一次拿全就 22:20~22:30 起跑**（此前最晚的 `ths_hot` 已于 2026-09-19
    删除；现行最晚的是 `stock_st_info`，实测 21:36~21:48，
-   见 §7.3）。赶在次日开盘前跑完。
-3. **必须始终以同一个用户跑**（推荐 `claude`）—— 见 §8 第一铁律。
+   见 §6.3）。赶在次日开盘前跑完。
+3. **必须始终以同一个用户跑**（推荐 `claude`）—— 见 §7 第一铁律。
 
 自动等待：闸门没到齐会每 5 分钟重查，预算 `gate.max_wait_hours` = **6 小时**。
 一轮约 **7~13 分钟**（09-18 实测 1420 s，因为多跑了几张慢表）。
@@ -164,7 +168,7 @@ $PY main.py            # $PY = /autodl-fs/data/miniconda3/bin/python
 |:--|:--|:--|
 | `✅ N/N 张日频表有新数据；无异常` | 正常 | 收工 |
 | `✅ …；K 条需要关注` | 有告警 | 逐条按 §4 判读 |
-| `⚠️ 闸门等待超时 … partial` | 有表没到齐 | 看被跳过的是哪张 → §2.3 / §7 |
+| `⚠️ 闸门等待超时 … partial` | 有表没到齐 | 看被跳过的是哪张 → §2.3 / §6 |
 | `✖ T 未确定` | 服务端没数据 | 确认今天是不是交易日；是就重跑一次 |
 | `✖ 闸门 strict 超时` | 配了 strict 就不更新 | 正常（配置如此） |
 
@@ -194,7 +198,7 @@ $PY main.py status                     # 各数据集本地水位（零请求）
 $PY main.py gate --max-wait 0          # 只探一轮闸门（看上游到齐没有，零写入）
 $PY scripts/day_expect.py snapshot --date <今天的T>   # 开工前存"今日 7 天窗口指纹基线"
 $PY scripts/day_expect.py compare --old expect_<昨天的T>.json   # 跨天核对历史有没有被偷改
-$PY scripts/day_expect.py verify --date <今天的T>     # 跑后逐条验收
+$PY scripts/day_expect.py verify --date <今天的T> --reprobe # 跑后按单日唯一业务键复探验收
 $PY scripts/api_ledger.py              # 刷接口台账到 logs/ledger/LOG<T 的 MMDD>/（零请求，用户 09-17 要求）
 $PY main.py dump-cache                 # 看 daily_dump 本地按日缓存（零请求）
 ```
@@ -209,7 +213,7 @@ $PY main.py dump-cache                 # 看 daily_dump 本地按日缓存（零
 ① 更新交易日历（到未来 T+30，供闸门回推 expected）
 ② 确定 T：问服务端"最新真正发布出来的交易日是哪天"
 ③ 闸门：检查各表在 T（或 T-delay）那天到齐没有；没到齐每 5 分钟重查，最长 6 小时
-④ 先更新基础名单，再跑 18 张日频表
+④ 先更新基础名单，再跑 17 张日频表
 ⑤ 跑其余表（分钟 / 季频 / 不定期 / 快照）
 ⑥ 单日 MD5 台账：重算尾部窗口指纹 + 抽查历史日（dayhash.sample_old_days，默认 3）
 ```
@@ -225,18 +229,18 @@ $PY main.py dump-cache                 # 看 daily_dump 本地按日缓存（零
 **delay = 有些表天生比 T 晚**。窗口上界一律收到 **`T - delay`**，不去够 T。
 
 > ★ 现行唯一非零值是 **`stock_margin_detail = 1`**，其余全部 `0`（含 `dc_daily` /
-> `stock_st_info` / `index_ths_daily` —— 它们是**发布晚**，不是**次日才有**）。
+> `stock_st_info` —— 它是**发布晚**，不是**次日才有**）。
 > **`registry._DELAY` 是唯一真源**，本文件若与它冲突以它为准。
 
 **尾部窗口 = 最重要的自愈机制**：每张表**每轮无条件重抓**最近 `redundancy_days`（默认 5）
 个交易日，不看任何标记。三个历史顽疾靠这一条同时解决：上游偶发返回空 / 服务端追溯修正 /
 数据被误删。
 
-### 2.3 闸门三档（`gate_tables()` **28 张**）
+### 2.3 闸门三档（`gate_tables()` **27 张**）
 
 | 档 | 成员 | 判据 | 行为 |
 |:--|:--|:--|:--|
-| **wait 等待** | **21 张** = 18 张日频 + `tdx_minute` + `stock_market_distribution_history` + `stock_history_5min` | 服务端在 `T-delay` 有数据 | **阻塞**（等到齐或超预算） |
+| **wait 等待** | **20 张** = 17 张日频 + `tdx_minute` + `stock_market_distribution_history` + `stock_history_5min` | 服务端在 `T-delay` 有数据 | **阻塞**（等到齐或超预算） |
 | **watch 观测** | **7 张** = 4 张季频财报（`stock_income` / `stock_balancesheet` / `stock_cashflow` / `stock_financial_indicator`）+ `stock_forecast` + `stock_holder_number` + `stock_pledge_stat` | 探服务端最近有数据的一格 | **不阻塞**；落后时标 ⚠️ |
 | **skip 跳过** | **4 张**无日历轴（`basic_calendar` / `stock_list` / `dc_blocks` / `tdx_blocks`） | — | 不参与 |
 
@@ -245,7 +249,7 @@ $PY main.py dump-cache                 # 看 daily_dump 本地按日缓存（零
 
 **超时行为** `partial`（默认）：只跳过"没到齐的日频表"，非日频表照常跑。
 `strict`：超时就不跑。要看是哪几张没到齐 → `$PY main.py gate --max-wait 0`。
-某张表**连续几天**都到不齐 → 它的 delay 声明偏小 → §7。
+某张表**连续几天**都到不齐 → 它的 delay 声明偏小 → §6。
 
 **`_KNOWN_HOLES`（已知厂商洞白名单）**：期望日期正好落在洞里的表不再阻塞闸门（标 `⏭`、
 报告降为 `ℹ️`）。**不等于放弃那天** —— 尾部窗口每天照常重试，上游一补发就自动抓回。
@@ -262,7 +266,7 @@ $PY main.py dump-cache                 # 看 daily_dump 本地按日缓存（零
 |:--|--:|:--|:--|
 | `range` | 11 | 按 `[区间]` 请求；区间 = 尾部窗口 ∪ coverage 缺口 ∪ revision 回刷窗口 | `stock_daily`（**1 个请求**拿全市场 6 天） |
 | `per_date` | 6 | 一个交易日一个请求 | `dc_daily`、`stock_top_list` |
-| `per_stock` | 5 | 四张财报表**只传报告期**就返回全市场（3 个请求），不用逐股；**另加 `ann_date` 日历日扫描兜底**（见 §9.11） | `stock_income` |
+| `per_stock` | 5 | 四张财报表**只传报告期**就返回全市场（3 个请求），不用逐股；**另加 `ann_date` 日历日扫描兜底**（见 §8.11） | `stock_income` |
 | `per_entity` | 5 | 按实体编组批量请求；已完成实体只补尾部窗口，未完成实体按年/月回填 | `stock_cyq_chips` |
 | `snapshot` | 4 | 无日期轴，按周期全量刷新 | `stock_list`（每天）、`dc_blocks` / `tdx_blocks`（每 7 天） |
 | `dump` | 1 | `daily_dump` 一次请求拿全市场当日 5min；**本地有按日缓存就先读缓存** | `stock_history_5min`（1 个请求顶 5901 个；命中缓存时 **0 个**） |
@@ -376,7 +380,7 @@ $PY main.py run --no-wait                  # 下一轮就会把它当缺口补�
 
 | 现象 | 成因 | 处理 |
 |:--|:--|:--|
-| 行数**不变**，只有值变 | **厂商晚间重算定型**（实测 `stock_daily` 的 `stock_name` 改名、`index_daily`、`tdx_daily`） | 记录即可，**本轮跑批已自动对齐到服务端当前值** |
+| 行数**不变**，只有值变 | **厂商值修订**（包括历史名称改写及 OHLCV/财务数值重算） | 本轮数据已对齐；继续按变化列和实际生产因子依赖判读。影响数值输入时须显式回刷下游，不能只凭行数不变认定无影响 |
 | 行数**变多** | **我们自己**用回刷窗口补的（实测 `stock_holder_number` 09-10 273→449） | 正常 |
 | 行数**变少** / `（本地整天数据消失）` | 上游撤数，**或**我们这边那天的数据没了 | **要查**（§4.3） |
 
@@ -402,75 +406,9 @@ $PY main.py hash-audit [--deep]                # MD5 台账自检（deep 要读�
 
 ---
 
-## 5. ★ 名单机制（2026-09-19 新增）
-
-### 5.1 为什么要有
-
-`index_ths_daily` 的抓取对象原来是**快照表** `index_ths_sector_categories`（厂商只存"当前"）。
-该快照 2026-09-19 被删（快照对回溯训练必然前视），名单**固化**成静态文件
-**`conf/ths_index_codes.txt`（1,676 只）**，改走 `DS.entity_codes`。
-
-**这不是权宜之计**：名单原会随快照漂移（实测 2026-03-02 多 763 只、2026-09-14 少 291 只的
-R/B 变体），每次都让 `index_ths_daily` 出现覆盖台阶，且新增实体的更早历史**永远补不齐**。
-固化后覆盖范围固定、可复现，名单变化变成一件**要人做**的事。
-
-> ⚠️ 两个 loader（新旧工程各一处）在名单文件缺失/为空时**大声报错**，不返回空清单 ——
-> 空清单会让一个指数都不抓、而报告照旧 ✔（静默停更）。两边读**同一个文件**。
-
-### 5.2 两件事已并进 `main.py`（用户要求：只跑 main.py 就能更新数据）
-
-| 时机 | 动作 | 成本 | 失败影响 |
-|:--|:--|:--|:--|
-| **主体之前** | `roster.sync()`：问厂商 THS 名单，**新增的自动追加**进 `conf/ths_index_codes.txt` | 1 请求 | 只记一条 note，不中断 |
-| **主体之后** | `roster.sweep_if_due()`：距上次 ≥ **30 天**才做全历史刷新兜底 | 约 40 请求 / 10 分钟 | 当日增量已入库，不受影响 |
-
-**为什么 `sync` 必须在主体之前**：新增的代码不在 `done.entities` 里，`run_per_entity` 会走
-`todo_new` 路径给它**全量回填历史**（不是只抓当天）。放主体之后就得白等一天。
-
-`sync` 的三条安全约束：**空返回不当作"厂商清空了名单"**（否则会把名单误删成空 → 静默停更）；
-**只增不减**；单次新增 > 200 只在报告里显著提示。
-
-### 5.3 为什么不 sweep 就会留下永久的洞（结构性风险）
-
-`strategies.py` 把实体分两类：
-
-```python
-todo_new = [c for c in codes if not man.is_done("entities", c)]   # → 全量回填
-rest     = [c for c in codes if c not in set(todo_new)]           # → 只补尾部窗口（约 6 个交易日）
-```
-
-- ✅ **厂商新上的代码会自动全量回填** —— 只要加进名单，下一轮就走 `todo_new` 拉全历史；
-- ⚠️ **已在 `done.entities` 里的实体只补尾部窗口**，**更早的洞永远不会自愈**。
-  实测：480 只"从 2026-03-02 才有数据"的代码**全部**在 `done.entities` 里，洞从 3 月留到 9 月。
-  表级 `_anchor_lo` 也救不了 —— 它锚的是表级 `max_partition_date()`，表整体不落后就不触发。
-
-⇒ **对策**：定期跑 sweep（已自动，30 天一次），**每次往名单里加代码之后立刻跑一次**。
-手动入口：`$PY main.py run --sweep-now`，或 `$PY scripts/backfill_index_ths_daily.py`（薄封装，
-实现与线上同一份）。状态写在 `state/roster_sweep.json`。
-
-### 5.4 名单维护与已知真相
-
-- **厂商新上的指数不会自动进来**（这是拿"覆盖可复现"换来的取舍）。`scripts/check_ths_roster.py`
-  把"厂商有新的"变成一件要人做的事：问一次 `/index/ths_sector_categories` 与固化名单 diff，
-  报新增/消失；`--update` 可把新增追加进名单（只追加、不重排）。**只查不存**。
-- **名单历史的深度参差是厂商侧的，不是我们丢的**：1,676 只里只有 3.5%（58 只）能回到 2010，
-  29.7%（497 只）从 2026 才开始。按起始年份分档各抽 3 只向厂商求证，**更早的全部返回空**。
-- **名单对研究窗的实际可用量**（完整覆盖 ≥98% 交易日）：
-
-  | 窗口 | 交易日 | 有数据 | 完整覆盖 |
-  |:--|--:|--:|--:|
-  | test 窗 2025-09-01~2026-09-01 | 243 | 1,665 | 1,109 |
-  | 近 1 年 train 2024-09-01~2025-08-10 | 226 | 1,176 | 1,153 |
-  | 长 train 2020-01-01~2025-08-10 | 1,358 | 1,179 | **536** |
-
-  ⇒ **要用长历史，可用池只有约 536 只**；只用近 1~2 年则有 1,100+ 只。这个约束是硬的。
-- 名单里**最后日期落后**的 87 只（抽样 4 只向厂商求证）：**厂商的结束日期和我们完全一致**
-  ⇒ 都是**厂商停供**，不是漏抓、也补不了。留在名单里的代价只是每次多一个空响应，
-  好处是**厂商哪天恢复供应能自动发现**。
-
 ---
 
-## 6. 单日 MD5 台账（发现"上游偷改历史"）
+## 5. 单日 MD5 台账（发现"上游偷改历史"）
 
 每轮增量之后，对尾部窗口内每个"数据集 × 日"重算一次**逻辑指纹**（行数 + 逐列值的哈希，
 不是文件字节 —— 文件字节会因压缩/分块变化而**必然假红**），与 `state/dayhash/<表>.parquet` 比：
@@ -484,7 +422,7 @@ rest     = [c for c in codes if c not in set(todo_new)]           # → 只补�
 
 ---
 
-## 7. delay 标定（主线任务）
+## 6. delay 标定（主线任务）
 
 > 用户原话：「很多东西只能在动态更新的时候才能发现，比如说 delay 到底是多少。
 > 我需要连续跟踪几天才能够完全确认目前的配置。」
@@ -538,7 +476,7 @@ _DELAY = {
 ```
 
 > **⚠️ `_DELAY` 是唯一真源**，本文件可能滞后，改完顺手对一遍。
-> `stock_st_info` / `index_ths_daily` 的**内联初值**仍在 `_reg`（`delay_days=1`），
+> `stock_st_info` 的**内联初值**仍在 `_reg`（`delay_days=1`），
 > `_DELAY` 是覆写层，**改 delay 一律改 `_DELAY`**。
 
 **改完必须验证**：`$PY main.py gate --max-wait 0` 确认闸门判据跟着变了，
@@ -556,13 +494,12 @@ _DELAY = {
 |:--|:--|
 | **≤ 19:48:51**（首轮即到齐） | 其余 21 张（`stock_daily` / `stock_adj_factor` / `dc_daily` / `stock_cyq_chips` / `tdx_minute` / `stock_history_5min` …） |
 | 19:48:51 ~ 19:54:19 | `stock_finance` |
-| 20:59:53 ~ 21:05:19 | `index_ths_daily` |
 | 21:36:07 ~ 21:48:29 | `stock_st_info` |
 | ~~22:10:16 ~ 22:15:48~~ | ~~**`ths_hot`** ← 当时最晚、也是唯一卡住闸门的~~ ★ **该表 2026-09-19 已删除** |
 | 当天不发 T（只发到 T-1） | `stock_margin_detail` |
 
-**三条修正**（都影响排批时刻）：① `index_ths_daily` **不是**"最后一批"，它在 21:05 前就发布了；
-② `stock_st_info` 与 `ths_hot` 差半小时，不是同批；③ `ths_hot` 当时是唯一真正的瓶颈 ——
+**两条修正**（都影响排批时刻）：① `stock_st_info` 与 `ths_hot` 差半小时，不是同批；
+② `ths_hot` 当时是唯一真正的瓶颈 ——
 官方口径（Tushare doc_id=320）写它的 `is_new='Y'` 最终版 **22:30** 更新，与实测 22:10~22:15 吻合。
 
 > ⚠️ **2026-09-19 起这张表的结论要打折**：`ths_hot` 已删除 ⇒ **现行最晚的是 `stock_st_info`
@@ -571,7 +508,7 @@ _DELAY = {
 
 ---
 
-## 8. ★★ 铁律与坑清单
+## 7. ★★ 铁律与坑清单
 
 ### 8.1 权限铁律（2026-09-15 实际踩到，代价很大）
 
@@ -598,7 +535,7 @@ sudo chmod -R g+rw  /autodl-fs/data/datadownload/state /autodl-fs/data/datadownl
 |:--|:--|:--|
 | 1 | **禁止在数据目录手工 `rm` parquet** | 只有 `store.upsert()` 一条写盘路径；要删用 `delete-day`（自动备份 + 裁 coverage） |
 | 2 | **`registry._DELAY` 是 delay 的唯一真源** | 文档会滞后；改 delay 一律改 `_DELAY`（内联 `delay_days=` 只是初值） |
-| 3 | **不要改 `_DELAY` 去迎合 monitor 的 `★改`** | monitor 读的是白天采样，**已知误报**（见 §7.1）；闸门用的是 `delay_history.json` |
+| 3 | **不要改 `_DELAY` 去迎合 monitor 的 `★改`** | monitor 读的是白天采样，**已知误报**（见 §6.1）；闸门用的是 `delay_history.json` |
 | 4 | **失败绝不标 coverage** | 标了就是永久空洞（旧工程 `index_daily` 缺 159 天的根因） |
 | 5 | **先落数据、再落状态** | 反过来会留"状态说完成、数据还在内存"的永久空洞 |
 | 6 | **`--sample` 之类收窄股票池的回测会被闸门挡** | 价格层按引擎代码轴落格，池子不同会**静默错位**（见 `model/README/SPEC.md` §3 末） |
@@ -631,10 +568,10 @@ sudo chmod -R g+rw  /autodl-fs/data/datadownload/state /autodl-fs/data/datadownl
 
 ### 8.4 已知会误报、别当新问题查
 
-- `dc_daily` / `stock_st_info` / `index_ths_daily` 这批 `delay=0` 但**发布晚**的表：
+- `dc_daily` / `stock_st_info` 这批 `delay=0` 但**发布晚**的表：
   跑批早于发布时刻 → 闸门等它（或转 partial 跳过，**次日尾部窗口自动补，不丢数据**）。
   想当晚就拿到：`run --no-wait --only <表名>`。
-- monitor 白天采样导致的 `⚡` + `★改`（§7.1）。
+- monitor 白天采样导致的 `⚡` + `★改`（§6.1）。
 - 「新增 0 行」本身不是告警（§4.2）。
 - 09-15 起已治本、不再出现的假告警：`dc_daily 部分失败`（窗口上界已收到 `T-delay`）、
   `stock_report_rc 部分失败 / 重试率 50%`（该数据集 09-17 已删）。
@@ -656,7 +593,7 @@ sudo chmod -R g+rw  /autodl-fs/data/datadownload/state /autodl-fs/data/datadownl
 
 ---
 
-## 9. 已知边界（别把它们当 bug 查）
+## 8. 已知边界（别把它们当 bug 查）
 
 1. **上游真没数据**：`stock_forecast` 的 2026-08-13~09-14 —— 已直接请求上游确认返回 0 行，
    **别反复重试**。
@@ -708,7 +645,7 @@ sudo chmod -R g+rw  /autodl-fs/data/datadownload/state /autodl-fs/data/datadownl
      （**尚未做**，属可选动作）。
    - 完整证据链（逐条查询 + monitor 逐轮时间线）见 `state/backtest/REPORT_roundtrip_2026-09-18.md`。
 10. **★ 25 号 `stock_pledge_stat` 的 `freq` 曾误标为 `quarterly` —— 它实际是「周频」**
-    （2026-09-19 核查季频 21–25 时发现；**★★ 2026-09-24 已修，见附录 F 与 §13**）。
+    （2026-09-19 核查季频 21–25 时发现；**★★ 2026-09-24 已修，见附录 F 与 §12**）。
     - **修法**（下面「不要只改 freq」预言的「周频候选期生成器」已经落地，**三条缺一不可**）：
       ① `registry.py` 的 `freq='quarterly'` → **`'weekly'`**；
       ② `probe._watch_candidates`（`probe.py:452`）新增 `freq=='weekly'` 分支 ——
@@ -763,7 +700,7 @@ sudo chmod -R g+rw  /autodl-fs/data/datadownload/state /autodl-fs/data/datadownl
         ① 原有「最近 3 期」（3 请求/张）—— 保证**当前期完整**；
         ② 新增「`ann_date` 最近 `ANN_LOOKBACK_DAYS=14` 个**日历日**」扫描
            （`strategies.ann_scan_days`）—— **兜住所有新公告**。
-      ⇒ **新报告期、老期追溯重述、非标准报告期（§9.12）一并自动覆盖**。
+      ⇒ **新报告期、老期追溯重述、非标准报告期（§8.12）一并自动覆盖**。
       ⚠️ 窗口必须用**日历日**：实测 353 个公告日里 **70 个不在交易日历**（62 个周六 + 节假日）。
       **成本**：4 张 × (3 + 14) = **68 请求/轮**（原 12），一轮 +29 秒；实测新增 **0 行**（幂等）。
       **功能验证**：删掉 4 行「`end_date` 在 3 期窗口外、`ann_date=2026-09-10`」的行
@@ -777,7 +714,7 @@ sudo chmod -R g+rw  /autodl-fs/data/datadownload/state /autodl-fs/data/datadownl
     实测 `stock_balancesheet` 有 4 个（`2015-02-28` / `2015-10-31` / `2023-10-31` / `2024-05-31`），
     **直接查服务端仍各返回 1 行**，且查标准季末**不会夹带**它们 ⇒ **main 永远抓不到**。
     这 4 行是 2026-09-14 改成"按报告期查"之前的旧设计（逐股全量重拉）存量。
-    **✅ 2026-09-19 已根治**：新增的 `ann_date` 扫描（§9.11）**不枚举报告期**，
+    **✅ 2026-09-19 已根治**：新增的 `ann_date` 扫描（§8.11）**不枚举报告期**，
     厂商新公告什么期就抓什么期 ⇒ 未来的非标准报告期会被自动抓到。
 13. **★ 25/26/27 号的更新逻辑已验（2026-09-19）—— 三张的自愈深度差很多**
     （报告 `state/backtest/REPORT_range_2026-09-18.md`，脚本 `scripts/range_test.py`）。
@@ -819,7 +756,7 @@ sudo chmod -R g+rw  /autodl-fs/data/datadownload/state /autodl-fs/data/datadownl
 
 ---
 
-## 10. 命令速查
+## 9. 命令速查
 
 ```bash
 $PY=/autodl-fs/data/miniconda3/bin/python
@@ -859,8 +796,6 @@ $PY main.py backtest {baseline|verify|deleted}
 # —— 脚本
 $PY scripts/day_expect.py {snapshot|compare|verify}    # 跨天指纹核对
 $PY scripts/api_ledger.py                              # 刷接口台账 logs/ledger/LOG<MMDD>/
-$PY scripts/check_ths_roster.py [--update]             # 名单巡检（厂商新增/消失）
-$PY scripts/backfill_index_ths_daily.py                # 名单全历史补齐（幂等，sweep 的薄封装）
 $PY scripts/verify_restore.py                          # 补回数据的逐行验收
 $PY scripts/backfill_dragon_tiger.py                   # 一次性：龙虎榜主键改造后的全量回填
 bash scripts/catchup_0914.sh                           # 收盘后自动补跑（历史遗留，按需）
@@ -868,7 +803,7 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 
 ---
 
-## 11. 记录文件索引
+## 10. 记录文件索引
 
 | 路径 | 是什么 | 谁写 |
 |:--|:--|:--|
@@ -879,7 +814,6 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 | `state/delay_history.json` | 闸门真正用的 delay 观测（**不受白天采样污染**） | 跑批时 |
 | `state/dayhash/<表>.parquet` | 单日 MD5 台账 | 跑批时 |
 | `state/run_log.jsonl` | 每轮一行的结果摘要（verdict / 告警数） | 跑批时 |
-| `state/roster_sweep.json` | 名单 sweep 的周期闸门状态 | sweep 时 |
 | `state/calendar_ext.json` | 交易日历（到 T+30） | 日历阶段 |
 | `state/backtest/REPORT_day_<日期>.md` | 当日验收报告（**跑之后零写入生成**） | `run` 之后 |
 | `state/backtest/deleted_<表>__<日期>.parquet` | 删除备份的原始行 | `delete-day` |
@@ -897,7 +831,7 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 
 ---
 
-## 12. 待办 / 遗留
+## 11. 待办 / 遗留
 
 **★ 下一步要做的**：
 
@@ -905,18 +839,17 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
    真实跑批还要再复核几轮**。完整记录与"哪些已验证/哪些没验证"见
    **附录 C**（`# 附录 C · stock_holder_number 台账键改造`，**复核从它开始**）。
 2. `state/backtest/full_20260917_095147/`（硬链接快照）确认无误后可 `rm -rf`。
-3. `LQdata/`（代码快照仓）**尚未同步**今天的数据侧改动（§13 的 09-19 那批）。
+3. `LQdata/`（代码快照仓）**尚未同步**今天的数据侧改动（§12 的 09-19 那批）。
 
 **长期**：
 
-4. 名单 sweep 已自动化（30 天）；**往名单加代码之后要立刻跑一次**（§5.3）。
-5. 发布时点台账（§7.3）建议继续攒样本 —— 目前只有 09-15 / 09-16 两天，
+4. 发布时点台账（§6.3）建议继续攒样本 —— 目前只有 09-15 / 09-16 两天，
    尤其缺 22:00~22:30 之间的采样。
-6. `stock_daily` / `stock_finance` 的 `stock_name` 回溯改名是厂商持续行为，
+5. `stock_daily` / `stock_finance` 的 `stock_name` 回溯改名是厂商持续行为，
    **不建议追**（逐行比对 0 差异），但台账会每晚报 🔴 —— 属预期噪声。
 7. 磁盘日常涨幅应是**每天几百 MB 量级**（`df -h /autodl-fs/data`）。
 8. **★ `stock_st_info` 厂商撤回事件（2026-09-19）—— 两件待办**：
-   - **等厂商恢复后重测**：本日往返测试对 15 号做了豁免（详见 §9.9 / 附录 B）。
+   - **等厂商恢复后重测**：本日往返测试对 15 号做了豁免（详见 §8.9 / 附录 B）。
      恢复后把 `scripts/roundtrip_test.py` 的 `EXEMPT` 清空，重跑 `snapshot → delete → main → verify`。
    - **闸门卡死要评估根因对策**：它在**等待档**，服务端永不到齐 ⇒ 每轮白等 6 小时。
      三个候选：降为观测档 / 加"厂商后退"检测（服务端 max ≪ 本地 max 时跳过等待并告警）/
@@ -924,7 +857,7 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 
 ---
 
-## 13. 变更履历
+## 12. 变更履历
 
 **2026-09-25 · 上午（文档对齐 —— 把 09-19 快照之后漂掉的口径刷回现状；零代码 / 零数据改动）**
 
@@ -935,10 +868,10 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 |:--|:--|:--|
 | §现状 快照 `2026-09-19` → **`2026-09-25`**：水位 T=09-18 → **T=09-24**；日频 17/18 → **18/18** | 09-24 日更后水位推进；`stock_st_info` 厂商也已恢复（见下行） | `main.py status` **＋** 直接读 33 张表的 `year=2026/data.parquet`（不依赖 manifest，独立复核） |
 | §现状 抓取模式修正：`range` **11 → 12**；§2.3 标题 `gate_tables()` **27 → 28** | 上一版快照的 `range` 与注册表对不上（11+6+5+5+4=31 ≠ 启用 32）；§2.3 标题也与它自己表里的 `21+7` 对不上 | `registry` 实测：`range 12 · per_date 6 · per_stock 5 · per_entity 5 · snapshot 4`（=32 启用）；`len(gate_tables()) == 28` |
-| §9.9 `stock_st_info` 加 **「★ 2026-09-25 核实：厂商已恢复供应」** | 原文是"服务端 max 退到 08-12、**闸门会长期卡住**、建议 `--no-wait`" —— 现状已不成立，照原文操作是**错的** | ① `REPORT_day_2026-09-22.md` 记服务端 204 = 本地 204、判 ✔；② T=09-24 那轮正常新增 204 行；③ 09-25 现场探测 09-23~09-24 窗口 `total=408`（=204×2）。**但 28 个历史日期的洞仍在**（含 `08-12`/`08-24`/`08-25`/`09-18`，本地保留未删） |
-| §10-10 `stock_pledge_stat` 由「freq 误标，**尚未修，待评估**」改为 **「已修（附录 F）」**，并写清三条缺一不可的修法 | 代码在 09-24 就修完了（`freq='weekly'` ＋ `_watch_candidates` 周频分支 ＋ `report` 分组），文档还停在"待评估"，**下一个人会去重复排查** | `registry.py:335` / `probe.py:452` / `report.py:34`；实测 T=09-24 候选 = `09-24 / 09-18 / 09-11`，命中 **09-11**，与本地水位一致 |
-| §10-10 补记：**厂商滞后由「晚一期」扩大到「晚两期」** | 09-19 记录时服务端有 09-11、缺 09-18；09-25 复核**两期都缺** | 现场逐周探测：`09-04=2211 · 09-11=2219 · 09-18=0 · 09-25=0` |
-| §8.4 新增两条「别当新问题查」：`stock_holder_number` 的水位显示口径、临时脚本比行数的三个探测口径坑 | 这两类本轮都**实际踩到**，且都会让人误判成"没更新 / 丢数据"去白查 | 见 §8.4 条内（`end_date` vs `ann_date`；`dragon_tiger` 无 total、`market_distribution_history` 字符串时间戳、`range` 表窗口 total） |
+| §8.9 `stock_st_info` 加 **「★ 2026-09-25 核实：厂商已恢复供应」** | 原文是"服务端 max 退到 08-12、**闸门会长期卡住**、建议 `--no-wait`" —— 现状已不成立，照原文操作是**错的** | ① `REPORT_day_2026-09-22.md` 记服务端 204 = 本地 204、判 ✔；② T=09-24 那轮正常新增 204 行；③ 09-25 现场探测 09-23~09-24 窗口 `total=408`（=204×2）。**但 28 个历史日期的洞仍在**（含 `08-12`/`08-24`/`08-25`/`09-18`，本地保留未删） |
+| §9-10 `stock_pledge_stat` 由「freq 误标，**尚未修，待评估**」改为 **「已修（附录 F）」**，并写清三条缺一不可的修法 | 代码在 09-24 就修完了（`freq='weekly'` ＋ `_watch_candidates` 周频分支 ＋ `report` 分组），文档还停在"待评估"，**下一个人会去重复排查** | `registry.py:335` / `probe.py:452` / `report.py:34`；实测 T=09-24 候选 = `09-24 / 09-18 / 09-11`，命中 **09-11**，与本地水位一致 |
+| §9-10 补记：**厂商滞后由「晚一期」扩大到「晚两期」** | 09-19 记录时服务端有 09-11、缺 09-18；09-25 复核**两期都缺** | 现场逐周探测：`09-04=2211 · 09-11=2219 · 09-18=0 · 09-25=0` |
+| §7.4 新增两条「别当新问题查」：`stock_holder_number` 的水位显示口径、临时脚本比行数的三个探测口径坑 | 这两类本轮都**实际踩到**，且都会让人误判成"没更新 / 丢数据"去白查 | 见 §7.4 条内（`end_date` vs `ann_date`；`dragon_tiger` 无 total、`market_distribution_history` 字符串时间戳、`range` 表窗口 total） |
 | `DAILY_LOG.md`：补 `2026-09-22`（**追记**）、新增 `2026-09-24 · 晚` 与 `2026-09-25 · 上午` 两条 | 该文件自认缺 09-22；09-24 晚的实跑与 09-25 的核查都没有流水 | 来源：`state/run_log.jsonl`、`state/last_report.json`、`state/backtest/REPORT_day_2026-09-2{2,4}.md` |
 
 **2026-09-24（增量下载审计 ＋ 缺陷修复 ＋ 真实删除恢复验收；当晚 T=2026-09-24 日更完成）**
@@ -948,7 +881,7 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 > 仅跑默认 `main.py` 即全部补回；全库净增 **1,371,998 行**（含质押历史补齐 1,351,499 行）；
 > 39 项原有 + 24 项新增测试全部通过。证据在 `/autodl-fs/CodeX/audit_20260924/`。
 >
-> ★ 本轮**顺带修掉**了 §10-10 的 `stock_pledge_stat` 频率误标（`quarterly` → `weekly`
+> ★ 本轮**顺带修掉**了 §9-10 的 `stock_pledge_stat` 频率误标（`quarterly` → `weekly`
 > ＋ `_watch_candidates` 周频候选期生成器），以及用旧日志取错请求数的 `api_ledger.py`。
 
 **2026-09-23 · 晚（`tdx_blocks` 补齐 503 个统计指数 → 修好「按日查捷径吃掉新实体回填」）**
@@ -969,28 +902,24 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 | ★★ **数据接口编号冻结**（新增**附录 A**）：31 个启用接口永久编号，以后按"26 号""27 号"称呼 | 用户交办"将这个数据的编号落盘到文档，以后都这么称呼每一个数据" | `scripts/gen_data_tables.py --check` → `✅ 与冻结编号一致（31 个，1–31 全部对得上）` |
 | 新增 `scripts/gen_data_tables.py`（现读注册表打全表 + 与冻结编号比对报增删） | 编号会因增删表而漂移，需要一个"核对"而不是"重排"的工具 | 与 `registry.py` 对齐；`FROZEN` 是唯一真相 |
 | ★★ **往返测试**（新增 `scripts/roundtrip_test.py`，三子命令 `snapshot/delete/verify`）：删掉 1–20 号最新一天（**637,015 行**）→ 只跑 `main.py` → 逐日比对 | 用户交办"将最新的一天数据都删了，然后只执行 main 看看能否有效的生成回来"；因尾部窗口 `redundancy_days=5` 会连带重抓 6 个交易日，台账**必须多做几天** | 台账 **20 个交易日 × 20 张表 = 399 条**逐日指纹；删除范围 19 张删 09-18 + `stock_margin_detail` 删 09-17（delay=1）；`daily_dump` 及其中间缓存**按用户要求全程不碰**并逐次核对未被触碰 |
-| ★★ **发现 `stock_st_info` 厂商**单表撤回**：服务端 max 从 09-18 退回 **08-12** | 闸门卡在它上面（其余 19 张等待档全到齐），遂直接查服务端取证 | 逐条查询：`09-13~09-18`→0、`09-01~09-18`→0、`08-01~08-31`→1,456、全年 29,457（倒序首页 08-12 / 末页 01-05）；对照 `stock_daily` 09-18 正常返回 5,553 行 ⇒ **非整站故障**。详见 §9.9 |
+| ★★ **发现 `stock_st_info` 厂商**单表撤回**：服务端 max 从 09-18 退回 **08-12** | 闸门卡在它上面（其余 19 张等待档全到齐），遂直接查服务端取证 | 逐条查询：`09-13~09-18`→0、`09-01~09-18`→0、`08-01~08-31`→1,456、全年 29,457（倒序首页 08-12 / 末页 01-05）；对照 `stock_daily` 09-18 正常返回 5,553 行 ⇒ **非整站故障**。详见 §8.9 |
 | 用户拍板：**15 号本次豁免**（不补、不等），`main.py run --no-wait` 只测其余 19 张；闸门策略**先只记录不动代码** | 厂商不再提供 08-13 之后的数据，本地那份无法从服务端重抓；改闸门档位是运营级决策，单独评估 | `roundtrip_test.py` 增加 `EXEMPT` 机制：豁免表照删照记，但不计入通过/失败判据，并在报告里单列原因 |
 | ★★ **往返测试结果：判据内 19 条全部原样补回，0 差异**（行数 0 差 / md5 0 差 / 全窗口 0 变少 / 0 整日丢失 / 0 厂商重算） | 用户交办的核心问题："删了能不能生成回来" | `main.py run --no-wait`：**358 s / 300 请求**；亮点 = **18 号 `stock_history_5min` 266,544 行由 `本地缓存 · 请求 0` 恢复**；`daily_dump` 缓存删除前后逐字节一致。详见**附录 B** |
 | 文档整理：`DATA_TABLES.md` 并入 **附录 A**（顶层只留 `README.md`）；`LOG09xx/` 三份搬入 **`logs/ledger/`**（`api_ledger.py` 默认落点同步改） | 用户口径："这个文件夹下只允许有一个 md 文件""LOG 文件也整理到一起去" | 顶层现有 `README.md` + 8 个代码/数据目录；`api_ledger.py` 落点已改为 `ROOT/"logs"/"ledger"/name`，语法与 docstring 同步更新 |
 | 修正 README 里过时的表数：日频 **16 → 17**（§现状 / §2.1 / §2.3） | 上一轮把 `stock_cyq_chips` 的 `freq` 由 `irregular` 更正为 `daily_full` 时漏改文档 | `registry.daily_tables()` 实测 17；闸门档位未变（wait 20 / watch 7 / skip 4） |
 | ★★ 新增 `scripts/quarterly_test.py`：季频 4 张（21–24）的**更新逻辑验证** | 用户交办「确认针对季度更新的逻辑是否能够真的符合预期……如果远程服务器真的更新了，我们的 main 能够正确及时的抓取下来」。这 4 张与日频不同：`per_stock`、**无 coverage**、自愈只有 3 期 | **动手前先做服务端阳性对照**（12/12 有数据，吸取 15 号 st_info 的教训）→ 删 **26,202 行** → `run --no-wait --only <4张>` **59 s / 12 请求** → **A 整期 4/4 原样补回、B 旧版本行 4/4 原样补回**（行数 + md5 一致）。报告 `state/backtest/REPORT_quarterly_2026-09-18.md` |
-| ★★ 实测量化出**老期存量缺口 25,833 行**（2010+） | 验证中发现 4 张财报的老期普遍比服务端少（`financial_indicator` 缺 **6.7%**，`2023-12-31` 缺 1,285 / `2024-12-31` 缺 1,190，**在模型训练窗口内**） | 全量扫描 66 期 × 4 张：**60/66 期有缺口**。成因 = `PERIOD_LOOKBACK=3` 窗口外的期不再更新，厂商后续补的行拿不到。**补救实测有效**：`--as-of 2025-11-14` 让四张全部补到与服务端 total **完全相等**（+3,570 行）。详见 §9.11 |
+| ★★ 实测量化出**老期存量缺口 25,833 行**（2010+） | 验证中发现 4 张财报的老期普遍比服务端少（`financial_indicator` 缺 **6.7%**，`2023-12-31` 缺 1,285 / `2024-12-31` 缺 1,190，**在模型训练窗口内**） | 全量扫描 66 期 × 4 张：**60/66 期有缺口**。成因 = `PERIOD_LOOKBACK=3` 窗口外的期不再更新，厂商后续补的行拿不到。**补救实测有效**：`--as-of 2025-11-14` 让四张全部补到与服务端 total **完全相等**（+3,570 行）。详见 §8.11 |
 | 发现**非标准报告期永久漏抓**的机制缺口 | `recent_report_periods` 只生成季末，而服务端仍有 4 个非季末期（`2015-02-28` 等）各返回 1 行 | 直接查服务端仍在、查标准季末不夹带 ⇒ main 永远抓不到。**已被下行根治** |
 | ★★★ **根治：给 21–24 号加 `ann_date`（公告日）增量轴** | 用户交办：「**最重要的是确认 main 能自己实现这个功能，而不是每次靠 agent 审核才发现**」。原设计的增量轴是 `end_date`（报告期）—— 而报告期是**有限枚举**，滑出窗口就再也不回头 | 实测 `/stock/financial_indicator?ann_date=2026-09-10` **一次跨 3 个 `end_date`** ⇒ 公告日才是真日期轴。`run_per_stock` 现做两件事：① 最近 3 期（保证当前期完整）② **`ann_date` 最近 14 个日历日扫描**。**功能验证**：删 4 行「`end_date` 在窗口外、`ann_date` 最近」的行 → 常规模式跑一轮 → **原样补回**。成本 +56 请求/轮（12→68），实测幂等（新增 0 行）。窗口用**日历日**（353 个公告日里 70 个不在交易日历） |
 | ★★ **存量缺口一次性回填归零**：新增 `main.py run --report-backfill` | 扫描出的 25,833 行老期缺口（落在模型训练窗口内） | 按 `end_date` 枚举 66 期 × 4 张 = **264 请求 / 5 分 30 秒** → 新增 **25,833 行**（与扫描缺口**逐张完全一致**：19,267 / 3,038 / 2,192 / 1,336）；复扫**缺口全部为 0** |
-| ★★ **25/26/27 更新逻辑验证 + 两处存量修复** | 用户交办「核对 25-27……逻辑分析 → 测服务端 → 破坏性实验闭合」 | `scripts/range_test.py` 四组删除（25,689 行）全部符合预期：**A 窗口内 3/3 补回 · B 窗口外保留 coverage 2/2 未补（真实暴露面）· C 窗口外裁 coverage 2/2 补回 · D 26 窗口外未补**。顺带修掉 26 的 **460 行**（散布 2012~2026 每年）、25 的 **690 行**（`2024-05-10`）。详见 §9.13 |
-| ★ **26 号新增周期性全历史兜底**（`forecast_sweep_due` / `mark_forecast_swept`） | 26 的取数窗口只有 **90 天**（25/27 是 400 天），滑出去更快、每年都在漂 | 每 30 天做一次全历史 `ann_date` 区间刷新，状态落 `state/forecast_sweep.json`；**按年切 17 请求 / 27 秒**（API 硬约束 `page×page_size ≤ 10万`，全历史一次查会被 400 拒）；实测首轮幂等（补齐 0 行）。详见 §9.14 |
+| ★★ **25/26/27 更新逻辑验证 + 两处存量修复** | 用户交办「核对 25-27……逻辑分析 → 测服务端 → 破坏性实验闭合」 | `scripts/range_test.py` 四组删除（25,689 行）全部符合预期：**A 窗口内 3/3 补回 · B 窗口外保留 coverage 2/2 未补（真实暴露面）· C 窗口外裁 coverage 2/2 补回 · D 26 窗口外未补**。顺带修掉 26 的 **460 行**（散布 2012~2026 每年）、25 的 **690 行**（`2024-05-10`）。详见 §8.13 |
+| ★ **26 号新增周期性全历史兜底**（`forecast_sweep_due` / `mark_forecast_swept`） | 26 的取数窗口只有 **90 天**（25/27 是 400 天），滑出去更快、每年都在漂 | 每 30 天做一次全历史 `ann_date` 区间刷新，状态落 `state/forecast_sweep.json`；**按年切 17 请求 / 27 秒**（API 硬约束 `page×page_size ≤ 10万`，全历史一次查会被 400 拒）；实测首轮幂等（补齐 0 行）。详见 §8.14 |
 
-**2026-09-19（名单机制收口 + 文档合并）**
+**2026-09-19（快照表清理 + 文档合并）**
 
 | 改了什么 | 为什么 | 证据/验证 |
 |:--|:--|:--|
-| 删 3 张快照表 `index_ths_sector_categories` / `index_ths_constituent_stocks` / `tdx_block_stocks` | 用户判定：模型训练是回溯的，快照没有历史版本 ⇒ 用于回测必然前视 ⇒ 无研究意义 | 备份 `state/backtest/snapshot_tables_removed_20260919_113054/`（这三接口是"当前状态"接口，**随时可重抓**） |
-| ★★ `index_ths_daily` 名单**固化**到 `conf/ths_index_codes.txt`（1,676 只），改走 `DS.entity_codes` | 直接删会让它失去抓取对象；且名单原随快照漂移，每次都造成覆盖台阶、新增实体的更早历史永远补不齐 | 两个 loader 在文件缺失/为空时**大声报错**（不返回空清单 = 不静默停更）；`--dry-run` 验证照常规划 1,676 个实体 |
-| 补齐名单历史洞 **+22,966 行**，`2026-03-02 才起始的代码` 480 → **0** | 日更只抓尾部窗口（约 6 个交易日），补不了开头/中间的洞；那 480 只的 34 个交易日正好落在 test 窗里 | 两轮失败批 0、约 16 分钟；批量**自适应**（超 `page*page_size ≤ 10万` 自动对半劈、递归重取） |
-| ★★ 两件事并进 `main.py`：`roster.sync()`（主体前）+ `roster.sweep_if_due()`（主体后，30 天） | 用户拍板：「我以后只执行 `everyday_tasks/main.py`，就能够更新数据」。凡是要手动跑第二条命令的事，实际上就等于没做 | `--dry-run` → `⓪ 名单同步：厂商 1676 / 固化 1676，无新增`、日频仍 18 张、零写入；sweep 实跑 **0 行 = 幂等验证通过** |
-| 新增 `scripts/check_ths_roster.py`（名单巡检）· `scripts/backfill_index_ths_daily.py`（薄封装）· `main.py run --sweep-now` | 名单固化后"厂商新上的不会自动进来"，要变成一件**要人做**的事 | 首次巡检：厂商 1,676 只与固化名单**完全一致**，无新增 |
+| 删快照表 `tdx_block_stocks` | 用户判定：模型训练是回溯的，快照没有历史版本 ⇒ 用于回测必然前视 ⇒ 无研究意义 | 备份 `state/backtest/snapshot_tables_removed_20260919_113054/`（"当前状态"接口，**随时可重抓**） |
 | 删 `stock_dc_block_fund_flow` | 用户指示（厂商只保留最近完整数据） | 日频 19 → **18** 张 |
 | **本文件诞生**：`DAILY_RUNBOOK.md` + `UPDATE_LOGIC.md` + `BACKTEST_REPORT.md` 三份合并为 README.md 一份 | 三份互相矛盾（"40 张表"/"39 张"/"20 张日频"），且都停在删表之前的口径 —— 单一真源 | 三份已删；所有引用改指本文件 |
 | ★★ **删 `ths_hot` + `stock_ths_block_fund_flow`**（用户判定"时间覆盖太短"）：数据 / 状态 / 台账 / 注册 / 配置 / 专用脚本全清 | 两张表分别只覆盖 2.6 年、1.7 年。**先做厂商取证**（见下行）再决定 | 日频 18 → **16** 张；注册 36→**34**、启用 33→**31**、闸门 wait 22→**20**；`runner.ORDER` 无孤儿、spec 无残留、全文件 `py_compile` 通过；备份 `state/backtest/two_tables_removed_20260919_142653/`（5.3 MB，含数据 tar + manifest + dayhash） |
@@ -1002,7 +931,7 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 |:--|:--|:--|
 | ★★ `strategies.py::_fetch` 解包 bug：`g, a, b = task` → **`task[-3:]`** | 回填任务自"失败时整组不标完成"那次改动起是 **4 元组** `(gi, g, a, b)`，而 `_fetch` 写死解 3 个 ⇒ **每个回填任务都抛 `ValueError: too many values to unpack`**，被 `except` 吞成"请求失败"。后果：**不在 `done.entities` 里的实体（= 新上市的票）永远补不上历史**，每晚只留一条 ⚠️ | 实测 `601091.SH`（C沈鼓，`list_date=2026-09-17`）在 `stock_cyq_chips` 里**行数为 0**、9 个年任务报同一个错 |
 | ★ **新股特殊处理**：回填下界从 `ds.start` 抬到**上市日**（新增 `_entity_list_dates()`） | 一只 09-17 上市的新股本来要发 9 个年请求、**其中 8 个必然返回 0 行** | 改后同一只票只需 **1 个请求**（实测 `回填 1 实体（1 个任务）→ 180 行`）。切期取**组内最早上市日**，组里只要有一只老票就铺满窗口 |
-| ⚠️ 该逻辑**显式白名单到 `stock_list` 源** | `index_ths_sector_categories`（`index_ths_daily` 的实体源）**也有** `list_date` 列，但语义是**板块自己的发布日** | 单测：`index_ths_daily` / `tdx_daily` / `stock_history_5min` 取到 `{}` → 零影响 |
+| ⚠️ 该逻辑**显式白名单到 `stock_list` 源** | 其他表即使也带 `list_date` 列，语义可能是**板块/产品自己的发布日期** | 单测：`tdx_daily` / `stock_history_5min` 取到 `{}` → 零影响 |
 | ★ 回填成功后**清 suspect 残迹** | 失败时写 `{实体}\|{年区间}\|error`，成功后没人删 ⇒ 修好后仍有 9 条永久挂在 manifest 上 | 清理前 9 条 → 清后 0 条，`done.entities` 3484 → **3485** |
 
 **2026-09-17（★ 三张红表彻底删除 —— 用户拍板"意义不大"）**
@@ -1029,7 +958,7 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
   `_period_skip` 自我续期、闸门 partial 连非日频表一起跳过……）。
 - **性能**：744.6 s → **409.4 s**（−45%）；MD5 阶段 173.5 s → 45.2 s（改成"扫一次、切多天"）。
 - `_DELAY` 定型：`dc_daily` / `stock_adj_factor_changes` / `stock_dragon_tiger` / `stock_top_list` /
-  `ths_hot` / `stock_st_info` / `index_ths_daily` 全部 **1→0**；`stock_margin_detail` **保持 1**。
+  `ths_hot` / `stock_st_info` 全部 **1→0**；`stock_margin_detail` **保持 1**。
 - ★★ `stock_dragon_tiger` **主键 4 列 → 7 列**（`+reason+buy_amount+sell_amount`）并全量回填：
   旧主键把**同名的多个机构席位合并成一条**（真丢数据：09-14 服务端 780 行只存 557）。
 - `daily_dump` 落**按日缓存**（补一天 0 请求）；取数窗口上界收到 `T - delay`；
@@ -1053,13 +982,12 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 
 **分段**：`1–20` 日频 · `21–25` 季频 · `26–27` 不定期 · `28–31` 快照。
 
-## A.2 全表（32 个启用接口，1–31 不变、新增 32）
+## A.2 全表（31 个启用接口，编号保持冻结、不重排）
 
 | # | 数据集 | 接口路径 | 频率 | 主键（一行 = 什么） | 说明 |
 |--:|:--|:--|:--|:--|:--|
 | 1 | `dc_daily` | `/dc/daily` | 日频 | `block_code + trade_date` | 板块日线：板块动量/轮动 |
 | 2 | `index_daily` | `/index/daily` | 日频 | `ts_code + trade_date` | 基准与相对强弱：指数收益、Beta 估计、择时信号 |
-| 3 | `index_ths_daily` | `/index/ths_daily` | 日频 | `ths_code + trade_date` | 同花顺板块指数日线：板块轮动与相对强弱 |
 | 4 | `stock_adj_factor` | `/stock/adj_factor` | 日频 | `trade_date + stock_code` | 自建复权：与原始价相乘即得后复权价，也是除权事件源 |
 | 5 | `stock_cyq_chips` | `/stock/cyq_chips` | 日频 | `trade_date + stock_code + price` | 筹码分布：获利盘比例、成本集中度 |
 | 6 | `stock_daily` | `/stock/daily` | 日频 | `trade_date + stock_code` | 量价因子的底座：动量/反转/波动率/换手/流动性 |
@@ -1093,7 +1021,7 @@ bash scripts/catchup_0914.sh                           # 收盘后自动补跑�
 **频率分布**：日频 **20** · 季频 **5** · 不定期 **2** · 快照 **4** = 31。
 
 **覆盖范围**（数据从哪到哪）**每天在变，不固化在本节**——查 `state/<表>.json` 的 `partitions`，
-或看 `logs/ledger/LOG<MMDD>/interfaces.tsv`（§11）。核对脚本：
+或看 `logs/ledger/LOG<MMDD>/interfaces.tsv`（§10）。核对脚本：
 
 ```bash
 $PY scripts/gen_data_tables.py          # 现读注册表打印全表 + 与冻结编号比对，报增删
@@ -1193,7 +1121,7 @@ _MONITOR_DATE_FIELDS = ("trade_date", "date", "report_date", "trade_time")
 | 全窗口 🚩 行数变少 / 整日丢失 | **0 / 0** ✔ |
 | 厂商重算（行数不变、值变） | **0 条** —— 尾部窗口 6 天全部逐字节幂等 |
 | `daily_dump` 本地按日缓存 | **删除前后逐字节一致，未被触碰** ✔ |
-| 豁免 | 1 条 = **15 号 `stock_st_info`**（厂商撤回，§9.9） |
+| 豁免 | 1 条 = **15 号 `stock_st_info`**（厂商撤回，§8.9） |
 
 **亮点**：**18 号 `stock_history_5min` 的 266,544 行是 `本地缓存 · 请求 0` 恢复的** ——
 走的正是"检测本地 dump 缓存有就直接读、不问服务端"那条路径（§2.4 的 `dump` 策略）。
@@ -1224,8 +1152,8 @@ _MONITOR_DATE_FIELDS = ("trade_date", "date", "report_date", "trade_time")
    1 个分片未完成/未标覆盖，下轮自动重取：2026-08-29~2026-09-18 预期非空却返回空
 ```
 
-这正是厂商撤回（§9.9）该有的表现：**判成"部分失败、下轮自动重取"，
-且没有误删本地数据**（§9.7 的撤数口径：本地旧数据一律保留）。
+这正是厂商撤回（§8.9）该有的表现：**判成"部分失败、下轮自动重取"，
+且没有误删本地数据**（§8.7 的撤数口径：本地旧数据一律保留）。
 上游一旦恢复发布，尾部窗口会自动抓回。
 
 ---
@@ -1240,7 +1168,7 @@ _MONITOR_DATE_FIELDS = ("trade_date", "date", "report_date", "trade_time")
 > `featureengineering-93`（因子侧）。
 >
 > ⚠️ **状态：代码已改完并做了单点验证，但「改造后的完整深检」被用户中断，未跑完。**
-> 复核时**第一件事就是补跑** `main.py hash-audit --deep`（见 §7）。
+> 复核时**第一件事就是补跑** `main.py hash-audit --deep`（见 §6）。
 
 ---
 
@@ -1254,7 +1182,7 @@ _MONITOR_DATE_FIELDS = ("trade_date", "date", "report_date", "trade_time")
 | 改造后效果 | 尾部窗口比对**变化 0 处**（改前每跑必报红） |
 | ★ 顺带发现的既有 bug | 台账代码假设「**日期的年份 == 分区年份**」，换键后暴露 → 台账凭空少 **44 天** |
 | 既有 bug | ✔ 已修（`_candidate_files`），台账由 3,551 → **3,595 天**，与数据的 3,595 个 `ann_date` 完全对齐 |
-| ⚠️ 未完成 | **改造后的 `hash-audit --deep` 未跑完**；另有 4 张表"复算不符"未查（见 §7） |
+| ⚠️ 未完成 | **改造后的 `hash-audit --deep` 未跑完**；另有 4 张表"复算不符"未查（见 §6） |
 
 ---
 
@@ -1466,12 +1394,12 @@ year=2018 分区：ann_date 年份 = ['2018','2019']
 | 台账重建 | 3,595 天，2016-01-04 ~ 2026-09-16 ✔ |
 | **假报是否消除** | 用 runner 的真实窗口（日历日 + 滞后 1 天）比对 → **变化 0 处** ✔ |
 | 一次性 `hash-audit`（非 deep） | 无台账 0 · 台账早于跑批 0 · 主键漂移 0 · ✔ 全部通过 ✔ |
-| 分区 bug 修复 | 见 §6 ✔ |
+| 分区 bug 修复 | 见 §5 ✔ |
 
 #### ❌ **未验证 / 被中断**
 1. **改造后的 `hash-audit --deep` 未跑完**（用户中断了该命令）。
    改前那次 deep 报 `漏天 1 张 · 复算不符 4 张`：
-   - `漏天 1 张` = 上表那 44 天，**已由 §6 的修复解决**，但**需要用 deep 复核确认归零**
+   - `漏天 1 张` = 上表那 44 天，**已由 §5 的修复解决**，但**需要用 deep 复核确认归零**
    - **`复算不符 4 张` —— 未查是哪 4 张、什么原因**。⚠️ 这条**改造前就存在**还是改造引入的，
      **尚无结论**，复核时请优先看
 2. **没有跑过一整轮真实跑批**（`main.py` 全流程）。所有验证都是组件级 + 单点。
@@ -1547,9 +1475,9 @@ $PY main.py                                 # 跑一轮增量，看它是否还�
    > 备份：`state/backtest/red3_purge_20260916_235239/`（勿恢复）。详见 `state/monitor/DAILY_LOG.md`
    > 的「2026-09-17 · 凌晨」条与 `QUANT_PLATFORM.md` 第十六部分。
    **工具缺口另计**（不计入接口名单）：`monitor` 按 `T − local_max` 算 lag 却不检查 `server_max`
-   是否推进过 ⇒ 当晚误报 12 条 `★改`，已立项 `datadownload/CLAUDE.md §7.1`，**逻辑未修**。
+   是否推进过 ⇒ 当晚误报 12 条 `★改`，已立项 `datadownload/CLAUDE.md §6.1`，**逻辑未修**。
 
-4. **发布时点实测修正**：`stock_finance` 19:48:51~19:54:19 · `index_ths_daily` 20:59:53~21:05:19 ·
+4. **发布时点实测修正**：`stock_finance` 19:48:51~19:54:19 ·
    `stock_st_info` 21:36:07~21:48:29 · **`ths_hot` 22:10:16~22:15:48（最晚，唯一瓶颈）**。
    昨天的"最后一批三张表同批"结论**被推翻**。排批建议更新为「**22:20 之后起跑即可**」。
    已写入 `DAILY_RUNBOOK.md §3.6` 与 `state/monitor/DAILY_LOG.md`。
@@ -1581,7 +1509,7 @@ $PY main.py                                 # 跑一轮增量，看它是否还�
 | 实测 | 删 30 张表 / **666,818 行** → 一轮 **7m14s / 337 请求 / 0 重试全补回**；独立逐行指纹验收 **28/30 完全一致** |
 | 另 2 张差异 | 厂商今早**回溯改写**了新股 `stock_name`（`C洛轴股份`→`洛轴股份`、空→`N信诺维`…），**被单日 MD5 台账按列抓到**——正是用户要的能力 |
 | 新增 | 接口台账 `LOG<数据日MMDD>/`（首份 `LOG0916/`）+ 生成脚本 `scripts/api_ledger.py` |
-| 未验证 | 见 §7（主要是"改造后连续观察几天"类的运维项） |
+| 未验证 | 见 §6（主要是"改造后连续观察几天"类的运维项） |
 
 ---
 
@@ -1901,7 +1829,7 @@ $PY main.py run --only tdx_daily --no-wait      # 22:45:15 → 23:42:21
 2. **`tdx_minute` 只回填到 2025-12-01**（`done.entities` 虽已 1121）。它走的是另一条回填路径，
    补的窗口比 `tdx_daily` 短。如需要 2025-12-01 之前的历史，要单独评估。
 3. `main.py monitor` 建议把 8 张表的 `_DELAY` 由 0 调到 1（`stock_finance` / `stock_st_info` /
-   `stock_limit_list` / `stock_dragon_tiger` / `stock_top_list` / `dc_daily` / `index_ths_daily` /
+   `stock_limit_list` / `stock_dragon_tiger` / `stock_top_list` / `dc_daily` /
    `stock_cyq_chips`），`stock_margin_detail` 1→2。**未改动**，等用户决定。
 4. `logs/run_daily_*.log` 在"把 stdout 重定向到 /tmp"的跑法下会留成 **0 字节**，
    导致 `scripts/api_ledger.py` 退回取上一份非空日志、把 `requests_per_round` 记错
@@ -1958,7 +1886,6 @@ python /root/autodl-fs/everyday_tasks/main.py
 | stock_pledge_stat | 1,351,499 |
 | stock_margin_detail | 12,534 |
 | stock_st_info | 7,272 |
-| index_ths_daily | 217 |
 | stock_cyq_chips | 197 |
 | stock_limit_up | 122 |
 | stock_financial_indicator | 47 |

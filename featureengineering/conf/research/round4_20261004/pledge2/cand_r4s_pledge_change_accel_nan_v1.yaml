@@ -1,0 +1,16 @@
+name: r4s_pledge_change_accel_nan_v1
+family_id: r4s_pledge_v2_v1
+implementation: research.families.r4s_pledge_v2_v1:build
+parameters: {signal: pledge_change_accel_nan}
+units: 百分点²（质押比例百分点的二阶差分，量纲为百分点）。
+availability: 周频快照 stock_pledge_stat；end_date 仅为截止日、无发布时刻；本模块进程内声明 end_date 为可得日期列（AGENTS.md F.1 绕行，已用 Upstream._audit_frame 实测截断生效）；as-of 只前向填充，整体保守滞后 15 个交易日（> 实测供应商滞后 12–13 个交易日）；lag<13 的口径被禁。
+missing_policy: NaN 敏感性口径：缺席**不记 0**——只在真实报告行上 as-of（无新报告沿用最近一次报告值；从未报告 = NaN）。这是对 R2 §8.3 陷阱（朴素 asof 让还清质押者永远挂旧值）的直接对照口径；与 zero 口径符号翻转 ⇒ 按 B3 判不支持。
+spec:
+  group: research_pledge
+  desc: 质押比例变化的加速度（NaN 口径）：同 pledge_change_accel 公式 A(t)=P(t)−2P(t−20)+P(t−40)，但 P 只在真实报告行上 as-of（缺席不记 0）。双口径并列报告；值越高 = 加杠杆加速，预期未来收益越低。
+  formula: "P(t) - 2*P(t-20) + P(t-40), P = lag15(asof_reportsonly(100*(unrest+rest)/total_share))"
+  deps: [stock_pledge_stat]
+  warmup_days: 400
+  higher_is_better: false
+  version: 1
+  note: 与 pledge_change_accel 仅缺省口径不同（R3 伪发现模式 5 要求的双口径对照，framework-grade）；方向与主口径一致、事前冻结；严禁 lag5 前视口径。

@@ -90,10 +90,11 @@ def run_dynamic(args,cfg,specs):
     jobs=safe_jobs(args.jobs)
     report={'sample_dates':[int_to_str(d) for d in picks],'comparisons':[],'errors':[],'skipped':[]}
     for cutoff in picks:
-        sandbox=Path(tempfile.mkdtemp(prefix='factor_pit_'))
-        local=copy.deepcopy(cfg)
+        temp_root=cfg.project_path('artifacts','artifacts')/'audits'/'tmp'
+        temp_root.mkdir(parents=True,exist_ok=True)
+        sandbox=Path(tempfile.mkdtemp(prefix='factor_pit_',dir=temp_root))
+        local=cfg.sandbox(sandbox)
         local.raw['_audit_cutoff'] = cutoff
-        local.raw['paths'].update(factors=str(sandbox/'factors'),market_factors=str(sandbox/'market_factors'),state=str(sandbox/'state'))
         active=[s for s in specs if s.start_int(cfg)<=cutoff]
         report['skipped'] += [[s.name,int_to_str(cutoff),'before effective start'] for s in specs if s not in active]
         try:

@@ -1,0 +1,9 @@
+idea_id: r4c_accruals_v1
+hypothesis: 利润中的应计成分高（经营现金流对利润的覆盖低）预示未来收益偏低；经营现金流对利润的转化率改善预示未来收益偏高；资产减值损失强度高预示未来收益偏低。
+mechanism: 应计项目与盈余质量（Round 4 批 1 单元 U3）。机制1 accrual_ratio_ttm=(归母净利TTM−经营净现金流TTM)/总资产；机制2 accrual_ratio_q 为同一表达的单季口径（财务层无单季水平字段，自算累计差分，口径见 delivery/r4c_accruals_v1/report.md）；机制3 earnings_conversion_trend=OCF/NI 最近4个单季均值−前4个单季均值（转化率改善）；机制4 impairment_to_assets=|资产减值损失累计|的单季变动/总资产（|·|用于消除 2018→2019 报表格式切换的符号翻转，实测见数据事实节）。数据=stock_income+stock_cashflow+stock_balancesheet，经财务层 PIT。全池含金融股。
+expected_direction: 事前冻结、不随结果翻转——accrual_ratio_ttm=false；accrual_ratio_q=false；earnings_conversion_trend=true；earnings_conversion_ttm_gap=true；impairment_to_assets=false；impairment_to_assets_merged=false。
+target_horizons: [1, 5]
+falsifiable: 声明口径 RankIC 落入 HAC 95% 置信区间内、或 9 个日历年中与声明方向同号的年份 <7、或与定向对照因子（ocf_to_profit / cfcr / cash_sales_ratio / qf_cash_margin_yoy_change / roa_ttm）|rho|>0.9 表明无新增信息、或覆盖不达 G1/G2（出现 Inf、非空股票数中位数过低、有效截面天数不足），则对应机制不支持。
+fields: [stock_income.n_income_attr_p, stock_income.assets_impair_loss, stock_cashflow.n_cashflow_act, stock_cashflow.credit_impa_loss, stock_balancesheet.total_assets]
+origin: round4_b1_lead_preregistered_20261004
+status: unvalidated_hypothesis

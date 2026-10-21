@@ -1,0 +1,9 @@
+idea_id: pv_exhaustion_v1
+hypothesis: 连续上涨中的价格增长减速同时伴随成交量加速，可能提示买盘承接效率下降。
+mechanism: 日线量价交互；与单独动量、价格减速及成交量变化比较。
+expected_direction: 强度越高，预期随后收益越低；事先固定方向。
+target_horizons: [1, 5]
+falsifiable: 若交互表达没有超出组成项的信息，或跨时间块不稳定，则不支持本假设。
+fields: [stock_daily.close, stock_daily.vol, stock_adj_factor.adj_factor]
+origin: engineering_research_example
+status: unvalidated_hypothesis

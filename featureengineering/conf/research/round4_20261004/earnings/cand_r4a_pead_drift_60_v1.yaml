@@ -1,0 +1,17 @@
+name: r4a_pead_drift_60_v1
+family_id: r4a_earnings_surprise_v1
+implementation: research.families.r4a_earnings_surprise_v1:build
+parameters: {signal: pead_drift_60, skip: 0}
+units: 累计对数收益之差（后复权日收益 − 池内已成交股票截面均值），无量纲。
+availability: 锚点 = 定期报告公告可得日的次一交易日（公告通常盘后发布，保守从次日起算）；累计区间只含已经实现的过去收益，无未来数据；停牌日按项目口径 0 收益（前向填充收盘价），截面均值只用已成交股票。
+missing_policy: 公告后不足 0 个交易日或超出第 59 个交易日为 NaN（由下一次公告重置）；未上市/无价格为 NaN；不零填充。
+spec:
+  group: research_earnings
+  desc: 公告后漂移：最近一次定期报告公告后 0–59 个交易日的累计池内超额收益（PEAD 机制的直译）。
+  formula: "sum_{k=0..59} shift(rel_ret, k) on days since ∈ [0,59], rel_ret = ret_hfq - cs_mean(ret_hfq), anchor = next_trading_day(pit)"
+  deps: [stock_income, stock_daily, stock_adj_factor]
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: 窗口 60 个交易日 < warmup 700 日历天；锚点须在本面板内（窗口仅 60 日，预热远大于它）；同日多报告期取最新报告期。
+  fin_fields: [n_income_attr_p]

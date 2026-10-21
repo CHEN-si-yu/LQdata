@@ -1,0 +1,21 @@
+{
+  "idea_id": "r6d_maturity_migration_v1",
+  "hypothesis": "起始近端债务份额至少25%、经营现金为正时，债务期限配置向长端迁移可以降低近期偿付与滚续压力，预期横截面收益更高；方向为事前机制先验，未验证。",
+  "mechanism": "带当期债务规模权重的期限份额变化，非真实展期交易识别，非完全融资中性。",
+  "expected_direction": "higher_is_better=true, 事前独立冻结；不得依据R5 A/B拒绝、pilot或后续收益统计改向/变体。",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "沿用官方G1-G7；覆盖、稳定、>=7/9同向年份、显著性、邻近独立增量任何强制门失败即证伪。候选只登记，不宣称合格或promote。",
+  "fields": [
+    "stock_balancesheet.st_borr",
+    "stock_balancesheet.non_cur_liab_due_1y",
+    "stock_balancesheet.lt_borr",
+    "stock_balancesheet.bond_payable",
+    "stock_cashflow.n_cashflow_act"
+  ],
+  "origin": "round6_lead_approved_20261005",
+  "status": "unvalidated_hypothesis",
+  "dedup": "已删bs_near_term_debt_share是静态近端份额，已删cf_net_borrowing_intensity是融资现金流。本项只用BS期限配置变化和债务规模权重；同比例债务增减的迁移为0，但长期新借款仍能造成份额改变，不能宣称完全排除融资。不同于借还重叠周转及R5持久性。"
+}

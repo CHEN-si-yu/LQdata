@@ -1,0 +1,16 @@
+name: r4e_idio_max_60_v1
+family_id: r4e_lottery_max_v1
+implementation: research.families.r4e_lottery_max_v1:build
+parameters: {signal: idio_max_60}
+units: 因子值 = 市场调整残差（后复权日收益 − 池内当日等权平均日收益）的 60 日最大值（分数）。
+availability: 只用到信号日 T 收盘及以前的行情；池内等权均值只用同日各股已实现收益，无未来信息。stock_daily / stock_adj_factor 不在可得性滞后名单（实测 LAGGED_DATASETS 仅含 stock_margin_detail，延迟 1 日），无需位移。
+missing_policy: 窗口内有效交易日 <45 个 → NaN；市场端要求当日池内有效收益 ≥100 只（池 2115 只下从不触发）；停牌日不参与窗口；不填充。
+spec:
+  group: research_lottery
+  desc: Lead 预登记机制 3：市场调整（ret − mkt_ew_ret，等权池均值口径事前定死）残差的 60 日最大值；越高预期收益越低。
+  formula: r = ret_clean(1); mkt = cs_mean(r | universe); idio = r - mkt; value = roll_max(idio, 60, min_count=45)
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 128
+  higher_is_better: false
+  version: 1
+  note: 窗口完整性 min_count=45=ceil(0.75*60)；市场调整口径按任务书固定为等权池均值差（与 idio_vol_60 的 beta×沪深300 口径不同），报告披露。

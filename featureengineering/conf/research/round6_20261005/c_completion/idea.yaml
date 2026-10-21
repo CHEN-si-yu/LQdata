@@ -1,0 +1,19 @@
+{
+  "idea_id": "r6c_project_completion_v1",
+  "hypothesis": "有正经营现金支撑时，在建工程下降与固定资产增加的同期配对表示工程投入开始形成可运营资产，减少闲置在建资金，预期横截面收益更高；方向为事前机制先验，未验证。",
+  "mechanism": "会计共同变化所支持的工程完工/资产转固代理，不能确认实际转固交易。",
+  "expected_direction": "higher_is_better=true, 事前独立冻结；不得依据R5 A/B拒绝、pilot或后续收益统计改向/变体。",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "沿用官方G1-G7；覆盖、稳定、>=7/9同向年份、显著性、邻近独立增量任何强制门失败即证伪。候选只登记，不宣称合格或promote。",
+  "fields": [
+    "stock_balancesheet.cip_total",
+    "stock_balancesheet.fix_assets",
+    "stock_cashflow.n_cashflow_act"
+  ],
+  "origin": "round6_lead_approved_20261005",
+  "status": "unvalidated_hypothesis",
+  "dedup": "已删bs_construction_capital_share是静态CIP/(CIP+固定资产)，本项为连续季末相反变化的非线性配对，非静态占比。已删年度capex/depr比变化及R5收入收现相关均非本机制；不使用SG&A、借还现金流周转或筹码持仓成本。"
+}

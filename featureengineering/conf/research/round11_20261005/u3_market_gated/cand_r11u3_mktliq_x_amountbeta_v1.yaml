@@ -1,0 +1,64 @@
+name: r11u3_mktliq_x_amountbeta_v1
+family_id: r11u3_market_gated_v1
+implementation: research.families.r11u3_market_gated_v1:build
+parameters: {signal: mktliq_x_amountbeta}
+units: 无量纲（有符号 z252 市场状态 × 个股成交额参与 β），股票级 (T, C)。
+availability: >
+  T 日收盘后可用：状态 = 当日池内成交额中位数的 log 的 z252（只用 ≤T 的历史，min_count=120）；
+  腿 = ≤T 的 120 日滚动成交额 β（min_count=60）；成交额在 T 日收盘即定稿
+  （与在生产 `r4o_mkt_amount_median_v1_fix1_36ab6152c0703e8c`、`amihud_daily_5` 同口径同可得性）。
+  T 日取值用于 T+1 开盘起的标签，无前视。
+missing_policy: >
+  状态在 z252 历史不足 120 个有效值 → 全横截面 NaN；池内有效票 < 100 只 → 状态当日 NaN；
+  个股停牌 / 未上市 / 已退市（`ctx.traded()` False）或成交额非正 → 该格 NaN；
+  腿回归有效对数 < 60 → 该格 NaN。不零填充、不前向填充。
+spec:
+  group: research_market_gated
+  desc: >
+    市场**参与度/流动性**状态（池内成交额中位数的 log 的 z252，min_count=120） ×
+    个股**成交额参与 β**（个股 log 成交额对 log 池内成交额中位数的 120 日回归斜率）。
+    全市场参与度高于其近一年常态时，增量资金面广、把参与 β 最高的股票推过均衡价，
+    随后 1–5 日部分回吐；参与度低迷时这批股票恰是被冷落的低流动性名、赚非流动性溢价，
+    故交互项对未来 1/5 日收益偏负（`higher_is_better=false`）。
+  formula: >
+    a_mkt(T) = median over 池内有效票 of amount（池 = ctx.universe ∩ ctx.traded()，≥100 只）；
+    state = (log a_mkt − roll_mean252(log a_mkt)) / roll_std252(log a_mkt, ddof=0)，min_count=120；
+    leg_i = roll_cov(log amount_i, log a_mkt, 120, 60) / roll_var(log a_mkt, 120, 60)；
+    value = state × leg
+  deps: [stock_daily, stock_adj_factor]
+  start: '2018-01-01'
+  warmup_days: 700
+  higher_is_better: false
+  version: 1
+  note: >
+    ★★ **头号结构性局限（必须与结论一起读）**：引擎逐日 winsor→z-score 且 z 对正尺度不变 ⇒
+    `z_t(state × leg) = sign(state_t)·z_t(leg)` 逐日**精确**成立 ⇒ 候选**每一天的截面排序
+    都不携带超出模块内自算腿的任何信息**，全部增量在**一个日度符号的时间序列**上
+    （等价于「市场参与度高于其一年常态时持腿多头、低于时持空头」）。这是**有真实预登记机制的
+    条件/择时构造**，**不是新的截面排序**；其 G4 RankIC 在算术上**就是 P3 的斜率项** ⇒
+    本单元**以 P3 斜率 t 为唯一证据列**，G4 通过**不得**被表述为新因子的证据。
+    ★ 与 R9 被否的 F1/F3 的区别（Lead 2026-10-05 裁定）：F1/F3 的腿**本身就是在产在册因子**
+    （`turnover_std_20` / `short_term_reversal_5`），逐日 ±1 的带符号副本是对已在册对象的**纯重复**；
+    本候选的腿是模块内自算的 120 日**成交额参与 β**，库内没有该对象
+    （P1 实测：对全部 125 个在产股票因子，逐日 |ρ|>0.99 的占比 ≈ 0）。
+    「相对**自己的私有腿**无独立截面变化」**本身不构成取消资格**，但必须如实标注：
+    对**自己的腿** `frac_days_abs_rho_gt_0.99 = 1.0000`（精确带符号置换），
+    并同时报 `daily_abs_mean` 与 dedup 合并 ρ（≈ 状态为正天数占比 − 状态为负天数占比）。
+    ★ 强制预筛（登记前执行，全区间 2018-01-02~2026-09-30，离线预筛无 warmup ⇒ 有效 1,870 天）
+    **P2** 腿无条件 RankIC HAC t = +0.92 (h=1) / +0.68 (h=5)，**不显著（过）**；
+    管线自校验：同一脚本复算 R9-F 的 `beta_120` 腿得 t=−1.36，框架实测 −1.60。
+    **P3**（唯一证据列，F2 参照：状态+ −0.02315 t=−4.52 n=1026 | 状态− +0.01095 t=+2.01 n=1095 | 斜率 t=−4.38）：
+    本候选 h=1 状态+ IC = −0.00863 (**t=−2.27**, n=1094) | 状态− IC = +0.01748 (**t=+3.35**, n=776)
+    | 斜率 **−0.01306, HAC t = −4.09**；h=5 状态+ −0.01625 (t=−2.11) | 状态− +0.03125 (t=+2.95)
+    | 斜率 **−0.02375, HAC t = −3.82** ⇒ 三条件全过（|t|≥3、反号、各自显著），
+    方向与冻结的 `higher_is_better=false` 一致。
+    ★ §8.8：已删 `liquidity_shock_20`（自身流动性水平变化）、`amihud_asymmetry_20`（自身涨跌侧比值）、
+    `bw_beta_60`/`bw_beta_asym_20`（对**宽度变化**的 β）、`ret_autocorr_1d_20`/`ret_efficiency_20`/
+    `trend_strength_60`（自相关/路径/趋势）都与本腿不同轴；在产 `beta_60` 是对 **index_daily**
+    的 60 日 β，本腿是对**池内成交额中位数**的成交额 β。
+    ★ 规则 3（Lead 裁定版）：**base-8** 对照 **base-8 + `amihud_daily_5`**（在产股票因子，有截面方差）
+    ＋ **base-8 + `r4o_mkt_amount_median_v1_fix1_36ab6152c0703e8c`**（在产**市场**标量，广播）
+    并报两列；★ 但市场标量广播后在**逐日截面**方差恒为 0、与截距精确共线 ⇒ **不能**作截面控制，
+    该列以**实测秩亏**证据上报，另附**时间序列控制**
+    （`declared RankIC(t) ~ z(market_t)`）作为市场择时变量唯一可识别的控制形式。
+    ★ 环境指纹: python 3.14.7 / numpy 2.5.3 / 数值指纹 7c7d05c7564f。

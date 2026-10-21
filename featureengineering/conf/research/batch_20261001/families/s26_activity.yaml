@@ -1,0 +1,30 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "family_id": "s26_activity_family_v1",
+  "idea_id": "s26_activity_idea_v1",
+  "trial_budget": 4,
+  "allowed_variants": [
+    {
+      "signal": "activity_close_confirmation"
+    },
+    {
+      "signal": "activity_failed_breakout"
+    },
+    {
+      "signal": "quiet_pool_relative_advance"
+    },
+    {
+      "signal": "capitulation_repair"
+    }
+  ],
+  "baseline": [
+    "amount_ratio_20",
+    "volume_price_divergence_score",
+    "outside_bar_count_20",
+    "momentum_20",
+    "short_term_reversal_5",
+    "gap_down_recover_freq_20d"
+  ],
+  "hypothesis_boundary": "用截至T-1的60日个股回归解释log成交额，控制固定股票池收益偏离绝对值与同日对数振幅，再观察T日创新在强收盘、突破失败、安静推进和跌后修复中的区别。",
+  "search_policy": "只登记四种机制，不扩窗口或方向搜索"
+}

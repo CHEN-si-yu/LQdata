@@ -33,6 +33,10 @@ import argparse
 import json
 from collections import Counter
 from pathlib import Path
+if __package__:
+    from ._project_paths import project_output
+else:
+    from _project_paths import project_output
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_START = "2018-01-01"
@@ -50,6 +54,7 @@ def main() -> int:
     ap.add_argument("--start", default=DEFAULT_START, help="输出窗口下界（默认 2018-01-01）")
     ap.add_argument("--out-dir", default="", help="可选：把这些结果写成报告目录")
     a = ap.parse_args()
+    output = project_output(a.out_dir) if a.out_dir else None
 
     d = json.loads(Path(a.baseline).read_text(encoding="utf-8"))
     an = d["anomalies"]
@@ -100,7 +105,7 @@ def main() -> int:
 
     text = "\n".join(lines)
     if a.out_dir:
-        out = ROOT / a.out_dir
+        out = output
         out.mkdir(parents=True, exist_ok=True)
         (out / "REPORT.md").write_text(text, encoding="utf-8")
         rows = [{"stock_code": x["stock_code"], "date": x["date"], "kind": x["kind"],

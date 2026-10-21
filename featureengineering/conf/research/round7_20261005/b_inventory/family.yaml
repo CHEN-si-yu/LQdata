@@ -1,0 +1,14 @@
+{
+  "family_id": "r7b_inventory_accumulation_v1",
+  "idea_id": "r7b_inventory_accumulation_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "sales_adjusted_inventory_accumulation"
+    }
+  ],
+  "baseline": "base8 + inventory_turnover, cash_conversion_cycle, R4 accrual q/TTM, sales YoY/acceleration, asset growth QoQ/YoY, TTM gross margin and YoY change, lag inventory/assets and zero-inventory business indicator, qf_roa/SUE. No posterior industry snapshots.",
+  "variants": "none",
+  "initial_single_task_budget_bytes": 3000000000,
+  "resource_estimate_not_measured": true
+}

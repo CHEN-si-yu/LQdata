@@ -1,0 +1,275 @@
+[
+  {
+    "factor_id": "classic_f_score",
+    "name": "Piotroski F Score",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "九个财务强弱二元信号相加，覆盖盈利、融资与流动性、经营效率。",
+    "required_data": "已披露年报、可比期财务数据及股权发行信息",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "原文为美国高BM样本和长期持有研究；A股日频映射需按本地披露时点核验。",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "classic_f_score_ROA",
+    "name": "F Score 分项 ROA",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "盈利为正；属于综合评分分项，精确口径见原文。",
+    "required_data": "对应已披露财务和股权数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "分项不是九个已验证的独立Alpha；标准化分母和不等式边界以原文为准。",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "usage_role": "score_component"
+  },
+  {
+    "factor_id": "classic_f_score_CFO",
+    "name": "F Score 分项 CFO",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "经营现金流为正；属于综合评分分项，精确口径见原文。",
+    "required_data": "对应已披露财务和股权数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "分项不是九个已验证的独立Alpha；标准化分母和不等式边界以原文为准。",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "usage_role": "score_component"
+  },
+  {
+    "factor_id": "classic_f_score_DeltaROA",
+    "name": "F Score 分项 DeltaROA",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "资产收益率改善；属于综合评分分项，精确口径见原文。",
+    "required_data": "对应已披露财务和股权数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "分项不是九个已验证的独立Alpha；标准化分母和不等式边界以原文为准。",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "usage_role": "score_component"
+  },
+  {
+    "factor_id": "classic_f_score_ACCRUAL",
+    "name": "F Score 分项 ACCRUAL",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "现金流质量优于会计盈利；属于综合评分分项，精确口径见原文。",
+    "required_data": "对应已披露财务和股权数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "分项不是九个已验证的独立Alpha；标准化分母和不等式边界以原文为准。",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "usage_role": "score_component"
+  },
+  {
+    "factor_id": "classic_f_score_DeltaLEVER",
+    "name": "F Score 分项 DeltaLEVER",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "杠杆改善；属于综合评分分项，精确口径见原文。",
+    "required_data": "对应已披露财务和股权数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "分项不是九个已验证的独立Alpha；标准化分母和不等式边界以原文为准。",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "usage_role": "score_component"
+  },
+  {
+    "factor_id": "classic_f_score_DeltaLIQUID",
+    "name": "F Score 分项 DeltaLIQUID",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "流动性改善；属于综合评分分项，精确口径见原文。",
+    "required_data": "对应已披露财务和股权数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "分项不是九个已验证的独立Alpha；标准化分母和不等式边界以原文为准。",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "usage_role": "score_component"
+  },
+  {
+    "factor_id": "classic_f_score_EQOFFER",
+    "name": "F Score 分项 EQOFFER",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "未发行新权益；属于综合评分分项，精确口径见原文。",
+    "required_data": "对应已披露财务和股权数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "分项不是九个已验证的独立Alpha；标准化分母和不等式边界以原文为准。",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "usage_role": "score_component"
+  },
+  {
+    "factor_id": "classic_f_score_DeltaMARGIN",
+    "name": "F Score 分项 DeltaMARGIN",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "利润率改善；属于综合评分分项，精确口径见原文。",
+    "required_data": "对应已披露财务和股权数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "分项不是九个已验证的独立Alpha；标准化分母和不等式边界以原文为准。",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "usage_role": "score_component"
+  },
+  {
+    "factor_id": "classic_f_score_DeltaTURN",
+    "name": "F Score 分项 DeltaTURN",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "资产周转改善；属于综合评分分项，精确口径见原文。",
+    "required_data": "对应已披露财务和股权数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_piotroski"
+    ],
+    "source_urls": [
+      "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "分项不是九个已验证的独立Alpha；标准化分母和不等式边界以原文为准。",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "usage_role": "score_component"
+  },
+  {
+    "factor_id": "classic_gross_profit_assets",
+    "name": "毛利润资产比",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "以毛利润相对总资产衡量盈利能力；精确时点和报表处理见正文。",
+    "required_data": "已披露收入、成本和资产",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 abstract",
+    "source_ids": [
+      "root_novymarx_gp"
+    ],
+    "source_urls": [
+      "https://www.nber.org/papers/w15940"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "只以摘要核验概念定义；具体财务分母时点、过滤和组合方法需读正文；美国证据不等于A股有效。",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "classic_qmj",
+    "name": "Quality Minus Junk 质量组合",
+    "category": "盈利质量",
+    "frequency": "财报公布时更新，可按已知信息日频映射",
+    "definition_summary": "比较高质量和低质量公司的多空组合；网页支持质量概念，完整评分需读论文。",
+    "required_data": "历史财务、价格和组合构建数据",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_aqr_qmj"
+    ],
+    "source_urls": [
+      "https://www.aqr.com/Insights/Research/Working-Paper/Quality-Minus-Junk"
+    ],
+    "pit_notes": "财务变量只能在实际披露后可用；跨年、历史修订与财报口径需保持一致",
+    "limitations": "网页概述不等于完整评分规范；不能从国际样本结果推出A股日频可执行收益。",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "usage_role": "portfolio_factor"
+  },
+  {
+    "factor_id": "classic_bab",
+    "name": "Betting Against Beta 低Beta组合",
+    "category": "风险与尾部",
+    "frequency": "来源提供日频组合收益；更新时间和信号形成方法需另核验",
+    "definition_summary": "构建经杠杆调整的低Beta多头与高Beta空头，形成市场中性组合。",
+    "required_data": "股票历史收益、市场收益、融资与卖空条件",
+    "a_share_relevance": "可研究的跨市场迁移机制；本记录不构成A股实证证据",
+    "evidence_level": "原始作者机构来源 full_text",
+    "source_ids": [
+      "root_aqr_bab"
+    ],
+    "source_urls": [
+      "https://www.aqr.com/insights/datasets/betting-against-beta-equity-factors-daily"
+    ],
+    "pit_notes": "Beta估计只使用形成时点前可得收益；组合杠杆和卖空条件需单独评估",
+    "limitations": "这是组合因子而非单一股票列；杠杆、做空和估计口径需独立适配A股。",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "usage_role": "portfolio_factor"
+  }
+]

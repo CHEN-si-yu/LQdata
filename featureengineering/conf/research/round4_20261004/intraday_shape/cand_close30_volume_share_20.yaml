@@ -1,0 +1,19 @@
+name: r4b_close30_volume_share_20
+family_id: r4b_intraday_shape_v1
+implementation: research.families.r4b_intraday_shape_v1:build
+parameters: {signal: close30_volume_share_20}
+units: 无量纲份额：尾盘成交额 / 当日成交额；用 amount（元，全程一致），不受 vol 手/股翻转影响。
+availability: 只用信号日 15:00 收盘前当日 5min bar；不跨日、无未来数据；stock_history_5min
+  经 fea/delay.py / conf/frequency.yaml 实测 delay_days=0，无需位移。
+missing_policy: 当日可用 bar（amount 有限且 ≥0）<40 或当日成交额<=0 为 NaN；停牌/无该日分区
+  为 NaN；不零填充。20 日窗内有效日 <15 为 NaN。
+spec:
+  group: research_intraday
+  desc: Lead 预登记机制 3：尾盘 14:30–15:00 成交额份额的 20 日均（尾盘博弈/调仓驱动）。
+  formula: mean20( Σ_{bar∈尾盘} amount / Σ_{当日全部 bar} amount )，尾盘 = 右端标签
+    {14:35,14:40,14:45,14:50,14:55,15:00} 六根（厂商时间戳为区间右端，与 fea/closing30.py 一致）。
+  deps: [stock_history_5min]
+  warmup_days: 45
+  higher_is_better: false
+  version: 1
+  note: 与既有 close30_ret（收益）不同：本机制是尾盘成交**份额**（成交的日内位置）。

@@ -1,0 +1,16 @@
+name: r4t_preann_vol_expansion_v1
+family_id: r4t_preann_v1
+implementation: research.families.r4t_preann_v1:build
+parameters: {signal: pre_ann_vol_expansion}
+units: 比值 = 最近 5 日日收益标准差 / 前 60 日（第 6–65 日）基线标准差（ddof=0，停牌日 NaN），无量纲。
+availability: 公告前窗口只用到 T−1：E(p) 由去年同期首个披露时点（早 ≥1 年，整数位移 +10000）与法定截止日决定；窗口关闭取公告可见日（pit = max(ann_date, f_ann_date, end_date) 的次一交易日）前最后交易日，兜底 = 法定截止 + 60 日历天；窗口内只用 ≤T 的已实现收益。PIT/verify 一致性论证见模块 docstring（截断/两阶段增量逐值一致）。
+missing_policy: 窗口外（该交易日不落在任何未公告报告期窗口内）为 NaN——「无即将公告」属结构性缺失，不零填充；未上市/无价格为 NaN（基线不足 min_count 时为 NaN）；零填充口径仅作离线敏感性分析在 report 中双列报告。
+spec:
+  group: research_preann
+  desc: 公告前抢跑：窗口内最近 5 日日收益标准差 / 前 60 日（第 6–65 日）基线标准差（公告前波动放大强度的直译）。方向 false 事前冻结。
+  formula: "ret_clean = ret(1) 按 traded 掩码（停牌日 NaN）; fast = roll_std(ret_clean, 5, min_count=2, ddof=0); slow = roll_std(ret_clean, 60, min_count=30, ddof=0); baseline = shift(slow, 5); ratio = fast / baseline（分母 <=1e-9 -> NaN）"
+  deps: [stock_income, stock_daily, stock_adj_factor]
+  warmup_days: 700
+  higher_is_better: false
+  version: 1
+  note: 窗口长度 p50 ≈ 20 交易日、p90 ≈ 29（总长 mean 23.1）≪ warmup 700 日历天；覆盖为季节性稀疏（NaN 口径 1050/2123 个交易日 ≥100 只活跃，占 49.5%）；机制集合/方向/预算事前冻结，无变体额度。

@@ -1,0 +1,23 @@
+idea_id: r2_ownership_idea_v1
+hypothesis: 股东户数下降（筹码由散户向大户集中）与户均持股市值上升，可能在固定2115只主板池上
+  改善下一开盘1/5日排序；披露事件本身以及披露日之后的短期漂移也应含独立信息。
+mechanism: 四个事前固定机制 —— (1) holder_per_capita_value：户均持股市值 circ_mv/holder_num
+  的水平与变化；(2) holder_trend_persistence：最近4个报告期户数下降的持续性与趋势强度，
+  而不是单期变化率；(3) holder_announcement_reaction：公告日之后的短期漂移；
+  (4) holder_dispersion_residual：户数变化对市值与换手的逐日截面中性残差。
+expected_direction: 六个候选全部 higher_is_better=true（户均市值高 / 户数持续下降 / 公告后正漂移 /
+  中性残差高，预期随后收益高）。方向在写第一行代码前固定，未按任何 IC 或收益结果翻转。
+target_horizons: [1, 5]
+falsifiable: 若某候选与现有正式因子（尤其 holder_number_chg）的日截面秩相关 |rho| > 0.9 且无法
+  论证新增信息在哪里，或分年度 RankIC 同号年数少于 7/9，或工程验证截断/增量不一致，则该候选
+  不支持本假设。
+fields:
+  - stock_holder_number.stock_code
+  - stock_holder_number.ann_date
+  - stock_holder_number.end_date
+  - stock_holder_number.holder_num
+  - stock_finance.circ_mv
+  - stock_finance.trade_date
+  - stock_daily.close
+  - stock_daily.vol
+  - stock_adj_factor.adj_factor

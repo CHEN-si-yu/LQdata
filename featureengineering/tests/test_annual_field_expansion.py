@@ -9,8 +9,8 @@ from fea.panel import Panel
 from fea.spec import REGISTRY
 import factors
 
-DS = 'stock_financial_indicator'
-FIELD = 'bps'
+DS = 'stock_cashflow'
+FIELD = 'im_net_cashflow_oper_act'  # ★ 2026-10-03：最终保留集 13 条 conf 条目、17 个声明字段之一
 ALIAS = annual_alias(DS, FIELD)
 
 def context(rows, days):
@@ -59,19 +59,22 @@ class AnnualExpansionTests(unittest.TestCase):
           "命名空间必须带数据集前缀"这条不变量钉住 —— 以后谁再加跨表同名别名，
           仍然会被这条挡住。
         """
-        a1 = annual_alias('stock_income', 'ebitda')
-        self.assertEqual(ANNUAL_ALIASES[a1], ('stock_income', 'ebitda'))
+        # ★ 2026-10-03 清理复审：conf/field_expansion.json 已按最终保留集剪枝（13 条）；
+        #   本用例用存活的现金流字段验证别名加载路径与加载值。
+        a1 = annual_alias('stock_cashflow', 'im_net_cashflow_oper_act')
+        self.assertEqual(ANNUAL_ALIASES[a1], ('stock_cashflow', 'im_net_cashflow_oper_act'))
         for logical, (ds, _f) in ANNUAL_ALIASES.items():
             self.assertTrue(logical.startswith(f"annual__{ds}__"),
                             f"别名 {logical} 没有带数据集前缀，跨表同名会串味")
         def read(ds, columns, **kwargs):
             d = {'stock_code': ['A'], 'ann_date': ['2025-03-10'], 'f_ann_date': ['2025-03-10'],
-                 'end_date': ['2024-12-31'], 'ebitda': [10], 'ebit': [10]}
+                 'end_date': ['2024-12-31'], 'im_net_cashflow_oper_act': [10], 'c_inf_fr_operate_a': [10]}
             return pd.DataFrame(d)[columns]
-        vt = load_vintages(SimpleNamespace(read=read), 2024, 2025, frozenset([a1, 'ebit']))
+        a2 = annual_alias('stock_cashflow', 'c_inf_fr_operate_a')
+        vt = load_vintages(SimpleNamespace(read=read), 2024, 2025, frozenset([a1, a2]))
         self.assertEqual(vt[a1].iloc[0], 10)
-        self.assertEqual(vt.ebit.iloc[0], 10)
-        self.assertEqual(FIELD_SOURCE[a1], 'stock_income')
+        self.assertEqual(vt[a2].iloc[0], 10)
+        self.assertEqual(FIELD_SOURCE[a1], 'stock_cashflow')
 
     def test_every_catalog_formula_has_real_dependencies_and_finite_guard(self):
         for entry in CATALOG:
@@ -86,14 +89,5 @@ class AnnualExpansionTests(unittest.TestCase):
             self.assertFalse(np.isinf(out).any())
             self.assertEqual(set(calls),{(ds,f) for ds,fs in entry['source_fields'].items() for f in fs})
             self.assertEqual(set(spec.deps),set(entry['source_fields']))
-
-    def test_income_per_share_growth_keeps_units_and_denominator_guard(self):
-        # ★ 2026-09-22 去冗余：同一路径的 `afx_is_diluted_eps`（与 `afx_is_basic_eps`
-        #   |ρ|=0.982）已删 —— 该口径下现在只剩这一个因子，单独覆盖同一条代码路径。
-        for name in ('afx_is_basic_eps',):
-            def annual(ds,f,lag_years=0):
-                return np.array([[.4,-.1,.5]]) if not lag_years else np.array([[.2,-.2,0.]])
-            c=SimpleNamespace(annual=annual,safe_div=FactorContext.safe_div)
-            np.testing.assert_allclose(REGISTRY[name].fn(c),np.arcsinh([[1.,.5,np.nan]]),equal_nan=True)
 
 if __name__=='__main__':unittest.main()

@@ -1,0 +1,16 @@
+name: pv_exhaustion_w10_continuous_v1
+family_id: pv_exhaustion_v1
+implementation: research.builders:volume_price_exhaustion
+parameters: {window: 10, expression: continuous, valid_fraction: 0.8}
+units: 收益为对数收益；成交量为本地日线原始股数，同源比值消除正比例单位；不与分钟手数混用。
+availability: 仅使用信号日收盘及以前真实成交量和当时累计复权因子。
+missing_policy: 两个窗口分别要求至少80%交易日真实成交且当日成交；数据不足为NaN，完整输入但事件不成立为0。
+spec:
+  group: research_price_volume
+  desc: 未验证候选：正向上涨背景中的放量与价格增长减速交互。
+  formula: max(cs_zscore(logvol_mean_A-logvol_mean_B),0)*max(cs_zscore(logret_B-logret_A),0), only logret_A>0
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 70
+  higher_is_better: false
+  version: 1
+  note: 参数与方向预登记；示例不能自动进入正式生产；无未来有效性证明。

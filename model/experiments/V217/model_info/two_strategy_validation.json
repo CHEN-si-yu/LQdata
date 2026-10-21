@@ -1,0 +1,73 @@
+{
+  "run_name": "research_20261006",
+  "checked_at": "2026-10-06 16:46:44",
+  "score_source": "training_predictions",
+  "reads_model_train": true,
+  "loads_model_weights": true,
+  "strategies": [
+    "top5_5d",
+    "top1_1d"
+  ],
+  "strategy_rows": 2,
+  "quarterly_rows": 8,
+  "evaluation_days": 242,
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 644339,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 639937,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 635558,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 624824,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 603712,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "quarterly_returns_compound": true,
+  "date_axis_matches_price_axis": true,
+  "realized": {
+    "top5_5d": {
+      "return_value": 0.29717285969349083,
+      "max_drawdown": -0.1587911318039037,
+      "sharpe": 1.4936100155019458,
+      "trades": 116,
+      "total_fees": 1414.764830651,
+      "gross_return_same_positions": 0.31958,
+      "fee_drag": 0.01414764830651,
+      "slippage_drag": 0.008259491999999154,
+      "avg_exposure": 0.43308344608836075,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    },
+    "top1_1d": {
+      "return_value": 0.5085538027705347,
+      "max_drawdown": -0.23131147669408714,
+      "sharpe": 1.1587154164616993,
+      "trades": 300,
+      "total_fees": 20849.654422948002,
+      "gross_return_same_positions": 0.8395900000000012,
+      "fee_drag": 0.2084965442294801,
+      "slippage_drag": 0.122539652999986,
+      "avg_exposure": 0.993108266327027,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    }
+  }
+}

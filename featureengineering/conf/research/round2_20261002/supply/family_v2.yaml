@@ -1,0 +1,43 @@
+# 事前登记定义；机制、方向、试验预算在计算前冻结。
+{
+  "family_id": "r2_supply_family_v2",
+  "idea_id": "r2_supply_idea_v1",
+  "trial_budget": 6,
+  "allowed_variants": [
+    {
+      "signal": "float_unlock_decay60"
+    },
+    {
+      "signal": "float_unlock_decay120"
+    },
+    {
+      "signal": "total_share_dilution252"
+    },
+    {
+      "signal": "free_float_ratio_level"
+    },
+    {
+      "signal": "free_float_ratio_rank252"
+    },
+    {
+      "signal": "supply_pressure_interaction"
+    }
+  ],
+  "mechanism_map": {
+    "float_unlock_decay60": "float_unlock_shock",
+    "float_unlock_decay120": "float_unlock_shock (pre-declared window variant)",
+    "total_share_dilution252": "total_share_dilution",
+    "free_float_ratio_level": "free_float_ratio_level",
+    "free_float_ratio_rank252": "free_float_ratio_level (pre-declared expression variant)",
+    "supply_pressure_interaction": "share_supply_pressure_interaction"
+  },
+  "baseline": [
+    "circ_mv",
+    "turnover_std_20",
+    "efx_free_turnover",
+    "total_leverage_ratio"
+  ],
+  "hypothesis_boundary": "只用日频股本状态(stock_finance)与累计复权因子；不复用送转事件本身的收益效应(R2-I2)；不做任何事后窗口/阈值搜索。",
+  "search_policy": "四个机制固定，六个候选一次登记；方向与窗口在计算前冻结。",
+  "registration_note": "v1 的 allowed_variants 误带 mechanism/note 元数据导致 parameters 校验不通过；在任何候选注册或计算之前改用 v2 重新登记，机制集合/方向/预算/候选完全不变。"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "r6a_sga_downside_stickiness_20q_v1",
+  "family_id": "r6a_sga_stickiness_v1",
+  "implementation": "research.families.r6a_sga_stickiness_v1:build",
+  "parameters": {
+    "signal": "sga_downside_stickiness",
+    "window": 20
+  },
+  "units": "dimensionless downside elasticity difference",
+  "availability": "Publication/revision event PIT=max(ann,f_ann,end), known announcement only; current Q prefix maximum. All24 single-quarter histories are refetched under same asof PIT. Q1=YTD, other quarters=YTD(q)-YTD(q-1). Historical revisions act prospectively; signal used next open.",
+  "missing_policy": "At least16 valid pairs, strict up/down each>=4; both YoY sides sales and SG&A>1e6; component missing not zero; standardized nonintercept Gram min eigenvalue>1e-8; nondegenerate x/y; invalid new window replaces old state; latest report end age<=550 calendar days.",
+  "spec": {
+    "group": "research_financial_behavior",
+    "fin_fields": ["revenue", "sell_exp", "admin_exp"],
+    "desc": "Repeated inability to reduce SG&A when sales fall may burden future operating performance; weak negative short-horizon prior.",
+    "formula": "x=log(S_q/S_q-4);y=log(C_q/C_q-4);y=a+b*x+delta*1[x<0]*x+g*fixed_slot_trend; value=-delta over latest20 continuous report slots",
+    "deps": [
+      "stock_income"
+    ],
+    "warmup_days": 2700,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "Single frozen main candidate, no variants. At least16 valid pairs, strict up/down each>=4; both YoY sides sales and SG&A>1e6; component missing not zero; standardized nonintercept Gram min eigenvalue>1e-8; nondegenerate x/y; invalid new window replaces old state; latest report end age<=550 calendar days. Float64 calculations; Store float32. Complete fixed2115 stock/date keys. base8 + sales/ROE volatility + asset growth + R4 accruals; diagnostic TTM SG&A/revenue, gross margin and upward elasticity b."
+  }
+}

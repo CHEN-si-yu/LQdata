@@ -1,0 +1,14 @@
+idea_id: r4a_earnings_surprise_v1
+hypothesis: 盈余惊喜（单季同比标准化、惊喜加速度、预告隐含惊喜）与公告后漂移携带横截面预期收益信息；实际定期报告相对公告前预告中点的落地偏差是落地日才公开的新信息。
+mechanism: |
+  1) sue_seasonal_q：单季归母净利同比差 d0 = Q(p)−Q(p−4)（由财务层 TTM 三行恒等式 lag_ttm 差分得到），除以过去 8 个同类同比差的标准差（至少 6 个有效，ddof=0），度量标准化惊喜；
+  2) sue_accel：本期 SUE 减上一期 SUE（同口径），度量惊喜方向的变化；
+  3) pead_drift_60：最近一次定期报告公告可得日的次一交易日起 0–59 个交易日的累计池内超额收益（停牌日 0 收益、只用已成交股票算截面均值），度量漂移延续；
+  4) forecast_implied_surprise：预告净利中点 (net_profit_min+net_profit_max)/2 相对去年同期 last_parent_net 的惊喜 (mid−base)/|base|，arcsinh 压缩，取最近一次预告公告；
+  5) forecast_landing_gap：实际定期报告归母净利相对同报告期公告前最后一次预告中点的偏差 (actual−mid)/|mid|（预告万元×1e4 换算），arcsinh 压缩；事件铺在每一个定期报告公告可得日上，无配对则失效。
+expected_direction: 五个机制全部登记为 true（正向）：惊喜/漂移/落地超预期越高，预期随后 1/5 日收益越高。变体（pead skip=5、sue 不标准化）同为 true。方向在看任何结果之前冻结。
+target_horizons: [1, 5]
+falsifiable: declared 分年同号 < 7/9；或 pead_drift_60 与 momentum_120 |rho|>0.9（动量投影）；或 G7 控制后 t 不显著；或与朴素对照（yoy_revenue、roe_ttm、ep_ttm；机制 3 对 momentum_60）高度重合且无增量。
+fields: [stock_income.ann_date, stock_income.f_ann_date, stock_income.end_date, stock_income.n_income_attr_p, stock_forecast.ann_date, stock_forecast.end_date, stock_forecast.net_profit_min, stock_forecast.net_profit_max, stock_forecast.last_parent_net, stock_daily.close, stock_daily.vol, stock_adj_factor.adj_factor]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

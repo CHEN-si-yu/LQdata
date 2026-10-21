@@ -1,0 +1,29 @@
+family_id: r9b_seat_identity_v1
+idea_id: r9b_seat_identity_v1
+trial_budget: 1
+allowed_variants:
+  - {signal: seat_identity_breadth, window: 60}
+baseline: |
+  强制并列报告（不进模型，只做去重与增量判据）：
+  1) 库内现存 177 个正式因子的 max|rho| 逐项枚举（报告给出因子名与系数）；
+  2) 已删同族重算基线 dragon_tiger_org_net_20（机构专用净买额 20 日/成交额 20 日）
+     与 top_list_net_rate_20（stock_top_list 20 日净买率）—— 本因子不读金额，二者
+     是金额口径，作为「同表不同轴」的对照；
+  3) 稀疏诊断：窗口内是否有可识别席位记录（二值），用来暴露零填充口径的缺失约定伪影
+     （R4-I 的教训：零填充的强正曾经完全来自缺失约定）。
+  4) G7 基础 8 控制：momentum_120, short_term_reversal_5, vol_120, idio_vol_60,
+     log_mv, turnover_std_20, bp, roe_ttm（全部实测存在于 factors.csv）。
+     波动率族额外控制 idt_rv_daily / id2_parkinson_vol / var_95_20 中 var_95_20
+     不在库内 —— 本候选非波动率族，按 BRIEF §6 该额外项不适用，已在报告声明。
+parameters_frozen:
+  window: 60
+  identity_dedupe_key: (row, code, seat_key)
+  seat_normalization: R3-A normalize_seat + COMPANY_ALIASES（逐字沿用）
+  anonymous_excluded: 机构类（机构专用/机构/机构投资者/机构席位/机构客户总部/含「机构席位」「机构客户」）+ 名称含「股通」
+  amount_columns_used: none
+  lag_trading_days: 0
+  primary_missing_convention: NaN（窗口内无可识别席位记录 → NaN）
+variants: >
+  不扩网格：窗口（60 交易日）、去重键（row, code, seat_key）、席位规范化规则、
+  匿名排除规则、缺失口径，全部在看任何 IC 之前冻结。本 family 只登记 1 个候选，
+  预算 1 用尽；不做窗口搜索、不做分类阈值搜索、不做事后反号。

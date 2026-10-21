@@ -1,0 +1,44 @@
+# 事前登记假设，不构成收益证明；机制、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r3rc_rev_drift_decay10",
+  "family_id": "r3_reverse_confirm_family_v1",
+  "implementation": "research.families.r3_reverse_confirm_v1:build",
+  "parameters": {
+    "signal": "rev_drift_decay10"
+  },
+  "units": "D1 为无量纲的池内相对收益（比值差或加权日均对数收益）；D2 为事件次数或事件率（无量纲）。全部同表同尺度比值，无跨表单位换算。",
+  "availability": "同 D1-P1；每日收益用 ctx.ret_clean(1)（停牌日 NaN，不伪造成交）。",
+  "missing_policy": "since<1 或 since>10 -> NaN；权重和 <=0 -> NaN。前沿权重让『公告后第一天的反应』权重最大，是聚合方式不同，不是窗口扫描。",
+  "closest_existing_baselines": [
+    "short_term_reversal_5",
+    "momentum_20"
+  ],
+  "semantic_difference": "公告后前沿加权 10 日相对日均收益取反（D1-P3，不同聚合）",
+  "source_fields": [
+    "stock_holder_number.ann_date",
+    "stock_holder_number.end_date",
+    "stock_holder_number.holder_num",
+    "stock_daily.stock_code",
+    "stock_daily.trade_date",
+    "stock_daily.close",
+    "stock_adj_factor.stock_code",
+    "stock_adj_factor.trade_date",
+    "stock_adj_factor.adj_factor"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r3_reverse_confirm",
+    "desc": "公告后前沿加权 10 日相对日均收益取反（D1-P3，不同聚合）",
+    "formula": "value(T) = -sum_{a=1..min(since,10)} w_a*pool_demean(logret(T-a+1)) / sum w_a, w_a=11-a",
+    "deps": [
+      "stock_holder_number",
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": null,
+    "warmup_days": 500,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R3-E 独立确认；值本身即反向信号量，declared==raw。任一条确认设计不过即判不可确认。"
+  }
+}

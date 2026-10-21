@@ -1,0 +1,12 @@
+# R3-D 事前登记：业绩预告变动原因文本分类。关键词表在模块常量里、任何 IC 之前冻结。
+{
+  "idea_id": "r3_reason_idea_v1",
+  "hypothesis": "业绩预告中「变动原因」文本所透露的驱动类型（主营驱动 / 非经常性损益驱动 / 减值计提驱动 / 行业景气需求驱动）携带盈余质量与持续性信息，可改善固定2115股下一开盘1/5日排序。",
+  "mechanism": "只用 stock_forecast 的 change_reason 文本 + ann_date 可用时点。四个固定机制：主营/销量/收入驱动(true)；非经常性损益/补助/处置/投资收益驱动(false)；减值计提驱动(false)；行业景气/需求/价格驱动(true)。文本用预登记关键词表二值化，未命中任何类别与空文本严格区分。",
+  "expected_direction": "reason_main_business=true / reason_nonrecurring=false / reason_impairment=false / reason_demand_cycle=true，事前冻结，不依据事后 IC 翻转。",
+  "target_horizons": [1, 5],
+  "falsifiable": "若关键词命中率低于 20%，或与 forecast_type_score 的 |rho| 大于 0.9，或 declared 分年一致为正不足 7/9，则不支持。",
+  "fields": ["stock_forecast.ann_date", "stock_forecast.change_reason", "stock_forecast.end_date", "stock_forecast.type"],
+  "origin": "round3_20261002_R3-D",
+  "status": "unvalidated_hypothesis"
+}

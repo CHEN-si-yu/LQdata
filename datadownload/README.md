@@ -113,7 +113,7 @@ $PY scripts/catalog.py --dataset stock_daily
 | `stock_kline` | **2026-09-16 彻底删除** | 接口返回的周/月线实为「抓取窗口 ∩ 该周期」的聚合，**非日历周期** —— 窗口一滑动，已结束周期的值就被改写；且 14 个列与 `stock_daily` 完全相同，零额外信息 |
 | `index_weight` | **2026-09-17 彻底删除** | 厂商月频延迟 ≥1 个月，服务端自己停在旧月份 |
 | `ths_hot` · `stock_dc_block_fund_flow` · `stock_ths_block_fund_flow` | **2026-09-19 彻底删除** | 时间覆盖不足 |
-| `index_ths_sector_categories` · `index_ths_constituent_stocks` · `tdx_block_stocks` | **2026-09-19 彻底删除** | 快照表、无历史版本，回测必然前视 |
+| `tdx_block_stocks` | **2026-09-19 彻底删除** | 快照表、无历史版本，回测必然前视 |
 | `index_history`（指数 5min） · `stock_daily_adj`（前复权 qfq） | **从未下载** | 因子要求日频 / qfq 被禁用 |
 
 > 旧代码或旧文档里若还出现这些名字，那是**过期引用**。

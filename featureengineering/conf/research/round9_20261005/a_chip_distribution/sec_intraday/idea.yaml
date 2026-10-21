@@ -1,0 +1,38 @@
+idea_id: r9_sec_intraday_idea_v1
+hypothesis: >-
+  tdx_minute 的板块 5 分钟线里存在一个 177 因子库完全没有用过的维度：板块「日内已实现波动率」。
+  一只股票对其**所属行业板块**日内 RV 的滚动暴露（beta），在固定 2114 只主板池上可能对下一开盘
+  1/5 日收益排序含独立信息；该暴露衡量的是「个股收益被行业层面信息冲击放大的程度」。
+mechanism: >-
+  板块日内 RV_s(t) = sqrt(Σ_m r²_{s,m,t})，r 由 tdx_minute 当日 48 根 5 分钟 bar 的 close 逐根取
+  对数收益（每日首根无前收盘，被 shift 丢弃 → 47 个收益）。行业映射：stock_list.industry
+  （audit 白名单中的 contract 数据集）→ tdx_minute.board_name → board_code。个股信号 =
+  Cov_60(r_i, RV_s) / Var_60(RV_s)，即个股对该行业日内波动的 60 日滚动 beta。
+  与已删除的 field_markets 三个因子的**唯一差异**（必须显式声明）：那三个的回归量是
+  cross_index_median(tdx_minute.<state>)，即**全板块中位数**（市场级状态，个股之间回归量完全相同）；
+  本候选的回归量是**个股自身所属行业**的 RV（截面异质），衡量的是行业特异信息冲击暴露，
+  而不是全市场日内波动暴露。两个暴露不是秩同构：X 的截面差异是本候选的唯一信息来源。
+expected_direction: >-
+  higher_is_better=false（事前固定）。机制：对行业日内波动暴露高的股票是「信息风险」高的股票，
+  在低风险异象（betting-against-beta / 低波动异象，A 股已有 vol_120 / idio_vol_60 两个正式因子）
+  下被高估，下一期收益更低。方向在写第一行代码之前固定，模块内不含任何反号逻辑，不按 IC 翻转。
+target_horizons: [1, 5]
+falsifiable: >-
+  若 declared RankIC 在 h=1 与 h=5 均落在 HAC 95% 区间内，或分年一致为负（declared 列）的年数 < 7/9，
+  或与 G7 控制集（尤其 vol_120 / idio_vol_60）正交后 t 归零或反号，则该机制被证伪。
+fields:
+  - tdx_minute.board_code
+  - tdx_minute.board_name
+  - tdx_minute.trade_time
+  - tdx_minute.close
+  - stock_list.stock_code
+  - stock_list.industry
+origin: round9_lead_pivot_20261005
+status: unvalidated_hypothesis
+dedup: >-
+  doc/因子清理记录_20261003.md 第 1602/1609/1616 行是三个已删除的 field_markets 因子：
+  corr60(ret_clean_hfq, cross_index_median(tdx_minute.amplitude|volume_concentration|
+  weighted_pressure))。它们**不是** Lead 简报所称的「市场级因子」——它们是**个股级**的滚动
+  60 日暴露，只是回归量取了全板块中位数。本候选因此在两个维度上不同：(a) 回归量 =
+  自身行业 RV（截面异质），(b) 状态量 = 已实现波动率（而非 amplitude/volume_concentration/
+  weighted_pressure）。tdx_minute 在 177 因子正式库中零引用。

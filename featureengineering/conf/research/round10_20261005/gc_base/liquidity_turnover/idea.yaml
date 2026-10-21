@@ -1,0 +1,17 @@
+{
+  "idea_id": "r10gc_liquidity_turnover_v1",
+  "hypothesis": "换手率的期限结构（21/63/252 日的水平、波动，以及短/长端均线与波动偏离）是对「交易活跃度的绝对水平与相对自身长期基准的位置」的透明观测描述量；本批只主张它是三项基础门槛（非空/非常数/无泄露）都成立的干净基础因子，**不主张它改善收益排序**（G4–G7 未主张）。",
+  "mechanism": "单条原始日频换手率序列 `vol/float_share×100` 的因果滚动均值/标准差与同序列短长端偏离。不含跨序列复合、不含对已聚合比率的再运算。",
+  "expected_direction": "不主张方向：全部 higher_is_better=true 仅表示 declared=raw、不做反号。",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "三项基础门槛各自的实测值：非空（coverage_mean 与 rows/day）、非常数（截面 std>0 的交易日占比，并报 constant_cross_section 计数）、无泄露（输入表 delay_days 声明 + 模块内无 shift/前向填充 + verify 截断复算逐值一致）。任一门槛不达标即本候选不合格。",
+  "fields": [
+    "stock_daily.vol",
+    "stock_finance.float_share"
+  ],
+  "origin": "用户 2026-10-05 指令：基于 featureengineering/resources/Tushare.txt 考虑绿卡股票因子；Lead 立项 R10（ROUND10_GREENCARD_CHARTER.md）+ 独立资格分类表",
+  "status": "unvalidated_hypothesis"
+}

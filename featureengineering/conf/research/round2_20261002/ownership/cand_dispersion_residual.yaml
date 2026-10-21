@@ -1,0 +1,23 @@
+name: r2own_v2_dispersion_residual_v1
+family_id: r2_ownership_family_v2
+implementation: research.families.r2_ownership_v2:build
+parameters: {signal: dispersion_residual}
+units: 对数变化率的残差（无量纲）。换手为 vol/float_share*100（价格层口径）。
+availability: T 日只用 ann_date<=T 的披露状态与 T 日收盘已知的 circ_mv/换手；截面回归只在当日截面上做，不使用任何全样本统计量，不跨日拟合。
+missing_policy: 相邻报告期间隔越界或 circ_mv/换手缺失 -> 该股票当日 NaN 并退出回归；当日有效票数<100 -> 整日 NaN。不做前向填充成交。
+closest_existing_baselines: [holder_number_chg, log_mv, turnover_std_20, chip_concentration]
+semantic_difference: 机制4；如果与 holder_number_chg 的相关仍 >0.9，说明中性化没有带来新维度，将如实报告为重复。
+source_fields:
+  - stock_holder_number.ann_date
+  - stock_holder_number.end_date
+  - stock_holder_number.holder_num
+  - stock_finance.circ_mv
+spec:
+  group: r2_ownership
+  desc: R2-I3 机制4：一期户数下降对 log 市值与 log 换手的逐日截面 OLS 残差
+  formula: x=-log(n1/n2); x ~ 1 + log(circ_mv) + log(turnover) 逐日截面 OLS; value=residual
+  deps: [stock_holder_number, stock_finance, stock_daily]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: v2 修正日期差单位（YYYYMMDD 相减 -> 真实日历天），机制/窗口/方向/阈值与 v1 完全相同；机制4；如果与 holder_number_chg 的相关仍 >0.9，说明中性化没有带来新维度，将如实报告为重复。

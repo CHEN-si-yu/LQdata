@@ -1,0 +1,12 @@
+family_id: r4c_accruals_v1
+idea_id: r4c_accruals_v1
+trial_budget: 6
+baseline: 水平类对照 ocf_to_profit / roe_ttm / roa_ttm（全库既有正式因子）；机制1的朴素对照 cf_purchase_cash_intensity 或 ocf_to_revenue；另按任务书 §4-U3 做定向对照 cfcr、cash_sales_ratio、qf_cash_margin_yoy_change、ocf_to_profit、roa_ttm 与全库正式因子相关筛查（G5）。
+allowed_variants:
+  - {signal: accrual_ratio_ttm}
+  - {signal: accrual_ratio_q}
+  - {signal: earnings_conversion_trend}
+  - {signal: impairment_to_assets}
+  - {signal: earnings_conversion_ttm_gap}
+  - {signal: impairment_to_assets_merged}
+note: 4 机制 + 2 变体（事前登记，未看结果扩网格）。变体理由——earnings_conversion_ttm_gap：机制3的复杂度增量对照（只用 ctx.ttm/lag_ttm 的 TTM 比率同比 vs 8 个自算单季的重构），若两者结论一致则该机制不依赖自算差分机制；impairment_to_assets_merged：口径范围对照（assets_impair_loss 单独 vs 并入 credit_impa_loss——2019 报表格式切换后信用减值损失从资产减值中拆出，实测字段符号口径跨年代不稳，见 delivery 报告数据事实节）。

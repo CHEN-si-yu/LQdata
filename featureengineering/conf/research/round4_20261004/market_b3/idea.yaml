@@ -1,0 +1,33 @@
+idea_id: r4o_market_b3_v1
+hypothesis: >
+  严格机制：成交额-价格背离——5 日均成交额同比变化（量腿）与等权池 5 日累计收益（价格腿）的
+  252 日滚动 z 之差，对未来 1/5 日等权市场收益存在负向关系（放量滞涨 → 未来偏弱；
+  缩量上涨 → 偏强）。绿卡通道（描述用途、无方向承诺）：池内收益截面 90–10 分位差 20 日均、
+  隔夜收益 20 日标准差、池内成交额中位数、|日收益| 截面中位数——市场状态描述性上下文量。
+mechanism: |
+  1) mkt_amount_price_divergence_5（严格，方向 −1，先验弱-中）：z252(5日均成交额同比变化)
+     − z252(等权池 5 日累计收益)。量腿 = T 日 5 日均池内成交额合计相对 252 交易日前（同比）
+     的变化（yoy = amt5(T)/amt5(T−252) − 1）；价格腿 = 等权池 5 日累计收益。背离为正
+     （量升价滞）预期未来 1/5 日市场收益偏弱，背离为负（缩量上涨）偏强。两腿先各自
+     252 日滚动 z（min120、ddof=0）再相减（冻结口径，见 freeze b3）。
+     与批 2 严格候选（宽度侧背离 mkt_breadth_price_divergence_5）机制独立性：成交额侧度量
+     资金参与强度（放量/缩量），宽度侧度量参与面（上涨家数占比）；输入、构念与反转语义不同，
+     独立性以 M4 时序相关实测见证并在 report.md 对比说明。
+  2) mkt_cs_q90_q10_spread（绿卡）：池内日收益截面 90–10 分位差——尾部峰谷幅度的稳健离散
+     描述量（对极端值不如标准差敏感）；20 日均（min15）。
+  3) mkt_overnight_vol20（绿卡）：池内等权隔夜收益（per-stock open/pre_close−1 的均值）的
+     20 日滚动标准差（ddof=0，min15）——隔夜跳空波动水平描述量。
+  4) mkt_amount_median（绿卡）：池内成交额中位数——量能水平的稳健中心描述量（日频原值）。
+  5) mkt_cs_absret_median（绿卡）：|日收益| 截面中位数——日内波动的稳健中心描述量（日频原值）。
+expected_direction: 严格候选 mkt_amount_price_divergence_5 预登记 direction=−1（先验弱-中）；其余 4 个绿卡候选 direction=null（无方向先验，不做收益有效性承诺）。方向表封存于 freeze b3（先于任何结果统计），登记后不得因结果改判。
+target_horizons: [1, 5]
+falsifiable: >
+  严格候选：M5 主期限（h=1 或 5）declared HAC 95% 区间未排除 0、或同号年数 < ceil(7×有效年数/9)、
+  或有效年数 < 6 → 信号未获支持（门序 2 → 待修订）；M5 获支持但 M6 declared t<2.0 → 增量不足（待修订）；
+  M5 获支持且 M6 符号反转 → 投影特征（门序 3 → 建议剔除）；M4 |ρ|>0.95 → 重复（建议剔除）；
+  与 mkt_breadth_price_divergence_5 |ρ|>0.95 → 成交额侧与宽度侧独立性论证失败（需合并取舍）。
+  绿卡候选：M0∧M2∧M3 任一不过 → 待修订。全部裁决按 doc/市场因子审核体系.md 门序规则树执行，
+  只出结论与建议、不执行处置。
+fields: [stock_daily.open, stock_daily.close, stock_daily.pre_close, stock_daily.amount, stock_adj_factor.adj_factor]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

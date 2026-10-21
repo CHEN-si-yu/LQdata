@@ -1,0 +1,16 @@
+name: r3b_intraday_vol_price_diffusion_v2
+family_id: r3_intraday_moments_v2
+implementation: research.families.r3_intraday_moments_v2:build
+parameters: {signal: vol_price_diffusion}
+units: 因子值 = 无量纲 OLS 斜率：x=v_i/mean(v)、y=|r_i|/mean(|r|) 后的 slope(y~x)，量纲 1。
+availability: 只用信号日 15:00 收盘前的当日 5min bar；不跨日、无未来数据；fea/delay.py 实测 stock_history_5min 不在可得性滞后名单，无需位移。
+missing_policy: 当日可用 bar 收益 < 40 个、或 x 的日内方差为 0 时为 NaN；停牌/无该日分区为 NaN；不零填充。
+spec:
+  group: research_intraday
+  desc: Lead 预登记机制 4：日内量价扩散（|5min 收益| 对 5min 成交量份额的回归斜率），越高越差。
+  formula: slope( |r_i|/mean|r| ~ v_i/mean(v) )，x 截尾 [0,8]、y 截尾 [0,8]，只取 v>0 的 bar
+  deps: [stock_history_5min]
+  warmup_days: 1
+  higher_is_better: false
+  version: 1
+  note: 用日内成交量份额而非原始量，因此对 vol 在 2025-12-01 的手/股单位翻转严格不变。

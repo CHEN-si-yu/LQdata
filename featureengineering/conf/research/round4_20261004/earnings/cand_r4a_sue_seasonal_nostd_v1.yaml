@@ -1,0 +1,17 @@
+name: r4a_sue_seasonal_nostd_v1
+family_id: r4a_earnings_surprise_v1
+implementation: research.families.r4a_earnings_surprise_v1:build
+parameters: {signal: sue_seasonal_nostd}
+units: n_income_attr_p 差分原值（元），未做个股 σ 标准化，截面标准化交给评价层的面板口径。
+availability: 同 sue_seasonal_q：公告可得日 pit = max(ann_date, f_ann_date, end_date) 前不可见；单季同比差由财务层 lag_ttm 恒等式得到。
+missing_policy: 当期单季同比差缺失时为 NaN；不零填充。
+spec:
+  group: research_earnings
+  desc: SUE 变体 B：去掉个股历史 σ 标准化的裸单季同比差，检验标准化是否贡献信息（对照 sue_seasonal_q）。
+  formula: "lag_ttm(NP,0)-lag_ttm(NP,1), NP=n_income_attr_p"
+  deps: [stock_income]
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: 变体在看结果前登记；原始量纲（元）在截面 z-score 口径下与标准化版等价性待验证，用于分离 σ 标准化的作用。
+  fin_fields: [n_income_attr_p]

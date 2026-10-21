@@ -1,0 +1,74 @@
+{
+  "family_id": "mkta26_index_family_v1",
+  "idea_id": "mkta26_index_idea_v1",
+  "trial_budget": 15,
+  "allowed_variants": [
+    {
+      "original_name": "mkt_idx_csi300_ret1",
+      "definition_sha256": "dda0d6d4ac7652e88770391c4fe2d5986ace8dac81027870943f5c8343580464"
+    },
+    {
+      "original_name": "mkt_idx_csi300_momentum20",
+      "definition_sha256": "89fa70f725d56ecd8816dbfaeb07910b8cf309fbf82a9d69e0e3d41b455da22a"
+    },
+    {
+      "original_name": "mkt_idx_csi300_volatility20",
+      "definition_sha256": "cc7b98ec2f6964280d6d2280c5e5154026c7cd962021dd776c2f38fdbc6cecb8"
+    },
+    {
+      "original_name": "mkt_idx_csi300_drawdown60",
+      "definition_sha256": "5062b759615a2a6b65a2b700d82c92208c189f197d9b99db3f9c7693600732ec"
+    },
+    {
+      "original_name": "mkt_idx_csi300_ma20_gap",
+      "definition_sha256": "83794d0265c5b1cfefa75748a6551abaceed4747678c93a475699c379de165db"
+    },
+    {
+      "original_name": "mkt_idx_csi300_amount_ratio20",
+      "definition_sha256": "9a3c7c9f6425aceb1caf5c7ac5a3d4f2c006509f65b37c0546c27ed25315d7fb"
+    },
+    {
+      "original_name": "mkt_idx_small_large_momentum20",
+      "definition_sha256": "892ae7970bfee6f3dba93b8b656c011120c5f85cd94a98e37fa11a1e5bb16315"
+    },
+    {
+      "original_name": "mkt_idx_sz_sh_momentum20",
+      "definition_sha256": "748dd0ade6289870fee5f0834204338c3261c0fccfff810c262d478afe38e83e"
+    },
+    {
+      "original_name": "mkt_idx_csi500_csi300_vol_ratio20",
+      "definition_sha256": "8e6868ac451c8c62d9be9afbf71148218065cfa23519e42b0152ec209c1ec9d1"
+    },
+    {
+      "original_name": "mkt_idx_sh_sz_return_corr60",
+      "definition_sha256": "e9d03bd8605fa82923701bd0ce437887f9d086a620dfb5ec1d943463efb55954"
+    },
+    {
+      "original_name": "mkt_idx_growth_value_spread20",
+      "definition_sha256": "4de34ba4ccc855837061c7b5b5eb72723086cb6d87020d44902d4bc5b6aa3ea5"
+    },
+    {
+      "original_name": "mkt_idx_csi300_amplitude20",
+      "definition_sha256": "c71737a3edbebe87d7eac9f99f2c2c5f44db0f2691d2fbced0d73f4457dd4d3c"
+    },
+    {
+      "original_name": "mkt_idx_csi300_amount_share",
+      "definition_sha256": "3e1352bf57ae0662d11f8f7868139471a9ce3f4789f9730d5eb635ffd71a25cb"
+    },
+    {
+      "original_name": "mkt_idx_broad_dispersion",
+      "definition_sha256": "5076f8a170cfab11bf2199920bfacb0dd59e917ce3e9580dffc451cc16852875"
+    },
+    {
+      "original_name": "mkt_idx_csi300_range_position250",
+      "definition_sha256": "25eb336042fbd4398600eb77ad47075f37c3a43e6a88b243a9d2b69bf5f31571"
+    }
+  ],
+  "baseline": [
+    "mkt_idx_csi300_momentum20",
+    "mkt_idx_csi300_volatility20"
+  ],
+  "hypothesis_boundary": "指数按官方编制范围（不受固定池限制），价格指数不含分红；指数动量/风格差刻画风险偏好与风格延续，量比/联动刻画参与度与系统耦合。",
+  "search_policy": "只登记既有正式因子的逐值审计别名，不扩窗口、不改参数、不新增变体",
+  "registration_note": "本文件为 2026-10-03 市场因子复审的**追溯登记**（既有正式因子的逐值审计别名），非事前研究登记；方向与先验强度的预登记见 freeze 方向表，检验为回顾性筛选，不构成未触碰留出样本上的结论（retrospective_screening;historical_selection_is_not_untouched_holdout）。"
+}

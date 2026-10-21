@@ -1,0 +1,28 @@
+family_id: r9f_breadth_shape_v1
+idea_id: r9f_breadth_shape_v1
+trial_budget: 3
+baseline: >
+  朴素对照 = 个股腿对应的生产因子（turnover_std_20 / vol_120+idio_vol_60 / short_term_reversal_5），
+  以及整市场状态腿的直接近亲（mkt_strong_up_ratio 用 ≥5% + 2,115 只冻结池、mkt_up_ratio、
+  mkt_full_flat_ratio 的 15:00 口径）；定向相关对照 = 在库 bw_strength_sensitivity_20
+  （个股对「涨超 5% 占比」的 20 日相关，属已删 bw_* 敏感度族）、mkt_dispersion。
+  不把模型贡献视为已完成。
+allowed_variants:
+  - {signal: breadth_tailskew_x_turnover}
+  - {signal: breadth_intraday_slope_x_beta}
+  - {signal: breadth_concentration_x_reversal}
+parameters_frozen: true
+variants: []
+search_policy: >
+  每机制恰一个候选、无参数变体；状态窗 252/120、腿窗 20/120/5、日内早盘腿 09:30–09:59、
+  状态标准化口径 z252 全部先于任何结果统计冻结；登记后不看结果改方向、改窗口或改腿。
+trial_budget_note: >
+  3 = 任务书 F1/F2/F3 各一个；F4（涨跌停不对称）因上游 limit_up_count/limit_down_count 在
+  2018–2019 恒为 0 而在全窗口不可运行，**不占预算、不登记**，以 not-run 记录在 report.md。
+registration_note: >
+  本族为 Round 9 单元 F 的事前研究登记（非追溯登记）。形状为**股票级 (T, C) 交互候选**，
+  is_market 保持默认 False —— 依据 research/evaluation.py 的 is_market 硬分支
+  （市场标量 rankic=None、无 G4 可裁决）与已删市场因子 M5 预测检验 0/27 的实测事实。
+  §8.8 重蹈检查：已删 breadth 族 10 个 + 在库 bw_strength_sensitivity_20 是「个股对宽度序列的
+  20–60 日滚动敏感度」，已删 field_markets 族 9 个是分钟振幅/量集中/加权压力/指数层——
+  **11 个收益桶的形状与 241 点日内路径此前完全未被使用**。

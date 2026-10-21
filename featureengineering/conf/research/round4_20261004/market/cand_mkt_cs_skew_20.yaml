@@ -1,0 +1,18 @@
+name: r4m_mkt_cs_skew_20_v1
+family_id: r4m_market_state_v1
+implementation: research.families.r4m_market_state_v1:build
+parameters: {signal: mkt_cs_skew_20}
+units: 无量纲（标准化三阶矩）；日频截面偏度与其 20 日滚动均值。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily / stock_adj_factor，delay=0）；无未来数据。
+missing_policy: 单日有效票 < 100 的截面偏度记 NaN；20 日均值窗口内至少 15 个有效值，否则 NaN；不填充。
+spec:
+  group: market
+  desc: "池内日收益截面偏度的 20 日均值（绿卡描述量，无方向）"
+  formula: "r=单日后复权收益(停牌NaN)；skew(T)=mean(z^3)/sd^3，z=r-mean(r)，sd=std(r,ddof=0)；value=MA20(skew), min_count=15"
+  deps: [stock_daily, stock_adj_factor]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  is_market: true
+  note: "绿卡通道预登记（无方向承诺）；截面偏度为横截面半矩口径（绿卡列举项），20 日滚动均值仅为降噪的单序列标准变换——该构造位于绿卡资格边缘，判定理由与披露见 round4 freeze；固定2115只主板池；有效样本分母，少于100只为NaN；市场标量不做截面rank；缺失保持NaN；未做收益有效性承诺。"

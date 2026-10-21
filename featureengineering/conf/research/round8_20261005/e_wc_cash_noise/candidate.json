@@ -1,0 +1,38 @@
+{
+  "name": "r8e_book_wc_cash_realization_noise20q_v1",
+  "family_id": "r8e_wc_cash_noise_v1",
+  "implementation": "research.families.r8e_wc_cash_noise_v1:build",
+  "parameters": {
+    "signal": "book_wc_cash_realization_noise",
+    "window": 20,
+    "full_rank": 7,
+    "residual_df": 13
+  },
+  "units": "dimensionless residual standard error of approximate book delta W/average assets",
+  "availability": "max(valid ann_date,valid f_ann_date); at least one valid >=19900101, quarterly end>=19900101 and PIT>=end; invalid earlier-than-end rejected, never manufacture announcement from end; strict next exchange trading day after row/event PIT; latest visible whole row for each stock,period,source; max report period present in both BS and CF by current event PIT, before finite-field/comp_type qualification; newest joint invalid state clears old; current BS/CF q and every row required for point/YTD-difference must comp_type==1 and report_type==1; invalid types preserve frontier but make state NaN",
+  "missing_policy": "20 contiguous quarters t=q-20,...,q-1 ascending; all mandatory values required; no compression/fallback; sqrt(SSE/(20-7)); rank7 and exactly constant finite y => exact0 allowed; any rank failure => NaN even constant y; frozen2115 pool, current universe/traded; calendar age since end(q) in [0,550], not since revision; invalid new joint events overwrite older finite state",
+  "spec": {
+    "group": "research_financial_quality",
+    "desc": "账面近似营运资本变动与已披露三期经营现金流的实现噪声；低噪声质量为负方向弱先验，非利润操纵识别或收益已证实。",
+    "formula": "W=CA-cash-CL+STborrow+all_due_noncurrent; y=deltaW/avgAssets;20 rows t=q-20..q-1; X=[1,Q2,Q3,Q4,CFO(t-1,t,t+1)/sameAvgAssets]; rank7; sqrt(dot(y-Xb,y-Xb)/13)",
+    "deps": [
+      "stock_balancesheet",
+      "stock_cashflow",
+      "stock_daily"
+    ],
+    "fin_fields": [
+      "total_cur_assets",
+      "money_cap",
+      "total_cur_liab",
+      "st_borr",
+      "non_cur_liab_due_1y",
+      "total_assets",
+      "n_cashflow_act"
+    ],
+    "warmup_days": 2800,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "All mandatory current/historical comp_type/report_type1, strictnextTD, age0..550 fromq. All original visible source rows retained; identical PIT whole-row physical-last order. Cashflow single quarters use exact same-fiscal YTD. Current q BS amounts unused. Six frozen same-support controls through control_components. Explicit7 financial fields; no5min. No validated returns; no literal DD or manipulation label. Float64 calculation, official Storefloat32. Fixed control plan in freeze."
+  },
+  "freeze_sha256": "f1237c720859ee92af91fe90d22e27f2d41433f7c4734ff2a87e8efa93dfc5fa"
+}

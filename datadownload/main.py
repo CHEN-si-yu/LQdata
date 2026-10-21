@@ -46,8 +46,7 @@ DEFAULT_ORDER = [
     # 0 基础
     "basic_calendar", "stock_list",
     # 1 小表 / 快照
-    # index_ths_sector_categories / index_ths_constituent_stocks / tdx_block_stocks
-    # 已于 2026-09-19 彻底删除（快照表，无历史版本，回测必然前视）
+    # tdx_block_stocks 已于 2026-09-19 彻底删除（快照表，无历史版本，回测必然前视）
     "tdx_blocks", "dc_blocks",
     "stock_pledge_stat",
     "stock_forecast", "stock_holder_number",
@@ -59,7 +58,7 @@ DEFAULT_ORDER = [
     # 2 中表
     "stock_st_info", "stock_suspension", "stock_adj_factor_changes",
     "stock_dragon_tiger", "stock_top_list",
-    "index_daily", "index_ths_daily", "tdx_minute",
+    "index_daily", "tdx_minute",
     # 3 大表
     "stock_adj_factor", "stock_daily", "stock_daily_adj",
     "stock_main_fund_flow", "stock_margin_detail",

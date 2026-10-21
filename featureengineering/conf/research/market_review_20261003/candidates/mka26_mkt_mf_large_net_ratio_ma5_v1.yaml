@@ -1,0 +1,28 @@
+{
+  "name": "mka26_mkt_mf_large_net_ratio_ma5_v1",
+  "family_id": "mkta26_flow_family_v1",
+  "implementation": "research.families.market_gate_audit_v1:build",
+  "parameters": {
+    "original_name": "mkt_mf_large_net_ratio_ma5",
+    "definition_sha256": "dd4676a6462ed0e9cda098f610de83b7218d62d327d1c5203f877fada63489f5"
+  },
+  "units": "与正式因子 mkt_mf_large_net_ratio_ma5 完全一致（本候选仅做逐值复算，不改变任何口径）；单位与可用性详见其正式 note。",
+  "availability": "与正式因子 mkt_mf_large_net_ratio_ma5 一致：T 日值于 T 日收盘后可用；无额外滞后；上午族截面时点 11:30 但生产可用时点为收盘后。",
+  "missing_policy": "与正式因子一致：缺失保持 NaN，不用未来值回填；对齐前缀按正式声明（align_fill 或 NaN）。",
+  "spec": {
+    "group": "market",
+    "desc": "大单净流入率的 5 日均",
+    "formula": "mean(前 5 日 large_net_ratio)",
+    "deps": [
+      "stock_main_fund_flow",
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": "2018-01-01",
+    "warmup_days": 80,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "市场审计别名（mka26 复审）：逐值复算正式因子 mkt_mf_large_net_ratio_ma5@v1；市场标量，每天恰好一行、无股票列、无横截面 rank；未做收益有效性承诺。资金流金额单位是万元，只做同表内部比率、不跨表相除；不使用 net_mf_amount 字段（实测其语义无法从源表自证），净额由四档原始列构造。 缺失保持 NaN，不用未来值回填。",
+    "is_market": true
+  }
+}

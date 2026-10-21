@@ -1,0 +1,50 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "name": "s26_flow_buy_underresponse_v1",
+  "family_id": "s26_transmission_family_v1",
+  "implementation": "research.families.selection_20261001_v1:build",
+  "parameters": {
+    "signal": "buy_flow_underresponse"
+  },
+  "units": "stock_daily的OHLC、vol、amount保留供应商原始尺度；四档买卖amount保留供应商原始尺度；本信号仅使用同字段时序比值、对数创新/标准化或同表同尺度比值，单位相消，不做跨表金额/成交量换算；不据字段名或跨表比例认定物理单位。",
+  "availability": "日终信号，仅T日及以前原始记录；拟合/历史基线若存在均止于T-1。四档资金遵循本项目delay_days=0合同，原始可见日期由审计cutoff控制。固定池偏离使用ctx.universe的当日有效样本，含ST屏蔽。",
+  "missing_policy": "当日不成交或实际必需源字段缺行/非法值为NaN；不前向填充资金流，不用未来标签有效性筛股票。个股池偏离收益对大单+超大单净额占比的回归使用过去60交易日、至少48个完整配对样本；系数和残差尺度止于T-1。有效输入下未发生买入低响应为0。用于lag/rolling的HFQ价格和成交额先按当日真实成交及OHLC/量额有效性屏蔽；收益/开盘缺口还要求前一交易日有效HFQ收盘，不把无效正价作为上一日观察。进入创新/拟合历史的资金档位须当日实际成交、八列金额有效且总额>0；完整输入下的合法未触发条件0仍保留。",
+  "closest_existing_baselines": [
+    "mf_flow_price_absorption_20",
+    "mf_big_order_ratio"
+  ],
+  "semantic_difference": "以过去回归响应定义吸收偏离；既有吸收为20日累计资金/绝对收益，不能解释当前超预期资金。",
+  "source_fields": [
+    "stock_daily.open",
+    "stock_daily.high",
+    "stock_daily.low",
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_daily.amount",
+    "stock_adj_factor.adj_factor",
+    "stock_main_fund_flow.buy_sm_amount",
+    "stock_main_fund_flow.sell_sm_amount",
+    "stock_main_fund_flow.buy_md_amount",
+    "stock_main_fund_flow.sell_md_amount",
+    "stock_main_fund_flow.buy_lg_amount",
+    "stock_main_fund_flow.sell_lg_amount",
+    "stock_main_fund_flow.buy_elg_amount",
+    "stock_main_fund_flow.sell_elg_amount"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "s26_transmission",
+    "desc": "正大单流的价格低响应",
+    "formula": "max(main_net_ratio,0)*max(-z(return-relative_past60_OLS_prediction(main_net_ratio)),0)",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor",
+      "stock_main_fund_flow"
+    ],
+    "start": null,
+    "warmup_days": 180,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "selection_20261001_v1；单解释项OLS ridge=1e-6；收益响应偏差clip±8。池偏离为固定池当日有效样本等权去均值，不是行业或完整beta中性。所有方向事前冻结，候选注册不等于生产批准。"
+  }
+}

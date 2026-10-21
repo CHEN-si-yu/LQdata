@@ -1,0 +1,4904 @@
+{
+ "schema_version": 1,
+ "created_at": "2026-10-01T02:51:57.691209+00:00",
+ "universe_sha256": "e0f1ef145d4011421d043d8f5076e1d1614ce4a325dfb577e3aaed48e5a6956c",
+ "default_start": "2018-01-01",
+ "common_sha256": "e4d1fc99901b5e060a0a8dde8fbbe899c5e087f9259104c44e69ccb686b54a30",
+ "kernel_version": 1,
+ "objects": [
+  {
+   "name": "afx_cf_im_net_cashflow_oper_act",
+   "definition_sha256": "886819fe998d223677825c6f5d4b3fc9cc5061030b8650153f2aa31c76ee198f",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_fcfe",
+   "definition_sha256": "7a32bc146fbc2392e0ed1f392345f4469d5c2bb42ec64fbb3c8f7c42ea92a846",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_fcff",
+   "definition_sha256": "d451ecc123acfe2305d8bdfc8c9297e5e31a322fc0df3f765209b7a0f50e1a6b",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_ocf_to_interestdebt",
+   "definition_sha256": "8c28820e4e6171398fb9b0d91c773a0860d6290ae225f71b4d6e698c2640985c",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_ocf_to_opincome",
+   "definition_sha256": "a6b6fe5dce146061a223888533148d23d0b643bedbd378ce1bd1dfc5de3e56cc",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_ocf_to_profit",
+   "definition_sha256": "a1726a288545a4c7c5161f70be495f1c310216472935b5f7c7827f255e4d0281",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_ocfps",
+   "definition_sha256": "71afd280ac547b7df47580e7071e0cacf1af13f90e623b91ad149e2de940e0ef",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_q_gr_qoq",
+   "definition_sha256": "c692128579ba1d2458b547c2639c1e5f430d2f553ac22ecc7655c29c05c8e482",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_q_gsprofit_margin",
+   "definition_sha256": "8273487fc8688fe480ad01c02910b462e20ff47f60347ad86fe812508d367d18",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_q_netprofit_qoq",
+   "definition_sha256": "a70587c50e6b8135a8a32219aeada6f4a9f3a40c8eff6cf2b93041f8e9dd8ee3",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_fi_q_ocf_to_or",
+   "definition_sha256": "cea1a316b5ffbbc5eea22a64ca329254b4f142c6e5a010921f7a1ea0dabed05b",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_is_basic_eps",
+   "definition_sha256": "981319efa2c8a7c9ff8ce8159637c7d43adb18f199ce437762d7b940d6b5332a",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "afx_is_ebitda",
+   "definition_sha256": "45064a161f1aae978092956276ee6feb65baa7a629aa88b7235a703c20b27c97",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "amihud_daily_5",
+   "definition_sha256": "cf116a5b6060c249e4466a08839db7aef626a30bcb90b2a73f9be76b5817106c",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "f3ce7575a2e7e05b22aaaec75f1eda9f4b43f6fc190f944f867a966f927ae526"
+  },
+  {
+   "name": "amount_mom_accel",
+   "definition_sha256": "819db655d86e4c39bebcabd3c83b97ece26c28d63c6b323002e5a2acd0cf8730",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "d1ddd8c337db0fb4834b31ad6605568a69d07e5bd9ffd36d4296ae2b32eb9f23"
+  },
+  {
+   "name": "amount_ratio_20",
+   "definition_sha256": "eb416656001bebdddf852063615153284befe6014ebedef9edbbc44f9bdaab27",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "887eee2ddad5ad98dd315c5166eea65a48a3e1074f77dbee1a88bcc513b390d1"
+  },
+  {
+   "name": "asset_growth_qoq",
+   "definition_sha256": "91aea06a2acf9446afd3b25fa78ba8284d56e92bcaff41a0bb7a16611ea2936a",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "atr_14_ratio",
+   "definition_sha256": "08c92d0a4e7e9d7a419f1a57d6253c16a08c7ae7626ad9f1cc8d2b7a05e15171",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "9737f26fa93d16b14d4522ebbb381c9085bef1963fe79d7592f12bdce9ed6758"
+  },
+  {
+   "name": "beta_60",
+   "definition_sha256": "5e599071840e87a4e1bcae4cb202d1bf69e954a6229705312e8bbda7815e5677",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "index_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "e057ac2a970a1df8c0e8a58bb256e31d8e91b9ea9e159085838fa14d9cad8b44"
+  },
+  {
+   "name": "bp",
+   "definition_sha256": "1e1ee30ebaf82bd49c979c8cc1d25a1fb30496178fc34e58c94289489c684c79",
+   "definition_version": 2,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "3bdeab7bc971a03a8152e361e18428333fef0c974389bef26a27521ead5467c7"
+  },
+  {
+   "name": "bs_other_receiv_to_assets",
+   "definition_sha256": "a82f9c5bc2f853c7d6657247b657a7567b53405e489be03cc9ef603232366062",
+   "definition_version": 2,
+   "deps": [
+    "stock_balancesheet"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "55de98d240a5b65563a95f69e0191b6f813f457624744e3a0fa4c17e066cdc1e"
+  },
+  {
+   "name": "bw_strength_sensitivity_20",
+   "definition_sha256": "13ccf16094cbd144fb3be0d6eeae39b8da1a0c3ccbe7f1a834295e255f55b131",
+   "definition_version": 2,
+   "deps": [
+    "stock_market_distribution_history",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "23baf49f3dcac7dabcb6ecd17edecd1f0596d0d932ea681b6ff82f15151fe10e"
+  },
+  {
+   "name": "cash_conversion_cycle",
+   "definition_sha256": "3baf959dde2cc1a57a98ae0802b442b8d467d64f723c0ba93d0f8fbb35ca5361",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "75a9a239949d120d9904ce206f04e7397b96c0b35079b7ed892d302222faaf70"
+  },
+  {
+   "name": "cash_sales_ratio",
+   "definition_sha256": "a7f4733d0ab5ec1550ff1f506cb121f7ec7dbe057d8c3a411be2827e7a00507a",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_cashflow"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "bd2fb3a629bd1c5e3df8d8c1c80eeaf361f04db521c22315df9d69ba9ced237c"
+  },
+  {
+   "name": "cf_purchase_cash_intensity",
+   "definition_sha256": "d5222421600124563d684c7a1d11a852aeb36e2cba4397c50267123a47bc603b",
+   "definition_version": 2,
+   "deps": [
+    "stock_cashflow",
+    "stock_income"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "ab22c4b8503ddbbd91a69f5f5539e75d96ddecbe74d5307580feda802021e07f"
+  },
+  {
+   "name": "cfcr",
+   "definition_sha256": "d1b6433b82e66b07270d86555d7473f30c168beff942c71db65cda0202b151b9",
+   "definition_version": 2,
+   "deps": [
+    "stock_cashflow",
+    "stock_income"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "94eaa58a02e402fc5075a531a31aac518043f8eea7bbbcc81a683af80c98756a"
+  },
+  {
+   "name": "cfp_ttm",
+   "definition_sha256": "367dafec21d729531e990f93005c8f2977a2a07f8c0d72279cfdb86f2a96d28c",
+   "definition_version": 2,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "b57b05984c419992e5b13e1083dbd15b35894e98bcbf6091b3e8e659e0b04d66"
+  },
+  {
+   "name": "close30_ret",
+   "definition_sha256": "2780f7a794aab81aa73ea7b4e75022c1dfb282b0c83e0d8a0b1045c7b75752c8",
+   "definition_version": 3,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "134eb9494e24f2677ffa0f23cfcd14700f8c565a6b713d90f7ac70368f09be1a"
+  },
+  {
+   "name": "cp_momentum_lowvol_20",
+   "definition_sha256": "9e405e73b890bc8f4da1fcefb49de70a644ebbcd3ae87d1d73ec34ace762ccb5",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "idio_vol_60"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "4e7bc729bd1ac022dd8023fe408659d13e325fa920649c9886c3487f06a2e359"
+  },
+  {
+   "name": "cp_value_momentum_div",
+   "definition_sha256": "52b2703cb5b9202d6ae7c7950c8fa413e30065153e68e72ed2d7257dd50deb03",
+   "definition_version": 2,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily",
+    "stock_finance",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "c836e4f8be39d562357c7665df6e57e0861b2a70b3ddbc6030750ce319c6c662"
+  },
+  {
+   "name": "dividend_yield_3y_avg",
+   "definition_sha256": "7e5e892789fdaeacbb6f72149bee450c85f5f442b2a234527ba00c7c76643833",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "32310a0f597a2fc18987940e4c4ff32c4a37c4b5ed0262015b1902e4e176261a"
+  },
+  {
+   "name": "dp_ttm",
+   "definition_sha256": "9286e5269c15a941e0efb3d83c126dd9be8014780dd100b37d5c012fc2284a66",
+   "definition_version": 2,
+   "deps": [
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "443ba44c633f1a3d6959da77499543081d8bf9322fddd35d9405596a22ddfb5a"
+  },
+  {
+   "name": "dpo_20",
+   "definition_sha256": "2b7294fb7245a4e321afd10ee9a53f9e6e200a993423b2ea7331e0ca1bbf73f5",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "eae5d55a344eb830ca7d10f7f90e7623e6038501ac7e304b0023023c4a505eb7"
+  },
+  {
+   "name": "ebitda_to_market",
+   "definition_sha256": "8f5c07da24f0197d0eaca4eeb79ee0fad518970501382ff99d43ee3cdabfb0b3",
+   "definition_version": 2,
+   "deps": [
+    "stock_cashflow",
+    "stock_income",
+    "stock_balancesheet",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "ea882b9c76cbb6164850ccb986170854c5c68cb70b67c5a80b5a623239e502a7"
+  },
+  {
+   "name": "efx_annual_earnings_yield",
+   "definition_sha256": "0fc09de7316417b9381be06e90d69e9b4803c87609fdd9a94dbefb7a30f4411c",
+   "definition_version": 3,
+   "deps": [
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "243d2f5576f29fe633d0a5897e91e5d40af8fae1ecd4425dbf101f9f446351c4"
+  },
+  {
+   "name": "efx_volume_ratio",
+   "definition_sha256": "415758cc26bda646b32df352a5848fb572ebf9e6073b58648dc817545b9a8fac",
+   "definition_version": 3,
+   "deps": [
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "71210676e5c3231debfe1e1b1c9bc9222f74aa4e126c840e926beb7f099bb523"
+  },
+  {
+   "name": "ep_ttm",
+   "definition_sha256": "5488ba65ecef10856c479418885fefc3e6a7324318799ebf89ca4bd4a60b875a",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "fcbbc4e74b963ff131ab2407f151ea75ec3317e20467132f178286f514b13317"
+  },
+  {
+   "name": "etp5",
+   "definition_sha256": "f1a7f97f9097cc66fa0dfb9fdc13bc9f06af0062f81d9ce53150a3213dc30020",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "7308d4cf072842817af715e6cb275e6a046435355f90c8053d253cfff0a82392"
+  },
+  {
+   "name": "extreme_move_event",
+   "definition_sha256": "31e498e6132e2025ac44dce187910d6c4da4decf623c0b709a7d0de74018a752",
+   "definition_version": 3,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "8475c489f59b5cd47c2d0bb71410067a407e11af780ea991e7a5a921d74972c9"
+  },
+  {
+   "name": "holder_number_chg",
+   "definition_sha256": "aaac7e58980ea67e6bf67858caf3a6391bc9497a2a3790496da963dd7ad338e8",
+   "definition_version": 3,
+   "deps": [
+    "stock_holder_number"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "be68cdd34a69a4e9e37ff6cef6624deaa4be87313c02924386527af190c8b949"
+  },
+  {
+   "name": "id2_close_vs_pm_vwap",
+   "definition_sha256": "3dd5969a5769c917eec113b3f2a0ce5330e79fb257ec0d8cdb17eeb2c371e8d3",
+   "definition_version": 2,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "6fa63ef35418ed7bc3effe84fa90fe1d6b24e65925c37f1ba7eb739611905089"
+  },
+  {
+   "name": "id2_close_vs_pm_vwap_20",
+   "definition_sha256": "948e28cfbb11770b29ba2179f393bb6aedb1a98c448bf5bf34253b622b7fabd4",
+   "definition_version": 2,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "ce76b38a8bafce3550c504795033870f5de322668b2d9799621be27e3fa73008"
+  },
+  {
+   "name": "id2_hi_lo_pos_gap",
+   "definition_sha256": "41d28f7bfee2878283ccbaf7758a37ca45799426b699dccc0356244e7acfe816",
+   "definition_version": 2,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "b28194da27930af4d8ac29e4b5507776f06f13d5dce1c10a70aa889e5a0cdc29"
+  },
+  {
+   "name": "id2_parkinson_vol",
+   "definition_sha256": "dd97d22814d07a74013d4795349cd7622698798ba16d0ceac4e23919cb6cbd78",
+   "definition_version": 2,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "84e9cca15dbe5e99ee5a9431e6e7d9015aa63874d78c9994fe6427f7f3ec50c6"
+  },
+  {
+   "name": "id2_ret_concentration",
+   "definition_sha256": "9e8a0cff6a12827b654db1c16e5635fd29e807bb84a780caf231f36511d521ba",
+   "definition_version": 2,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "179629021d9060be6ef4e111dca33125a2cc5478e3ee1dfcae8a65ebf18758dd"
+  },
+  {
+   "name": "idio_vol_60",
+   "definition_sha256": "e36dfb2de98d3ca5aaf807e977bee29225a405684756f190128718e10d9486c3",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "index_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "d6fe6137d66e348f3df1a2ba355564f1397c12ec865e7baaa605ec81e369b491"
+  },
+  {
+   "name": "idt_overnight_minus_intraday",
+   "definition_sha256": "d6f7c28a3d501537a9e769946261b7188ec442a551cdcc555e88e30e4883faad",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "e2842a95da616602f22908a2d23b338930377cffd878695a755601bc9f6646e7"
+  },
+  {
+   "name": "idt_rv_daily",
+   "definition_sha256": "35df7eae100dfef8de5e3bb50c938f683039d2c8780e2b8119c179caa6b817c9",
+   "definition_version": 2,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "abc4289b93994532a70207a0289f37018d188ad2058613740d62116bb5e616e0"
+  },
+  {
+   "name": "idt_rv_term_structure_slope",
+   "definition_sha256": "e63290bd4a01330bf3af7a7b7582f71e7fcc96e2dfffb166ffab472812542dc3",
+   "definition_version": 2,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "d03fe19d54e30803c153f725c0db92e9aa1617ba34a553b475c9e19400ab976c"
+  },
+  {
+   "name": "idt_vol_stability",
+   "definition_sha256": "2ee2fb1c85424a24606224915a66b184d5ad32543a5a35ccf1d825957dbecc98",
+   "definition_version": 2,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "998ee36272a6fe9b180531cd90865d24b8ee5b889f0a8648a6576db261209276"
+  },
+  {
+   "name": "ind_bps_yoy",
+   "definition_sha256": "849e2b87eb7382341ad1fd239d7a55f2e1852828942f12a3f5790656622e4b20",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "6bb5dd0b4728841179293d7d2db0b072a97c85c7f7608e68dbb7892055eb8173"
+  },
+  {
+   "name": "ind_dt_netprofit_yoy",
+   "definition_sha256": "4964906ee20171c7af82d5b0cf25c79beab72bf411aa78a47fbcd9eeef98984d",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "3ffb1bd5d34ac95b63d49dba0b838d007befd9c80e07eaea66fa25107f4d94c6"
+  },
+  {
+   "name": "ind_int_to_talcap",
+   "definition_sha256": "27290401421f0551377a60114cfd02c7a593fb35be7edea3a5b6d1019d11967d",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "95fe0ace18a2f801d9f5cf6980dea16a0acfe8fd24c17eae9cabc1c76726b85f"
+  },
+  {
+   "name": "interest_coverage",
+   "definition_sha256": "bac96167f31573526c1a0afcfad1c4629bd5ce063785bde528c1780e7d914108",
+   "definition_version": 2,
+   "deps": [
+    "stock_income"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "57084e2cf002bd0ada8999fc4c64cf62a46cbef66c4cd04bed17ab167956dc4a"
+  },
+  {
+   "name": "intraday_vol_ratio_5d",
+   "definition_sha256": "0d1de8f852a0d9f6b7e0f148ceb317c25aca74366a68397b15d341bd0def71a9",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "acf4cbec4443de87a9d2a429d372c22e3ea1229b4821311e1209a33afc55ab87"
+  },
+  {
+   "name": "inventory_turnover",
+   "definition_sha256": "044a81380518501536699c2761d40c9aee9ebe7da466dd9d2e0ddde14ccb252b",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "5c820c632ca716662d1a4bdfc8134173779dcaa18ce692849fffd4f8ccfc49b2"
+  },
+  {
+   "name": "label_ret_10d",
+   "definition_sha256": "b467dce8b6c4cd938c33aed254fc2f2c0b9d74df8449f3792304787cc5a9e36e",
+   "definition_version": 3,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "label_ret_1d",
+   "definition_sha256": "1f686306ba31d0325cb04aa0922e92db16926a92d206a8d5fbdcd2995e1822a0",
+   "definition_version": 3,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "label_ret_20d",
+   "definition_sha256": "bae773544cdb874d2660e2340fbe2b63adc2c2a1fe926babda89aaab34463c84",
+   "definition_version": 3,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "label_ret_3d",
+   "definition_sha256": "deae98d84c207935fd782ed255aa5e53940e4d6373f52747ad6f37ae737fd08a",
+   "definition_version": 3,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "label_ret_5d",
+   "definition_sha256": "9c8d479e20c4e0e05321d200736db42ca4c884435596b31bb4fe0985c6468b89",
+   "definition_version": 3,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "limit_broken_ratio_20",
+   "definition_sha256": "ceb31a1b836cdb9c4ee0f9e7f8bce337d9addc9b5b0fc00361fe14582c94dd39",
+   "definition_version": 2,
+   "deps": [
+    "stock_limit_list",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "af663ca22932efa9a27ffd4509cb2f6d1065bf6f53027720fc9b15f68eb9c1e8"
+  },
+  {
+   "name": "limit_days_since_up_20",
+   "definition_sha256": "3cc261e115535b64191930559f7e9d3d17f7208489b3a9990573bb6c8fb3b50a",
+   "definition_version": 2,
+   "deps": [
+    "stock_limit_list",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "7ea7b36535bf65dfb0040ac365d7a3486ae029afed601890c2fb2a1d43fc7ee6"
+  },
+  {
+   "name": "limit_down_event_5",
+   "definition_sha256": "5f116f43038103d37c978f22ec738b640a67da663a0889a7ee779f3e48da5758",
+   "definition_version": 2,
+   "deps": [
+    "stock_limit_list",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "81a4797b8c69b0696027fcc6c0de35b57f0eb842b47ce079cce14e51bc790df0"
+  },
+  {
+   "name": "log_mv",
+   "definition_sha256": "25a49b75bb5f95e8dc621a74fd24d34f594d12219b44a5e4fc27b896b382f884",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "b2d2c76d44ed51f1673ca6a4c8d80eb58f5777d8a9725f0dc8304911b5216302"
+  },
+  {
+   "name": "margin_repay_deceleration",
+   "definition_sha256": "574075d145f475f05f8199af80ed9e94b6a7b14b128e5db0284859b90a5f0e58",
+   "definition_version": 2,
+   "deps": [
+    "stock_margin_detail"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "8f87568aa44fe7e5b817c721032c033cf3e0cd903a36358e32be484a5b356a97"
+  },
+  {
+   "name": "margin_repay_shock",
+   "definition_sha256": "6a2df5adf2fdf8ea62b89a75d810081a69bf66d3e7875da8ebb5783351cc12ba",
+   "definition_version": 2,
+   "deps": [
+    "stock_margin_detail"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "7078014faed07a2fb4c163fe0701909df1213469728c03d02e0f875aa2143115"
+  },
+  {
+   "name": "mf_amount_weighted_direction",
+   "definition_sha256": "84f39b78f12fabfcf058162890b05748dae56da2892fcf4a61bc82566ccd56ee",
+   "definition_version": 2,
+   "deps": [
+    "stock_main_fund_flow",
+    "stock_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "8b30238e0421d35683c78f256aa81e3b890e64e9d3c126fd82cf6c2f95c764fa"
+  },
+  {
+   "name": "mf_big_order_net_ac1_20",
+   "definition_sha256": "b72cf075a2d5209d48d1981e1bdf4bc12e3287b49d0fb42d10a4781c70b366ff",
+   "definition_version": 2,
+   "deps": [
+    "stock_main_fund_flow",
+    "stock_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "9de98d2e90d0da07e87f321d44860ffbd64ef913244f858783cb32d687032ca0"
+  },
+  {
+   "name": "mf_net_inflow_5d",
+   "definition_sha256": "73de5bfc66dbc0324a611707ab6e1922c916635d7fb860260b4e49e193bea6bf",
+   "definition_version": 2,
+   "deps": [
+    "stock_main_fund_flow",
+    "stock_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "c1ae7ee168e4ef41c4d2e0f9e33f26410352113e56a8d5a2c67804110f7ddec7"
+  },
+  {
+   "name": "mf_net_vol_surprise_20",
+   "definition_sha256": "328faf047a1c82ed621f093a061704574b058f149fe53d93e5a151044b2345bd",
+   "definition_version": 2,
+   "deps": [
+    "stock_main_fund_flow",
+    "stock_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "74b71df8e7b408efd951efcd797327bd1d4affa41220f3fdf195bdb6f0921275"
+  },
+  {
+   "name": "mf_small_order_avg_price_dev",
+   "definition_sha256": "2cb053c3f6e86527b5ad7a4656211775e938cfcb7bc53c08aeaa879e55aa6896",
+   "definition_version": 2,
+   "deps": [
+    "stock_main_fund_flow",
+    "stock_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "77c76e1930e7d90edab1428e8ad981f5109e5666ae498f7b980ce8528f479295"
+  },
+  {
+   "name": "mkt_above_ma20_ratio",
+   "definition_sha256": "08f1a2fea76ed542042c998ab52fca01bff314b5240045f8f3e087179fdaa093",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "649afc51c068276e686f5018bc7fea08c25fe1f3d95c0c61677e24267623a596"
+  },
+  {
+   "name": "mkt_above_ma60_ratio",
+   "definition_sha256": "e4a51225228746180dffdd9a5221f068f08a85a1d8c415caeb4f8c93b9f3c18b",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "5493a442acf73c0c9e488137196d8c86cd3041b9946e5aeb15e22c4e6cf4e520"
+  },
+  {
+   "name": "mkt_am_dispersion",
+   "definition_sha256": "c38a8cd06dd1b1455c3b8ad717e0c62812d9df97b6a1ea907248dce70dd0c3ca",
+   "definition_version": 5,
+   "deps": [
+    "stock_daily",
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "c8e6178b4c5ef8d706c31c5a0f3bac3ed506d8a97629dd5cb6f30ce24af722a9"
+  },
+  {
+   "name": "mkt_am_downside_rms",
+   "definition_sha256": "00a42a81880b9d093408ca8f9a98fa84b745ed764b81c45406b4c19584aba903",
+   "definition_version": 5,
+   "deps": [
+    "stock_daily",
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "4a07e64ff81031ac6aa508915c75febfee72dc6fae1e73b5934e573dcdca0adb"
+  },
+  {
+   "name": "mkt_am_ew_return",
+   "definition_sha256": "6106440e897745727798a735b6d16b0946f69347e4df9e47a04cdebfecc372e2",
+   "definition_version": 5,
+   "deps": [
+    "stock_daily",
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "3ba281fedd5d36f2040faa9281237386e0d741acabdd48ed9ce09897f1ebe5e1"
+  },
+  {
+   "name": "mkt_am_range_mean",
+   "definition_sha256": "fac954dc43a55175d84b89fdf273e1690b0738f2abd4e73798a5e0ca389ff66a",
+   "definition_version": 5,
+   "deps": [
+    "stock_daily",
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "9ef05cc603270caaec8fb1f673e82e50ccca9e6fa3391bef93d0cc10a1fa3aba"
+  },
+  {
+   "name": "mkt_am_strong_down_ratio",
+   "definition_sha256": "19ac46d56ba0f649a6d942324dadaa35e0dc2bedb684b1b1d48e743750e983b4",
+   "definition_version": 5,
+   "deps": [
+    "stock_daily",
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "be81c3b18adcbf7d2fdc352d338dc32b72dcd9e37eb657ecfdc42de4251986fc"
+  },
+  {
+   "name": "mkt_am_strong_up_ratio",
+   "definition_sha256": "7a00e7332bb629ee6c997041922254cf01de0bbee3c2a459edc46e688383ab1e",
+   "definition_version": 5,
+   "deps": [
+    "stock_daily",
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "bee5c94d3e93b9c9de180f62b187abbc0b259faa4d707ab51ef84ed9c078f583"
+  },
+  {
+   "name": "mkt_am_up_amount_share",
+   "definition_sha256": "327c400d2b1474e88b64fa7117a180290d4f6103e5028bdb80fa386fd7c3ca3a",
+   "definition_version": 5,
+   "deps": [
+    "stock_daily",
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "8bf6a102e26fc0e17240b66ffe67167404ced0c33432f2e69569fe294b004891"
+  },
+  {
+   "name": "mkt_am_up_ratio",
+   "definition_sha256": "869c72146e5e2a2cc9d33d07f87d78ec00c79f0bebebe590b42bd39a09aa5ee3",
+   "definition_version": 5,
+   "deps": [
+    "stock_daily",
+    "stock_history_5min"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "46974396e172695cea921b8cb4614068a130e4ab26a571cc8db08bda6cfd7fc7"
+  },
+  {
+   "name": "mkt_dispersion",
+   "definition_sha256": "c50519513932d6890d18cc0e644c79a09b8ce149dac89e7c8a3f5772732e6305",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "fbcde75797b6aab2202fced49f98a8af4a2bc7e54f321f2de3b1a0a5dc520898"
+  },
+  {
+   "name": "mkt_full_flat_ratio",
+   "definition_sha256": "d6f96c504b843574565a05bf9c85a7073d4efaa643eb5e4dffa56c3b0f5594f6",
+   "definition_version": 2,
+   "deps": [
+    "stock_market_distribution_history"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "037de471b20ce9fe5042a2f4916eea6b31768e6b27909a1e3a5756f227328a3d"
+  },
+  {
+   "name": "mkt_idx_broad_dispersion",
+   "definition_sha256": "eac00830745701d488342ca8fc7dd181b34ede59d0478993c0c547f5352e4a6a",
+   "definition_version": 2,
+   "deps": [
+    "index_daily",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "70f59ab41ee69b5385813a57e51af3644f81d8a0615485ba314476d77e270ceb"
+  },
+  {
+   "name": "mkt_idx_csi300_amplitude20",
+   "definition_sha256": "75ef8bb8ad290923259ef58dd70429623e9ba631966a12e5d5cdae76e6d2f052",
+   "definition_version": 2,
+   "deps": [
+    "index_daily",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "bea021e8ec02b64e4c66b1221858319864f2ed0dcb31d1c018e9674c3429e702"
+  },
+  {
+   "name": "mkt_idx_csi300_drawdown60",
+   "definition_sha256": "821a2c974344521eae63a048f12f683c2abfb1c8c2281fa06c2ad955426b9a83",
+   "definition_version": 2,
+   "deps": [
+    "index_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "114ed0266f73ed297bf97ba3a4e37c61bf968e4422a1e12df68c96bf9621a4cb"
+  },
+  {
+   "name": "mkt_idx_csi300_ma20_gap",
+   "definition_sha256": "5eee6dbdf230cb2b70fee0eb7e793c5e64521122fa84aa2138e8252845fbd659",
+   "definition_version": 2,
+   "deps": [
+    "index_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "7a346511d6fbd3ff94a6b2c19fc0fca0fd09a3a67a9c99403775cb276e86e1af"
+  },
+  {
+   "name": "mkt_idx_csi300_momentum20",
+   "definition_sha256": "92a9dcd207401f7eb102060691e9a74bfdc01ffd5c4da2f6b8bb237108f7f54c",
+   "definition_version": 2,
+   "deps": [
+    "index_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "97a38328774772098f222cc14f978fc7b1096e176fc1fed6a5441dc9003ca2d6"
+  },
+  {
+   "name": "mkt_idx_csi300_range_position250",
+   "definition_sha256": "e267a1a96c837d2d963d6f11e96f41dc7f13f21b31be58b239f1862b965a1d43",
+   "definition_version": 2,
+   "deps": [
+    "index_daily",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "f0743da1f518d1552b0d4e11d5b6f272f94cce73f320e5ec72b6e971a2fcf146"
+  },
+  {
+   "name": "mkt_idx_csi300_ret1",
+   "definition_sha256": "f554ad5f89a32c9a27eb36846b21c5689f2e32059656c77e167490262b5a1a4b",
+   "definition_version": 2,
+   "deps": [
+    "index_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "4cc124b90fb401504855b3a7ccc9b5512d71bd48bc35eb46e7df7a1dcf1a1e23"
+  },
+  {
+   "name": "mkt_idx_csi300_volatility20",
+   "definition_sha256": "15ed234e7f6b9fd8ceaff5187aa9d632e76e2cac05639a14d96dd6f0ede7eeb8",
+   "definition_version": 2,
+   "deps": [
+    "index_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "2932920012eec3fb528010209a4bfbc661f63b277d12103b3bbaa152489421f9"
+  },
+  {
+   "name": "mkt_illiquidity_median",
+   "definition_sha256": "6bc4cd89abaccc22a69f5ec8a4a4c203037dadf476133bbc4fbb8303682678a1",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "16e0b333ec9534c7e5a56749f177e6b6e3e09bf22efa560994ab788f7fced940"
+  },
+  {
+   "name": "mkt_limit_down_ratio",
+   "definition_sha256": "85b46f7e29d9cf2aad11c928b5fe9f39292c9825707f298916bc232dd6f1fcc9",
+   "definition_version": 2,
+   "deps": [
+    "stock_limit_list",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "afbe4dec4cf3a23490496a7f8c6550782b145ca4af4cc7cafc1cbe9967c5d479"
+  },
+  {
+   "name": "mkt_limit_up_ratio",
+   "definition_sha256": "d9b1f983a4267d5e1fc1b2e52351e03258a28e2bbc6c2f3c4fc66b348e0c4902",
+   "definition_version": 2,
+   "deps": [
+    "stock_limit_list",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "6af3910bbd154c7391502af3337180e3e277491a1bfbc1aa9955b4260a6f0761"
+  },
+  {
+   "name": "mkt_margin_breadth",
+   "definition_sha256": "e44fa6ec783e33a562261716c2b05ef6aa666a6efc2625412a7eb7cdfae7f654",
+   "definition_version": 2,
+   "deps": [
+    "stock_margin_detail",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "7af28e81aaf84bfb85fc4a9015211f3a37f3527a8fd63a617048c5ecd38d0d60"
+  },
+  {
+   "name": "mkt_mf_elg_turnover_share",
+   "definition_sha256": "00b2060696faf16a15014b2e5c7c295231725558082418c6c8a2bd96e2e8f92a",
+   "definition_version": 2,
+   "deps": [
+    "stock_main_fund_flow",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "9f98562d313cfb52bf76157b2cc7ca78301fc04cfea16a275f0e0ffabe7871e7"
+  },
+  {
+   "name": "mkt_mf_large_breadth",
+   "definition_sha256": "0829da257801a56d75b9c7601f53cf58f91d3daa2cb0eaca4a9a739ccc600241",
+   "definition_version": 2,
+   "deps": [
+    "stock_main_fund_flow",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "af80264ff0b483642434135a95d27443f702bb92e4fb5e945eb663691f11bb83"
+  },
+  {
+   "name": "mkt_new_high60_ratio",
+   "definition_sha256": "85250b9f39eb8c341ee6a35cc1e7107c3fe5569d5ff4d989851daca7504ca430",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "f54704d7e55e1eac6b0151ab32caeac7fbe29428196fe30d8e9dd494da2de2df"
+  },
+  {
+   "name": "mkt_new_low60_ratio",
+   "definition_sha256": "df180bd48d514b606c2a28fed634c3c57e76ff02d0f1450427d358b5da1191f0",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "67406bff50f9c0086d24484ba0ab2572f58e183c3ce297ec157a778d5703d643"
+  },
+  {
+   "name": "mkt_no_trade_ratio",
+   "definition_sha256": "5a2d1c16f821fefcb3debf0ac104273d798b7e146d5ac191c7f8b5416bf924e1",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "9299d16fb7cc47527f50ccbcd16028cec86288198eb188607ff8bc22daa5400d"
+  },
+  {
+   "name": "mkt_sector_dispersion",
+   "definition_sha256": "646ff42139397c80c75183b18155a71a7f7287bff49dc6f667aabf4e181aee3f",
+   "definition_version": 2,
+   "deps": [
+    "tdx_daily",
+    "tdx_blocks",
+    "dc_blocks"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "ab391f86578b9c0373496e8547112df93122acc83865fd8826c34b0e9f570a58"
+  },
+  {
+   "name": "mkt_sector_mom20_dispersion",
+   "definition_sha256": "79abb5b887007688f40ccf85eb88db5da5c3597b2e9d59bf615c2da5015f50ed",
+   "definition_version": 2,
+   "deps": [
+    "tdx_daily",
+    "tdx_blocks",
+    "dc_blocks"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "f0e13666ca02835ddbcb2cbc23cd9b6c0352199bd76529d6b94fc091396142a5"
+  },
+  {
+   "name": "mkt_strong_down_ratio",
+   "definition_sha256": "3d7172655eef996a8d9195be8c48b253a847d24089d4a63b314192cfc750a45c",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "d5e378c479ad3e6cfa528c232d072b1293daf4f05b834f9c2967f4afe7c5be4c"
+  },
+  {
+   "name": "mkt_strong_up_ratio",
+   "definition_sha256": "4a76aef13cc55eebd7a105977d079f3e304799572739324122d96952cbf5836a",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "1cfb22f3901e30b7c342146acb7c97677a67c61c241956022989642e555275a5"
+  },
+  {
+   "name": "mkt_up_ratio",
+   "definition_sha256": "ed490adec23255962cb9ad0600e8bf69be246ee47f4a591418a00ec69ffb1dee",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "786e6ed84d01a9cc830280e58bfdcf4cf3f490765a0183b899a10e1e908f2948"
+  },
+  {
+   "name": "momentum_120",
+   "definition_sha256": "f33e3c438f0e8b23d4c9f931c2410488d12046512c550f9ed1317f0f18c20f2d",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "909b1f96329db7eb940c7e9a1bad7bb5be5f985235061fa02c2c192487f3572a"
+  },
+  {
+   "name": "momentum_20",
+   "definition_sha256": "33f46990731c6f4e1cc0175a8731db6d893d74e6dbf2fcf703cbc07f89a135c7",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "9372fd9aa49d421d51efbd6d55c4e3182bb0c6224cff983638b6ee070911de18"
+  },
+  {
+   "name": "momentum_250",
+   "definition_sha256": "ce80e527687053ea9bf324f214fc748a076f4a2fa8e0bada2f176a89d895b0b0",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "6078c6cc2c6cd455f6fd8e345016e7baee8a55f94e05bf492ed15eacf60d9f44"
+  },
+  {
+   "name": "momentum_60",
+   "definition_sha256": "a5452e48eed8f7635f4f2fa528d8123977527412220e2ad957bbd5dd64750113",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "ffcc8aa92017dc32449760d062ebe55b5af9e5d781d8045df6b7a60375d1f8ec"
+  },
+  {
+   "name": "ocf_to_profit",
+   "definition_sha256": "857c9c44af81948ecf43fbd4e87b2080e69c06dedb14f15ce234f8538e223e0d",
+   "definition_version": 2,
+   "deps": [
+    "stock_cashflow",
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "65d407e2fed8a525fc361399ac6d90f220d9a3ef7bcf75b5b03834b1dee5f430"
+  },
+  {
+   "name": "ocf_to_revenue",
+   "definition_sha256": "7ec7e03fdd944a5501d540f00c4596d4fc358bdda821b133497cd350330372cb",
+   "definition_version": 2,
+   "deps": [
+    "stock_cashflow",
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "46c9067a5f1c024f443b35688ecc2aca9a1b992168cb3b064995449c68155c54"
+  },
+  {
+   "name": "open5_capacity_floor_ratio_20",
+   "definition_sha256": "62089bcbf7ca61ab5e052dfe63b308dd3b2c01458d4d6cb2335cb5135f960a50",
+   "definition_version": 2,
+   "deps": [
+    "stock_history_5min",
+    "stock_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "32c4f3376cc4ae7aba0ebf173de63199804bdb06c009793f7895169ff7c547fb"
+  },
+  {
+   "name": "overnight_ma_20d",
+   "definition_sha256": "78850edccd7ec023b446d36e991d23254faaaa55fef65fc64994b3e5e192ac16",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "beee371c5387315cc2c1c5a72c2fbe47010c4441de908a962269b2475d4af3d5"
+  },
+  {
+   "name": "overnight_ma_5d",
+   "definition_sha256": "f10532a3450329cac88b1a94d177129f3b3ac7efd3392f597439417ffc3330b9",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "49f7222bab58cce241658adede101f3516ec19ad27950d3efdb050085d5281af"
+  },
+  {
+   "name": "overnight_ma_60d",
+   "definition_sha256": "39b28f6d412262e355cc0e2d86eaa40dd9188cdf003b0d386dcb28d5fdd6f7f1",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "4ba53b8dfc4a95bb0f510ba59a6941743ba85b11e859b4e1a89b4f2bbf87cb4d"
+  },
+  {
+   "name": "overnight_std_5d",
+   "definition_sha256": "c3b703b1c18e3a71c0195481b2d25c9246f6c353365249e6b6ee04ec5c6546b0",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "a67bc3f373f1c2bf665c053f80e29c438a63749e0f14cfe08ddef7b0bfde19cb"
+  },
+  {
+   "name": "price_distance_from_52w_low",
+   "definition_sha256": "54cf17d2f919b2aa1c568a4ec960755935e5ed933b9fc04a4028e962123de5f8",
+   "definition_version": 3,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "b319273dd38384b9987605990a1c6fecb9cabc47ced3955537fb76641959400c"
+  },
+  {
+   "name": "price_to_52w_high",
+   "definition_sha256": "0613d5c4a55653e9abddb4fea57d5c2f3661fb67b335555168c6cf3b0b63a9a9",
+   "definition_version": 3,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "a4786664c33b1ea013450fd6fec375de5fa118a29ba920f3d2b049eb6f2fa86e"
+  },
+  {
+   "name": "qf_cash_margin_floor_4q",
+   "definition_sha256": "cbbb065918a78e0470c2707f25fb8b6fa2cd0ee462e71da5f273e1da5e9cc813",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "23d0a05da1e9d5b83aa074aa7d8c6fa6597f61d9f8631684d2a202546ac06945"
+  },
+  {
+   "name": "qf_cash_margin_yoy_change",
+   "definition_sha256": "785bb100e8093dbcfc411c11a338171d6e63e8474aa5aa9fad3cc07fa7477687",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "5b8bbce34e9d6fda3ddeacf02867e9f39f53c96566d474d7d58d79e9cbce2c9e"
+  },
+  {
+   "name": "qf_core_roe_floor_4q",
+   "definition_sha256": "f420e680f8fe10dd9d063ba02a7bea88e95ee46c62bb9ea2dba1c0dc1b66ec6c",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "2ca768cf806406e8daa677e1e86c02f8524fd4643446cdfbda9dbeabd5a103b1"
+  },
+  {
+   "name": "qf_core_roe_vol_4q",
+   "definition_sha256": "b04682cc0d89d898a7c16c0f7ecb91c90bed6cecc257c5f78736819ac2d2bb80",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "2d328e1fbe38543308611ff9e28ed8c8bf85b0ea7bb28111256be46948a7fe69"
+  },
+  {
+   "name": "qf_core_roe_yoy_change",
+   "definition_sha256": "06b08218133e6c9adc30fc033230e225cead7e0d36a1adfee75514c5f9c26e2a",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "174ecbfdbde7b5129c4bd22f670ac656dbe5280f14e94112691a2de11397ac60"
+  },
+  {
+   "name": "qf_roa_yoy_change",
+   "definition_sha256": "74b79ff17bddae8ecd6718bca1fa28332eef12054ba5eb610acc893de2437011",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "42c070a6c45b8766092fd5f2f0a230ff5776cf94ed509602f14ebd998dda0268"
+  },
+  {
+   "name": "qf_sales_growth_accel",
+   "definition_sha256": "a3299ff559f073fd7ecee034eb9bb5ca4d431a7eacad7abc9a7c798045df6f23",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "4f15a8472df0c9673ce11a5eacc6d4ad4591721f7d36a97dfe2da1aefa4f2437"
+  },
+  {
+   "name": "qf_sales_growth_vol_4q",
+   "definition_sha256": "81247570be3eb67eb565a02daab9036d96c81e358421928591ad28de35aff912",
+   "definition_version": 2,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "f98b349fe402a9f972ff00f020f3035280324a66eb8530c2b321640bbb934d56"
+  },
+  {
+   "name": "ret_skew_20",
+   "definition_sha256": "4fd76009c7c55122f978550f683322226cea59c45d0e3f8c818d8c07b1c14531",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "226dd50d5a63d42e0bd8dc48585cc345e7108e7e8e85fdfb0ed247845d826583"
+  },
+  {
+   "name": "revenue_cagr_3y",
+   "definition_sha256": "d5b0d671176f6c51bf4342955736b3f72415938261de0ce3172297ba13ff3c99",
+   "definition_version": 2,
+   "deps": [
+    "stock_income"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "5dc7f71431022210dca115afe71e43adf0bce86300b1666d7411c3f0e89b4aad"
+  },
+  {
+   "name": "reversal_2d",
+   "definition_sha256": "c3201c9d1cea5a5bb29e1203f0e7c57f99391ad9399e5e4c12ea9903692e0343",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "9b6a952138e1b56f3f44b951c34e6a045bbc3a7e4e0ab80afd41fdc3e7a8a38d"
+  },
+  {
+   "name": "roa_ttm",
+   "definition_sha256": "58c7b0fb5810c512fccfbe206a2316d5a17888732c4c9b6360583b8d279d6548",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "6d362ef84c2ebe24cd719d137e548082c15a0a3c6cb82880f66716c275849dc8"
+  },
+  {
+   "name": "roc_12",
+   "definition_sha256": "289bca35a361d9ed95ee1532928850c1f5ead92a54c0209c65417b4388f78be7",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "3b68875693142c88ef9a905efef09550e168ad726d654ea5bd34e0f0442c6e9c"
+  },
+  {
+   "name": "roe_ttm",
+   "definition_sha256": "e215c142c558c85775bee7d0f1f5f25e709ad2b51db39c7df2415f1ce5e5a0df",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "rsi_14",
+   "definition_sha256": "2de20674dff633b1c92fa2f29d693b1740ef784bb2d78812dca5b695797bc468",
+   "definition_version": 3,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "af0dd1bbc4142c34ed85297851a04979e1869d563e82034054dbb8097e8bbc38"
+  },
+  {
+   "name": "rsrs_beta_18",
+   "definition_sha256": "32c762f65b9cc249ad826748ee94451b3935f1547c5041d046230dbbf26757a2",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "a39c9bf2a744500fac9da0166e2a3b0a1c3af3e8fec4d064c72e500c422989a7"
+  },
+  {
+   "name": "rv_term_structure",
+   "definition_sha256": "e49b704e749119ecebcca63bfe54e9187a76cc33306e9a48b4119e7be63b35a4",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "353b00cdc5e706ec386163c1bd464008a27c34d26dbd23ba5d73541f94f66a7c"
+  },
+  {
+   "name": "short_term_reversal_5",
+   "definition_sha256": "3cdc5dd230c6969ffd609c08a2696e8ceb2864cca45261cc6bdcf4754caa88a5",
+   "definition_version": 4,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "55f4b0d35e484c95a2b666751a5bfc06b36b23f524a2193b9155549290188cdb"
+  },
+  {
+   "name": "sp_ttm",
+   "definition_sha256": "94dccea1ba7f5aee8409c83359a6957b4b3473a0bbbc064b002d577facd06e2d",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "2ea80a5390be0ebcd834b799652332460d66cade448a77b360851c942317c9ad"
+  },
+  {
+   "name": "td_setup_count",
+   "definition_sha256": "affa6f7e0b6099acba0c75666864973375e5667c5766d4796de891786bb31245",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "ec5ff699dd91d2d66b8b3185bfd5c28724f51c3a913dd545d1ce3403e67d0311"
+  },
+  {
+   "name": "three_black_crows",
+   "definition_sha256": "3c9da076b34a723e46fab53bc93178ac58786f4ee34787356df25ee5909ca4b8",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "55c55d74f2ca445a627d8215644383f3a7b3a7b3ba9e73d389efc418c219ad4e"
+  },
+  {
+   "name": "turnover_anomaly_20",
+   "definition_sha256": "e75310845bbd7c263fd21bfa7558b45b443c70292621cdc7fffad40199284cc1",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "38d8365de954a756248b7c4c6e9e36d714dff8dd1d649c486dc1bf63b5490203"
+  },
+  {
+   "name": "turnover_f_delta_5",
+   "definition_sha256": "11a539a82ce3dfa2d9b8fb3ad2d1be871dff1a8d1a29dcaa7201eccd3ace2db6",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "a83351cc223a3c7f34546a34bb3b8f5766c5d8e03c1dc9c5525056d494c2f757"
+  },
+  {
+   "name": "turnover_std_20",
+   "definition_sha256": "247ca27870f0e3aed552b115d2f90e2b8fdfed44b07ad4122091f03de8e60348",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "396c9e1c24ef3a62731da7a88dd2c20fe4f98ced2e77ea999f9d566a0137b588"
+  },
+  {
+   "name": "vol_120",
+   "definition_sha256": "3440e1252e04fe64bc27a3d0c2645cf2c62fc9819dd492a0df669a0b9abf8edf",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "87191c403f364ab5bb8b6caf59a96bb456dc90959e04b06ca4aa4a549f5d5857"
+  },
+  {
+   "name": "vol_clustering_20",
+   "definition_sha256": "0ae1006573bbdc5332c22a761017a3051c8321c1c81023a1aa7c77bfaa88c079",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "d1cfd466414749a759463714ffbaa281eea614d540f37dc1b6516932cccf7f69"
+  },
+  {
+   "name": "vol_of_rv",
+   "definition_sha256": "bffa0f2f1dbee0007292676cee9bd61760cc161e684cc427d32c08513410918d",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "bf3db018cd9a2c99bed042195613c5954c7e238e80fab8f974f6d0f294f80f7c"
+  },
+  {
+   "name": "vol_ratio_ma5_ma20",
+   "definition_sha256": "8f3efd8cb1ca44008a51f0c578eedf5e6180f810dd724df6e074a690d5e31d97",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "c31399e89bdd94200e970a0778642d954916e12caa45d32346a63ddefc060c4a"
+  },
+  {
+   "name": "volume_ratio",
+   "definition_sha256": "c5922615b45296d123701e497c0381b1f0dd394b3b08c51766fa5468ac36cd83",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production",
+   "approval_event": "053887c3115e4af11acd8f961ebe6af188b98918d822d588b9aa2ce7ed04a600"
+  },
+  {
+   "name": "yoy_revenue",
+   "definition_sha256": "1238d43c63eedfe857c1d20c38c29483f973440e4f16495c4ae968a0f857e5d9",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "origin": "legacy",
+   "research_review": "pending",
+   "status": "production"
+  },
+  {
+   "name": "s26_liq_up_fragility_v1_b43c747ff9090bc2",
+   "candidate_id": "s26_liq_up_fragility_v1_b43c747ff9090bc2",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "5b3953e6dff69fd1eebbcf2d62d816eb656b4ba667e4741fc0602ad3b7e87da2",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6d1a0413a73c0307f29e838baf8da856778577b0e9fbcd4856a549475d4c23aa"
+  },
+  {
+   "name": "s26_structure_side_hhi_v1_bb77e106a875308a",
+   "candidate_id": "s26_structure_side_hhi_v1_bb77e106a875308a",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "stock_main_fund_flow"
+   ],
+   "definition_sha256": "10f864a7b2015c24ee7c11e3b761879bfc178fa471edfdfa83b6c6f453832f1e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "fbf92459d226759da9260b53c9437cd072251b21c72eed1147114dbc6d5d84f6"
+  },
+  {
+   "name": "r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb",
+   "candidate_id": "r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb",
+   "definition_version": 1,
+   "deps": [
+    "stock_holder_number"
+   ],
+   "definition_sha256": "2bf722670a121da18e2c1bee1a38bfca36f438dd82545825dfa5b37b9621e2a4",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "ff370a2ea087e109f1b8ae3bdfaf51d608aaf219c462e70419012e07480b879d"
+  },
+  {
+   "name": "r3b_intraday_rv_skewness_v2_44ef55d83a759fba",
+   "candidate_id": "r3b_intraday_rv_skewness_v2_44ef55d83a759fba",
+   "definition_version": 1,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "definition_sha256": "bb291494af7a3e87d236b3605ede33cfcaf1e9e53f520fbe6dbf7efe56074ec4",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "274e2d7746c59a79035ab9d3477e3df5454334c0d83f24d179099944bbaa2b4c"
+  },
+  {
+   "name": "r4e_idio_max_20_v1_d0d201efd7755e86",
+   "candidate_id": "r4e_idio_max_20_v1_d0d201efd7755e86",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "3bc712412b5e116ef3d21e136743ab183cc08a3346e182839cb0c0a2cb559718",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "11bb8efbe112ffecff68aa226fd8d37f24c9c0fd6d91db51e4e96e522d662656"
+  },
+  {
+   "name": "r4a_sue_seasonal_q_v1_f1def0b01eb0b979",
+   "candidate_id": "r4a_sue_seasonal_q_v1_f1def0b01eb0b979",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "67055e737aea892054247c2ab5092a519ee3bb7b29832de1a3d46ba90ec51152",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "01cde73238f508e2ccdc2987fa1ffc58a9f86314db1a468a0148166c0f7d6dba"
+  },
+  {
+   "name": "r4a_sue_accel_v1_4b443eb2d4fda83c",
+   "candidate_id": "r4a_sue_accel_v1_4b443eb2d4fda83c",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "98038286ba39e5a7e046642dc8541e37535f5f49ad16aaa5a2c713f91a5467bf",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "3fd735f45241de2560b75b061cffea8dbd7f6957412be065388ffb3833061733"
+  },
+  {
+   "name": "r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5",
+   "candidate_id": "r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_cashflow",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "4fe14f1c8234eaa0a3d38314ac5b687c79e57cdcb5f96a49ac135c26bf84941c",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1eb184c65ab60f074660b5239941522524d1f7d4e1873399e04d90e4a6ad78dd"
+  },
+  {
+   "name": "r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9",
+   "candidate_id": "r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_cashflow",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "60149de905ab47997df9eade233654c6eb731f659023a078434d0d1893f73e31",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1920e73db400129dd5e70883d91e41e406db0a428a9b1b43e4535bfdfb00c201"
+  },
+  {
+   "name": "r4a_forecast_landing_gap_v3_972c0653571ab5d8",
+   "candidate_id": "r4a_forecast_landing_gap_v3_972c0653571ab5d8",
+   "definition_version": 1,
+   "deps": [
+    "stock_forecast",
+    "stock_income"
+   ],
+   "definition_sha256": "db3fce1936af20ce79b27e1581679dd75a76c19185b67d9261c9aa4cfd4d7a0b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "10e31021f8174d41543bff693e7f75796e0df8d1f59fb467914b572d9b8d6e69"
+  },
+  {
+   "name": "r4j_same_month_consistency_v1_be7f8ede9c4b5afe",
+   "candidate_id": "r4j_same_month_consistency_v1_be7f8ede9c4b5afe",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "adf31102dadf5266880b2fd6334011916df763dabcd954d8c21f50af66dbb27b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "921fe12b043dac0ad67937809e2c80d0e99ace5253dc494f3504607276603e7d"
+  },
+  {
+   "name": "r4b_intraday_rv_kurtosis_20_4fdea35833870ebb",
+   "candidate_id": "r4b_intraday_rv_kurtosis_20_4fdea35833870ebb",
+   "definition_version": 1,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "definition_sha256": "c7fcb12316c50e81d4395fcd8fbb88352c47279efc74d16bf4334c70bd3fca20",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "dcd362a6e79a2de2d894d28122f77703ba9c3901bc08ee714a9e83c3e5f69df1"
+  },
+  {
+   "name": "r4b_intraday_volume_hhi_20_2462d9ca21d9adf8",
+   "candidate_id": "r4b_intraday_volume_hhi_20_2462d9ca21d9adf8",
+   "definition_version": 1,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "definition_sha256": "907e0cf3da6da6d240bc84349a0418a3f24208ae8e9797e1ef03a1f24aeabcc7",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "e4d504b1816993c0b2573a1947c7db70281e4366128161b9dda70477ce04e568"
+  },
+  {
+   "name": "r4n_mkt_breadth_price_divergence_5_v1_e255d6fb075d8108",
+   "candidate_id": "r4n_mkt_breadth_price_divergence_5_v1_e255d6fb075d8108",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "02943484ab4c46d569be8ea33b7a07727b0ec2a0386d849438a602718c645075",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c85dd75aaeba3f26af8c03d4200b7d5b6a22aeccf5674d6b6e7edb422f7ae3e0"
+  },
+  {
+   "name": "r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1",
+   "candidate_id": "r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "4f521e55db9c91fc80e2feef41fb465a5f41b965c325a4ab87d4031d1e441dbc",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "2eda6f6a6ab3253006b74c159ab820a4d38c94372610183f37464178b5fc7501"
+  },
+  {
+   "name": "r4m_mkt_cs_skew_20_v1_eb852bd4aead2cc5",
+   "candidate_id": "r4m_mkt_cs_skew_20_v1_eb852bd4aead2cc5",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "12f4e399d6c516b8e32f4436fc53ad88ecccee88dee62e18cbdcfe9c2acbd1d4",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1edba2509c05c45c1ed2e1967b152ad5452c15d4eac54f2670fb56675a40c92c"
+  },
+  {
+   "name": "r4m_mkt_cs_kurtosis_20_v1_ade059b5c88177a2",
+   "candidate_id": "r4m_mkt_cs_kurtosis_20_v1_ade059b5c88177a2",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "209f4a11f8fdbf27b082f17b9d39c5dd49e0be736f68d2650cc37ca3d27c7523",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "0134adb14d21afc43fdeb38ea1aed1211a26b558bb717bb47cd5889dd3445643"
+  },
+  {
+   "name": "r4m_mkt_turnover_median_v1_69775de2bd2ac9af",
+   "candidate_id": "r4m_mkt_turnover_median_v1_69775de2bd2ac9af",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "e0cac428af742425ab55ee7114f36ba9332283a52c10fbb8b929680aa23b2eb0",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "2f50d4842d48673150f96f2ea6cbd681dc91d93b1d566ac2add8710f7768277d"
+  },
+  {
+   "name": "r4m_mkt_amount_total_log_v1_7b70a3ea97987953",
+   "candidate_id": "r4m_mkt_amount_total_log_v1_7b70a3ea97987953",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily"
+   ],
+   "definition_sha256": "06775650434148ef8988ae840b6d8f90f153b943df5a6187db9efd9902223747",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b61d6744ff6319fe9b369b054900efe90e4877a977dfe75d31348fdf218a7968"
+  },
+  {
+   "name": "r4m_mkt_overnight_ret_v1_5210c92d86a1f372",
+   "candidate_id": "r4m_mkt_overnight_ret_v1_5210c92d86a1f372",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily"
+   ],
+   "definition_sha256": "cb0a4c2cc862447c21695ffbf8d8019fa5ed2ee27c3284acea768b781857ddf6",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "f2984a9efa6abbd89552a62fbbbed93e38586eaa127e0dbbe41919600a211589"
+  },
+  {
+   "name": "r4n_mkt_idx_csi300_amount_log_v1_23b2e6b091b2bbed",
+   "candidate_id": "r4n_mkt_idx_csi300_amount_log_v1_23b2e6b091b2bbed",
+   "definition_version": 1,
+   "deps": [
+    "index_daily"
+   ],
+   "definition_sha256": "f928d0395752851ca272ffefba612e40eb2b9be946a60af5d3c8da51ed6f5dc6",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "687111738e8e2870d6972427c4976e5af7e3ad3f0bec05712ad1f0ec71966338"
+  },
+  {
+   "name": "r4o_mkt_amount_median_v1_fix1_36ab6152c0703e8c",
+   "candidate_id": "r4o_mkt_amount_median_v1_fix1_36ab6152c0703e8c",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "a525ded91517671277e11ce81d6a5583fa4443b6dafef9465843699765007d49",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "2eb8131f7822aeea3dfb036302a605b763d4ed4725d3d007e98c44c993a123be"
+  },
+  {
+   "name": "r4o_mkt_cs_absret_median_v1_fb38c3080c85415e",
+   "candidate_id": "r4o_mkt_cs_absret_median_v1_fb38c3080c85415e",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "e770332a69a9a88a9ebd11c162159f012fe84a8b16b040d7685a0217498c0870",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "d10dab5e4d1fc23788cf5322e6f8a5a964c6861967ec85cf5860883f4e8481b0"
+  },
+  {
+   "name": "r4o_mkt_cs_q90_q10_spread_v1_a27b0ed8f884732b",
+   "candidate_id": "r4o_mkt_cs_q90_q10_spread_v1_a27b0ed8f884732b",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "9681de631321429f9d9f7e774fb886d31eedfc8546216a92eddffc21fac1f972",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "748b032138e61a8136667d1d0bee44526c433bffc8403d22e39dbf6f276768db"
+  },
+  {
+   "name": "r4o_mkt_overnight_vol20_v1_ac13b13b656106ba",
+   "candidate_id": "r4o_mkt_overnight_vol20_v1_ac13b13b656106ba",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily"
+   ],
+   "definition_sha256": "67db23314dcf53ad6b1147d8db1b95b9d4534aaab76644949bff05f20e23d263",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "ca476da5da534ec2d32a7f50381461c321ccc10e15432a47af8a34c219fe83ec"
+  },
+  {
+   "name": "r4n_mkt_ew_amplitude_v1_45ec9f840af145c1",
+   "candidate_id": "r4n_mkt_ew_amplitude_v1_45ec9f840af145c1",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily"
+   ],
+   "definition_sha256": "de2fe19afb6f4f564ec98763bf2dbba35b753aa9779118664a79b2d1118b09e4",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "75aeae811ca56cba2cb6875c14331d0111d339b3babf5f0f797da19bc3913ab9"
+  },
+  {
+   "name": "r4n_mkt_turnover_median_std20_v1_95cb3c5b6d1750f3",
+   "candidate_id": "r4n_mkt_turnover_median_std20_v1_95cb3c5b6d1750f3",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "317bea71ff71b5506484dd0ab05085144a175b7611d17ac20e629545bb1eb4ec",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "993504608e563b2c532519d62a9b6502c16ed40f0275c4ac21bb6c0c981b8834"
+  },
+  {
+   "name": "r7e_context_salience20_v1_f4efb8789772d003",
+   "candidate_id": "r7e_context_salience20_v1_f4efb8789772d003",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "737fafd9eeea75ac5d68f561df771befcd5a2c9059b29a4346b7102ffcd5b317",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6f70dfce3b97debf3447e2f4716f4fcaad1f674403d25eaadb258f526c0f7445"
+  },
+  {
+   "name": "r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1",
+   "candidate_id": "r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1",
+   "definition_version": 1,
+   "deps": [
+    "mf_net_inflow_5d",
+    "mf_net_vol_surprise_20"
+   ],
+   "definition_sha256": "cd47c8ef031094e6f86ee63f74a4456c3a1c900fbaa2856214705a5f77ed8405",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "baa2984240725f62e179f97c85b71e0a2c10846ee4a8402c48f37e851af21f75"
+  },
+  {
+   "name": "r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f",
+   "candidate_id": "r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f",
+   "definition_version": 1,
+   "deps": [
+    "stock_market_distribution_history",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "b2da83f5e925181382355e13c8e62e15e58870fb0c14a6871d65af8ee1329a94",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "f75f54fc4f46901cd2a3a51d849dd8ad18cc42abfeb694eac46b17b82aeb049d"
+  },
+  {
+   "name": "r9a_sec_own_rv_beta_v2_ef77e079dd4478fe",
+   "candidate_id": "r9a_sec_own_rv_beta_v2_ef77e079dd4478fe",
+   "definition_version": 1,
+   "deps": [
+    "tdx_minute",
+    "stock_list",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "02909dd6f256884c174411af65c5537838c5d15d75673b0cf9b0e24fecb0aa3b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c1945251e3916a3688c97f13a5179ae205a233990bb438c7e8cd016145458ad9"
+  },
+  {
+   "name": "r11gc_turn_lvl_5_v1_332d53f4bb907a79",
+   "candidate_id": "r11gc_turn_lvl_5_v1_332d53f4bb907a79",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "d637573cc8758e5c5b6051504e5d73706d3e5da34ab1ceab9e44a68cb655ce39",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "10af1e7e3ec5c19078625d31099005b817e4cf414c05309897d37195c9a33540"
+  },
+  {
+   "name": "r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4",
+   "candidate_id": "r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "e3889a14e24412b61960590ea10373fe2b47281fad2cb1ba435731eb2ef5f34d",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "4bb1be20dc38d8c755f1a01a027271a08cebb8cd966ec0a017b21bbeb8fe26b6"
+  },
+  {
+   "name": "r10gc_yoy_net_profit_v1_bdc315b5d4b02fac",
+   "candidate_id": "r10gc_yoy_net_profit_v1_bdc315b5d4b02fac",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "4cc363288c7f82177a81e43198336399cb3e4b2a4257aab6610519203a60d036",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "a11e0ea382519d7ce155b5b98a3c9fb6c5f987444c9edc03be8764463c5b7bf4"
+  },
+  {
+   "name": "r10gc_income_tax_yoy_v1_c051c303608f0a17",
+   "candidate_id": "r10gc_income_tax_yoy_v1_c051c303608f0a17",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "2167e2f28ff85dbacde74a548a5cd50da6af893d0b165858944a120cde1f801e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "dde2681a90a8f84560bfdd3342914f83a1f24cdbfce50164d34667625ddb6b04"
+  },
+  {
+   "name": "r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca",
+   "candidate_id": "r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "4bcfe431a7b49a3613aa6814c157daeb061dbbeda5cf0548ce3fe28bb9fce61f",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "db4d84c0f5ee9a42307c272d55474daa65ab0eba2bb52d295d3575ff08d1450a"
+  },
+  {
+   "name": "r11gc_turn_lvl_42_v1_24d04a044ce607a0",
+   "candidate_id": "r11gc_turn_lvl_42_v1_24d04a044ce607a0",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "41bff884890a96bf6aff35cbbf5ba8c33e826e8f5837267e3cc6f321d3f096e3",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "7894ce87e88411dbb2467dd0dfbabf8bf9285c678580ada8f7d512c192fc5fff"
+  },
+  {
+   "name": "r10gc_high_low_21_v1_ca60e882d8b5c22f",
+   "candidate_id": "r10gc_high_low_21_v1_ca60e882d8b5c22f",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "da88cb5563b71ee25d906c6fe7e494e3f8c625863ef134adc06f54c61651f08e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c697683fc4864211a4fec227ccb55b78fb0696019342abc3202ca6f4f6e585f6"
+  },
+  {
+   "name": "r11gc_ret_std_42_v1_23474362384bc399",
+   "candidate_id": "r11gc_ret_std_42_v1_23474362384bc399",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "adadfb1117eb2893d59f1d81b926bb02331fe1344f00a371ad5dce3c14748587",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "19be40371854bb12e5c762a98b86fa7957a4777aae659e293aebaaaa3c7cfc40"
+  },
+  {
+   "name": "r10gc_ret_std_252_v1_db7166018e1a0511",
+   "candidate_id": "r10gc_ret_std_252_v1_db7166018e1a0511",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "570b029c50ea9842d2d4576179fec3be2dcc52d5644313155a88e0e4eede1e18",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "63bd44bd1c6ac1e84302f95bceb66d2a25b674fcdbcf8ddf5484cdee2cf1aa80"
+  },
+  {
+   "name": "r10gc_yoy_ocf_v1_066e6046572baf9c",
+   "candidate_id": "r10gc_yoy_ocf_v1_066e6046572baf9c",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow"
+   ],
+   "definition_sha256": "3a06a8ea0b98c6dc6cdce0cd7193a32141ae76a72b18e748e2f81dbfd3c84457",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c851fd4530efb03496f73ef17d255bcd030985bccf4709d9b9f782c7370f6d76"
+  },
+  {
+   "name": "r11gc_amount_ma_20_v1_1858415feaa5dbe6",
+   "candidate_id": "r11gc_amount_ma_20_v1_1858415feaa5dbe6",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily"
+   ],
+   "definition_sha256": "bb5cb472308167ffca297dde9138b62fd4763643ee2af2684f738d49bd6a35fa",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "a060b0f624557bce4255276da732c00143219c80a2778143fa5ffbb2caa02f8d"
+  },
+  {
+   "name": "r10gc_turn_lvl_21_v1_2bab2360d6cb7099",
+   "candidate_id": "r10gc_turn_lvl_21_v1_2bab2360d6cb7099",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "86bd42b39fc48ff2cb207e28f62bc0103fc041491a67324fc86d0da06ccf3774",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "562ed7d13443c811442f9ee9eae5f435e84f077e3f6d79ea7f230e59b4c7b9c7"
+  },
+  {
+   "name": "r10gc_turn_lvl_63_v1_7d51db9d4ff08793",
+   "candidate_id": "r10gc_turn_lvl_63_v1_7d51db9d4ff08793",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "68f63f522c687e75e3be1bfefc749cb47c1c801cee973a8b2b6ab0e14a78d659",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "99e89ea90420ca750ee542c72ab0b3f054c483bbe7669a669af36b7917a225a9"
+  },
+  {
+   "name": "r11gc_turn_lvl_10_v1_c377944b650ec037",
+   "candidate_id": "r11gc_turn_lvl_10_v1_c377944b650ec037",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "3f0468df3b5b2a1c42abcf49fb70153be4f80e80c6abf5164e3a28a5d3b18b85",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5f8e5ca22bf9747a905b93c473a2ae11ef4188d646ab95098b86f946af4d0223"
+  },
+  {
+   "name": "r11gc_turn_lvl_126_v1_ef48ac322c8d0929",
+   "candidate_id": "r11gc_turn_lvl_126_v1_ef48ac322c8d0929",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "c205540292ed77b1f3f827ae9a7fb732603c3c7348619b8fa27815f9a3568dbb",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "35d314d0ab2795670d7fb2c7c7a626bfc2ee84d41956d923f7e925f9350480fd"
+  },
+  {
+   "name": "r11gc_turn_std_63_v1_5ef776ad40ef77f6",
+   "candidate_id": "r11gc_turn_std_63_v1_5ef776ad40ef77f6",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "4ae56d1fcbb4bf660b05941d43c47be9da21f9d339b11b69a645139304285e20",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "8a01ecb5c583843c0e6ddaa7889252f22ccf25a41a5a9adb6e7388958241de82"
+  },
+  {
+   "name": "r11gc_high_low_126_v1_2666509099db4a47",
+   "candidate_id": "r11gc_high_low_126_v1_2666509099db4a47",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "e276b1a446826c7f44d3130007155185c09ba879b00df4c3f77cbe3931157ae8",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "40726a0d16c2ddba31408cfaa0a59c5618dba0c458cf263bbfc45215bc8101d4"
+  },
+  {
+   "name": "r10gc_turn_std_126_v1_e96f93f78ed0e472",
+   "candidate_id": "r10gc_turn_std_126_v1_e96f93f78ed0e472",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "c141a9005eb021877d321cfa3ae084d1cd92af0fdbbbbe9d335cb6f3cbf71d7a",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5c1bbfe483c6aa0f2984cd8c686088c7caa4413ff102e2bf83c44d3e0a5b0660"
+  },
+  {
+   "name": "r11gc_high_low_42_v1_36fd67d17bea68ac",
+   "candidate_id": "r11gc_high_low_42_v1_36fd67d17bea68ac",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "9082a75ff7b0472cf7b299fb89a66cdb3dc4dcc6a7d91f09713d4ce1ebf7bf8a",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5c4a00df8c80fa772ef37332ec2212b5c88b709c7026fccc11b22ed035e1e4d6"
+  },
+  {
+   "name": "r10gc_ret_std_21_v1_51f3cc1a8b65d126",
+   "candidate_id": "r10gc_ret_std_21_v1_51f3cc1a8b65d126",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "b0d518f61d117c9ff4df4610a8c238e7ad03288714a692072330a4883f22ae57",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "060ac6296be324fb2381d33e581b8eaa32bb1a6dcdb5d99b07b79decd84300de"
+  },
+  {
+   "name": "r10gc_high_low_252_v1_facb1d1f647f48ca",
+   "candidate_id": "r10gc_high_low_252_v1_facb1d1f647f48ca",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "8a6b673496b5c91d0e91b10effa94ed693ef08c2b85cc392596138ed8dd2845a",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "db426024c3f34873a2fbb14b9a42f8e7f953f3b45630cf4e8e192ebd0bdfaec3"
+  },
+  {
+   "name": "r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7",
+   "candidate_id": "r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "d588df3618414839bd432961bdf72cb53f0d80e9be08076937ebf4403dba75d8",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6b1a36d5eeaa1f5b8025cdfc653834a3bb942177bb89478b60566cf7935e46b7"
+  },
+  {
+   "name": "r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581",
+   "candidate_id": "r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "f917401e6fadaefde7fa8bceb8d4f160d71276e6604c3b24edf763fced391343",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "4b326e2305e6d148f6a292d019c2b77aac37df37a4afbc199f3330dea0781993"
+  },
+  {
+   "name": "r10gc_turn_std_252_v1_9a4d3d577535e360",
+   "candidate_id": "r10gc_turn_std_252_v1_9a4d3d577535e360",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "73314098c78e3adbc2fb67158cfa393d7cbeea012d33ef54bb5f74d1179c4507",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "95a9fc4e6935b5e2bdf44e697581e4564c4f60877b50fc8711152c99749588ac"
+  },
+  {
+   "name": "r10gc_turn_lvl_252_v1_2dd70c23d17694f4",
+   "candidate_id": "r10gc_turn_lvl_252_v1_2dd70c23d17694f4",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "abb097f4449e846eeaf08fd2d113e1611801f5250869cef2dba20d17623d8e3f",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1b7ff396fe97ca6c7c76ec15658a4c047c029e5d7cb496a4dd1231c2882dd1e3"
+  },
+  {
+   "name": "r10gc_bias_turn_63_252_v1_27c60f4ea79e6742",
+   "candidate_id": "r10gc_bias_turn_63_252_v1_27c60f4ea79e6742",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "b96f192c53faa07644759e0796284564d51853551e92a201e1922100c82ad92f",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "99017cc3091763e12970bf06f7b7517d4b5382b99d23cbd5af0363394d738cf0"
+  },
+  {
+   "name": "r10gc_bias_turn_126_252_v1_a9656f4fececd030",
+   "candidate_id": "r10gc_bias_turn_126_252_v1_a9656f4fececd030",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "eeb4f39d4c8e1f8249d376e5206550385d761fad4db6eac11818cc79575c88a8",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5ec543cf7187bf617ea135f2f6e848f3e55bff25d8a2268efccce88812f12696"
+  },
+  {
+   "name": "r10gc_high_low_63_v1_34a74707a9f916a3",
+   "candidate_id": "r10gc_high_low_63_v1_34a74707a9f916a3",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "6b7205b763b0f58ba954854de327755c860ebb475fb82801ddc9df390e47a33a",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b3bf90040081a3c4c6b89993d9dd454a8f6d5c1e7a16c0006137c0a6cc2b588d"
+  },
+  {
+   "name": "r10gc_ret_std_63_v1_19b9e9fa082c7cec",
+   "candidate_id": "r10gc_ret_std_63_v1_19b9e9fa082c7cec",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "6e8ce174b3c26fc7370e1cb85d86ca4a9534b0cce49595f190ca808afca3de44",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "cc036f0f05887c6320ef365ad66608bba61fc4636064712cec10e7325bc56128"
+  },
+  {
+   "name": "r10gc_turn_std_42_v1_21349ae0e32c1db7",
+   "candidate_id": "r10gc_turn_std_42_v1_21349ae0e32c1db7",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "a34caf4f4fb960c79c0b307bca39f880c25e730b12ce9aae9d135f16262be978",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6d1dda58b5dc23552159bcaacca3a0f579355b78f343f3268b71587cf6de17df"
+  },
+  {
+   "name": "r10gc_yoy_net_asset_v1_2a57af1e5c40492f",
+   "candidate_id": "r10gc_yoy_net_asset_v1_2a57af1e5c40492f",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "58d9391e3dcc21e546de6891692a157077737325151ff5a6051bb454a4734a24",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1eb4e4b2ff2bab6c50f3a49c49f6fdb4682da191437205b1f6fb2750707642c5"
+  },
+  {
+   "name": "r4t_preann_turnover_shock_v1_3a95800106c754f2",
+   "candidate_id": "r4t_preann_turnover_shock_v1_3a95800106c754f2",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily",
+    "stock_adj_factor",
+    "stock_finance"
+   ],
+   "definition_sha256": "55e93e2f288446b4f2c4c4b7af157cda614f26d15e83fa42ef627c4ad7ab8760",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "e7e309aadb9f557879cd0a6224c0a372907354731c0c53668f4d824bfd4d7c45"
+  },
+  {
+   "name": "r4t_preann_vol_expansion_v1_bebf97b2c5260706",
+   "candidate_id": "r4t_preann_vol_expansion_v1_bebf97b2c5260706",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "94fc6a5e2a51fb02d1d77ea2a0295028de96aba1949c4e0606c912e22744cfe6",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "68f7268cde057d5a970d72d6737afa2af1c385f8bfd5c00e15202e3d755293d5"
+  },
+  {
+   "name": "r11gc_bias_turn_42_252_v1_fa9e6caf1c763260",
+   "candidate_id": "r11gc_bias_turn_42_252_v1_fa9e6caf1c763260",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "3f65d45c1b44fb706f26765a3a74f5c4c4500f5efcc237ed46ee09d22a86b376",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "02ada6fdd23ad3b6c76dcc5fc18f76d5ca553ca2a70cf05f5f29f54b910f3337"
+  },
+  {
+   "name": "r11gc_bias_turn_21_504_v1_111533df505215cb",
+   "candidate_id": "r11gc_bias_turn_21_504_v1_111533df505215cb",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "aeb29820f3c6c58657038b19d07e7bc4b647ab37cb4a3963baa0f435ca64a9ba",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "3639c7b84df6f1ee068f52b09b1c2229d0145fadedefa580709dade1d4a34618"
+  },
+  {
+   "name": "r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad",
+   "candidate_id": "r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "afd78322a325c87a5496800acf7db7f9041fd36e7b6e09d4626aa5f70df582a5",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "049d05800ce9a1f037f3af3bb939f57b74f05fe85ac2dc3b04efb58d880d65f9"
+  },
+  {
+   "name": "r11gc_bias_turn_63_504_v1_387613367cbd4dd9",
+   "candidate_id": "r11gc_bias_turn_63_504_v1_387613367cbd4dd9",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "75b28f3670f5760d1afb3d75c96c8ff26557bb8fe5df4e0894645c3b386d6ffb",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "10e684a709f1c42e0e397317a5907e8b90247e41da4a4f03b69321b1888af52c"
+  },
+  {
+   "name": "r11gc_bias_turn_126_504_v1_e3ccc91522792d65",
+   "candidate_id": "r11gc_bias_turn_126_504_v1_e3ccc91522792d65",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "c3466dbfc74d180b59e204bf836b1f58575fd9db46c13884c9f4c3549358bd29",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "881e9f123fa986421f503d52893d1a63b7099f9d7c6df5a3f5cf2fb9dc1b1f74"
+  },
+  {
+   "name": "r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa",
+   "candidate_id": "r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "a4caabc4a8d97c1088b805bea2c7820faec0f5cd54c92161dbe19d2a1492f925",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "561b10552cdb3f9857f5c483e38f60a5d387c766f6c67c00c5dd63626ac6067c"
+  },
+  {
+   "name": "r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1",
+   "candidate_id": "r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "1ec92f1f9012b774bd929102d01606430a85590b6dd36d6b15b5f2852ac869d8",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "df3d1f9e93f8049ecbee35bc078857604be20753e2b9e4515a299c375e5dc6a9"
+  },
+  {
+   "name": "r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe",
+   "candidate_id": "r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "faaee1127ba1c384816f6a06d0d6045aae77284d722bdeb8b160b237faa8a16d",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6278603e5f283c6c934d99342ef9930abd378c967936c3b6111acd96abd1da56"
+  },
+  {
+   "name": "r7a_tax_expense_seasonal_change_v2_371da87d5055df86",
+   "candidate_id": "r7a_tax_expense_seasonal_change_v2_371da87d5055df86",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "f6e14d6f3cf0c5919ca60ce64c1047b7fe5d94368f26f109554a387847f90867",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "638c2774c00040ba37eb2e175abc5e00b0f76992bef2761c0512a922b4b8723c"
+  },
+  {
+   "name": "r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035",
+   "candidate_id": "r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035",
+   "definition_version": 2,
+   "deps": [
+    "stock_balancesheet",
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "4e1e3321ff7ac57fd16fb4220d6a83f4eab6a2cdbde78d102c7f3577db09f311",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "cb18aab274f968196d8937d019991302d9281560fb20b49a4d2b8a3f6ec035f7"
+  },
+  {
+   "name": "r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728",
+   "candidate_id": "r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728",
+   "definition_version": 1,
+   "deps": [
+    "stock_holder_number"
+   ],
+   "definition_sha256": "c1d4cbac53076fff28d0065caa0fe648ac84a97f74948536fd30d098cec73aab",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1a1cd0e768b5352e16818ed055f09d33bd46a3683f6192db5dd7482cee420a99"
+  },
+  {
+   "name": "r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732",
+   "candidate_id": "r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "c7dc568321ea0979d1774c81cff805b116e1e7b17aeb4ba65fe748f9048b6b44",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "0cfd9093bb5e139f535c75ac2ba3f8e36132d6e48679f5105c65cb8a36d9729e"
+  },
+  {
+   "name": "r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1",
+   "candidate_id": "r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "03805a0f2b1762df8c39806a3a6b0bdb87997b8659fa8f1d449605211acccf86",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5c1ad4fbd447fa4575f84e9c61fbde9e6e01707e4234dd59eb053842e78a3a50"
+  },
+  {
+   "name": "r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134",
+   "candidate_id": "r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "bd8c1e0eee2716b7a5933084403351989f3a6c06fa0c0e02ccf9493fefc9dadd",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5d4bd8c54dbf2422de6849f9c19fd2e29806c0a604a82a72ca1cafc0efb6a603"
+  },
+  {
+   "name": "r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f",
+   "candidate_id": "r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "225ae28ccd2ecbc59a1a2cfa2fe72f08c501455f8f834fc726769c9148387254",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b98d8e451017d4154fb6d6be9edd5d900f06e7cb0f042a3fee92388f50f2ccf6"
+  },
+  {
+   "name": "r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3",
+   "candidate_id": "r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3",
+   "definition_version": 1,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "definition_sha256": "5b3266581c6afe8160c16819c7deebfd5bf10299e9c3d8b78d099186f12948e8",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6f7ba0260edd2d9803ac499160220fa6c5fb4d7b812084c42e8af1ec41eae6f4"
+  },
+  {
+   "name": "r12gc_asset_turnover_v1_40d616e07fd4a097",
+   "candidate_id": "r12gc_asset_turnover_v1_40d616e07fd4a097",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "f358dd36bb39f968d52894fc2d39dfe8dcd863db05df9c2d63a9f776bd408be9",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "25cdfd29a7848edf8f0444243ef1c49aaf632dd244214b6d5b64dfe1b6a65cd9"
+  },
+  {
+   "name": "r12gc_cash_ratio_v1_7ef2829865ad2cc2",
+   "candidate_id": "r12gc_cash_ratio_v1_7ef2829865ad2cc2",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "definition_sha256": "0c460ded1e04f6f78f93603e0023db7816ee237c6cf87c63d80d4e118a2c8029",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "21b78f53890d6b8189e432fd2a80effcee51417ca4b5218991fd0ca94b04afff"
+  },
+  {
+   "name": "r12gc_de_v1_d4cd33b978d63b0a",
+   "candidate_id": "r12gc_de_v1_d4cd33b978d63b0a",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "b9e8da1651ef8f55f082c8bf58871716ba65a4dab3bc02837b4da66eb67954a5",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "7add85e586dea03be4c1697bc0733e4b421a01fda7266656248cb2631e740e23"
+  },
+  {
+   "name": "r12gc_eps_q_v1_8f3703e8eb218668",
+   "candidate_id": "r12gc_eps_q_v1_8f3703e8eb218668",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "a9b6abed410fb805ffaa55dc771065eaa202dbccff403f6644583d176db2368c",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "a7846eaa4788c2b464fb3d432e301386822698b8337b7fc928f1f2f1db51969e"
+  },
+  {
+   "name": "r12gc_eps_ttm_v1_2d84c57b9ea5f85d",
+   "candidate_id": "r12gc_eps_ttm_v1_2d84c57b9ea5f85d",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "8a416033c39b0ec437bdcf3273eafd1f81b18f25bedc805239fa7bc1109974ac",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5843dd69222015797561669dcf5d26e81f79e50f13d3eed6e7c293010f5b173d"
+  },
+  {
+   "name": "r12gc_eps_y_v1_6f0a67c91531a732",
+   "candidate_id": "r12gc_eps_y_v1_6f0a67c91531a732",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "bd9e16bba3959cc7bc9f6e130a635a99838a936ad641d6d13322888a66e61a9b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "cacce15338c15a72e4b0c9da78dc51ea5f1c438126f6afe8e797dcc031d05d77"
+  },
+  {
+   "name": "r12gc_equity_turnover_v1_4cba36560ca472e5",
+   "candidate_id": "r12gc_equity_turnover_v1_4cba36560ca472e5",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "ccd5dfd17f21f3b146422cb13d998cff4792f554e0d014c79e8371474fc5777e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "f7c303e81216d109e9eb8d8b1f5a3d706024cbef411f0aa5828998f9a4b2edbb"
+  },
+  {
+   "name": "r12gc_fcf_to_market_v1_49c0b5d214b35db0",
+   "candidate_id": "r12gc_fcf_to_market_v1_49c0b5d214b35db0",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "8c831895906cddee4065da5021fda4ead3c6c52143858fefd5a53cadf6dfb5d9",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b37f9aea335283a3272885464e4a343c75da0d51cefc9062880491b1cdfac266"
+  },
+  {
+   "name": "r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2",
+   "candidate_id": "r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "b780e88a4a83bae1e608a45fef0f60f03a1480edd4b9536641046b415daf7620",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "7803869347f5ae0f9367e46a05bb7ad9a9328e74b1e354b7bec032d59513c2d2"
+  },
+  {
+   "name": "r12gc_float_size_v1_8b275acb0cb20dec",
+   "candidate_id": "r12gc_float_size_v1_8b275acb0cb20dec",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "da98714cb91a3ed0260c077c740688282f0a070a8bbaf674850f661ee43dcd90",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "bbbcc963f1a9de4b9ffa79d22df7e324d34f348e27cc0d5d4a4e4b013db2fbf7"
+  },
+  {
+   "name": "r12gc_gpm_q_v1_842e57e4d0d033e5",
+   "candidate_id": "r12gc_gpm_q_v1_842e57e4d0d033e5",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "f62760e3a759a3040b96023f4e4a81b6c19867318aa994811587f8722c57ab03",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "56cee19adc1b4a1377bc9033b4a9bb238b2b31b0ddee0b11458e58e3df5ca811"
+  },
+  {
+   "name": "r12gc_gpm_ttm_v1_7e99428574d400ea",
+   "candidate_id": "r12gc_gpm_ttm_v1_7e99428574d400ea",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "28da02d031ffc1a1bb82df09688b08259522536a2c46e99224a6f2c89ed0d0d1",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "9c73f3b55bf96f0c66a867badfccf503c15d42039ae743b31adbf5a958a25d15"
+  },
+  {
+   "name": "r12gc_gpm_y_v1_102eddddb8fac4c4",
+   "candidate_id": "r12gc_gpm_y_v1_102eddddb8fac4c4",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "869721e6fcf7e690e3e0ea136f0a51aab32562377e11475ca58bc00f655e9359",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "398c725b74214759382c98a2b1cfd1879573020004981355947fdf4d40da49a9"
+  },
+  {
+   "name": "r12gc_log_price_v1_0a22efbc7b6bb1f7",
+   "candidate_id": "r12gc_log_price_v1_0a22efbc7b6bb1f7",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily"
+   ],
+   "definition_sha256": "e3f38c6c84d81cb1d354733cfa5fa66fea8fc719d9bc8d9f1f8c861c1769f779",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1fbda9400e3b82adbec2f134b9ea2ec73d6d331759e6dfb4bb940872400d0b5a"
+  },
+  {
+   "name": "r12gc_market_value_leverage_v1_9f3705df7636e0cc",
+   "candidate_id": "r12gc_market_value_leverage_v1_9f3705df7636e0cc",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "4fe2f0520e56532a41f748f0a0a0ec25a4f366afcdf8f8400a9b9f2bd82df5fe",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "a5675fc39e2828b0d18e7a5256b35a07cb5ef427f5a14b2e36f57a43373bfe04"
+  },
+  {
+   "name": "r12gc_ncf_to_market_v1_71cf1e0deddc7070",
+   "candidate_id": "r12gc_ncf_to_market_v1_71cf1e0deddc7070",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "c21156dff0131b9c57a307cb6858e2daa901e2d8d61f385acd8149fa58fe06a4",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "0220c9dc7e33e7c9f12fabf5bd985a314164ce2f295b21b2955e848e01d378ef"
+  },
+  {
+   "name": "r12gc_npm_q_v1_a1e5e8bb0a48de33",
+   "candidate_id": "r12gc_npm_q_v1_a1e5e8bb0a48de33",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "2bf54eadc3fa85ad7f8db42902d3a8461a9d1987c43e213309b7e1840a50f182",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "27d110e12d24cabd6581bf5b953cfe7365dc71566af626ca1c181bdbf4db4451"
+  },
+  {
+   "name": "r12gc_npm_ttm_v1_4e4381d67f1d7391",
+   "candidate_id": "r12gc_npm_ttm_v1_4e4381d67f1d7391",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "887260513c00c78c9a7db6f771afaefb777880b55c08b23d9697be4bb31b3641",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "d2ff2b5393fe40d0366a876734353706d0be13e87509f6f14ab4fdcd630dc707"
+  },
+  {
+   "name": "r12gc_npm_y_v1_f78b237b3b7c1b18",
+   "candidate_id": "r12gc_npm_y_v1_f78b237b3b7c1b18",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "d78ea1ed8f63eb41e9ce5adf251c2948d01099ac8b919366123386ef0df673e7",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "69be7f7800426be39e06094a7f42dc00078a279bcd31b895ff1f78fec72cfd6f"
+  },
+  {
+   "name": "r12gc_opm_ttm_v1_2827ff5d605bdeeb",
+   "candidate_id": "r12gc_opm_ttm_v1_2827ff5d605bdeeb",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "dee436129a646f8dffc29248182afc8ea0b79f082c37cca65f8caf0c6fbe901e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b62454689e395b257b3e4e1d5ee2db7ccdb2563926800b161875637cbd0f0479"
+  },
+  {
+   "name": "r12gc_opm_y_v1_6e2f1f9aaf3c6106",
+   "candidate_id": "r12gc_opm_y_v1_6e2f1f9aaf3c6106",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "6a706dd3c93fb7b05d7a5b8d35330ce19104700d51d8481b94a28ae2f1728268",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "88e50e298ab69ac01f84604777df1a0b3170292ed66afa4c7fc729ba7d907106"
+  },
+  {
+   "name": "r12gc_opt_tpro_v1_d832d118e2414259",
+   "candidate_id": "r12gc_opt_tpro_v1_d832d118e2414259",
+   "definition_version": 1,
+   "deps": [
+    "stock_income"
+   ],
+   "definition_sha256": "1680629db265af200d27dc36dea1c3311dba529d1119747cad779556b9b97cd6",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b3b1e36ba22db311bf5cc739726a3ae6cd8fd1737a6dab7235af677d2fefb30d"
+  },
+  {
+   "name": "r12gc_quick_ratio_v1_ea13af873ce572fc",
+   "candidate_id": "r12gc_quick_ratio_v1_ea13af873ce572fc",
+   "definition_version": 1,
+   "deps": [
+    "stock_financial_indicator"
+   ],
+   "definition_sha256": "e436d75cc6f7c16fffcf2e13be90f3d69c01dd33f40ee253405fbf69f8c97083",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "93ec5c601d537bd630c5ff9910c52915fff9cbd1fb8ff569858ef2b82c46c495"
+  },
+  {
+   "name": "r12gc_receivable_turnover_v1_458e2aaecafa62b9",
+   "candidate_id": "r12gc_receivable_turnover_v1_458e2aaecafa62b9",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "5d4d70f6eb86d31e928ee41cd8c147e53cc8a2c95122b329e26e1e3975987ed6",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b5b84a890bca54c9cac428d81e9089dd14e8db0eab2ae27c5066ba7f9cef3bd9"
+  },
+  {
+   "name": "r12gc_return_42_v1_0032bf23a28de8f7",
+   "candidate_id": "r12gc_return_42_v1_0032bf23a28de8f7",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "b93fba78a4080a5dc54b24ed00fb5634c4998805b70254ae696a146f1fab30b0",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "7bb6c56715a16cdb82fc6b257237415e1e1c0ffee5c55787ea53c78982e4148c"
+  },
+  {
+   "name": "r12gc_roa_q_v1_4b4ae2280384ebde",
+   "candidate_id": "r12gc_roa_q_v1_4b4ae2280384ebde",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "c701677360fe28f34fa7aa5e82ed7c9e0bd2c76afe0709aa2c2df1672a25c935",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "931d7cf7eb354416ac64494993a3da4fb9d1886dc62f1b20d6ee98978b66957f"
+  },
+  {
+   "name": "r12gc_roa_y_v1_6e585294932485e4",
+   "candidate_id": "r12gc_roa_y_v1_6e585294932485e4",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "e091598186c96740e663bae5cf32cb87495f3e98b4e96e10034842fe50f47a99",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5586407bbb05694a9beeb17a5f27dd7ca33955933ca5e16ec02311b74fd961e5"
+  },
+  {
+   "name": "r12gc_roe_y_v1_bca9de9f86ce36dd",
+   "candidate_id": "r12gc_roe_y_v1_bca9de9f86ce36dd",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet"
+   ],
+   "definition_sha256": "62d13d352f8f0700a9273a7fdc2419c6f2bfa2e5d7f17e2e05176723cf0e0dc3",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6dfd20db77004f90a739da047eeba8fec6f2fc72d2213c4631c4ff3511ecd441"
+  },
+  {
+   "name": "r12gc_sales_to_market_v1_ff344107e3f2c925",
+   "candidate_id": "r12gc_sales_to_market_v1_ff344107e3f2c925",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "4e637446efaf31d33596819f0db143566a09d3f694867ac1637e77bb73d36d28",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "305dfba5408d7a2b5c2c4cb3d4662f1bc35cfd977400d7f5dda312f8b93457b2"
+  },
+  {
+   "name": "r13p_fip_return_discreteness_v1_94875f42e1e5efcf",
+   "candidate_id": "r13p_fip_return_discreteness_v1_94875f42e1e5efcf",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "2901a9a1c58f19bf6dc8d2396ecfab10da5a0c739a33b47015eca0c03de6396e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "f90d6e6182c874524924143eb9952c7be1268256e99b9f3195a3807449f5b2fc"
+  },
+  {
+   "name": "r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485",
+   "candidate_id": "r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "b07353bcf3bc944d5335711b5b0ff4d172a787e5fc972adbc31cd5215e8c66be",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "bd67b207792dfdaf95455bc9124bbca0c5fddef18b5c354f19aa689e766a7ee8"
+  },
+  {
+   "name": "r13f_gpm_dispersion_v1_d45cc0c6c766d353",
+   "candidate_id": "r13f_gpm_dispersion_v1_d45cc0c6c766d353",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "a0beb8beba41f08856dc75e75e783ef9ac92fbafffcb13ddb3e935b27b8929a9",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "62f8ba6753e09c4d8a3fa77b33292d8a2b81428255c2749de783e497433939b9"
+  },
+  {
+   "name": "r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43",
+   "candidate_id": "r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily"
+   ],
+   "definition_sha256": "4512702ba888ff8cf966b3291b233eec69aeb68ed4e549cfad7d47be9ba57385",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6380ab1451515e68f0a75a705888e8d276874ca3cb7d1456a42d9510a829e956"
+  },
+  {
+   "name": "r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e",
+   "candidate_id": "r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "f6b2d115423b2ace748ea7b276cd35b8ca8eea98fd3abaa1b637607f5947bffc",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "7cf528b31ffbd95d54e8972967dff665fe9a04c9a5b66d9d867624553223a965"
+  },
+  {
+   "name": "r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6",
+   "candidate_id": "r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "bfda54262769336df99f7967c9b94e1d97c9e27d2d98e6e6fa9d5677bef09245",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6b63f3eea79a927055b810239d6a5b6b88a4285d8d0f96432d015496449d8087"
+  },
+  {
+   "name": "r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4",
+   "candidate_id": "r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "619d8deca613aa209cbecc980d24809bae28d3fe5da750d2d5fef979e667d0d7",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "08a0025f31cf4982b94d1ff3c59d64faa279ed107faf186acc22e84003ffd1ab"
+  },
+  {
+   "name": "r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254",
+   "candidate_id": "r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "15bf815819874584452cd139db3e39d418ca5c097aeff18a1845f538d833cff0",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "3b82ebaa618d00646559bd3058ab1e5dc8794e34a6485eda5f8cba4df4f71fca"
+  },
+  {
+   "name": "r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41",
+   "candidate_id": "r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "de04f79c23113cbaf6a8af7cf949d4c11041c35d36fe10fb6e3ebf7d100aadef",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "bda074749335704838024d68199a6a27e79793da25e1587c94ac7b8a1c318941"
+  },
+  {
+   "name": "r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576",
+   "candidate_id": "r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "ce959851bcf5742cbc6e62d89f58ddb9af03d67e4787b43950374288977257e7",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "8593da343708665165bda67d8e5a2a4eacde896ef915e1a85aaeb984d93a7fcc"
+  },
+  {
+   "name": "r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a",
+   "candidate_id": "r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "250cb1c84d9ed58505fa4f647507c76d13abbde01d12d698c12c9060d7ae04cd",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "7709e55372c55e4a19cf6758ba807725ae8fdb7579d8b0f2eca8f5337a182a87"
+  },
+  {
+   "name": "r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab",
+   "candidate_id": "r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "7063a11759e425920d1fbdb302a73be34c32f7a46a3b2451b7a3c20d4274163b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c04d4df8fecb4675fd8a04fd0c021d525044baeab5560ba4be246547490a010b"
+  },
+  {
+   "name": "r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2",
+   "candidate_id": "r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "18ff2193be8f0a180343221cbeaf382f381ca37cd3572e9a80a75f8650429009",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1a105800950fd66d63c191d41cf899d1848805295366ed2ebe23e8c6fdeabc83"
+  },
+  {
+   "name": "r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd",
+   "candidate_id": "r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd",
+   "definition_version": 2,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "a29174f47cb6a0a7c257b6ba50b04aede3508745e630b2a629fe03bea50271fd",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "d6ba573582313c1b1b6ec88860ff684ca118fd50eb6c376a5c4cf278eff37785"
+  },
+  {
+   "name": "r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504",
+   "candidate_id": "r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "6d347d591e203524eae8e7c8f814cfe9a6ff3e8b4eaf083f26928f94ce127e5d",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "bd7a1103e8eea5a8b51a1e880b855770eacd16db0f1681c639bfc64aae2d9f67"
+  },
+  {
+   "name": "r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9",
+   "candidate_id": "r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9",
+   "definition_version": 2,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "77444bf9e8875ccdfe1b895f8665eabd4ceeb479116856855a32a9d3e480b10e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "099206f55ec3bda3458bc06fb908245fab4cc84446cb1494d2765425ce98c04b"
+  },
+  {
+   "name": "r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981",
+   "candidate_id": "r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "e886e02696c0cda9e4dd7b2f526a137a1dfd5e740cbd06f80b5229176fae57cd",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c24af4371cd1c76fa2cab08e85ee48ba0ac4a69c9750f261177ac50b4f2689f2"
+  },
+  {
+   "name": "r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449",
+   "candidate_id": "r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "50aeedf702fcd5261474a25d4e12870db34db2bf8dbccf226a675e07b4da944d",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "4fe3291b770d8aab106c9ccfcdba9941246479d2f086635d6146d06904f7834e"
+  },
+  {
+   "name": "r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd",
+   "candidate_id": "r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "e4b7a3bdfca9586e074ed5a77ba81c2dee7c595a0c591b67bb3cbc42a55a1e20",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "95262171030cf48181769e883f5422d2b332b046c741a3e01aa229e4ca3760b8"
+  },
+  {
+   "name": "r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70",
+   "candidate_id": "r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_finance"
+   ],
+   "definition_sha256": "e46c1925d83d515cc5d700abded6bbd696597679dbd765efb56802c809222dda",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "25479d37d3a06161ddc7cf32e833aac912846ea71d4c35c9e9ae651894f2692a"
+  },
+  {
+   "name": "r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711",
+   "candidate_id": "r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_finance",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "df0817fe31dfddb4756462f13bdad5971a3abe3e491b08c3b2a97d04ba2aa5d9",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1e082f7e486e729b0f8f481d87bf0fa483373f57c0fa79f65fea86f1e3ab1eeb"
+  },
+  {
+   "name": "r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970",
+   "candidate_id": "r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970",
+   "definition_version": 2,
+   "deps": [
+    "stock_income",
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "e398d8c6a42ea6a7651d2f054a29d077e7c6012778f048a67c5447d09d0ae895",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1fb5f8c69c26fde69336a44137b39a3d119200752f9a4645b837c9013173e8a2"
+  },
+  {
+   "name": "r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f",
+   "candidate_id": "r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "basic_calendar"
+   ],
+   "definition_sha256": "f2755e43e98af1f9339cb9a62a793c6065ef332e56a5e3da8cbe8d53fa62025c",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c42a806def32379de60caf59b73fa6a1cf7349f0e81e95a3d26b4fd08fc05317"
+  },
+  {
+   "name": "r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8",
+   "candidate_id": "r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8",
+   "definition_version": 1,
+   "deps": [
+    "stock_history_5min"
+   ],
+   "definition_sha256": "a091155ae3e9e0365ccd43d41e3e058c14ab3b8ab9591a58745d30cee74d307b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "38fab488bcb9ecc2d831f47f24a133cea8ea84eed6031d577a73598086e93398"
+  },
+  {
+   "name": "r14f7_positive_contract_rights_share_v2_3cab6f4117f47708",
+   "candidate_id": "r14f7_positive_contract_rights_share_v2_3cab6f4117f47708",
+   "definition_version": 2,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "e260138ef00f257dc1c83e3f61b4bd7809ab06a649e351884794406b02ad3e5b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "a0d8b9b2caad0bcb90d0047c478ccef2fe14666b45083393a08795d2ae42e980"
+  },
+  {
+   "name": "r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e",
+   "candidate_id": "r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "index_daily"
+   ],
+   "definition_sha256": "28d9481a20803747ddb908f7c3e40dbe5af2c5abfd8883143c3b01112f0dd335",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c67a3b14123359605fc3d932920af305d848cebc03bfa02e44e87effed74db7a"
+  },
+  {
+   "name": "r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283",
+   "candidate_id": "r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "6aff7cccaabe661c24037413d84be63445cb9dae1b964fed73224e4adcb165a6",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6f461d60a3e9d87e74dd89fec6be15a43f31ceeef3b48226691c8bc7424e4248"
+  },
+  {
+   "name": "r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976",
+   "candidate_id": "r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976",
+   "definition_version": 2,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "index_daily"
+   ],
+   "definition_sha256": "2c991cb5c3f66732e22faa36f54a2eb8a7ce484c5a7e28913798bf32ba1009c1",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "f82d3a2738a5c19cd630620afd98178557ed78683a3c6d9625ab060973a49531"
+  },
+  {
+   "name": "r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4",
+   "candidate_id": "r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "fd248d88676ade516752503e5fd074513cb06a1a2044cd3e7f2125eed04596ab",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "10d6a2ed63412243916fe2add80e5c4f740e657f7109044ebcb825ec7fd97c3d"
+  },
+  {
+   "name": "r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b",
+   "candidate_id": "r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "65cf7f46134fa638552fbb4ba091eb1da164746e453d0fa5e66e9d755c300a8f",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5630f8045c10188207912a869dcadef65854c872886adf5f77609d26b4aad7fd"
+  },
+  {
+   "name": "r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8",
+   "candidate_id": "r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "7fdc89f6b5ca512c2a736042a14def567e17c8557de1cae30ba1be7683bf6f28",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "02617aed77a2eba795f8fca29024b04ef11ea1ef06e8c657cd356dfff1eea3ca"
+  },
+  {
+   "name": "r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769",
+   "candidate_id": "r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "be439d8e5295818b1cae9cc1831aebf77074f3c2a14ebee65ee2208ae26a4c5c",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "87e4f8960120cf76c1705a338cbc36ff26becfe271b9a79c6e0aeb673d7ec1ad"
+  },
+  {
+   "name": "r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79",
+   "candidate_id": "r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "16e6789788ca5b7f9bcc974cb23717104ebf4c6600184635db7767507eea4a13",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "3898d5da04463c5fea286e50fa98221fe8079c66e3ea8fa98037376448c659a4"
+  },
+  {
+   "name": "r14f28_tax_cash_refund_share_v1_3904a84026422c3e",
+   "candidate_id": "r14f28_tax_cash_refund_share_v1_3904a84026422c3e",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "69871f6879e52819ace5c6eb21abbf643d46f5affb56d156736821d8df6574a9",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "ba89b595ee47d2dff87edbb7b0b389757f2cd79317e64cab3ae866b4ef2bd587"
+  },
+  {
+   "name": "r15p14_monthly_component_range_memory_v1_6fe135138d05893d",
+   "candidate_id": "r15p14_monthly_component_range_memory_v1_6fe135138d05893d",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "d87e648366dffb30eaec95b5714972b5d12ef0f7db5a315c4234dbe1e7006120",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "2223f8a7e26cf822aab5fecb891f6aa10ed5c71388c215f7868cbe32cfc7f87e"
+  },
+  {
+   "name": "r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c",
+   "candidate_id": "r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "ac77e542e972fd99f51b0e8ae80263d6509b9cc286b482f8a3ba7745217c40e1",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "bb7bcb084586ba2b0b90ca9f40293767d2abdc7188bf58309d0dbe9ec3bacd8e"
+  },
+  {
+   "name": "r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb",
+   "candidate_id": "r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "c2912ac4c1f31ea80bdacb8740718559a3ef41bd8b7f34bf0811e1f416367080",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "9828734e0705b99e977673fd4bc1720b74974abf4c21024ab0b3dc31bdc3e98f"
+  },
+  {
+   "name": "r14f29_intangible_amort_share_v1_476979a530c60728",
+   "candidate_id": "r14f29_intangible_amort_share_v1_476979a530c60728",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "5d58ecde17548787633019daa10d6737efb70023ddf820abf5016dd0c400188d",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c66e259b4b79a5ebe16de7f020cb4614b67f734f2813c9c380d64b077cab569b"
+  },
+  {
+   "name": "r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501",
+   "candidate_id": "r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "d733582202c5ea370973acea0b8e2c08adb6ad86411cbe72b2420e66bf97a009",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "531b977b2617e27b367dcbf54fa8aeac8c607015219c711591d77dd81ba2e92a"
+  },
+  {
+   "name": "r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394",
+   "candidate_id": "r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "2b3b32e7582c19c50c217d4bfa89ef8a20f2216948dc954c789a7d73375b635c",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "fa5eb47ab77d0ae5e772261a7ec70e7f0f75f7e9d308e5dba2f4b90c03efd425"
+  },
+  {
+   "name": "r15net_peer_flow_diffusion_v1_0ea2820cafbe9177",
+   "candidate_id": "r15net_peer_flow_diffusion_v1_0ea2820cafbe9177",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "stock_finance"
+   ],
+   "definition_sha256": "bad37d32123c1f7d331a61b3a8c107c2948fb7a5c9b44494429de5bef4d8b86e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "3c417cb9088212899184c0319494ae72b27e4379f4b63ac99c2b003f1c8fcf7b"
+  },
+  {
+   "name": "r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8",
+   "candidate_id": "r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "d00f53392add9ca019f0ec36bdcd55766068ef3d65fd2b1f37be4792fc7b3835",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "8d3d0ed4b7920b0f3a5a37e68652ffca959dae4cfe8e83d0748b55555da53ba8"
+  },
+  {
+   "name": "r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f",
+   "candidate_id": "r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "dc1494dd0f4eaa0591a30428d972b50136a9df31f7bdda45f70b28da165ce512",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "3520cf53b0cffb6c96562c6d59d739c06a4d5eeedfadb209c45489d432c05bbf"
+  },
+  {
+   "name": "r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3",
+   "candidate_id": "r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "6f96478375183c99f0a740b01789a51442cf325ec6fa02d6caa26bb91c329c2b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "8d139266bb6d9df2947e2da7a59355c7690108311f57544053171daf490f45b4"
+  },
+  {
+   "name": "r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5",
+   "candidate_id": "r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "93dd38ee1b55a1314a5e4c87a95998dab240cf823a800e09a6688e94e36c184d",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "a8a270dcd7c73d0eca64cbff18566bb503e73830af031a8a72189600b7f8a3b4"
+  },
+  {
+   "name": "r15t3_overnight_variance_share_v1_09b9ae4f22c98618",
+   "candidate_id": "r15t3_overnight_variance_share_v1_09b9ae4f22c98618",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "51a5316653dba40d6fce8174555dc62d05b2a9f61f3732ff950c746547a5ac6a",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "685513e5f065644898cc57d2610ef762566a1ac43a7f04b5965ae08f4f6184a9"
+  },
+  {
+   "name": "r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08",
+   "candidate_id": "r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "89811f9fc781f0f635c6dc299f3b9d1628d48f0fdb3f26baf5359d40cc9a3a82",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "d5edde76f1bb89bb6a55c37cd62821128171f9b826c660368263f8327bba89f3"
+  },
+  {
+   "name": "r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f",
+   "candidate_id": "r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "21ab8f37ca09c3417b61e0107eed43cc50deaee1a868b95e45c1dd9de3370a66",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5ca9a09faf47aaa22a1fc8e7cf312ed1db9230ccc149d944491710fe05ee9f35"
+  },
+  {
+   "name": "r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4",
+   "candidate_id": "r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "3491d3976b8c65d39c07727af832fb9941f492d12e04642fc43111e91f136a72",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "0fea857e991852de8fc1b419a8eb14133f9ad61c512439cf2d3aed0737c47d43"
+  },
+  {
+   "name": "r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf",
+   "candidate_id": "r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf",
+   "definition_version": 1,
+   "deps": [
+    "stock_cashflow",
+    "stock_daily"
+   ],
+   "definition_sha256": "f538ecb2ac86c1aa2696e409dbced4160097679bd905b4d29346a7220655f458",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "155ca0a4c312c6542b7e26f2099a786bdaf58eac6261cd2eeffd67ed6287b415"
+  },
+  {
+   "name": "r15t3_spillover_v1_432027233601b658",
+   "candidate_id": "r15t3_spillover_v1_432027233601b658",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor"
+   ],
+   "definition_sha256": "6e3fa5be801810d9234adbb28659f79c606a50550d5e305555c747f7bfed5141",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "cac95ee068bb8cd5cc5a3b1fa94534604bf2f8d9f987550e6f0057d5ad5c1b87"
+  },
+  {
+   "name": "r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4",
+   "candidate_id": "r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "5288bab9c274bb9c8c77b3e4f81a927587992ca699b83617ac817245d07bab36",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c0884cfacd6d541a72117de8e4ff65e2395793abc5dfebf3e0e9dd1a3379f060"
+  },
+  {
+   "name": "r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e",
+   "candidate_id": "r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e",
+   "definition_version": 1,
+   "deps": [
+    "stock_income",
+    "stock_daily"
+   ],
+   "definition_sha256": "3c81a6f339ffd9c9b6f05c9b40267845dd95482c6e6d80f61232abba3ac755f7",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "2c0436eafa057f9b63356362f86e4bfaef79ac63d9a3d064568f79433e33730c"
+  },
+  {
+   "name": "r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43",
+   "candidate_id": "r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43",
+   "definition_version": 1,
+   "deps": [
+    "momentum_120",
+    "short_term_reversal_5",
+    "vol_120",
+    "idio_vol_60",
+    "turnover_std_20",
+    "stock_daily",
+    "stock_adj_factor",
+    "stock_finance",
+    "index_daily"
+   ],
+   "definition_sha256": "8449ef8404e6876d4adfe6392074de711dacf5c52439810f58b1a9ac04aebf2f",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "95d15192472db81508b3fa524191d9d33db810bd1524f0f34f970ee86539f10e"
+  },
+  {
+   "name": "r17fb1_asset_cip_to_fixed_5e21cf56126218f4",
+   "candidate_id": "r17fb1_asset_cip_to_fixed_5e21cf56126218f4",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "af2bca729a1db24aad771bc3f308c4917aa393c75a38206fd2222ef976473d65",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "retired",
+   "approval_event": "51f5dacb0afec9a223b60f2812ffc8e07c7e5d0bc211e37a514fec011cec8079"
+  },
+  {
+   "name": "r17re_afx_bs_cap_rese_v1_c2f96ea2a41b6b20",
+   "candidate_id": "r17re_afx_bs_cap_rese_v1_c2f96ea2a41b6b20",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "dc3548529860d6f56b56964620c1f4d1e818c91f9d94fa0e9cd1c27952b08cc0",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6471196a3bef6b2be5e3028dca1b2285ea0181945eca97374459f706a00a37e0"
+  },
+  {
+   "name": "r17fb1_asset_cip_to_fixed_v2_f8f6c9bd47779ce3",
+   "candidate_id": "r17fb1_asset_cip_to_fixed_v2_f8f6c9bd47779ce3",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "21db1daa157c95812064b121cdda5b14941f423d18bbca5e10773c8e6510b6de",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "41448a22c6a580c7de84bc6bd4f2c202148123adeca7e4f53a14f2c60a5736bd"
+  },
+  {
+   "name": "r17fb1_asset_notes_receiv_share_v2_1f3fc6f9c2cd3689",
+   "candidate_id": "r17fb1_asset_notes_receiv_share_v2_1f3fc6f9c2cd3689",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "11237e34579b8cbc44e18ff274dec1476b2db68876b1b3abe2df0d3f8caf6a9f",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "bec4aedf8ed7a33740dc2896eac91eaf7c5b4ccae98c6d025432fd5ca7e17469"
+  },
+  {
+   "name": "r17fb1_asset_trad_asset_share_v2_aadd1a2dc543a147",
+   "candidate_id": "r17fb1_asset_trad_asset_share_v2_aadd1a2dc543a147",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "51483b8e900e065cbc34ee73fb53465556c456211dff3d0322b5c7a9ee1c7722",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "af1adb4239520929785feac9e102def0e50889221fba6d3ddb30147d4f7c4254"
+  },
+  {
+   "name": "r17fb1_asset_contract_assets_share_v2_a82f724e5ad67010",
+   "candidate_id": "r17fb1_asset_contract_assets_share_v2_a82f724e5ad67010",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "20b4ffcfa0bb3f74b18b09a973c244fb254e31eb996a6eb8a438aa6777eaac8a",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "26a1b97ceaeb679eb7977b660bfdcce661443e100343f2e0b60af088c3215e9f"
+  },
+  {
+   "name": "r17fb1_asset_cip_share_v2_8e5d8f911c3fad0d",
+   "candidate_id": "r17fb1_asset_cip_share_v2_8e5d8f911c3fad0d",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "c472c2f8e3ccf691c174594aa828a3ac6206bbdf4d218b13e09daa84f12372e7",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c034d5c044d2f3b9c826b4b57d3defa25637eebdcd16f5a8ff3ec6949e79e8a9"
+  },
+  {
+   "name": "r17fb1_asset_oth_cur_share_v2_60163354eeb87c2d",
+   "candidate_id": "r17fb1_asset_oth_cur_share_v2_60163354eeb87c2d",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "bdd564e4a8647764db78ee42650135ce462e08733c1ad410c10d1dba39259676",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c43af54b96d1e8aec4ca7aaa45494ef38e801c66df820f77ccbf77b730b98ca9"
+  },
+  {
+   "name": "r17fb1_asset_oth_nca_share_v2_c9df11dd343132a8",
+   "candidate_id": "r17fb1_asset_oth_nca_share_v2_c9df11dd343132a8",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "d89af3f0c8a7bb6dd12c04a5201bcdd7b8f48ed51c293601bf76ed4abfa134fd",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "73e5a919c4f558b5c5eefe0c5438a58f01f88a9bc7dbd19d1acdf69aedc6eee7"
+  },
+  {
+   "name": "r17fb1_asset_goodwill_share_v2_29209c799e0d7e99",
+   "candidate_id": "r17fb1_asset_goodwill_share_v2_29209c799e0d7e99",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "cc42a33c55c16776017578921c79561ffd5ebd004237b09f86357d789147b6c1",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "494249965c4ec1072c65d6529d7a05b8bd9ef5bc7a4ef3208e4be8e43a02085d"
+  },
+  {
+   "name": "r17fb1_asset_invest_property_share_v2_9243c6e537721ea2",
+   "candidate_id": "r17fb1_asset_invest_property_share_v2_9243c6e537721ea2",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "7c0862278952cccae84a1c6d561a18e0a0587f2e6f496e403e15d624b76f633d",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "858702f422a30bab4b2c762687a2149f802d688f6303cc9f86d0ba5884bfc75a"
+  },
+  {
+   "name": "r17fb1_asset_intan_share_v2_41ce3b751f1b2ee6",
+   "candidate_id": "r17fb1_asset_intan_share_v2_41ce3b751f1b2ee6",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "cdbca2abd449b0e46472ffae64a8dcc5a2d933eec00ccc529a1acb640cb26a46",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "e25d5101f924f1bbd27cfbae45a0642296bff5b948004cf2ec8ac6b5ef5d019a"
+  },
+  {
+   "name": "r17fb1_asset_nca_within1y_share_v2_fcc86fc427d7e93a",
+   "candidate_id": "r17fb1_asset_nca_within1y_share_v2_fcc86fc427d7e93a",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "8b2db86e0253cfcc97eb62347dc9ea0114ac252ac22c485229581662c439b753",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "65d8c0ee6a55cbae99abf888681f56df68166a14eab439a896f5f9cbe91321dd"
+  },
+  {
+   "name": "r17fb1_asset_current_share_v2_bdb0bf52e9a73af4",
+   "candidate_id": "r17fb1_asset_current_share_v2_bdb0bf52e9a73af4",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "833089b9f0b5feb2551e9537c9efa59fa7dc24516546b8db8bf505ea954647d3",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "d0275c255303e8c076a3d669f203000fa0082b5a064355ad3add3bb256e6eb9d"
+  },
+  {
+   "name": "r17fb1_asset_inventory_share_v2_f6b177645eb366d3",
+   "candidate_id": "r17fb1_asset_inventory_share_v2_f6b177645eb366d3",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "bd221f29ad6862f37d55622638f2e1c6111c6421a7d01a41e37a5970691a1266",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "570cc8dc7a65de74564abf03d0b2361b55cf2dd30642c63abd7c204c722dc40b"
+  },
+  {
+   "name": "r17fb1_asset_rnd_capital_share_v2_be181cccf022ae61",
+   "candidate_id": "r17fb1_asset_rnd_capital_share_v2_be181cccf022ae61",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "c6a7e08c78ecf970fd481546961b9b914ebfe7ea9d19747991da12371d8bb479",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "8ab6714edc5f79106d1a5330dc13376bc542e320fa84043a0fdec153a6ab0e21"
+  },
+  {
+   "name": "r17fb1_asset_fix_to_nca_v2_a8087176e8402fb2",
+   "candidate_id": "r17fb1_asset_fix_to_nca_v2_a8087176e8402fb2",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "432ed292a45dd4709c075bb17275302e75ca4f424744574c74bbbe3f2a9b6ddd",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "7f8bdf900555033b69787194507fd11be206f16c715c7f7e850d44500da30382"
+  },
+  {
+   "name": "r17fb1_asset_inventory_to_payable_v2_154835a2ea4c48fa",
+   "candidate_id": "r17fb1_asset_inventory_to_payable_v2_154835a2ea4c48fa",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "9fbea0ee87076506f81a3958193a08aea3d2c2fe8d8272ca8d644f5a767bca95",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5f5e6f5edc57993beffc592821e099f04c4c961f76f2248960985bb7182400a3"
+  },
+  {
+   "name": "r17fb1_asset_invest_property_to_fixed_v2_db945c58569dd5c3",
+   "candidate_id": "r17fb1_asset_invest_property_to_fixed_v2_db945c58569dd5c3",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "839a9cce2c49c7b14568289683f3deec893ddc91a4b66b76e5c35abb5d1764b4",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5f5acceab336358ff969995c6e511b61d8fb193306b58c1af75b7c3f85d6897f"
+  },
+  {
+   "name": "r17fb1_asset_net_trade_wc_share_v2_d89124f2bb38cbb8",
+   "candidate_id": "r17fb1_asset_net_trade_wc_share_v2_d89124f2bb38cbb8",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "247f073fa60e4e34510335aee0008c5f2815b1decb1865fe34947bb4a0a07555",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "2c9aebdd3329d0f2f01d1dc9fe91313d6f5583e4ec13ae33218105c3563e8cc4"
+  },
+  {
+   "name": "r17fb1_asset_notes_to_receivables_v2_40068f6f13126412",
+   "candidate_id": "r17fb1_asset_notes_to_receivables_v2_40068f6f13126412",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "393e4ddfa13b5b30d71d6660ec2b82a8e1f13fe2124b035129a7ae729e5fd790",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6501331f26eda09390de1006cdd7a9ea8a0116d19a5355b36d268fd6684a8aac"
+  },
+  {
+   "name": "r17fb1_asset_prepay_to_customer_adv_v2_0baa1282215b61c7",
+   "candidate_id": "r17fb1_asset_prepay_to_customer_adv_v2_0baa1282215b61c7",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "cd0b9cfd15218e1c6b4a44bec96df89fb9314c343070b036b67ff9a8537fc9b6",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5152b529b551343a09e4524e3b6b75e568a4b9a8e460f3907f586ad3727fad63"
+  },
+  {
+   "name": "r17fb2_liab_acct_payable_to_liab_v2_a2192b8ed099950e",
+   "candidate_id": "r17fb2_liab_acct_payable_to_liab_v2_a2192b8ed099950e",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "76368cc73d0ee7d2c4ea77cdda82f997c78daf55438b2eebab599c7bfabce11d",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "fea5dd16f2e2b5ffe4c906cb1901d2c3e30cade9248a2a9f1e38371b65e54677"
+  },
+  {
+   "name": "r17fb2_liab_adv_receipts_to_liab_v2_9dc63c78cf9be27b",
+   "candidate_id": "r17fb2_liab_adv_receipts_to_liab_v2_9dc63c78cf9be27b",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "876e4c52ee8bbd691cecaeaf40e1343f68e1e5e43ae018361df30d34c562c8fe",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b4f38de1751723ebef82d4c203e10dcd138a1e9256bcdcecfa853a03c8704a7b"
+  },
+  {
+   "name": "r17fb2_liab_bond_to_liab_v2_08310df1288c41b0",
+   "candidate_id": "r17fb2_liab_bond_to_liab_v2_08310df1288c41b0",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "ecccfdad1b500275e87b615cffa8e7aea5609023ad7b83d8ec6ec98f7e34b22e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "1b79cf1ba20694f087f8d41f06482ef7155efd3c8419ba8c49506163c1b746dc"
+  },
+  {
+   "name": "r17fb2_liab_contract_liab_to_liab_v2_4bcb958ffa136fa8",
+   "candidate_id": "r17fb2_liab_contract_liab_to_liab_v2_4bcb958ffa136fa8",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "75a07d9db792713aa8b31611b103d66cc568acff6d7c485b668582214dc4408c",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b61937d331a5223855340ccd659f57e40843531485be5780d36eef2cd2a4c9cd"
+  },
+  {
+   "name": "r17fb2_liab_current_portion_share_ibd_v2_eeec363287011f04",
+   "candidate_id": "r17fb2_liab_current_portion_share_ibd_v2_eeec363287011f04",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "0272f77da99931f2f198e6d40b94cf1ad55fed3dfdf00e4e2d4309250ea8c8c3",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "3716b8c2266d40580a5fd410ac8bec83c0a2beae24de20212a273016a47095bd"
+  },
+  {
+   "name": "r17fb2_liab_defer_income_to_liab_v2_17a0d8247969ac4e",
+   "candidate_id": "r17fb2_liab_defer_income_to_liab_v2_17a0d8247969ac4e",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "00091f464f2f5c0947ff6e98130a96bcd5a8ff27297b012e5770f0dc2ecd4d92",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6574a8f8e69a339ff5a3c97a6de5273f17464933399f74f7a20df86804ba08d3"
+  },
+  {
+   "name": "r17fb2_liab_contract_liab_share_customer_adv_v2_06a44e1c5e652787",
+   "candidate_id": "r17fb2_liab_contract_liab_share_customer_adv_v2_06a44e1c5e652787",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "3254240373525a3833d976a89807c65eed68561a2d18fc6e620d00df6105aa00",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "575c757b080286f83a14635b895f1ac0d6a958fbe4b4ef06a16b7a7bafd367f4"
+  },
+  {
+   "name": "r17fb2_liab_acct_payable_share_trade_v2_f823a14c6367ae4b",
+   "candidate_id": "r17fb2_liab_acct_payable_share_trade_v2_f823a14c6367ae4b",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "345cccaaecaef6de059a98815a9ed403bcca94cf43e08c7488ec52fc9813c2ab",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "67e7730444206edca81848268646a1f4a12fe136cc405cff70bb730d5d4380b4"
+  },
+  {
+   "name": "r17fb2_liab_defer_tax_share_lt_oblig_v2_0832a7a75cad8b89",
+   "candidate_id": "r17fb2_liab_defer_tax_share_lt_oblig_v2_0832a7a75cad8b89",
+   "definition_version": 1,
+   "deps": [
+    "stock_balancesheet",
+    "stock_daily"
+   ],
+   "definition_sha256": "30c9df8f87311bfbb9165e5df3b1e50c229276cdfbc14c34f10b26060341872e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c817a30f1d86eb5f4e65aed2b1b67334d4fae58dda7b09491e4fca18734d3207"
+  },
+  {
+   "name": "r17x_net_cluster_tightness_v3_7684619a30bd7821",
+   "candidate_id": "r17x_net_cluster_tightness_v3_7684619a30bd7821",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "stock_finance",
+    "stock_main_fund_flow",
+    "stock_income"
+   ],
+   "definition_sha256": "88c34c43b4af795a8d32cb6b6648c370ebb659fab5131f1c4fbdb1927d6682f1",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "bc7c4bc59220c99edf003b34c0d0734d6546be66b858412326d8705478a0d585"
+  },
+  {
+   "name": "r17x_net_peer_corr_dispersion_v3_0136fe5025838330",
+   "candidate_id": "r17x_net_peer_corr_dispersion_v3_0136fe5025838330",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "stock_finance",
+    "stock_main_fund_flow",
+    "stock_income"
+   ],
+   "definition_sha256": "1b93082ab278e36c64dee7cbc94769cb57c6a41707ecd20f5905f3987163c0f6",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "35ba602f7dc230947b8a00ff9484eb76cc7b8e1dfdc6eb043620a58e386c9fbd"
+  },
+  {
+   "name": "r17x_net_two_hop_density_v3_a68943c3d0b8ba5a",
+   "candidate_id": "r17x_net_two_hop_density_v3_a68943c3d0b8ba5a",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "stock_finance",
+    "stock_main_fund_flow",
+    "stock_income"
+   ],
+   "definition_sha256": "6ca4fd7be312b01262e372be678cf3876a44b925ceb26339eb13c80cdde75225",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "6d75d7da6a127b44b78706655a2f843fdf4ca59b767139c03503ad826a111489"
+  },
+  {
+   "name": "r17cg_mean_gap_chg5_33004777b5285f13",
+   "candidate_id": "r17cg_mean_gap_chg5_33004777b5285f13",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "05910ae88f238b6e7526b836e4617385f749f0b8e2082233fb533445a0c25d5c",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c8c7128c4bc4f91d7879f67fe764e5905523902f5dd1c8a8a23e143489d26740"
+  },
+  {
+   "name": "r17cg_n_peaks_chg20_f44e9e1cc27782a1",
+   "candidate_id": "r17cg_n_peaks_chg20_f44e9e1cc27782a1",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "e96e8350b6538dc170edcd5adec2693de961f74cec041819f2f6ceb5f72632af",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "74aca739f1c746f9e72885dbdfc8de77b0ea5db10736de679ac60184aad4212f"
+  },
+  {
+   "name": "r17cg_chip_skew_c0483bce256ff0d4",
+   "candidate_id": "r17cg_chip_skew_c0483bce256ff0d4",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "473a88c3b12a255046ef4462cbbe473b28b8e93cf686574c4902d2707373fac2",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "4be72549159d31e58d48f2887e580332bbdd728d18ba493809bdc8df8e78ed47"
+  },
+  {
+   "name": "r17cg_mode_vs_median_fd0f6f0f27661177",
+   "candidate_id": "r17cg_mode_vs_median_fd0f6f0f27661177",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "b8169d139356f9ef8d4d8c566f1c8fec69e37260d5e3d85642b25e9fb3b6dcbb",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "b821e96948bee2f6115ad00d226254e951d9649c3cf1a393923ea99ba5562cbd"
+  },
+  {
+   "name": "r17cg_chip_gini_38d02c6cc01fbd71",
+   "candidate_id": "r17cg_chip_gini_38d02c6cc01fbd71",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "f1733010634892a45e04e2cdb217ac94be027f71346154c00bdf8b6ccacb5316",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "c1c3c0f710d40f4ad06f5f5b5595e446d0ae5c295403d0c2d6acd86c7632f14c"
+  },
+  {
+   "name": "r17cg_chip_peak_gap_2a0ffd978824deca",
+   "candidate_id": "r17cg_chip_peak_gap_2a0ffd978824deca",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "d86556f657f5138325c043d5a9238b8d39b50d6d7b26a9d179e60af38bd1bf46",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "ba49660e35089f7a2d227b29d2abfa40f80b08e7cf1129672f42eaf5337f7eec"
+  },
+  {
+   "name": "r17cg_cost_range_vs_hist_562131dee31e9ee9",
+   "candidate_id": "r17cg_cost_range_vs_hist_562131dee31e9ee9",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_perf",
+    "stock_daily"
+   ],
+   "definition_sha256": "151df42cb8338ab6655d35b6b526ecca458f0eb099e26ba27555db6d4b281be4",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "8d57eefc1f91143e473c22349854e0d2a13009a43d87621d72c5b59487038ba6"
+  },
+  {
+   "name": "r17cg_cost_width_80_5cf614f2d5f3956f",
+   "candidate_id": "r17cg_cost_width_80_5cf614f2d5f3956f",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "10ec158390855306fdeb80c4b3a9e2444f85146cae198c996e1331629bb2169b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "53bb58a306fa90bf48d555f14f941bfc35c569f5098061d91e800942f45af23b"
+  },
+  {
+   "name": "r17cg_peak_vs_top3_d62c93f9f9b52f89",
+   "candidate_id": "r17cg_peak_vs_top3_d62c93f9f9b52f89",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "36568f68a45fab974b980de3a9652b5149e46fce2301ea796a7053c5d2260b9e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "07e2d05975da2e85a2138c0108d3ace11d388b579b61f476895803d8d57dead9"
+  },
+  {
+   "name": "r17cg_p90_hist_pos_6bdd9e80d892da3e",
+   "candidate_id": "r17cg_p90_hist_pos_6bdd9e80d892da3e",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_perf",
+    "stock_daily"
+   ],
+   "definition_sha256": "787097331ca060f484e3461894a64b90c377e9b2bc45d7f7e0b4dff4665005c8",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "3d8688c66a7e7e5394977f659fba0cc45b32da77c45c9f80d5ffa2c53bbebcdc"
+  },
+  {
+   "name": "r17cg_skew_chg20_4c9f6345c8034e61",
+   "candidate_id": "r17cg_skew_chg20_4c9f6345c8034e61",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "4eb1b2b827196c8bf5a333e2639cef54ba52e047fa4cb361c506da5f056ea9f1",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "4cf7fc43ab8c0f5029db0af714e8ef33e0f50ba47ab60d3758f061efb6d8da58"
+  },
+  {
+   "name": "r17cc_chip_entropy_7a2083fdad619cbc",
+   "candidate_id": "r17cc_chip_entropy_7a2083fdad619cbc",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "a139a4afcbc11e7ed049a9a6ca0808f254afb54b51cc93630020a3db5c925227",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "35e666caa6a285b3b8bb43d6beebf77c80a05c7789d33b06d0dca64763b2351e"
+  },
+  {
+   "name": "r17cg_mid_tier_mass_d3ad83f0b2b023cd",
+   "candidate_id": "r17cg_mid_tier_mass_d3ad83f0b2b023cd",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "b4b331d0343c50059e1ee0bf43568800da1f18cd8fde4b8bc99ae6f528eaf1a1",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "f446eca7b4ca0788c42fbd7481a3b587779d96de032717c2b4d0ef170791c7a0"
+  },
+  {
+   "name": "r17cg_p90_gap_chg20_c91115e3f691152c",
+   "candidate_id": "r17cg_p90_gap_chg20_c91115e3f691152c",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "81fb7941686222518e73481da471e70137756c2cda1d196d7d00ec2a190a5be2",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "41454ba4f90d91cf089d405daa0c3792f765c390e9d43754bb7db24f2e920464"
+  },
+  {
+   "name": "r17x_net_edge_weight_hhi_v3_61f921e8543188e5",
+   "candidate_id": "r17x_net_edge_weight_hhi_v3_61f921e8543188e5",
+   "definition_version": 1,
+   "deps": [
+    "stock_daily",
+    "stock_adj_factor",
+    "stock_finance",
+    "stock_main_fund_flow",
+    "stock_income"
+   ],
+   "definition_sha256": "b638eb1700c1599c2484a5ae8d4deea2c26c783ad834f8b67a0c04f614fd6d8e",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "904bb7988b65d6600fa761b9b7eb8595a23be9a49fc345ae2ef355fb4a94b4b8"
+  },
+  {
+   "name": "r17cg_chip_cr3_f3dc52e9a85abfb7",
+   "candidate_id": "r17cg_chip_cr3_f3dc52e9a85abfb7",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "a02efc6eea6ee152bf861893a9e8e8943c14b37ea47edef4907f06b302eb935b",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "5b6ac9f62f75d99d02be31d7d32ee319028ba31b0d8b41044e3d79b06357087d"
+  },
+  {
+   "name": "r17cg_chip_n_levels_df5db51fc7a2fdfc",
+   "candidate_id": "r17cg_chip_n_levels_df5db51fc7a2fdfc",
+   "definition_version": 1,
+   "deps": [
+    "stock_cyq_chips",
+    "stock_daily"
+   ],
+   "definition_sha256": "3774f803c836c33f9bfb85e8a6f4072e873fcd367548d80eb0da91dfa5139119",
+   "origin": "research",
+   "research_review": "approved",
+   "status": "production",
+   "approval_event": "e7a4b861550ec6a6a71e6c0515b46bd08721f4a530933f5816c0f798d750d87f"
+  }
+ ]
+}

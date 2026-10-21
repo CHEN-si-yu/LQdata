@@ -100,7 +100,7 @@ class TestFloat32Guard(unittest.TestCase):
         from pathlib import Path as _P
         with tempfile.TemporaryDirectory() as td:
             out = _P(td) / "guard.jsonl"
-            install_float32_guard(str(out))
+            install_float32_guard(str(out), project_root=Path(td))
             try:
                 set_guard_factor("unit_test_factor")
                 np.arcsinh(np.array([0.1, 0.2], dtype=np.float32))   # 应该被抓到
@@ -113,6 +113,7 @@ class TestFloat32Guard(unittest.TestCase):
                 self.assertTrue(any(r[0] == "unit_test_factor" and r[1] == "arcsinh" for r in rows),
                                 f"探针没抓到 float32 的 arcsinh：{rows}")
                 self.assertTrue(all(r[1] != "sqrt" for r in rows))
+                resources.uninstall_float32_guard()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,20 @@
+{
+  "idea_id": "r7c_self_disclosure_delay_v1",
+  "hypothesis": "An unexpectedly later completed financial disclosure relative to the same company's prior three same-season reports may reflect adverse information that continues to be incorporated after disclosure; weak negative prior.",
+  "mechanism": "Completed formal income-report timing surprise only; never an unresolved waiting-pressure signal or a return-path/turnover proxy.",
+  "expected_direction": "higher_is_better=false; weak prior fixed before candidate returns",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "Original G1-G7 and fixed neighbor audit; no direction flip, active-window extension, baseline replacement, control removal, or changing completed-event semantics after results.",
+  "fields": [
+    "stock_income.stock_code",
+    "stock_income.end_date",
+    "stock_income.ann_date",
+    "stock_income.f_ann_date",
+    "stock_daily traded mask"
+  ],
+  "origin": "Lead-approved R7 C unique definition",
+  "status": "unvalidated_hypothesis"
+}

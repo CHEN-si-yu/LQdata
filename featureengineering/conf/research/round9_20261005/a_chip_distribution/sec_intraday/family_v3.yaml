@@ -1,0 +1,24 @@
+family_id: r9_sec_intraday_family_v3
+idea_id: r9_sec_intraday_idea_v1
+trial_budget: 1
+allowed_variants:
+  - {signal: sec_own_rv_beta_exrelabel, window: 60, min_count: 54}
+baseline: [vol_120, idio_vol_60, momentum_120, short_term_reversal_5, turnover_std_20, log_mv, bp, roe_ttm]
+parameters_frozen:
+  window: 60
+  min_count: 54
+  direction: false
+  sector_map: "stock_list.industry == tdx_minute.board_name -> board_code"
+  exclusion: "frozen list of 1032 stocks carrying >1 DC-style industry label in 2022-2026"
+  warmup_days: 200
+variants: "none"
+purpose: >-
+  Lead 条件 1 的前视敏感性诊断：把「在 2022-2026 改名后区间内携带一个以上 DC 风格行业标签」
+  的股票整列置 NaN，与全样本候选 r9a_sec_own_rv_beta_v2_ef77e079dd4478fe 对照。
+  若两者符号不同，那是数据质量发现，必须如实报告。
+known_confounds_must_state: >-
+  (a) 排除名单由 2022-2026 的标签计算、却应用于 2018-2026 ⇒ 这本身是**样本选择层面的前视**，
+      因此本候选是**诊断**，不是可入库的正式候选；
+  (b) 排除名单来自**另一套分类体系**（DC 风格），只是 TDX 标签漂移的弱代理；
+  (c) 剔除后池子腰斩，再叠加 2011-2024 的 38.82% 板块覆盖上限，G2 预期失败 —— 本候选的目的是
+      比较**符号与量级**，不是过闸门。

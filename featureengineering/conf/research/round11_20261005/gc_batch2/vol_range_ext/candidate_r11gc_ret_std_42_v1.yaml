@@ -1,0 +1,26 @@
+{
+  "name": "r11gc_ret_std_42_v1",
+  "family_id": "r11gc_vol_range_ext_v1",
+  "implementation": "research.families.r11gc_vol_range_ext_v1:build",
+  "parameters": {
+    "kind": "ret_std",
+    "window": 42
+  },
+  "units": "日收益的总体标准差（无量纲，日频）",
+  "availability": "T 日收盘后可得：stock_daily 与 stock_adj_factor 均 delay_days: 0（conf/frequency.yaml 原文）。复权用 ctx.hfq（截至当日累计复权因子），历史值不随未来分红改变。真实值起点 = default_start（2018-01-01）；更早年份仅用于 warmup，不产出真实值。",
+  "missing_policy": "停牌日：ctx.ret_clean(1) 置 NaN（不用被前向填充的 hfq_close 造出的 0 收益），滚动标准差按 min_count=n//2 统计有效值，不足一半 → NaN。极值用 hfq_close（水平量，停牌日前向填充，不会造假极值）；窗口最低价 <= 0 或非有限 → NaN。真实 0 收益（收平）是观测值，保留。池外股票 → NaN。",
+  "spec": {
+    "group": "r11_gc_risk",
+    "desc": "收益波动（2 个月）：过去 42 个交易日日收益的总体标准差（42 个交易日）",
+    "formula": "StdDev_pop(daily_return, 42)  # daily_return = ctx.ret_clean(1)",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "fin_fields": [],
+    "warmup_days": 120,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "绿卡候选（只主张三项基础门槛：非空 / 非常数 / 无泄露；G4–G7 未主张）。higher_is_better=true 仅表示 declared=raw（不做反号），不代表任何预测方向，不主张预测有效性，不写「已验证信号」。；Tushare 对应名：return_std_42d（原文窗口写作 w=221，见窗口语义段）。；透明观测描述量：单条后复权价格/收益序列的滚动标准差（volatility）。；【与 Tushare 原文的等价性】原式为日收益的滚动标准差，本实现逐字对应。；【窗口语义·必读】Tushare 原文的 w=221（2 个月）/ w=621（6 个月）是「月数 × 21 交易日」被拼接后的产物，不是交易日数；本对象按**交易日**实现，照抄字面数字会得到长于语义的窗口。；【无泄露】输入仅 stock_daily 与 stock_adj_factor（delay_days: 0）；收益用 ctx.ret_clean(1)（停牌日 NaN，不用前向填充价造出的 0 收益）；价格用 ctx.hfq（截至当日累计复权因子，PIT 安全）；模块内无 shift / 无前向填充 / 无全样本标准化。；【与在产对象的差异】在产 `vol_120` = Std(日收益,120) 且其 note 原文自述「公式形式逐字同 return_std_126d」——即 Tushare 的 `return_std_126d` **已在产**；本批登记的是**未在产**的 42/126 中的 42 与 high_low 42/126 三点，126 日收益标准差与在产 vol_120 同轴，故本批**不把 (ret_std,126) 当作新增信息**，仅在登记台账中标注其与 vol_120 的关系（见 gc_report.md §4 的近邻表）。在产 `price_to_52w_high`（现价/最高−1）与 `price_distance_from_52w_low`（(现价−最低)/最低）都含**现价**；`high_low_n` 是窗口内 max/min 的**振幅**，与现价无关。在产 `rv_term_structure` 是 Std(ret,20)/Std(ret,60) 的**比率**；本批 `ret_std_n` 是**水平**。"
+  }
+}

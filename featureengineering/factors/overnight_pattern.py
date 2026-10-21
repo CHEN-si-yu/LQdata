@@ -217,25 +217,8 @@ def _intraday(ctx, ok: np.ndarray) -> np.ndarray:
     return np.where(ok, r, np.nan)
 
 
-def _log1p_pos(x: np.ndarray) -> np.ndarray:
-    """`log1p(x)`，`x <= -1`（价格比非正，只可能是上游脏数据）处给 NaN。
-
-    ★ 不能直接 `np.log1p`：`x = -1` 会产出 **-inf**，而 `mathx` 的滚动把 ±inf
-      当**缺失**（`_finite` = isfinite），于是那一天被静默从窗口里剔除 ——
-      累乘结果看起来完全正常，只是少乘了一天。
-    """
-    ok = np.isfinite(x) & (x > -1.0)
-    return np.where(ok, np.log1p(np.where(ok, x, 0.0)), np.nan)
 
 
-def _cum_prod(ctx, x: np.ndarray, n: int, min_count: int) -> np.ndarray:
-    """`Π(1+x) - 1` 的滚动版（参考库 `_cum_prod` = `(1+s).rolling(n).apply(np.prod) - 1`）。
-
-    ★ 不用 `ctx.roll_prod`：它把 NaN 当**乘法单位元 1.0**，等于「跳过缺失」，
-      与「缺失毒化 + min_count」的框架语义不一致（模块 docstring 第 6 条）。
-      `log1p` + `roll_sum` 是 O(T·C)，且 `expm1(log1p(x)) = x` 逐位可逆。
-    """
-    return np.expm1(ctx.roll_sum(_log1p_pos(x), n, min_count))
 
 
 def _roll_skew_eff(ctx, x: np.ndarray, n: int, min_count: int) -> np.ndarray:
@@ -269,25 +252,8 @@ def _bars(ctx):
     return _hfq(ctx, "open"), _hfq(ctx, "high"), _hfq(ctx, "low"), _hfq(ctx, "close")
 
 
-def _rng(ctx, hi: np.ndarray, lo: np.ndarray):
-    """振幅与「振幅是否为正」掩码（一字板 `high == low` → 形态判据是 0/0 型无定义）。"""
-    r = hi - lo
-    return r, np.isfinite(r) & (r > 0)
 
 
-def _cs_z(ctx, x: np.ndarray) -> np.ndarray:
-    """截面 z-score（`mask=ctx.universe`），**本地吞掉全 NaN 行的 RuntimeWarning**。
-
-    ★ `fea/mathx.py: _row_reduce` 直接调 `np.nanmean/np.nanstd`，而面板**开头的 warmup 行**
-      在 `ret(20)` 这类因子上是整行 NaN（所有股票都还没满 20 个交易日）——
-      这是预期行为（返回 NaN 是对的），但 numpy 会刷 "Mean of empty slice" /
-      "Degrees of freedom <= 0 for slice" 两条 RuntimeWarning。实测跑一次会各出 2 条。
-      这里只在**本因子自己的调用**上抑制，不改 `fea/**`（契约 §0 禁止）。
-      （同样的问题 valuation.py 的 `pe_pb_zscore` 也会撞到 —— 已写进汇报的「需要引擎扩展」。）
-    """
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        return ctx.cs_zscore(x, mask=ctx.universe)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -301,7 +267,7 @@ def _overnight_ma(ctx, n: int, min_count: int) -> np.ndarray:
 
 
 @register(FactorSpec(
-    name="overnight_ma_5d", group=GROUP, deps=PRICE_DEPS,
+    name="overnight_ma_5d", version=2, group=GROUP, deps=PRICE_DEPS,
     desc="隔夜收益均值（5 个交易日）",
     formula="overnight = open/pre_close - 1; ma5 = rolling(5).mean()",
     start=PAT_START, warmup_days=W5, higher_is_better=True,
@@ -316,7 +282,7 @@ def overnight_ma_5d(ctx):
 
 
 @register(FactorSpec(
-    name="overnight_ma_20d", group=GROUP, deps=PRICE_DEPS,
+    name="overnight_ma_20d", version=2, group=GROUP, deps=PRICE_DEPS,
     desc="隔夜收益均值（20 个交易日）",
     formula="overnight = open/pre_close - 1; ma20 = rolling(20).mean()",
     start=PAT_START, warmup_days=W20, higher_is_better=True,
@@ -328,7 +294,7 @@ def overnight_ma_20d(ctx):
 
 
 @register(FactorSpec(
-    name="overnight_ma_60d", group=GROUP, deps=PRICE_DEPS,
+    name="overnight_ma_60d", version=2, group=GROUP, deps=PRICE_DEPS,
     desc="隔夜收益均值（60 个交易日）",
     formula="overnight = open/pre_close - 1; ma60 = rolling(60).mean()",
     start=PAT_START, warmup_days=W60, higher_is_better=True,
@@ -340,48 +306,12 @@ def overnight_ma_60d(ctx):
     return _overnight_ma(ctx, 60, 30)
 
 
-@register(FactorSpec(
-    name="overnight_sign_consistency_20d", group=GROUP, deps=PRICE_DEPS,
-    desc="隔夜方向一致性：20 日内 overnight > 0 的交易日占比（0~1）",
-    formula="overnight_pos = (overnight > 0).astype(float); x = rolling(20).mean()",
-    start=PAT_START, warmup_days=W20, higher_is_better=True,
-    note="参考库 Class1 `overnight_sign_consistency_20d`（fac_new_daily.py）逐字为 "
-         "`df['overnight_pos'] = (df['overnight']>0).astype(float)` + `roll(...,20,'mean')`，"
-         "`roll` 默认 min_periods=1 → 本实现 min_count=10（N//2）。"
-         "★ `overnight == 0` 精确相等时**不算**正方向（参考库用严格 `> 0`，本实现照抄）。"
-         "★ 判据不可得（停牌 / 前一日停牌）给 NaN 而不是 0：给 0 会让停牌多的股票"
-         "被系统性拉向「方向不一致」，而这个偏差与停牌频率相关，不是随机噪声（第 4 条）。"
-         "值域 [0,1]。",
-))
-def overnight_sign_consistency_20d(ctx):
-    g = _overnight(ctx, _ok2(ctx))
-    return ctx.roll_mean(_ind(np.isfinite(g), g > 0.0), 20, 10)
+
+
 
 
 @register(FactorSpec(
-    name="overnight_skewness_20d", group=GROUP, deps=PRICE_DEPS,
-    desc="20 日隔夜收益偏度的**绝对值取反**（−|skew|，越接近 0 = 信息冲击越不极端）",
-    formula="skew = rolling(20, min_periods=10).skew(); skew = skew.clip(-5, 5); "
-            "factor = -skew.abs()   # 参考库: cross_sectional_rank(-skew.abs())",
-    start=PAT_START, warmup_days=W20, higher_is_better=True,
-    note="参考库 Class1 `overnight_skewness_20d`（price_deep.py）返回 "
-         "`cross_sectional_rank(-skew.abs())`。契约 §2.3 不许在因子里 rank，"
-         "所以本因子返回**原始值 `-|skew|`**（rank 由引擎统一做），方向语义不变："
-         "值越大（越接近 0）= 隔夜分布越对称 = 信息冲击越不极端。"
-         "★ 偏度做 `clip(-5, 5)` 保留（参考库原样），避免 3 阶矩在退化窗口里爆掉。"
-         "★ **必须用本文件的 `_roll_skew_eff`**：`ctx.roll_skew` 在 `min_count < n` 时"
-         "三阶矩分母固定取 n，实测偏差高达 0.2008（模块 docstring 第 6 条）；"
-         "本实现按有效值个数做矩，与 pandas `rolling(20, min_periods=10).skew()` 一致到 3.3e-15。"
-         "★ 隔夜腿掩码 `traded(T) & traded(T-1)`。窗口内有效值 < 3 时三阶矩无定义 → NaN。",
-))
-def overnight_skewness_20d(ctx):
-    g = _overnight(ctx, _ok2(ctx))
-    s = _roll_skew_eff(ctx, g, 20, 10)
-    return -np.abs(np.clip(s, -5.0, 5.0))
-
-
-@register(FactorSpec(
-    name="overnight_std_5d", group=GROUP, deps=PRICE_DEPS,
+    name="overnight_std_5d", version=2, group=GROUP, deps=PRICE_DEPS,
     desc="隔夜收益标准差（5 个交易日，样本口径 ddof=1）",
     formula="overnight = open/pre_close - 1; std5 = rolling(5).std()",
     start=PAT_START, warmup_days=W5, higher_is_better=False,
@@ -398,22 +328,6 @@ def overnight_std_5d(ctx):
     return ctx.roll_std(_overnight(ctx, _ok2(ctx)), 5, min_count=2, ddof=1)
 
 
-@register(FactorSpec(
-    name="overnight_gap_vol_20", group=GROUP, deps=PRICE_DEPS,
-    desc="20 日隔夜跳空波动率（样本标准差 ddof=1，高波动=信息不确定性高）",
-    formula="overnight_ret = (open - pre_close)/(pre_close + 1e-8); "
-            "gap_vol = rolling(20, min_periods=10).std()   # 参考库 rank(-gap_vol)",
-    start=PAT_START, warmup_days=W20, higher_is_better=False,
-    note="参考库 Class1 `overnight_gap_vol_20`（price.py）返回 `cross_sectional_rank(-gap_vol)`。"
-         "契约 §2.3 不许在因子里 rank，故本因子返回**原始值 `+gap_vol`** 并置 "
-         "`higher_is_better=False`（与 `factors/intraday.py: idt_overnight_gap` 同样的处置）。"
-         "★ 与同族 `overnight_std_5d` 的差别只有窗口（20 vs 5）与参考库的 min_periods"
-         "（10 vs 1，本实现统一 N//2 → 10 vs 2）；两者高度相关但窗口不同，不是重复因子。"
-         "★ 分母的 `+1e-8` 由 `safe_div(min_abs_den=1e-8)` 承担（语义相同：只挡 0 价脏行）。"
-         "ddof=1 与 pandas 对齐（实测 1.4e-17）。隔夜腿掩码 `traded(T) & traded(T-1)`。",
-))
-def overnight_gap_vol_20(ctx):
-    return ctx.roll_std(_overnight(ctx, _ok2(ctx)), 20, min_count=10, ddof=1)
 
 
 
@@ -422,57 +336,22 @@ def overnight_gap_vol_20(ctx):
 # ② 日内族（6 个）
 # ══════════════════════════════════════════════════════════════════════
 
-def _intraday_1d(ctx) -> np.ndarray:
-    """单日日内收益，只按 `traded(T)` 掩码（当日量，不需要 T-1）。"""
-    return _intraday(ctx, _tr(ctx))
 
 
 
 
-def _intraday_ma(ctx, n: int, min_count: int) -> np.ndarray:
-    return ctx.roll_mean(_intraday_1d(ctx), n, min_count)
 
 
-@register(FactorSpec(
-    name="intraday_ma_5d", group=GROUP, deps=PRICE_DEPS,
-    desc="日内收益均值（5 个交易日）",
-    formula="intraday = close/open - 1; ma5 = rolling(5).mean()",
-    start=PAT_START, warmup_days=W5, higher_is_better=True,
-    note="参考库 Class1 `intraday_ma_5d`（fac_new_daily.py），`roll` 默认 min_periods=1 → "
-         "本实现 min_count=2（N//2）。掩码只用 `traded(T)`（当日量）。",
-))
-def intraday_ma_5d(ctx):
-    return _intraday_ma(ctx, 5, 2)
 
 
-@register(FactorSpec(
-    name="intraday_ma_20d", group=GROUP, deps=PRICE_DEPS,
-    desc="日内收益均值（20 个交易日）",
-    formula="intraday = close/open - 1; ma20 = rolling(20).mean()",
-    start=PAT_START, warmup_days=W20, higher_is_better=True,
-    note="参考库 Class1 `intraday_ma_20d`（fac_new_daily.py），min_periods=1 → 本实现 min_count=10。"
-         "掩码只用 `traded(T)`（当日量）。",
-))
-def intraday_ma_20d(ctx):
-    return _intraday_ma(ctx, 20, 10)
 
 
-@register(FactorSpec(
-    name="intraday_ma_60d", group=GROUP, deps=PRICE_DEPS,
-    desc="日内收益均值（60 个交易日）",
-    formula="intraday = close/open - 1; ma60 = rolling(60).mean()",
-    start=PAT_START, warmup_days=W60, higher_is_better=True,
-    note="参考库 Class1 `intraday_ma_60d`（fac_new_daily.py），min_periods=1 → 本实现 min_count=30。"
-         "掩码只用 `traded(T)`（当日量）。",
-))
-def intraday_ma_60d(ctx):
-    return _intraday_ma(ctx, 60, 30)
 
 
 
 
 @register(FactorSpec(
-    name="intraday_vol_ratio_5d", group=GROUP, deps=PRICE_DEPS,
+    name="intraday_vol_ratio_5d", version=2, group=GROUP, deps=PRICE_DEPS,
     desc="日内/隔夜波动比：5 日 |日内收益| 均值 ÷ 5 日 |隔夜收益| 均值",
     formula="_ia = |intraday|; _oa = |overnight|; m_ia = rolling(5).mean(_ia); "
             "m_oa = rolling(5).mean(_oa); x = m_ia / (m_oa + 1e-8)",
@@ -498,7 +377,7 @@ def intraday_vol_ratio_5d(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="td_setup_count", group=GROUP, deps=PRICE_DEPS,
+    name="td_setup_count", version=2, group=GROUP, deps=PRICE_DEPS,
     desc="TD setup：20 日内 close ≤ 4 日前 close 的交易日**占比**（0~1，超卖衰竭程度）",
     formula="cond = (adj_close <= adj_close.shift(4)).astype(int); "
             "seg = (~cond).groupby(Code).cumsum(); count = cond.groupby([Code, seg]).cumsum(); "
@@ -527,7 +406,7 @@ def td_setup_count(ctx):
 
 
 @register(FactorSpec(
-    name="three_black_crows", group=GROUP, deps=PRICE_DEPS,
+    name="three_black_crows", version=2, group=GROUP, deps=PRICE_DEPS,
     desc="三只黑鸦：20 日内「收盘<开盘 且 收盘<前收」的交易日**占比**（0~1，连续阴跌强度）",
     formula="cond = (close < open) & (close < pre_close); "
             "seg = (~cond).groupby(Code).cumsum(); count = cond.groupby([Code, seg]).cumsum(); "
@@ -549,108 +428,14 @@ def three_black_crows(ctx):
     return ctx.roll_mean(_ind(ok, cond), 20, 10)
 
 
-@register(FactorSpec(
-    name="hammer_ratio_20d", group=GROUP, deps=PRICE_DEPS,
-    desc="锤子线频率：20 日内（下影 > 2×实体 且 上影 < 0.3×振幅 且 实体>0）的占比",
-    formula="body=|close-open|; lower=min(open,close)-low; upper=high-max(open,close); "
-            "rng=high-low; is_hammer=(lower>2*body)&(upper<0.3*rng)&(body>0); "
-            "ratio=rolling(20, min_periods=10).mean(is_hammer)",
-    start=PAT_START, warmup_days=W20, higher_is_better=True,
-    note="参考库 Class1 `hammer_ratio_20d`（trend_pattern.py）逐字如上，`min_periods=10` 与"
-         "本实现的 min_count=10（N//2）**完全一致**（这一族里唯一一个原生就对齐的）。"
-         "参考库返回 `cross_sectional_rank(ratio)`，本因子返回原始占比（rank 由引擎做）。"
-         "★ 一字板（`high == low`）时 `upper < 0.3*rng` 是 0 < 0 型无定义，"
-         "参考库靠 `.replace(0, nan)` 判成 False；本实现用 `rng > 0` 显式判 `ok` → 给 **NaN**"
-         "（判据不可得 ≠ 形态不成立，第 4 条）。实测一字板占 0.20%~1.81%（按年，模块 docstring 第 3 条）。"
-         "★ 掩码只用 `traded(T)`：判据全是**当日** OHLC，不跨日。"
-         "值域 [0,1]。",
-))
-def hammer_ratio_20d(ctx):
-    o, h, l, c = _bars(ctx)
-    body = np.abs(c - o)
-    lower = np.minimum(o, c) - l
-    upper = h - np.maximum(o, c)
-    rng, ok_r = _rng(ctx, h, l)
-    ok = _tr(ctx) & ok_r
-    cond = (lower > 2.0 * body) & (upper < 0.3 * rng) & (body > 0.0)
-    return ctx.roll_mean(_ind(ok, cond), 20, 10)
-
-
-@register(FactorSpec(
-    name="inside_bar_count_20", group=GROUP, deps=PRICE_DEPS,
-    desc="孕线（内包线）频率：20 日内「今高 ≤ 昨高 且 今低 ≥ 昨低」的交易日占比",
-    formula="prev_high=shift(high,1); prev_low=shift(low,1); "
-            "inside=(high<=prev_high)&(low>=prev_low); count=_roll_sum(inside,20,5); "
-            "参考库: cross_sectional_rank(count)",
-    start=PAT_START, warmup_days=W20, higher_is_better=True,
-    note="参考库 Class1 `inside_bar_count_20`（structure_patterns.py）用 `_roll_sum(inside, 20, 5)` "
-         "= **20 日窗口内满足形态的交易日**（计数，不是比率）。"
-         "本实现按任务书做成**占比**（`roll_mean(inside, 20, 10)`）：满窗 20 天时"
-         "`count/20` 与 `count` 只差常数 20 → **截面 rank 完全相同**；"
-         "但占比对停牌日天然免疫（计数会因为窗口里少了 3 天而系统性偏小，"
-         "而且偏小的幅度与停牌频率相关）。min_periods 由 5 提到 10（N//2，模块 docstring 第 5 条）。"
-         "★ 参考库注明「跨日比较用复权口径高低点」——本实现用 `ctx.hfq('high'/'low')`。"
-         "★ 掩码 `traded(T) & traded(T-1)`（要跟昨日高低比）。值域 [0,1]。",
-))
-def inside_bar_count_20(ctx):
-    _, h, l, _ = _bars(ctx)
-    ok = _ok2(ctx)
-    ph = ctx.shift(h, 1)
-    pl = ctx.shift(l, 1)
-    cond = (h <= ph) & (l >= pl)
-    return ctx.roll_mean(_ind(ok & np.isfinite(ph) & np.isfinite(pl), cond), 20, 10)
-
-
-@register(FactorSpec(
-    name="outside_bar_count_20", group=GROUP, deps=PRICE_DEPS,
-    desc="吞没/突破频率：20 日内「收盘 > 昨高 或 收盘 < 昨低」的交易日占比",
-    formula="prev_high=shift(high,1); prev_low=shift(low,1); "
-            "outside=(close>prev_high)|(close<prev_low); count=_roll_sum(outside,20,5); "
-            "参考库: cross_sectional_rank(count)",
-    start=PAT_START, warmup_days=W20, higher_is_better=True,
-    note="参考库 Class1 `outside_bar_count_20`（structure_patterns.py）用 `_roll_sum(outside, 20, 5)` "
-         "（计数）→ 本实现按任务书做成占比（`roll_mean(..., 20, 10)`），满窗时 rank 等价，"
-         "且对停牌天然免疫（同 `inside_bar_count_20`）。"
-         "★ 判据是**收盘价**与昨日全天区间比（不是今日高低点吞没昨日高低点）——"
-         "参考库的 `outside` 就是 `(adj.gt(prev_high) | adj.lt(prev_low))`，本实现照抄。"
-         "`gt/lt` 是**严格**比较，相等不算（照抄）。"
-         "★ 掩码 `traded(T) & traded(T-1)`。值域 [0,1]。",
-))
-def outside_bar_count_20(ctx):
-    _, h, l, c = _bars(ctx)
-    ok = _ok2(ctx)
-    ph = ctx.shift(h, 1)
-    pl = ctx.shift(l, 1)
-    cond = (c > ph) | (c < pl)
-    return ctx.roll_mean(_ind(ok & np.isfinite(ph) & np.isfinite(pl), cond), 20, 10)
 
 
 
 
-@register(FactorSpec(
-    name="marubozu_ratio_10d", group=GROUP, deps=PRICE_DEPS,
-    desc="光头光脚阳线频率：10 日内（上下影合计 < 10%×振幅 且 收>开）的交易日占比",
-    formula="body=|close-open|; upper=high-max(open,close); lower=min(open,close)-low; "
-            "rng=high-low; is_marubozu=((upper+lower)/rng < 0.1); is_green=(close>open); "
-            "signal=is_marubozu*is_green; ratio=rolling(10, min_periods=5).mean(signal)",
-    start=PAT_START, warmup_days=W10, higher_is_better=True,
-    note="参考库 Class1 `marubozu_ratio_10d`（trend_pattern.py）逐字如上，`min_periods=5` = "
-         "10//2，与本实现的 min_count=5 **完全一致**。窗口是 **10 日**（不是 20 日）——"
-         "任务书里唯一一个 10 日窗的形态因子，本实现照抄。"
-         "★ `is_marubozu` 用 `is_green` **相乘**而不是与（参考库原样）："
-         "`(upper+lower)/rng` 无定义（rng=0）时参考库靠 `.replace(0, nan)` 让"
-         "`nan < 0.1` 为 False → 0；本实现用 `ok = rng > 0` 显式判 NaN。"
-         "★ 掩码只用 `traded(T)`。值域 [0,1]。",
-))
-def marubozu_ratio_10d(ctx):
-    o, h, l, c = _bars(ctx)
-    rng, ok_r = _rng(ctx, h, l)
-    ok = _tr(ctx) & ok_r
-    shadow = (h - np.maximum(o, c)) + (np.minimum(o, c) - l)
-    # ★ 除法走 safe_div：一字板 rng=0 时给 NaN（并顺带消掉 numpy 的 0/0 RuntimeWarning）。
-    #   参考库是 `(upper+lower)/total_range.replace(0, np.nan)`，语义相同。
-    cond = (ctx.safe_div(shadow, rng, min_abs_den=0.0) < 0.1) & (c > o)
-    return ctx.roll_mean(_ind(ok, cond), 10, 5)
+
+
+
+
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -659,74 +444,10 @@ def marubozu_ratio_10d(ctx):
 
 
 
-@register(FactorSpec(
-    name="gap_fill_tendency_10d", group=GROUP, deps=PRICE_DEPS,
-    desc="缺口回补倾向：10 日内跳空（>1%）后被**当日收盘**回补的比例",
-    formula="gap=(open-pre_close)/pre_close; is_gap=|gap|>0.01; "
-            "filled=((gap>0.01)&(close<pre_close))|((gap<-0.01)&(close>pre_close)); "
-            "rate=_roll_sum(filled,10,5)/(_roll_sum(is_gap,10,5)+0.01)",
-    start=PAT_START, warmup_days=W10, higher_is_better=False,
-    note="参考库 Class1 `gap_fill_tendency_10d`（price_deep.py）逐字如上，`min_periods=5` 照抄。"
-         "★ **回补 = 当日收盘回到前收之上/之下**（完全回补），不是「盘中触及缺口边缘」，"
-         "也不是「之后 N 日内回补」—— 后者按字面实现要读 `T+1..T+N`，是**未来数据泄露**"
-         "（面板右端就是 T），本文件**不**做。窗口只向过去看（模块 docstring 的专门一节）。"
-         "★ 分母 `+0.01` 照抄参考库（避免除 0）；没有跳空日的股票 → 分母 0.01 → 值 0.0"
-         "（不是 NaN），这一点与 `gap_open_follow_ratio_20` 不同，是参考库的原样行为。"
-         "★ 跳空阈值 **1%** 照抄参考库（比 `gap_open_follow_ratio_20` 的 0.5% 严）。"
-         "★ 掩码 `traded(T) & traded(T-1)`。值域 [0,1]（分子 ≤ 分母）。",
-))
-def gap_fill_tendency_10d(ctx):
-    ok = _ok2(ctx)
-    g = _overnight(ctx, ok)
-    c = _hfq(ctx, "close")
-    pc = ctx.shift(c, 1)
-    is_gap = np.abs(g) > 0.01
-    filled = ((g > 0.01) & (c < pc)) | ((g < -0.01) & (c > pc))
-    n_gap = ctx.roll_sum(_ind(ok, is_gap), 10, 5)
-    n_fill = ctx.roll_sum(_ind(ok, filled), 10, 5)
-    return ctx.safe_div(n_fill, n_gap + 0.01, min_abs_den=0.0)
 
 
-@register(FactorSpec(
-    name="gap_up_fade_freq_20d", group=GROUP, deps=PRICE_DEPS,
-    desc="高开低走频率：20 日内（隔夜>0 且 日内<0）的交易日占比（0~1）",
-    formula="gap_up_fade = ((overnight>0) & (intraday<0)).astype(float); "
-            "freq = rolling(20).mean()",
-    start=PAT_START, warmup_days=W20, higher_is_better=False,
-    note="参考库 Class1 `gap_up_fade_freq_20d`（fac_new_daily.py）逐字如上，"
-         "`roll` 默认 min_periods=1 → 本实现 min_count=10（N//2）。"
-         "★ 方向：值高 = 冲高抛压重、上方套牢盘多（参考库 `意义` 一栏），故 "
-         "`higher_is_better=False`。"
-         "★ 判据**不用**阈值（隔夜 > 0 就算高开，哪怕只高开 0.001%）—— 参考库原样。"
-         "★ 停牌 / 前一日停牌一律 NaN，且**不补 0**：补 0 会把停牌多的股票推成"
-         "「从不低走」（第 4 条）。值域 [0,1]。",
-))
-def gap_up_fade_freq_20d(ctx):
-    ok = _ok2(ctx)
-    g = _overnight(ctx, ok)
-    ia = _intraday(ctx, ok)
-    return ctx.roll_mean(_ind(ok, (g > 0) & (ia < 0)), 20, 10)
 
 
-@register(FactorSpec(
-    name="gap_down_recover_freq_20d", group=GROUP, deps=PRICE_DEPS,
-    desc="低开高走频率：20 日内（隔夜<0 且 日内>0）的交易日占比（0~1）",
-    formula="gap_down_rec = ((overnight<0) & (intraday>0)).astype(float); "
-            "freq = rolling(20).mean()",
-    start=PAT_START, warmup_days=W20, higher_is_better=True,
-    note="参考库 Class1 `gap_down_recover_freq_20d`（fac_new_daily.py）逐字如上，"
-         "`roll` 默认 min_periods=1 → 本实现 min_count=10（N//2）。"
-         "★ 与 `gap_up_fade_freq_20d` 是**镜像**关系但**不是** 1 − x："
-         "「隔夜>0 且 日内<0」与「隔夜<0 且 日内>0」互不覆盖（隔夜/日内同号的日子两边都不计），"
-         "所以两个都必须独立保留。"
-         "★ 方向：值高 = 恐慌被消化、买盘韧性好（参考库 `意义` 一栏），`higher_is_better=True`。"
-         "★ 停牌一律 NaN，不补 0。值域 [0,1]。",
-))
-def gap_down_recover_freq_20d(ctx):
-    ok = _ok2(ctx)
-    g = _overnight(ctx, ok)
-    ia = _intraday(ctx, ok)
-    return ctx.roll_mean(_ind(ok, (g < 0) & (ia > 0)), 20, 10)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -735,58 +456,7 @@ def gap_down_recover_freq_20d(ctx):
 
 
 
-@register(FactorSpec(
-    name="eom_14", group=GROUP, deps=PRICE_DEPS,
-    desc="14 日 Ease of Movement：价格中点位移 ÷ (成交量/振幅) 的 14 日均值",
-    formula="mid=(adj_high+adj_low)/2; box_ratio=vol/(adj_high-adj_low); "
-            "distance=mid-mid.shift(1); eom=distance/box_ratio; eom_avg=rolling(14, min_periods=7).mean()",
-    start=PAT_START, warmup_days=W14, higher_is_better=True,
-    note="参考库 Class1 `eom_14`（technical_daily.py）逐字如上，`min_periods=7` = 14//2，"
-         "与本实现的 min_count=7（N//2）**一致**。参考库返回 `cross_sectional_rank(eom_avg)`，"
-         "本因子返回原始值。"
-         "★ 参考库注释明确写了「**除** box_ratio 而不是乘」（「Multiplication would reward "
-         "high-volume/narrow-range days and is the inverse of the named indicator」），"
-         "本实现照抄除法。"
-         "★ 中点位移走**后复权**口径（参考库用 `scale = adj/close` 折算 high/low，"
-         "数学上就是复权价），避免除权日伪位移。"
-         "★ 振幅 0（一字板）→ `box_ratio` 分母 0 → `eom` NaN（参考库 `.replace(0, np.nan)` 同义）。"
-         "★ 掩码 `traded(T) & traded(T-1)`：`distance` 是跨日量；停牌日 `vol` 本来就是 NaN，"
-         "所以这层掩码只额外挡住「复牌日」（mid 从停牌前的陈旧值跳到复牌价）。"
-         "★ 量纲是 **元²/股**（数量级 1e-9~1e-5），不要与参考库的绝对水平对齐；"
-         "截面 rank 不受常数因子影响。值域无界但极小。",
-))
-def eom_14(ctx):
-    _, h, l, _ = _bars(ctx)
-    mid = (h + l) / 2.0
-    dist = mid - ctx.shift(mid, 1)
-    rng = h - l
-    box = ctx.safe_div(ctx.px("vol"), rng, min_abs_den=0.0)     # 振幅 0 → NaN
-    eom = ctx.safe_div(dist, box, min_abs_den=0.0)
-    return ctx.roll_mean(np.where(_ok2(ctx), eom, np.nan), 14, 7)
 
 
 
 
-@register(FactorSpec(
-    name="volume_price_divergence_score", group=GROUP, deps=PRICE_DEPS,
-    desc="量价背离得分：20 日价动量截面 z − 20 日量动量截面 z（值高 = 价升量缩）",
-    formula="price_mom=adj_close.pct_change(20); vol_mom=vol.pct_change(20); "
-            "pr=cs_rank(price_mom); vr=cs_rank(vol_mom); "
-            "参考库: cross_sectional_rank(pr - vr)",
-    start=PAT_START, warmup_days=W20, higher_is_better=False,
-    note="参考库 Class1 `volume_price_divergence_score`（volume_price_dynamics.py）逐字如上。"
-         "★ **偏离**：与 `obv_divergence_20` 同一处置 —— 两次 `cross_sectional_rank` "
-         "换成两次 `ctx.cs_zscore(..., mask=ctx.universe)`（契约 §2.3 不许在因子里 rank）。"
-         "★ 与 `obv_divergence_20` 的区别：那个用 **OBV 的 20 日变化 / 均量**（带方向符号的"
-         "量能净额），这个用**成交量的 20 日变化率**（无量纲、无方向）。两者相关但不重复。"
-         "★ 价动量用 `ctx.ret(20)`（后复权累计收益，已挡单日 |r|>60% 的复权脏数据），"
-         "不用 `pct_change(hfq_close, 20)`，与 `factors/momentum.py` 的口径一致。"
-         "★ 量动量的分母地板给 **1.0**（原始成交量单位）：`vol` 近 0 的格子"
-         "（停牌前后、极冷门股）会产出 ±1e6 级的假变化率，默认的 1e-12 挡不住。"
-         "★ 方向：值高 = 价强量弱的可疑上涨，`higher_is_better=False`。",
-))
-def volume_price_divergence_score(ctx):
-    vol = np.asarray(ctx.px("vol"), dtype=np.float64)
-    price_mom = np.asarray(ctx.ret(20), dtype=np.float64)
-    vol_mom = ctx.pct_change(vol, 20, min_abs_den=1.0)
-    return _cs_z(ctx, price_mom) - _cs_z(ctx, vol_mom)

@@ -1,0 +1,21 @@
+# R2-I4 事前登记：机制集合、变体、基线、试验预算。登记后不可原地修改。
+{
+  "family_id": "r2_disclosure_family_v1",
+  "idea_id": "r2_disclosure_idea_v1",
+  "trial_budget": 6,
+  "allowed_variants": [
+    {"signal": "earliness_last"},
+    {"signal": "earliness_mean4"},
+    {"signal": "peer_rank_last"},
+    {"signal": "disclosure_gap"},
+    {"signal": "baseline_forecast_type"}
+  ],
+  "baseline": [
+    "forecast_type_score",
+    "forecast_profit_midpoint_change",
+    "roe_ttm",
+    "momentum_20"
+  ],
+  "hypothesis_boundary": "本 Family 只使用公告日/报告期/预告类型等日期与时点字段，不读取任何财报数值字段；end_date 只作报告期标识，绝不作可用时点；stock_forecast.end_date 只作配对键。",
+  "search_policy": "只登记已冻结的四个机制加一个朴素基线（预告类型水平）；不扩窗口、不扩方向、不按IC筛参数。forecast_revision_direction 因 type 修正样本仅 105 对 (stock,end_date) 而实现不可行，如实停止并不登记候选。"
+}

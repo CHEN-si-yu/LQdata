@@ -1,0 +1,21 @@
+idea_id: r4d_state_interaction_v1
+hypothesis: |
+  股票信号的有效性依赖市场状态：高波动/高分歧状态下流动性提供与过度反应的补偿更高，
+  因此反转与低波动类信号在高波动期更强；上行趋势广度状态下动量延续更强；
+  高横截面分歧状态下非流动性的补偿更高。交互项在控制两腿主效应后应仍有剩余信息。
+mechanism: |
+  1) rev5_x_mktvol     = z_cs(−ret5) × z_time(mkt_idx_csi300_volatility20)
+  2) mom120_x_trendstate = z_cs(momentum_120) × z_time(mkt_above_ma60_ratio)
+  3) lowvol_x_mktvol   = z_cs(−vol_120) × z_time(mkt_idx_csi300_volatility20)
+  4) illiq_x_dispstate = z_cs(amihud_daily_5) × z_time(mkt_dispersion)
+  股票腿 = 截面 winsor+zscore；市场状态 = 252 日滚动 z（min_periods=120）；交互值 = 两腿乘积。
+expected_direction: 四个机制全部 true（higher_is_better=true，值大 = 状态加成方向），方向在本文件落盘前冻结。
+target_horizons: [1, 5]
+falsifiable: |
+  控制两腿主效应后交互项不显著（交互只是两腿的可加效应）；或 declared 分年同号 < 7/9；
+  或与单腿正式因子（short_term_reversal_5 / momentum_120 / vol_120 / amihud_daily_5）
+  或 cp_* 并存耦合因子 |rho|>0.95。
+fields: [stock_daily.close, stock_daily.amount, stock_adj_factor.adj_factor, index_daily.close,
+         mkt_idx_csi300_volatility20, mkt_above_ma60_ratio, mkt_dispersion]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

@@ -1,0 +1,25 @@
+{
+  "name": "r5c_flow_innovation_delayed_oo_forecast_v1",
+  "family_id": "r5c_family_v1",
+  "implementation": "research.families.r5c_flow_delay_v1:build",
+  "parameters": {
+    "signal": "flow_innovation_delayed_oo_forecast"
+  },
+  "units": "dimensionless return contribution",
+  "availability": "Daily after close; same-day published sources; frozen current source availability contract. No future shift. C target endpoints <=T and training signal index <=T-2. D monthly graph ends before month start; lag fits end T-1.",
+  "missing_policy": "Missing source/no trade=NaN; fixed full keys; beta60 min45; train126 min95; no ffill in flows; opening target requires real endpoints; invalid std/rank deficiency=NaN.",
+  "spec": {
+    "group": "research_r5c",
+    "desc": "Unvalidated Round5 candidate: Signed flow innovation incorporates after next open; forecast excludes own return and level/persistence.",
+    "formula": "X_s=(e_s,u_s,u_s-1); target open(s+2)/open(s+1)-1; fit at T only s=T-127..T-2; F=b1*(u_T-mu1)+b2*(u_T-1-mu2); rolling126, min95, standardized ridge0.01*n; u innovation60/min45; beta60/min45 past-only",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor",
+      "stock_main_fund_flow"
+    ],
+    "warmup_days": 600,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "Daily causal learned coefficients are fixed algorithm, not a post-result direction change. Research only; no production approval."
+  }
+}

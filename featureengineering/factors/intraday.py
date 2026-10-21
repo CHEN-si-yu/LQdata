@@ -221,34 +221,10 @@ def _seg_range(ctx, hi_f: str, lo_f: str, op_f: str, cl_f: str):
 # 1. 隔夜 / 跨日（3 个）—— 只吃价格层，不受 5min 冻结影响
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="idt_overnight_gap",
-    group="intraday",
-    desc="隔夜跳空：后复权开盘 / 上一交易日后复权收盘 − 1",
-    formula="gap = open / pre_close - 1  （参考库 rank(-gap)）",
-    deps=("stock_daily", "stock_adj_factor"),
-    start=IDT_START,
-    warmup_days=W_D,
-    higher_is_better=False,
-    note=("参考库 Class1 `overnight_gap`（alternative.py）逐字为 "
-          "`-(open-pre_close)/pre_close` 截面排名 —— 高开=反转信号排后，故本因子"
-          "（有符号的跳空）方向取负。"
-          "★ 口径：`pre_close` 换成 `hfq_open(T)/hfq_close(T-1)-1`，两者数学等价"
-          "（交易所前收 = 昨收 × 除权调整），但走的是 PIT 安全的「未复权价 × "
-          "累计复权因子」路径，不依赖供应商的 pre_close 列。"
-          "★ **不用日内层的 open5/close5**：那是未复权价，跨日相除在除权日会造出"
-          " −30% 量级的假跳空且不报错（模块 docstring 第 1 条）。"
-          "★ 停牌日（`ctx.traded()` 为 False）置 NaN：价格层对 open/close 做了"
-          "前向填充，不掩码的话停牌日会产出「上一个成交日自己的日内涨跌」。"
-          "★ 本因子**不依赖** `stock_history_5min`，所以 2026-09-11 之后仍有值"
-          "（数据冻结只影响吃日内层的因子）。"),
-))
-def idt_overnight_gap(ctx):
-    return _overnight_gap(ctx)
 
 
 @register(FactorSpec(
-    name="idt_overnight_minus_intraday",
+    name="idt_overnight_minus_intraday", version=2,
     group="intraday",
     desc="隔夜 − 日内收益差：隔夜强于日内＝信息在开盘被消化",
     formula="overnight - intraday  (= open/pre_close-1 与 close/open-1 之差)",
@@ -268,31 +244,6 @@ def idt_overnight_minus_intraday(ctx):
     return _overnight_gap(ctx) - _intraday_ret(ctx)
 
 
-@register(FactorSpec(
-    name="idt_overnight_return_share_20",
-    group="intraday",
-    desc="隔夜收益占比：20 日 |跳空| / Σ(|跳空|+|日内|)",
-    formula="roll_sum(|gap|, 20, 10) / roll_sum(|gap|+|intra|, 20, 10)",
-    deps=("stock_daily", "stock_adj_factor"),
-    start=IDT_START,
-    warmup_days=W_20,
-    higher_is_better=True,
-    note=("参考库 Class1 `overnight_return_share_20`（momentum_structure.py）逐字为 "
-          "`num=_roll_sum(abs_gap,20,10); den=_roll_sum(abs_gap+abs_intra,20,10); "
-          "share=safe_divide(num,den)` —— 参考库自己就用 **min_count=10 = 20//2**，"
-          "本文件与它口径一致（模块 docstring 第 7 条）。"
-          "★ 分子分母同量纲（都是 |收益| 之和），占比 ∈[0,1]。"
-          "★ 停牌日两腿都 NaN，被 min_count 跳过（不是当 0 计入，"
-          "否则停牌多的股票占比会被稀释）。"
-          "★ 本因子**不依赖** `stock_history_5min`，2026-09-11 之后仍有值"
-          "（分母的分母是价格层）。"),
-))
-def idt_overnight_return_share_20(ctx):
-    g = np.abs(_overnight_gap(ctx))
-    it = np.abs(_intraday_ret(ctx))
-    num = ctx.roll_sum(g, 20, min_count=10)
-    den = ctx.roll_sum(g + it, 20, min_count=10)
-    return ctx.safe_div(num, den, min_abs_den=1e-8)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -308,7 +259,7 @@ def idt_overnight_return_share_20(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="idt_rv_daily",
+    name="idt_rv_daily", version=2,
     group="intraday",
     desc="日已实现波动率：当日 5min 收益平方和开根（**日频口径，未年化**）",
     formula="rv_daily = sqrt(sum(r_5min^2)) = sqrt(ret2_sum)",
@@ -333,7 +284,7 @@ def idt_rv_daily(ctx):
 
 
 @register(FactorSpec(
-    name="idt_rv_term_structure_slope",
+    name="idt_rv_term_structure_slope", version=2,
     group="intraday",
     desc="波动率期限结构斜率：rv_5日/rv_60日 − 1（陡峭＝短期波动高）",
     formula="rv_5min / rv_60min - 1,  rv_N = sqrt(roll_mean(ret2_sum, N))",
@@ -369,51 +320,10 @@ def idt_rv_term_structure_slope(ctx):
 
 
 
-@register(FactorSpec(
-    name="idt_intraday_max_drawdown",
-    group="intraday",
-    desc="日内最大回撤：从盘内高点到后续低点的最大跌幅（≤0）",
-    formula="min(close5_t / cummax(close5) - 1)  （= 日内层 max_dd 字段）",
-    deps=("stock_history_5min",),
-    start=IDT_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + "参考库 Class3 `intraday_max_drawdown` 的**定义**是「日内从最高点到"
-          "后续最低点的最大跌幅」，公式却写 `rank(-dd.abs())`——`max_dd` 本身 ≤0，"
-          "所以 `-|dd| ≡ dd`，**参考库的排序等价于「回撤浅的排前」**，本因子方向"
-          "取 True（= 参考库的实际方向）。"
-          "★ 取值 ∈[−1,0]（价格恒正），实测中位数 ≈ −0.02。"
-          "★ 日内层用**收盘价序列**的 running max（不是 bar 的 high）——"
-          "与参考库「从最高点到**后续**最低点」的口径一致（顺序敏感，"
-          "不含「先跌后涨」式的回撤）。"
-          "★ 5min 棒数从 240 降到 48，会**轻微低估**回撤深度（棒内极值被抹平），"
-          "方向为对所有股票的同向压缩。"),
-))
-def idt_intraday_max_drawdown(ctx):
-    return _f(ctx, "max_dd")
 
 
 
 
-@register(FactorSpec(
-    name="idt_lo_pos",
-    group="intraday",
-    desc="日内最低价时点（归一化到 [0,1]）：越晚见低＝尾盘走弱（方向为负）",
-    formula="argmin(close5) / (n_bars - 1)  （日内层 lo_pos，已在 [0,1]）",
-    deps=("stock_history_5min",),
-    start=IDT_START,
-    warmup_days=W_D,
-    higher_is_better=False,
-    note=(_DEG5 + "★★ **本因子在参考库里没有同名条目**：Class3 只有 "
-          "`intraday_high_time`（最高价时点），没有 `intraday_low_time`。"
-          "这里按镜像构造（同一字段族、同一归一化口径），"
-          "方向取负 = 「最低点越晚出现越差」（尾盘才见低 = 尾盘抛压）。"
-          "**方向是本次推断的，未经 V8 独立筛查，下游首次使用前应用样本外 IC 复核。**"
-          "★ 与 `idt_hi_pos` 同为 [0,1] 的归一化时点，直接透传字段、不再除 n_bars。"
-          "★ 与 hi_pos 的分析口径一致：分辨率 48 档，大量并列。"),
-))
-def idt_lo_pos(ctx):
-    return _f(ctx, "lo_pos")
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -421,7 +331,7 @@ def idt_lo_pos(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="idt_vol_stability",
+    name="idt_vol_stability", version=2,
     group="intraday",
     desc="成交量稳定性：日内 5min 量的变异系数 std/mean（越大越不稳定）",
     formula="std(vol_5min) / mean(vol_5min) = sqrt(n_bars * vol2_sum*vol_mult / vol^2 - 1)",

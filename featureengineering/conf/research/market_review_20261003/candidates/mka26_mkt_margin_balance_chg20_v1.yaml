@@ -1,0 +1,31 @@
+{
+  "name": "mka26_mkt_margin_balance_chg20_v1",
+  "family_id": "mkta26_margin_family_v1",
+  "implementation": "research.families.market_gate_audit_v1:build",
+  "parameters": {
+    "original_name": "mkt_margin_balance_chg20",
+    "definition_sha256": "6ae206c9315a5c1d515b94dfdef2eb92d81277ed334d1892938499fbf26a8fde"
+  },
+  "units": "与正式因子 mkt_margin_balance_chg20 完全一致（本候选仅做逐值复算，不改变任何口径）；单位与可用性详见其正式 note。",
+  "availability": "与正式因子 mkt_margin_balance_chg20 一致：T 日值于 T 日收盘后可用；源表滞后 1 个交易日、网格已下移（lag_grid）。",
+  "missing_policy": "与正式因子一致：缺失保持 NaN，不用未来值回填；对齐前缀按正式声明（align_fill 或 NaN）。",
+  "spec": {
+    "group": "market",
+    "desc": "池内融资余额 20 日变化率",
+    "formula": "sum(rzye)/lag(sum(rzye),20)-1",
+    "deps": [
+      "stock_margin_detail",
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": "2018-01-01",
+    "warmup_days": 80,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "市场审计别名（mka26 复审）：逐值复算正式因子 mkt_margin_balance_chg20@v1；市场标量，每天恰好一行、无股票列、无横截面 rank；未做收益有效性承诺。stock_margin_detail 实测滞后 1 个交易日，网格整体下移一行后使用。 缺失保持 NaN，不用未来值回填。",
+    "is_market": true,
+    "lagged_ok": [
+      "stock_margin_detail"
+    ]
+  }
+}

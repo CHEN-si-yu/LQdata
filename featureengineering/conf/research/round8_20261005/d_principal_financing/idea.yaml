@@ -1,0 +1,21 @@
+{
+  "idea_id": "r8d_net_principal_cash_raising_v1",
+  "hypothesis": "显式吸收资本+借款+发债−偿债的严格四季现金净募集/期初资产可能带有融资依赖/融资用途信息，false主观弱先验；非完整Richardson/Sloan XFIN，不保证A股1/5日收益。",
+  "mechanism": "Consolidated principal cash net raising; includes minority equity inflows, excludes stock repurchases, dividends and interest; combines gross debt and equity rather than identifying causal investment or matched refinance transactions.",
+  "expected_direction": "higher_is_better=false, one weak prior frozen before returns",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "Official G1-G7 and fixed2115 pool, raw/declared and rank/consumption FM kernels; current CF controls plus fixed legacy controls, no signal direction rescue or variant after outcomes.",
+  "fields": [
+    "stock_cashflow.c_recp_cap_contrib",
+    "stock_cashflow.c_recp_borrow",
+    "stock_cashflow.proc_issue_bonds",
+    "stock_cashflow.c_prepay_amt_borr",
+    "stock_balancesheet.total_assets"
+  ],
+  "origin": "round8_lead_approved_20261005",
+  "status": "unvalidated_hypothesis",
+  "dedup": "Strong deleted old net borrowing/totalassets and equity contributions/opcash-inflow; F=E+D additive identity; original share issuance includes bonus/noncash; R6 overlap is gross minimum/average debt, different from net principal flow; complete XFIN source HOLD remains."
+}

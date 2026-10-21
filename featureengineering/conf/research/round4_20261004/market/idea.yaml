@@ -1,0 +1,24 @@
+idea_id: r4m_market_state_v1
+hypothesis: >
+  严格机制：市场层面的短期反转——等权池过去 5 日累计收益对未来 1/5 日等权市场收益存在反向关系
+  （过度反应修正 / 流动性提供者补偿）。绿卡通道（描述用途、无方向承诺）：池内日收益截面偏度与峰度
+  （20 日均值）、换手率中位数、成交额合计（对数）、隔夜收益均值——市场状态描述性上下文量。
+mechanism: |
+  1) mkt_ew_reversal_5（严格，方向 −1，先验中）：过去 5 日等权市场累计收益越高，短期回调 /
+     流动性补偿下未来 1/5 日等权市场收益预期越低；是股票侧 short_term_reversal_5 的市场层对应物。
+  2) mkt_cs_skew_20（绿卡）：收益分布截面偏度的 20 日均值——尾部结构（崩盘/泡沫倾向）描述量。
+  3) mkt_cs_kurtosis_20（绿卡）：截面（非超额）峰度的 20 日均值——极端收益占比描述量。
+  4) mkt_turnover_median（绿卡）：池内换手率中位数——交易活跃度水平描述量。
+  5) mkt_amount_total_log（绿卡·边界案例）：成交额合计对数——量能水平描述量；「横截面求和+对数」
+     的绿卡资格判定理由另行写入 round4 freeze 并披露。
+  6) mkt_overnight_ret（绿卡）：隔夜收益均值——开盘情绪 / 隔夜信息消化描述量。
+expected_direction: 严格候选 mkt_ew_reversal_5 预登记 direction=-1（先验中）；其余 5 个绿卡候选 direction=null（无方向先验，不做收益有效性承诺）。方向表封存于 round4 freeze，登记后不得因结果改判。
+target_horizons: [1, 5]
+falsifiable: >
+  严格候选：M5 主期限（h=1 或 5）declared HAC 95% 区间未排除 0、或同号年数 < ceil(7×有效年数/9)、
+  或有效年数 < 6 → 信号未获支持（门序 2 → 待修订）；M5 获支持但 M6 declared t<2.0 → 增量不足（待修订）；
+  M6 符号反转 → 投影特征（门序 3 → 建议剔除）。绿卡候选：M0∧M2∧M3 任一不过 → 待修订。
+  全部裁决按 doc/市场因子审核体系.md 门序规则树执行，只出结论与建议、不执行处置。
+fields: [stock_daily.open, stock_daily.close, stock_daily.pre_close, stock_daily.amount, stock_daily.vol, stock_finance.float_share, stock_adj_factor.adj_factor]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

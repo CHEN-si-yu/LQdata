@@ -1,0 +1,20 @@
+family_id: r4i_seat_closeout_v1
+idea_id: r4i_seat_closeout_v1
+trial_budget: 4
+baseline: |
+  强制对照（B2 §4-U9）：已删同族因子的自建重算 —— dragon_tiger_org_net_20（原文公式口径 buy−sell
+  重算版 + net_buy_amount 校正版）与 top_list_net_rate_20（stock_top_list，net_amount/l_amount
+  重算版）；另报「窗口内是否上榜」二值诊断，并与 R3-A 存档数字对拍（w20/w60 零填充 +0.01117/+0.02045、
+  +0.00915/+0.01608，NaN +0.00165/+0.00250、−0.00194/−0.00330）。
+  朴素基线对照：库内现存相关因子按 max|rho| 逐项枚举（报告给出因子名与相关系数）。
+note: |
+  机制集合固定 2 个（任务书 §4-U9），方向全部事前登记为 true；预算 ≤4 个候选，全部用于
+  机制 1 两窗口 + 机制 2 + 零填充对照，不预留扩网格位；实现缺陷修复只允许原地重跑
+  （同 candidate_id），不得新增变体。
+  主判据口径 = NaN 条件（未上榜=NaN）；零填充作并列对照列且仅对照，不单独立主张。
+  只用 net_buy_amount 权威净额；gross=buy_amount+sell_amount（2018 行级换位不变）仅用于归一。
+allowed_variants:
+  - {signal: class_divergence_nan_native, window: 20}
+  - {signal: class_divergence_nan_native, window: 60}
+  - {signal: inst_net_intensity_cond, window: 20}
+  - {signal: class_divergence_zerofill_control, window: 60}

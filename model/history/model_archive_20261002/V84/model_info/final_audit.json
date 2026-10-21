@@ -1,0 +1,458 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-10-01 22:01:14",
+  "score_source": "training_predictions",
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "score_window": [
+    "2025-07-01",
+    "2026-09-30"
+  ],
+  "model_train_read": true,
+  "weights_reloaded": true,
+  "folds_checked": 16,
+  "max_cpu_reload_error": 0.0,
+  "audit": [
+    {
+      "quarter": "2025Q3",
+      "fold": 1,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-07-01",
+        "2025-08-15",
+        "2025-09-30"
+      ]
+    },
+    {
+      "quarter": "2025Q4",
+      "fold": 1,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-10-09",
+        "2025-11-20",
+        "2025-12-31"
+      ]
+    },
+    {
+      "quarter": "2026Q1",
+      "fold": 1,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-01-05",
+        "2026-02-12",
+        "2026-03-31"
+      ]
+    },
+    {
+      "quarter": "2026Q2",
+      "fold": 1,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-04-01",
+        "2026-05-19",
+        "2026-06-30"
+      ]
+    },
+    {
+      "quarter": "2025Q3",
+      "fold": 2,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-07-01",
+        "2025-08-15",
+        "2025-09-30"
+      ]
+    },
+    {
+      "quarter": "2025Q4",
+      "fold": 2,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-10-09",
+        "2025-11-20",
+        "2025-12-31"
+      ]
+    },
+    {
+      "quarter": "2026Q1",
+      "fold": 2,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-01-05",
+        "2026-02-12",
+        "2026-03-31"
+      ]
+    },
+    {
+      "quarter": "2026Q2",
+      "fold": 2,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-04-01",
+        "2026-05-19",
+        "2026-06-30"
+      ]
+    },
+    {
+      "quarter": "2025Q3",
+      "fold": 3,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-07-01",
+        "2025-08-15",
+        "2025-09-30"
+      ]
+    },
+    {
+      "quarter": "2025Q4",
+      "fold": 3,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-10-09",
+        "2025-11-20",
+        "2025-12-31"
+      ]
+    },
+    {
+      "quarter": "2026Q1",
+      "fold": 3,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-01-05",
+        "2026-02-12",
+        "2026-03-31"
+      ]
+    },
+    {
+      "quarter": "2026Q2",
+      "fold": 3,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-04-01",
+        "2026-05-19",
+        "2026-06-30"
+      ]
+    },
+    {
+      "quarter": "2025Q3",
+      "fold": 4,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-07-01",
+        "2025-08-15",
+        "2025-09-30"
+      ]
+    },
+    {
+      "quarter": "2025Q4",
+      "fold": 4,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2025-10-09",
+        "2025-11-20",
+        "2025-12-31"
+      ]
+    },
+    {
+      "quarter": "2026Q1",
+      "fold": 4,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-01-05",
+        "2026-02-12",
+        "2026-03-31"
+      ]
+    },
+    {
+      "quarter": "2026Q2",
+      "fold": 4,
+      "max_cpu_reload_error": 0.0,
+      "days": [
+        "2026-04-01",
+        "2026-05-19",
+        "2026-06-30"
+      ]
+    }
+  ],
+  "metrics_total": {
+    "quarter": "总计",
+    "days": 242,
+    "IC": 0.011480985652768188,
+    "ICIR": 0.10774039548702649,
+    "top_return": 0.08596365657097241,
+    "top_return_stability": 0.054913886418853794,
+    "total_return": 19.516191930742366,
+    "IC_1d": 0.011480985652768188,
+    "IC_5d": 0.021335435111903955,
+    "RankIC_1d": 0.039319086192606253,
+    "RankIC_5d": 0.05394052290497765
+  },
+  "realizable": {
+    "topk": 5,
+    "label": "label_ret_5d",
+    "ideal_mean_pct": 0.2917885301804963,
+    "realizable_mean_pct": 0.2928826962992133,
+    "ratio": 1.0037498599346595,
+    "days": 242,
+    "days_with_position": 242,
+    "gap_pct": 0.001094166118717052,
+    "gap_t": 0.9999999999999997
+  },
+  "clean_blocks": {
+    "strategy": "top5_5d",
+    "blocks": [
+      {
+        "quarter": "2025Q3",
+        "fold": 4,
+        "start": "2023-07-21",
+        "end": "2025-04-25",
+        "days": 427,
+        "ideal_mean_pct": 0.5338634322908943,
+        "realizable_mean_pct": 0.5411144347131905,
+        "tradable_ratio": 1.0135821297802343,
+        "strategy_return_value": 1.0170677702114057,
+        "strategy_net_annual_pct": 43.31781333226331,
+        "strategy_max_drawdown": -0.27401693400574767,
+        "idle_cash_pct": 38.46842501696032,
+        "trades": 304,
+        "gross_return_same_positions": 1.0855598802300448,
+        "total_fees": 4325.615205457215,
+        "fee_drag": 0.043256152054572165,
+        "slippage_drag": 0.025235957964067093,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      },
+      {
+        "quarter": "2025Q4",
+        "fold": 4,
+        "start": "2023-09-28",
+        "end": "2025-08-01",
+        "days": 444,
+        "ideal_mean_pct": 1.0287664695374792,
+        "realizable_mean_pct": 1.0327987254345932,
+        "tradable_ratio": 1.0039195055598251,
+        "strategy_return_value": 0.7503409261747411,
+        "strategy_net_annual_pct": 35.10051859875335,
+        "strategy_max_drawdown": -0.43317093301716647,
+        "idle_cash_pct": 40.1754137301785,
+        "trades": 290,
+        "gross_return_same_positions": 0.8018299999999994,
+        "total_fees": 3294.1672825260002,
+        "fee_drag": 0.03294167282525998,
+        "slippage_drag": 0.0185474009999981,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      },
+      {
+        "quarter": "2026Q1",
+        "fold": 4,
+        "start": "2023-12-08",
+        "end": "2025-11-03",
+        "days": 459,
+        "ideal_mean_pct": 0.9494119525044012,
+        "realizable_mean_pct": 0.9515690997071474,
+        "tradable_ratio": 1.0022720876823343,
+        "strategy_return_value": 0.5272791000555022,
+        "strategy_net_annual_pct": 26.929782254550442,
+        "strategy_max_drawdown": -0.4520159358980047,
+        "idle_cash_pct": 45.49151724165462,
+        "trades": 260,
+        "gross_return_same_positions": 0.5702651190327284,
+        "total_fees": 2775.3349441517735,
+        "fee_drag": 0.02775334944151774,
+        "slippage_drag": 0.01523266953570821,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      },
+      {
+        "quarter": "2026Q2",
+        "fold": 4,
+        "start": "2024-02-07",
+        "end": "2026-01-22",
+        "days": 473,
+        "ideal_mean_pct": 1.2038530251935438,
+        "realizable_mean_pct": 1.2042835936850838,
+        "tradable_ratio": 1.0003576586863423,
+        "strategy_return_value": 1.352274050978782,
+        "strategy_net_annual_pct": 47.49082011036559,
+        "strategy_max_drawdown": -0.36778277162656947,
+        "idle_cash_pct": 39.851263211776065,
+        "trades": 268,
+        "gross_return_same_positions": 1.425425849462366,
+        "total_fees": 4619.243472874772,
+        "fee_drag": 0.04619243472874776,
+        "slippage_drag": 0.02695936375483616,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      }
+    ],
+    "total_days": 1803,
+    "note": "这些 (季度, 折) 的训练集全部早于其验证块 ⇒ **无前视**；块与块之间日历不连续，**不可拼接**，只并列看。"
+  },
+  "bag_vs_argmax": {
+    "folds": 16,
+    "topk": 5,
+    "bag_epochs": [
+      [
+        5,
+        8,
+        2,
+        6,
+        3
+      ],
+      [
+        4,
+        6,
+        2,
+        8,
+        3
+      ],
+      [
+        3,
+        6,
+        4,
+        5,
+        1
+      ],
+      [
+        3,
+        5,
+        2,
+        7,
+        9
+      ],
+      [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      [
+        2,
+        4,
+        1,
+        6,
+        8
+      ],
+      [
+        1,
+        6,
+        2,
+        3,
+        7
+      ],
+      [
+        3,
+        2,
+        6,
+        1,
+        8
+      ],
+      [
+        2,
+        6,
+        1,
+        4,
+        8
+      ],
+      [
+        2,
+        6,
+        8,
+        7,
+        5
+      ],
+      [
+        8,
+        11,
+        4,
+        12,
+        5
+      ],
+      [
+        8,
+        12,
+        5,
+        2,
+        7
+      ],
+      [
+        3,
+        7,
+        8,
+        9,
+        1
+      ],
+      [
+        6,
+        7,
+        9,
+        4,
+        5
+      ],
+      [
+        7,
+        8,
+        4,
+        9,
+        2
+      ],
+      [
+        5,
+        4,
+        2,
+        1,
+        9
+      ]
+    ],
+    "metrics": {
+      "val_wei": {
+        "bagged": 0.08203166734282505,
+        "argmax": 0.08468557954320452,
+        "delta": -0.0026539122003794756,
+        "t": -9.858495895195563,
+        "wins": 0
+      },
+      "IC_1d": {
+        "bagged": 0.03163734084004546,
+        "argmax": 0.03157196929460729,
+        "delta": 6.537154543816734e-05,
+        "t": 0.278347430373915,
+        "wins": 8
+      },
+      "IC_5d": {
+        "bagged": 0.05601290738373503,
+        "argmax": 0.05654569238011265,
+        "delta": -0.0005327849963776313,
+        "t": -1.5921736692795232,
+        "wins": 5
+      },
+      "RankIC_1d": {
+        "bagged": 0.05095160409105215,
+        "argmax": 0.05243882276248481,
+        "delta": -0.0014872186714326519,
+        "t": -6.032799845514986,
+        "wins": 2
+      },
+      "RankIC_5d": {
+        "bagged": 0.08040543709532212,
+        "argmax": 0.0829872319807585,
+        "delta": -0.0025817948854363736,
+        "t": -9.825490008115834,
+        "wins": 0
+      },
+      "val_return_proxy": {
+        "bagged": 0.008370327493147468,
+        "argmax": 0.008690243681018055,
+        "delta": -0.00031991618787058666,
+        "t": -0.8683924904047862,
+        "wins": 5
+      }
+    }
+  },
+  "fusion": {
+    "flow_weight": 0.5,
+    "rank_scale": "within submodel explicit family percentiles; raw fourfold sum afterward",
+    "absolute_gate": "separate training-fitted1d return, never percentile as return"
+  },
+  "auxiliary_forecast": "separate raw1d technical return; existing yearly parquet column; same fixed159 paths"
+}

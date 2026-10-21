@@ -1,0 +1,17 @@
+name: r4q_contract_liab_accel_v1
+family_id: r4q_contract_liab_v1
+implementation: research.families.r4q_contract_liab_v1:build
+parameters: {signal: contract_liab_accel}
+units: 无量纲差值（增速之差）。正值=合同负债同比增速环比抬升（订单加速），负值=减速。
+availability: 四个报告期时点值（p, p−1, p−4, p−5）全部经财务层 ctx.point 取「同一公告时点已知的最新版本」，同比/环比均为报告期口径；无未来信息。
+missing_policy: 当期增速 g(p) 与上期增速 g(p−1) 任一不可考时为 NaN；每个增速各自的基期（CL(p−4)、CL(p−5)）须 >1e6 元（含未启用 0 的排除）；非有限值输出 NaN；不零填充。
+spec:
+  group: research_contract_liab
+  desc: 未验证候选（V2 机制3）：合同负债增速的二阶（环比加速度） → 正向预期收益。
+  formula: "[CL(p)/CL(p−4) − 1] − [CL(p−1)/CL(p−5) − 1]"
+  deps: [stock_balancesheet]
+  fin_fields: [contract_liab]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: 方向事前冻结 true。需要 5 个季度的科目历史，纯口径可算起点晚于机制1约 1 个季度；覆盖曲线见 delivery 报告。

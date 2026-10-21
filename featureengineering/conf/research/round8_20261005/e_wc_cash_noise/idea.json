@@ -1,0 +1,24 @@
+{
+  "idea_id": "r8e_wc_cash_noise_v1",
+  "hypothesis": "账面近似营运资本变动与已披露三期经营现金流的实现噪声；低噪声质量为负方向弱先验，非利润操纵识别或收益已证实。",
+  "mechanism": "20 contiguous quarters of scaled delta W residual to three CFO leads/lags and quarter-season indicators; exact due-item classification adjustment, approximate book measure.",
+  "expected_direction": "higher_is_better=false, fixed weak engineering quality prior",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "Same original G1-G7 gates, base8 and all fixed extras; no threshold/sign/parameter changes or dropping controls to rescue rank.",
+  "fields": [
+    "stock_balancesheet.total_cur_assets",
+    "stock_balancesheet.money_cap",
+    "stock_balancesheet.total_cur_liab",
+    "stock_balancesheet.st_borr",
+    "stock_balancesheet.non_cur_liab_due_1y",
+    "stock_balancesheet.total_assets",
+    "stock_cashflow.n_cashflow_act"
+  ],
+  "origin": "round8 Lead approved20261005",
+  "status": "unvalidated_hypothesis",
+  "limitations": "DD mechanism only; CGV2008 no AQ pricing evidence. Current snapshot PIT does not reconstruct historical vendor vintage.",
+  "freeze_reference": "artifacts/research/round8_20261005/freeze/e_wc_cash_noise_definition_v1.json"
+}

@@ -13,6 +13,7 @@
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.." || exit 1
 PY=/autodl-fs/data/miniconda3/bin/python
 LOG="${1:-logs/post_steps_$(date +%m%d_%H%M).log}"
+LOG="$("$PY" scripts/_project_paths.py "$LOG")" || exit $?
 
 {
   echo "=== post_steps 开始 $(date '+%F %T') ==="

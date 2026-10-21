@@ -1,0 +1,16 @@
+name: r4j_same_month_prev_year_v1
+family_id: r4j_seasonality_v1
+implementation: research.families.r4j_seasonality_v1:build
+parameters: {signal: same_month_prev_year}
+units: 单个月收益（去年同期月，无量纲）。
+availability: 用 (Y−1,m) 的已完结月收益，当月内为常数、不回填本月收益。
+missing_policy: 去年同期月样本缺失（整月无成交 / 未上市 / 脏数据）时为 NaN；不零填充。
+spec:
+  group: research_seasonality
+  desc: U10 变体 B（同月口径单点）：只取去年同期月的月收益，检验多历年平均相比单点是否带来信息。
+  formula: "value(t in (Y,m)) = R[(Y-1),m]"
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 2300
+  higher_is_better: true
+  version: 1
+  note: 变体性质（非新机制主张）：warmup 与核心机制保持一致（2300）以免口径差异；值前 NaN 前缀应显著更短（仅需 1 个历史同月）。

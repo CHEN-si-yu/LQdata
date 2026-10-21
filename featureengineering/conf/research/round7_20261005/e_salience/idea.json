@@ -1,0 +1,31 @@
+{
+  "idea_id": "r7e_context_salience_v1",
+  "hypothesis": "Investors may overweight realized return states that stand out against same-day market alternatives; a salience-weighted expectation above the ordinary historical mean may imply overvaluation and lower subsequent returns. Weak negative prior only.",
+  "mechanism": "Context-dependent probability reweighting, not a new price source or a proven short-horizon alpha. Cosemans/Frehen2021 motivates monthly US salience; rolling20TD strict-endpoint fixed2115 and1/5day outcomes are local unvalidated choices.",
+  "expected_direction": "higher_is_better=false; weak negative prior fixed before candidate outcomes",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "Fixed G1-G7 plus specified neighbors; reject if direction/stability/incremental information fails; no parameter search, sign reversal, control removal, or changing window/minimum sample.",
+  "fields": [
+    "stock_daily.stock_code",
+    "stock_daily.trade_date",
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_adj_factor.stock_code",
+    "stock_adj_factor.trade_date",
+    "stock_adj_factor.adj_factor",
+    "current and previous exchange-day universe eligibility"
+  ],
+  "origin": "Lead-approved unique R7 E salience proposal; no returns inspected",
+  "literature": {
+    "title": "Salience theory and stock prices: Empirical evidence",
+    "authors": "Mathijs Cosemans; Rik Frehen",
+    "year": 2021,
+    "doi": "10.1016/j.jfineco.2020.12.012",
+    "primary_url": "https://pure.eur.nl/ws/files/47705178/Repub_134044.pdf",
+    "scope_boundary": "US monthly evidence is mechanism source, not local1/5day performance evidence"
+  },
+  "status": "unvalidated_hypothesis"
+}

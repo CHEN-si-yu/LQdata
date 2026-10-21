@@ -1,0 +1,1852 @@
+[
+  {
+    "source_id": "qlib_repo",
+    "title": "Microsoft Qlib 项目主页（数据集目录）",
+    "url": "https://github.com/microsoft/qlib/tree/be725493eb1a6bbb42bf11b37aa7669f59610ff1",
+    "source_type": "repository",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "MIT",
+    "summary": "项目主页列出 Alpha158 与 Alpha360，并标明适用于中国和美国市场；用于确认项目范围。",
+    "limitations": "项目首页不证明任一因子在A股中具有预测能力。",
+    "verification_status": "full_text",
+    "location": "README.md; examples/benchmarks/README.md",
+    "commit": "be725493eb1a6bbb42bf11b37aa7669f59610ff1",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "qlib_loader",
+    "title": "Qlib Alpha158/Alpha360 特征表达式源码",
+    "url": "https://github.com/microsoft/qlib/blob/be725493eb1a6bbb42bf11b37aa7669f59610ff1/qlib/contrib/data/loader.py",
+    "source_type": "source_code",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "MIT",
+    "summary": "静态读取Alpha158DL与Alpha360DL的字段表达式和默认窗口，保存获许可的参考快照。",
+    "limitations": "表达式只确认特征定义；复权、缺失、可得时点和预测能力仍需独立核验。",
+    "verification_status": "full_text",
+    "location": "qlib/contrib/data/loader.py; local reference_snapshots/microsoft_qlib_be725493/qlib_loader.py.txt",
+    "commit": "be725493eb1a6bbb42bf11b37aa7669f59610ff1",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "qlib_handler",
+    "title": "Qlib Alpha158/Alpha360 handler 默认装载配置",
+    "url": "https://github.com/microsoft/qlib/blob/be725493eb1a6bbb42bf11b37aa7669f59610ff1/qlib/contrib/data/handler.py",
+    "source_type": "source_code",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "MIT",
+    "summary": "静态阅读默认字段集合、日频接口和默认标签配置，供辨别特征与标签。",
+    "limitations": "标签含未来引用，仅用作监督目标；不能当作当日特征。",
+    "verification_status": "full_text",
+    "location": "qlib/contrib/data/handler.py; local reference_snapshots/microsoft_qlib_be725493/qlib_handler.py.txt",
+    "commit": "be725493eb1a6bbb42bf11b37aa7669f59610ff1",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "qlib_benchmark",
+    "title": "Qlib 数据集基准说明",
+    "url": "https://github.com/microsoft/qlib/blob/be725493eb1a6bbb42bf11b37aa7669f59610ff1/examples/benchmarks/README.md",
+    "source_type": "benchmark_doc",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "MIT（仓库）",
+    "summary": "基准说明将 Alpha158 描述为人工设计特征集，将 Alpha360 描述为保留更多价格与成交量时间结构的数据集，并报告中国市场基准设置。",
+    "limitations": "报告的历史基准表现依赖样本、模型和回测设定，不是未来收益承诺。",
+    "verification_status": "full_text",
+    "location": "examples/benchmarks/README.md",
+    "commit": "be725493eb1a6bbb42bf11b37aa7669f59610ff1",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "wq101_paper",
+    "title": "101 Formulaic Alphas（Kakushadze, 2016）",
+    "url": "https://arxiv.org/abs/1601.00991",
+    "source_type": "paper",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "作者/预印本权利；未假设可再发布全文",
+    "summary": "摘要确认论文给出 101 个短持有期公式化 alpha 的显式表达。",
+    "limitations": "原研究市场、时间、成本和字段口径不自动迁移到A股；本文不抄录公式集。",
+    "verification_status": "abstract",
+    "location": "arXiv abstract; paper sections contain numbered formulas",
+    "aliases": [
+      "alpha101_paper"
+    ],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json",
+      "新增调研/平台与比赛/sources.json"
+    ],
+    "alternate_urls": [
+      "https://arxiv.org/abs/1601.00991"
+    ]
+  },
+  {
+    "source_id": "wq101_code",
+    "title": "101 Formulaic Alphas Python 参考实现",
+    "url": "https://github.com/ram-ki/101_formulaic_alphas/blob/6f177fc1eefdc4f66018ce4eec593027ee69984c/formulaic_alphas.py",
+    "source_type": "source_code",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "未发现明确许可证；仅记录链接和自写摘要，不再分发代码",
+    "summary": "社区 Python 实现提供 Alpha001–101 的方法命名及实现线索；仅用于代码出处交叉定位。",
+    "limitations": "非原作者实现；并非所有公式实现都经过逐项对照，字段、缺失值、运算符可能偏离论文。",
+    "verification_status": "full_text",
+    "location": "formulaic_alphas.py",
+    "commit": "6f177fc1eefdc4f66018ce4eec593027ee69984c",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "gtja191_dolphindb",
+    "title": "DolphinDB GTJA 191 Alpha 模块说明",
+    "url": "https://github.com/dolphindb/DolphinDBModules/blob/43ace2cc4b81d048864ec2e40c25728d5d464e05/gtja191Alpha/README_CN.md",
+    "source_type": "documentation",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "未核实仓库对该模块的单独授权；本文不复制代码",
+    "summary": "文档称该模块实现 GTJA 191 个短周期价量因子，并列出 open/close/high/low/vol/VWAP 等字段和批/流调用方式。",
+    "limitations": "文档是实现说明，不等同于国泰君安原始报告；不同实现可能存在口径差异。",
+    "verification_status": "metadata_only",
+    "location": "gtja191Alpha/README_CN.md; stated implementation file gtja191Alpha.dos",
+    "commit": "43ace2cc4b81d048864ec2e40c25728d5d464e05",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "alphagen_repo",
+    "title": "ICT-FinD-Lab AlphaGen 代码库",
+    "url": "https://github.com/ICT-FinD-Lab/alphagen/tree/259687e8f316994426416c530a94842a2fe6405e",
+    "source_type": "repository",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "GitHub metadata 未识别许可证；不再分发代码",
+    "summary": "README 指明该项目提供强化学习公式 alpha 挖掘、Qlib API、GP/DSO 基线和若干 LLM 扩展；有 Baostock 数据准备脚本。",
+    "limitations": "代码包含实验扩展与基线改动；README 未能证明 A股因子有效或可复现论文全部实验。",
+    "verification_status": "full_text",
+    "location": "README.md; repository tree",
+    "commit": "259687e8f316994426416c530a94842a2fe6405e",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "alphagen_paper",
+    "title": "Generating Synergistic Formulaic Alpha Collections via Reinforcement Learning",
+    "url": "https://doi.org/10.1145/3580305.3599831",
+    "source_type": "paper",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "ACM 页面标示 CC BY 4.0",
+    "summary": "论文摘要提出以组合模型表现作为生成器奖励，直接搜索互补的公式因子集合。",
+    "limitations": "实验结论依赖论文数据/成本设定；方法本身不提供稳定的A股收益保证。",
+    "verification_status": "abstract",
+    "location": "KDD 2023, abstract and bibliographic record",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "alphaforge_repo",
+    "title": "DulyHao AlphaForge 官方实现",
+    "url": "https://github.com/DulyHao/AlphaForge/tree/d0cfc27df23c60f271bc885fd43027b86b787746",
+    "source_type": "repository",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "GitHub metadata 未识别许可证；不再分发代码",
+    "summary": "仓库自述为 AAAI 2025 AlphaForge 论文的实现。",
+    "limitations": "本次只核验仓库说明及论文摘要，没有执行代码或逐文件审查；实现复现程度未核实。",
+    "verification_status": "metadata_only",
+    "location": "README.md; repository tree",
+    "commit": "d0cfc27df23c60f271bc885fd43027b86b787746",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "alphaforge_paper",
+    "title": "AlphaForge: A Framework to Mine and Dynamically Combine Formulaic Alpha Factors",
+    "url": "https://ojs.aaai.org/index.php/AAAI/article/view/33365",
+    "source_type": "paper",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "出版方/作者权利；未假设可再发布全文",
+    "summary": "摘要与论文页描述生成预测模块提案因子、组合模块随时间调整因子权重的两阶段框架。",
+    "limitations": "论文实验结果不可直接视为A股实盘表现；动态权重仍需防前视、换手和成本偏差。",
+    "verification_status": "abstract",
+    "location": "AAAI 2025 paper landing page; DOI/arXiv:2406.18394",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "autoalpha_paper",
+    "title": "AutoAlpha: an Efficient Hierarchical Evolutionary Algorithm for Mining Alpha Factors",
+    "url": "https://arxiv.org/abs/2002.08245",
+    "source_type": "paper",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "arXiv 作者权利；页面提供版本/许可信息，未假设可再发布全文",
+    "summary": "摘要描述分层搜索、PCA-QD 多样性、warm start/replacement；明确提及中国股票市场实验。",
+    "limitations": "不能由摘要判断严格交易成本、复权或样本外稳定性；本研究不复现其绩效。",
+    "verification_status": "abstract",
+    "location": "arXiv v2 abstract",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "autoalpha_repo",
+    "title": "AutoAlpha 第三方复现仓库",
+    "url": "https://github.com/bigsuperFishfish/AutoAlpha/tree/82d1d07c63b585407520d023ec30325bce779cf9",
+    "source_type": "repository",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "README 声称 MIT；此结论仅按该仓库 README 登记",
+    "summary": "README 展示遗传编程、分层结构、PCA-QD、多样性维护与排序组合流程。",
+    "limitations": "第三方教育实现，README 的回测数字未独立复核，且不应与原论文结果混为一谈。",
+    "verification_status": "full_text",
+    "location": "README.md",
+    "commit": "82d1d07c63b585407520d023ec30325bce779cf9",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "alphaevolve_paper",
+    "title": "AlphaEvolve: A Learning Framework to Discover Novel Alphas in Quantitative Investment",
+    "url": "https://doi.org/10.1145/3448016.3457324",
+    "source_type": "paper",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "ACM/作者权利；未假设可再发布全文",
+    "summary": "摘要描述将标量、向量、矩阵特征纳入新的 alpha 表示，并以 AutoML、关系知识注入与冗余剪枝搜索。",
+    "limitations": "是方法论文，不是包含可直接移植日频因子的目录；原始市场/字段设定需阅读全文核对。",
+    "verification_status": "abstract",
+    "location": "SIGMOD 2021 abstract and DOI record",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "alphagfn_repo",
+    "title": "Alpha-gfn: Mining formulaic alpha factors with GFlowNets",
+    "url": "https://github.com/nshen7/alpha-gfn/tree/b0f415c155d3c4e0447f3231bde95f0f95b6d449",
+    "source_type": "repository",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "仓库元数据未识别明确许可证；不再分发代码",
+    "summary": "README 说明以 GFlowNet 采样公式因子，奖励结合未来收益秩相关与缺失率；注明示例因 NDA 而受限。",
+    "limitations": "作者明确称代码仅为演示、数据规模较小；示例使用美股，不可作为A股实证。",
+    "verification_status": "full_text",
+    "location": "README.md; source description",
+    "commit": "b0f415c155d3c4e0447f3231bde95f0f95b6d449",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "alpha2_paper",
+    "title": "Alpha²: Discovering Logical Formulaic Alphas using Deep Reinforcement Learning",
+    "url": "https://arxiv.org/abs/2406.16505",
+    "source_type": "paper",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "arXiv 作者权利；未假设可再发布全文",
+    "summary": "摘要描述 DRL 指导程序构造和搜索，并强调因子多样性、合法性/维度检查。",
+    "limitations": "摘要无法确认所有运算符与具体公式；市场实验迁移需单独评估。",
+    "verification_status": "abstract",
+    "location": "arXiv abstract",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "alpha2_repo",
+    "title": "x35f/alpha2 论文代码仓库",
+    "url": "https://github.com/x35f/alpha2/tree/cfc4d44ea4a6e530e8bcd40e6f59af9888e8bb38",
+    "source_type": "repository",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "仓库元数据未核实许可证；不再分发代码",
+    "summary": "作者主页将仓库标注为对应 Alpha² 论文的伪代码与算法实现。",
+    "limitations": "未逐文件核验实现完整性、数据或复现实验。",
+    "verification_status": "metadata_only",
+    "location": "repository description",
+    "commit": "cfc4d44ea4a6e530e8bcd40e6f59af9888e8bb38",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "openfe_paper",
+    "title": "OpenFE: Automated Feature Generation with Expert-level Performance",
+    "url": "https://arxiv.org/abs/2211.12507",
+    "source_type": "paper",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "arXiv 作者权利；未假设可再发布全文",
+    "summary": "论文摘要提出 feature boosting 与两阶段剪枝，以提高自动候选特征生成效率。",
+    "limitations": "面向通用表格数据，不是专门的时序/金融因子证据；时间序列需阻止跨期泄漏。",
+    "verification_status": "abstract",
+    "location": "arXiv abstract; ICML 2023 publication",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "openfe_repo",
+    "title": "IIIS-Li-Group/OpenFE",
+    "url": "https://github.com/IIIS-Li-Group/OpenFE/tree/3e3bdf9f5b972e214e018c22f6f9f456a47b416e",
+    "source_type": "repository",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "MIT",
+    "summary": "README 列出 23 类候选生成算子，并描述表格分类/回归的自动特征扩展流程。",
+    "limitations": "通用特征工程工具，不提供财务 point-in-time 语义；使用前需分时切分并排除未来字段。",
+    "verification_status": "full_text",
+    "location": "README.md; LICENSE",
+    "commit": "3e3bdf9f5b972e214e018c22f6f9f456a47b416e",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "rdagent_repo",
+    "title": "Microsoft R&D-Agent（含 RD-Agent(Q)）",
+    "url": "https://github.com/microsoft/RD-Agent/tree/484776c211e4fbbeef03e0ec00d6bbee7362a4f4",
+    "source_type": "repository",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "MIT",
+    "summary": "README 将 RD-Agent(Q) 描述为面向量化研究的多代理框架，围绕因子与模型共同迭代。",
+    "limitations": "项目覆盖完整研究工作流；不是固定因子库，生成结果及评估不能脱离数据/验证协议。",
+    "verification_status": "full_text",
+    "location": "README.md; RD-Agent(Q) section",
+    "commit": "484776c211e4fbbeef03e0ec00d6bbee7362a4f4",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "bigquant_alphaminer",
+    "title": "BigQuant 因子分析框架 AlphaMiner 文档",
+    "url": "https://bigquant.com/wiki/doc/kkC3XIaMup",
+    "source_type": "product_documentation",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "平台内容/服务条款；无代码再分发授权假定",
+    "summary": "文档展示因子清洗、截面标准化/行业市值中性化、分组收益与 IC/年度统计的分析流程。",
+    "limitations": "这是因子评价框架而非因子生成器；文档中的接口与默认配置可能随平台更新。",
+    "verification_status": "full_text",
+    "location": "AlphaMiner documentation page",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "bigquant_openfe",
+    "title": "BigQuant：将 OpenFE 用于基本面因子挖掘的案例",
+    "url": "https://sysubs.bigquant.com/wiki/doc/QJl5xQVoP2",
+    "source_type": "product_documentation",
+    "accessed_at": "2026-10-07T09:29:37Z",
+    "verified": true,
+    "license": "平台用户文档/服务条款；不假设代码可再发布",
+    "summary": "案例描述 Expand-And-Reduce 枚举、连续筛选和 LGBM 特征重要性筛选，并报告基本面因子类别。",
+    "limitations": "平台文章带有作者实验语境，指标和结果需回查原始数据、样本切分与代码。",
+    "verification_status": "full_text",
+    "location": "article page; OpenFE A-share research case",
+    "aliases": [],
+    "source_group": "GitHub因子库",
+    "record_files": [
+      "新增调研/GitHub因子库/sources.json"
+    ]
+  },
+  {
+    "source_id": "root_osa_data",
+    "title": "Open Source Asset Pricing 数据与文档目录",
+    "url": "https://www.openassetpricing.com/data/",
+    "source_type": "author_research_project",
+    "accessed_at": "2026-10-07T09:26:11.627938+00:00",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "网站资料按其条款；只保存自写摘要与链接",
+    "summary": "作者项目提供信号目录、原研究文献信息、复现说明以及组合收益；网站分别列示股票信号与日频和月频组合收益。",
+    "limitations": "主要为美国市场研究和复现；组合收益频率不等于信号更新频率；不能据此宣称A股日频有效。",
+    "aliases": [],
+    "source_group": "学术复现目录",
+    "record_files": [
+      "新增调研/学术复现目录/sources.json"
+    ]
+  },
+  {
+    "source_id": "root_osa_signal_doc",
+    "title": "OpenSourceAP CrossSection SignalDoc 信号与文献元数据",
+    "url": "https://github.com/OpenSourceAP/CrossSection/blob/8db892442c2c3a3779b0f1eac4370d3655be15a1/SignalDoc.csv",
+    "source_type": "github_metadata_dataset",
+    "accessed_at": "2026-10-07T09:26:11.627938+00:00",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "GPL-2.0，仓库LICENSE与原始元数据随参考快照保存",
+    "summary": "读取固定commit的CSV，保留具体信号标识、原文作者年份、数据类别、Predictor/Placebo分类和定义定位；不复制本项目因子实现。",
+    "limitations": "具体公式在参考CSV而非自写目录摘要；A股字段映射、披露时点和制度适配尚需后续研究。",
+    "commit": "8db892442c2c3a3779b0f1eac4370d3655be15a1",
+    "snapshot": "参考快照/SignalDoc.csv",
+    "record_count": 331,
+    "aliases": [],
+    "source_group": "学术复现目录",
+    "record_files": [
+      "新增调研/学术复现目录/sources.json"
+    ]
+  },
+  {
+    "source_id": "root_globalq_testing",
+    "title": "Global q 测试组合与异常复现目录",
+    "url": "https://global-q.org/testingportfolios.html",
+    "source_type": "author_research_project",
+    "accessed_at": "2026-10-07T09:26:11.627938+00:00",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "原文链接；未保存无明确复制许可全文",
+    "summary": "作者项目按动量、估值与增长、投资、盈利、无形资产、交易摩擦组织测试组合，并提供组合收益及更新说明。",
+    "limitations": "美国市场资产定价与组合复现资料；日频组合收益不等于A股日频信号已验证。",
+    "related_urls": [
+      "https://global-q.org/uploads/1/2/2/6/122679606/release_notes_for_july_2026_factors_and_portfolios_update.pdf",
+      "https://global-q.org/uploads/1/2/2/6/122679606/portfoliostd_2026jul.pdf",
+      "https://global-q.org/uploads/1/2/2/6/122679606/q5rf2021.pdf",
+      "https://global-q.org/uploads/1/2/2/6/122679606/houxuezhang2020rfs.pdf"
+    ],
+    "aliases": [],
+    "source_group": "学术复现目录",
+    "record_files": [
+      "新增调研/学术复现目录/sources.json"
+    ]
+  },
+  {
+    "source_id": "jq_alpha101",
+    "title": "Alpha101因子 - JoinQuant",
+    "url": "https://www.test.demo.joinquant.com/data/dict/alpha101",
+    "source_type": "platform_factor_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": true,
+    "license": "文档指向 WorldQuant 论文；平台服务和原文许可各自适用。本清单只保存自写摘要，不转录公式。",
+    "summary": "公开文档列出 101 个 WorldQuant Formulaic Alpha 的实现说明、公共运算符约定、输入字段说明及每个因子公式。聚宽实现示例以A股股票池展示。",
+    "limitations": "当前生产域从本环境打开会返回地区限制页；核验使用聚宽 test.demo 文档域。因子源自海外论文，能在A股计算不代表有A股预测效力。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "jq_alpha191",
+    "title": "短周期价量特征 191 Alphas 因子函数使用说明 - JoinQuant",
+    "url": "https://www.test.demo.joinquant.com/data/dict/alpha191",
+    "source_type": "platform_factor_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": true,
+    "license": "平台文档引用国泰君安研究报告；平台/报告权利各自适用。此处不复制公式。",
+    "summary": "公开文档逐项列出191个短周期价量因子和公式，说明输入来自个股日频价格成交量，并提示平台对缺失或不合理公式作过调整、是否适用A股需自行研究。",
+    "limitations": "公式调整与来源研报之间存在平台实现差异；当日收盘后才能取得的行情字段不能提前使用。当前使用聚宽 test.demo 文档域。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "jq_factor_dashboard",
+    "title": "聚宽因子看板",
+    "url": "https://www.joinquant.com/view/factorlib/list",
+    "source_type": "platform_factor_catalog",
+    "accessed_at": "2026-10-07",
+    "verified": false,
+    "verification_status": "metadata_only",
+    "access_limited": true,
+    "license": "未发现公开的开放许可声明；具体使用依平台账号/会员条款。",
+    "summary": "官方目录入口可作为聚宽因子库及看板的入口线索。",
+    "limitations": "当前生产域返回地区限制页，未登录因子目录无法确认现行因子全量清单、精确公式、权限和历史变更；不根据社区帖子补全名单。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "jq_factor_changelog",
+    "title": "聚宽平台更新公告：因子库、因子看板与 get_all_factors API",
+    "url": "https://test.demo.joinquant.com/community/post/detailMobile?postId=553",
+    "source_type": "platform_announcement",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "access_limited": false,
+    "license": "平台公告；平台服务和共享数据条款适用。",
+    "summary": "公告索引记载聚宽因子库包含质量、情绪、风险、成长等类别，并提及 get_all_factors 用于列举因子代码、名称和分类，以及因子看板。",
+    "limitations": "这是历史更新公告，不能证明当前产品清单、可访问权限或公式，也不作为因子有效性证据。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "rq_risk_model",
+    "title": "米筐风险模型 - RQData 文档",
+    "url": "https://www.ricequant.com/doc/rqdata/python/risk-factors-mod.html",
+    "source_type": "platform_risk_model_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "文档未声明开放数据/公式许可；调用权限、模型和结果使用受米筐合同/服务条款约束。",
+    "summary": "公开文档说明 v1、v2、v2trd 等模型股票池与期限，列出风险风格因子中英文名称和概念说明，并说明暴露、收益、协方差等 API。",
+    "limitations": "详细风险模型白皮书及定制模型实现需联系米筐；公开概念描述不是完整内部计算公式。部分模型含港股或AH范围，应按实际模型校验股票池。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "rq_docs",
+    "title": "Ricequant Docs - RQData / RQFactor 文档目录",
+    "url": "https://www.ricequant.com/doc/",
+    "source_type": "platform_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "平台文档；未见开放许可声明。",
+    "summary": "官方文档目录将 RQData 金融数据 API、RQFactor 因子投研工具和 RQAlpha Plus 等产品分列。",
+    "limitations": "产品目录只说明功能入口，不证明因子定义或研究结论。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "bigquant_alpha191_formula",
+    "title": "Alpha191因子构建公式 - BigQuant",
+    "url": "https://bigquant.com/wiki/doc/Pyf0TYya6H",
+    "source_type": "platform_wiki_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": false,
+    "verification_status": "metadata_only",
+    "access_limited": true,
+    "license": "页面为平台 Wiki 内容；原始研究报告、平台内容及数据许可分别适用。",
+    "summary": "平台检索摘要显示此 Wiki 页面名为 Alpha191 因子构建公式，并将体系归于国泰君安短周期价量研究。",
+    "limitations": "正文抓取超时；页面为平台 Wiki 而非原始研报，本文不据此声称具体公式已核验。需要通过原研报和平台可访问正文复核。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "bigquant_alpha191_schema",
+    "title": "Alpha191数据获取 / cn_stock_factors_alpha_191 - BigQuant",
+    "url": "https://bigquant.com/data/datasources/cn_stock_factors_alpha_191",
+    "source_type": "platform_data_schema",
+    "accessed_at": "2026-10-07",
+    "verified": false,
+    "verification_status": "metadata_only",
+    "access_limited": true,
+    "license": "BigQuant 数据服务条款和上游数据许可适用；未发现页面授予再分发许可。",
+    "summary": "搜索索引显示该表输出 Alpha191 编号字段及 instrument、date 等键，字段描述链接至公式说明文档。",
+    "limitations": "当前抓取超时；仅作为表名/字段集合线索，不代表数据免费、可下载或公式定义全文已核验。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "bigquant_bigalpha",
+    "title": "因子平台 / BigAlpha - BigQuant",
+    "url": "https://bigquant.com/wiki/doc/EOVmVtJMS5",
+    "source_type": "platform_factor_tool_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": false,
+    "verification_status": "metadata_only",
+    "access_limited": true,
+    "license": "平台服务条款适用；未见开放许可声明。",
+    "summary": "平台 Wiki 摘要说明 BigAlpha 可提交和展示自定义因子分析结果。",
+    "limitations": "当前只核验到搜索索引摘要，不将该页用于推出因子公式、研究效果或付费权限。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tushare_daily",
+    "title": "A股日线行情 daily - Tushare",
+    "url": "https://tushare.pro/document/2?doc_id=27",
+    "source_type": "api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "Tushare 服务条款及积分/接口权限适用；文档未声明原始行情可自由再分发。",
+    "summary": "接口字段包括A股日线开高低收、昨收、涨跌、成交量与成交额；文档说明为未复权日线、停牌日无记录，并给出入库时间。",
+    "limitations": "需使用当时可得的复权因子和交易状态；当前接口字段、权限与更新规则可能调整。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tushare_daily_basic",
+    "title": "每日指标 daily_basic - Tushare",
+    "url": "https://tushare.pro/document/2?doc_id=32",
+    "source_type": "api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "Tushare 服务条款及积分权限适用；未授予行情数据再分发许可。",
+    "summary": "公开字段包括换手率、量比、PE/PB/PS、股息率、总/流通市值等，并注明交易日15:00–17:00更新与最低积分权限。",
+    "limitations": "PE等字段缺失规则、除息日和TTM窗口按文档定义；只能在数据实际发布时间后用于决策。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tushare_stk_factor",
+    "title": "股票技术因子 stk_factor - Tushare",
+    "url": "https://tushare.pro/document/2?doc_id=296",
+    "source_type": "api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "Tushare 服务条款及积分权限适用；未授予字段数据的再分发许可。",
+    "summary": "接口列出MACD、KDJ、RSI、BOLL、CCI等每日技术指标字段；文档注明技术指标基于前复权价格计算、前复权历史快照的处理方式。",
+    "limitations": "部分字段只给指标名称而未完整定义参数/实现；文档明确与pro_bar动态复权结果可能不一致，须防复权与时点偏差。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tushare_fina_indicator",
+    "title": "财务指标数据 fina_indicator - Tushare",
+    "url": "https://tushare.pro/document/2?doc_id=79",
+    "source_type": "api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "Tushare 服务条款及积分权限适用；指标数据未声明可自由再分发。",
+    "summary": "公开财务指标字段含EPS、每股收入、扣非净利润、毛利率、流动/速动/现金比率、存货及应收周转天数等。",
+    "limitations": "一般接口至少2000积分且每次最多100行；全市场季度数据接口需更高权限。回测必须使用公告可见日而非报告期末。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tushare_income",
+    "title": "利润表 income - Tushare",
+    "url": "https://tushare.pro/document/2?doc_id=33",
+    "source_type": "api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "Tushare 服务条款及积分权限适用；报表数据未授予再分发许可。",
+    "summary": "文档列出利润表及公告日、报告期、报表类型、营业收入、净利润等字段。",
+    "limitations": "接口说明单股票历史数据通常需至少2000积分；报告期字段不是公开可用时点，需用实际公告时间做PIT。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tushare_balancesheet",
+    "title": "资产负债表 balancesheet - Tushare",
+    "url": "https://tushare.pro/document/2?doc_id=36",
+    "source_type": "api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "Tushare 服务条款及积分权限适用；报表数据未授予再分发许可。",
+    "summary": "文档列出资产负债表字段，包含总股本、货币资金、应收款项、存货等。",
+    "limitations": "需区分报告期和公告日；金融行业报表口径不同。接口有积分/按股票查询限制。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tushare_cashflow",
+    "title": "现金流量表 cashflow - Tushare",
+    "url": "https://tushare.pro/document/2?doc_id=44",
+    "source_type": "api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "Tushare 服务条款及积分权限适用；报表数据未授予再分发许可。",
+    "summary": "文档列出经营、投资和筹资现金流量表字段，含净利润、销售商品收到现金等。",
+    "limitations": "部分季度报表为累计值，构造单季增量时需按报表口径处理；必须以公告日约束数据可见性。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tushare_index_dailybasic",
+    "title": "大盘指数每日指标 index_dailybasic - Tushare",
+    "url": "https://tushare.pro/document/2?doc_id=128",
+    "source_type": "api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "Tushare 服务条款及积分权限适用；指数数据使用条款按供应方规定。",
+    "summary": "接口公开若干指数的换手率、PE/PE_TTM、PB和市值等每日指标字段。",
+    "limitations": "文档列出的覆盖指数有限；来源注明社区统计计算，不应与交易所官方指数编制指标混同。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tushare_us_fina",
+    "title": "美股财务指标 us_fina_indicator - Tushare",
+    "url": "https://tushare.pro/document/2?doc_id=393",
+    "source_type": "api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "access_limited": false,
+    "license": "Tushare 美股数据服务条款和单独权限适用；不等同A股数据许可。",
+    "summary": "官方接口目录注明该接口覆盖主要美股与中概股财务指标。",
+    "limitations": "需单独开权限；本记录只作市场覆盖线索，未将美股字段并入A股候选因子。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "akshare_stock_docs",
+    "title": "AKShare 股票数据文档",
+    "url": "https://akshare.akfamily.xyz/data/stock/stock.html",
+    "source_type": "community_api_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "AKShare 代码许可证与上游来源数据许可分开；文档不授予Eastmoney等上游数据再分发权。",
+    "summary": "官方文档列出沪深京A股日频历史行情和实时行情字段，例如OHLC、涨跌幅、成交量/额、换手、市盈率、市净率与市值；历史行情来自东方财富接口。",
+    "limitations": "AKShare是采集/封装层而非交易所数据授权方；实时快照并非可回溯的PIT数据，注意源站字段/访问限制和复权口径。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tianchi_stock_analysis",
+    "title": "天池证券数据分析学习赛 531992",
+    "url": "https://tianchi.aliyun.com/competition/entrance/531992/information",
+    "source_type": "competition",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": true,
+    "license": "天池赛事条款适用；样例数据需登录/报名下载，页面未声明开放再分发许可。",
+    "summary": "官方赛题以沪深指数及融资融券的日线、周线、月线/K线为背景，要求分析相关性并可展示MACD/KDJ等指标。",
+    "limitations": "该页是教学/可视化赛题，不是前瞻验证研究；页面提到收益率和最大回撤只是作业指标，不作为因子有效性证据。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tianchi_fddc2018",
+    "title": "FDDC2018 A股上市公司季度营收预测赛题索引 - 阿里云天池",
+    "url": "https://tianchi.aliyun.com/markets/tianchi/tianchideveloper",
+    "source_type": "competition",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": true,
+    "license": "赛事及数据集条款适用；公开索引未授权历史数据再分发。",
+    "summary": "天池官方开发者页收录FDDC2018金融算法挑战赛，赛题为A股主板上市公司季度营收预测及公告信息抽取。",
+    "limitations": "这是历史赛事索引，原数据获取状态和字段许可需按当前赛事页复核；题目预测公司营收，不等同日频股票收益预测。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "tianchi_fddc_dataset",
+    "title": "FDDC2018季度营收预测数据集 - 天池",
+    "url": "https://tianchi.aliyun.com/dataset/133410",
+    "source_type": "dataset_catalog",
+    "accessed_at": "2026-10-07",
+    "verified": false,
+    "verification_status": "metadata_only",
+    "access_limited": true,
+    "license": "天池数据集/原始数据授权适用；未确认公开许可。",
+    "summary": "官方数据集目录保留赛题数据集名称与入口。",
+    "limitations": "当前页面内容由内嵌框架加载，未核验字段、下载授权或数据可用性；仅记录目录元数据。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "gifp_ai_quant_2026",
+    "title": "全国高校AI量化投资挑战赛启动公告 - GIFP中国",
+    "url": "https://www.gifp.cn/news/xhdt/115.html",
+    "source_type": "competition_announcement",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": true,
+    "license": "GIFP中国页面内容受其版权声明约束；只引用自写摘要。",
+    "summary": "主办方公告称首届赛事于2026年启动，列出IC均值、夏普、最大回撤和换手率等评估维度，报名时间为2026-10-10至11-30。",
+    "limitations": "公告未披露完整赛题、数据集或因子公式；截至访问日尚未到公告所列报名起始日。页面自述的行业判断不是独立证据。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "kaggle_jpx",
+    "title": "JPX Tokyo Stock Exchange Prediction - Kaggle / JPX",
+    "url": "https://www.kaggle.com/competitions/jpx-tokyo-stock-exchange-prediction/overview",
+    "source_type": "competition",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": true,
+    "license": "需接受Kaggle赛事规则；数据集使用限于赛事条款。",
+    "summary": "JPX主办的日本股票市场赛题，使用日本市场股票信息、历史价格及交易/财务等数据，按日排名约2000只股票的预期收益；赛事于2022年结束。",
+    "limitations": "这是日本市场，不是A股；赛题排行榜只说明赛事评分，不是外部可复现的有效性证据；数据字段及规则应在Kaggle页面复核。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "jpx_event",
+    "title": "J-Quants数据分析竞赛颁奖公告 - Japan Exchange Group",
+    "url": "https://www.jpx.co.jp/corporate/news/news-releases/6020/20221206-01.html",
+    "source_type": "competition_announcement",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": false,
+    "license": "JPX网站内容版权归JPX；只保留赛事事实摘要。",
+    "summary": "日本交易所集团公告确认其在Kaggle举办JPX Tokyo Stock Exchange Prediction赛事及相关颁奖活动。",
+    "limitations": "公告用于主办方核验，不用于因子有效性证明。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "kaggle_two_sigma_news",
+    "title": "Two Sigma: Using News to Predict Stock Movements - Kaggle",
+    "url": "https://www.kaggle.com/competitions/two-sigma-financial-news/overview",
+    "source_type": "competition",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": true,
+    "license": "赛事规则适用；新闻数据源为Thomson Reuters并受其明确版权/使用限制。赛事已关闭且官方页面注明数据已移除。",
+    "summary": "赛事结合Intrinio市场数据和Thomson Reuters新闻，预测美国上市标的未来十日市场调整收益；使用时间序列环境隔离未来信息。",
+    "limitations": "美国市场而非A股；已结束、数据不可从赛事页获取；收益榜仅为比赛分数，不能作为稳健有效性的证明。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "kaggle_two_sigma_data",
+    "title": "Two Sigma赛事数据说明 - Kaggle",
+    "url": "https://www.kaggle.com/competitions/two-sigma-financial-news/data",
+    "source_type": "competition_data_documentation",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "access_limited": true,
+    "license": "数据源版权和赛事条款适用；页面明确指出Reuters新闻内容严禁未授权复制/销售。",
+    "summary": "官方数据说明指出市场数据覆盖一组美国上市标的，提供开收盘、成交量及不同时间窗的原始/市场残差收益字段。",
+    "limitations": "数据现已移除；证券样本按成交和信息可用性变化，样本缺口不必然表示停牌。不是A股数据。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "kaggle_optiver",
+    "title": "Optiver - Trading at the Close - Kaggle",
+    "url": "https://www.kaggle.com/competitions/optiver-trading-at-the-close/overview",
+    "source_type": "competition",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "access_limited": true,
+    "license": "Kaggle赛事规则及Optiver数据条款适用；数据不得脱离规则使用。",
+    "summary": "Kaggle赛事标题/说明将其定位为美国股票收盘走势预测，数据围绕NASDAQ收盘竞价及日内盘口变量；比赛已结束。",
+    "limitations": "美国收盘竞价/日内任务，不是A股日频因子任务；本次浏览只得到公开摘要，具体字段、目标和规则需在页面复核。",
+    "aliases": [],
+    "source_group": "平台与比赛",
+    "record_files": [
+      "新增调研/平台与比赛/sources.json"
+    ]
+  },
+  {
+    "source_id": "root_piotroski",
+    "title": "Piotroski Value Investing 财务信息与F Score",
+    "url": "https://www.chicagobooth.edu/~/media/FE874EE65F624AAEBD0166B1974FD74D",
+    "source_type": "author_university_paper",
+    "accessed_at": "2026-10-07T09:29:58.160501+00:00",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "大学归档PDF版权所有，仅保存链接与自写摘要",
+    "summary": "F Score用九项财务信号区分高账面市值比公司的财务强弱；源PDF为大学2002年归档版本。",
+    "limitations": "原文为美国高BM样本和长期持有研究；A股日频映射需按本地披露时点核验。",
+    "year": "2002 archived version; original research 2000",
+    "authors": "Joseph D. Piotroski",
+    "definition_locator": "PDF pages 8–10, Section 2.3",
+    "aliases": [],
+    "source_group": "经典质量与风险",
+    "record_files": [
+      "新增调研/经典质量与风险/sources.json"
+    ]
+  },
+  {
+    "source_id": "root_novymarx_gp",
+    "title": "Novy Marx The Other Side of Value 毛利润资产比",
+    "url": "https://www.nber.org/papers/w15940",
+    "source_type": "author_working_paper",
+    "accessed_at": "2026-10-07T09:29:58.160501+00:00",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "只保存摘要概念归纳与文献链接",
+    "summary": "NBER工作论文摘要明确以毛利润相对资产衡量盈利能力，并研究其横截面收益关系。",
+    "limitations": "只以摘要核验概念定义；具体财务分母时点、过滤和组合方法需读正文；美国证据不等于A股有效。",
+    "authors": "Robert Novy-Marx",
+    "year": "2010 working paper; 2013 published version",
+    "doi": "10.3386/w15940",
+    "related_urls": [
+      "https://www.nber.org/papers/w15940.pdf"
+    ],
+    "aliases": [],
+    "source_group": "经典质量与风险",
+    "record_files": [
+      "新增调研/经典质量与风险/sources.json"
+    ]
+  },
+  {
+    "source_id": "root_aqr_qmj",
+    "title": "AQR Quality Minus Junk 质量组合研究",
+    "url": "https://www.aqr.com/Insights/Research/Working-Paper/Quality-Minus-Junk",
+    "source_type": "author_research_page",
+    "accessed_at": "2026-10-07T09:29:58.160501+00:00",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "作者机构网页版权所有，仅链接与自写摘要",
+    "summary": "作者机构介绍质量与低质量股票的多空比较，以及盈利、成长和管理质量等概念。",
+    "limitations": "网页概述不等于完整评分规范；不能从国际样本结果推出A股日频可执行收益。",
+    "authors": "Cliff Asness, Andrea Frazzini, Lasse H. Pedersen",
+    "year": "2018 author page",
+    "aliases": [],
+    "source_group": "经典质量与风险",
+    "record_files": [
+      "新增调研/经典质量与风险/sources.json"
+    ]
+  },
+  {
+    "source_id": "root_aqr_bab",
+    "title": "AQR Betting Against Beta 日频股权组合数据说明",
+    "url": "https://www.aqr.com/insights/datasets/betting-against-beta-equity-factors-daily",
+    "source_type": "author_dataset_documentation",
+    "accessed_at": "2026-10-07T09:29:58.160501+00:00",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "机构网页和数据按其使用条款；仅保存链接与自写摘要",
+    "summary": "作者说明BAB组合做多经杠杆调整的低Beta资产并做空高Beta资产，提供日频组合收益，数据按月更新。",
+    "limitations": "这是组合因子而非单一股票列；杠杆、做空和估计口径需独立适配A股。",
+    "aliases": [],
+    "source_group": "经典质量与风险",
+    "record_files": [
+      "新增调研/经典质量与风险/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_lsy2019",
+    "title": "Size and value in China",
+    "url": "https://doi.org/10.1016/j.jfineco.2019.03.008",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Publisher abstract supports China size factor excluding bottom 30% and EP-based value factor; CH-3 outperforms replicated FF-3 for the studied China sample.",
+    "limitations": "A factor-model pricing test and sample-period result are not a claim of persistent implementable daily alpha; precise universe, breakpoints and formation timing still require full methods review.",
+    "authors": "Jianan Liu, Robert F. Stambaugh, Yu Yuan",
+    "year": "2019",
+    "publication": "Journal of Financial Economics 134(1), 48–69",
+    "doi": "10.1016/j.jfineco.2019.03.008",
+    "empirical_frequency": "monthly portfolio factors",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_jansen2021",
+    "title": "Anomalies in the China A-share market",
+    "url": "https://doi.org/10.1016/j.pacfin.2021.101607",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Tests 32 anomalies on A-shares: value, risk and trading categories carry over; size, quality and past-return evidence is weaker except residual momentum/reversal; reports trading, seasonal and return-pattern tests.",
+    "limitations": "Authors caution short sample relative to a transformed market; reported portfolio excess returns omit transaction costs and short-horizon trading constraints matter.",
+    "authors": "Maarten Jansen, Laurens Swinkels, Weili Zhou",
+    "year": "2021",
+    "publication": "Pacific-Basin Finance Journal 68, 101607",
+    "doi": "10.1016/j.pacfin.2021.101607",
+    "empirical_frequency": "monthly cross-sectional portfolios; sample 2000–2019",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_replicating2024",
+    "title": "Replicating and Digesting Anomalies in the Chinese A-Share Market",
+    "url": "https://doi.org/10.1287/mnsc.2023.4904",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Replicates 469 anomaly variables on A-shares with mainboard breakpoints and value-weighted returns; 83.37% fail raw H-L significance and the failure rate increases after risk adjustment.",
+    "limitations": "This is a strong warning on microcap overweighting, test multiplicity and capacity, not evidence that every individual anomaly is absent.",
+    "authors": "Zhibing Li, Laura Xiaolei Liu, Xiaoyu Liu, K. C. John Wei",
+    "year": "2024",
+    "publication": "Management Science 70(8), 5066–5090",
+    "doi": "10.1287/mnsc.2023.4904",
+    "empirical_frequency": "monthly anomaly portfolio tests",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_amihud2002",
+    "title": "Illiquidity and stock returns: cross-section and time-series effects",
+    "url": "https://doi.org/10.1016/S1386-4181(01)00024-6",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "Publisher copyright; public academic-hosted copy was read but not downloaded or redistributed.",
+    "summary": "Defines daily illiquidity as absolute return divided by dollar volume and studies cross-sectional and aggregate liquidity-return relations. The paper text was readable at a public university-hosted copy.",
+    "limitations": "US market evidence and dollar-volume formula require currency/unit adaptation for RMB A-shares; zero-volume, suspensions and price limits need explicit handling.",
+    "authors": "Yakov Amihud",
+    "year": "2002",
+    "publication": "Journal of Financial Markets 5(1), 31–56",
+    "doi": "10.1016/S1386-4181(01)00024-6",
+    "empirical_frequency": "daily input; monthly/annual asset-pricing tests",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_datar1998",
+    "title": "Liquidity and stock returns: An alternative test",
+    "url": "https://doi.org/10.1016/S1386-4181(97)00004-9",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Uses share turnover (shares traded / shares outstanding) as liquidity proxy; lower turnover relates to higher returns in the studied US cross-section.",
+    "limitations": "US result; turnover is also speculative activity in China and may proxy sentiment, so direction need not transfer.",
+    "authors": "Vinay T. Datar, Narayan Y. Naik, Robert Radcliffe",
+    "year": "1998",
+    "publication": "Journal of Financial Markets 1(2), 203–219",
+    "doi": "10.1016/S1386-4181(97)00004-9",
+    "empirical_frequency": "monthly turnover and returns",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_ff2015",
+    "title": "A five-factor asset pricing model",
+    "url": "https://doi.org/10.1016/j.jfineco.2014.10.010",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Introduces profitability (RMW) and investment (CMA) alongside market, size and value factors; provides formal global factor definitions and tests.",
+    "limitations": "US-developed-market evidence. China-specific studies report mixed profitability/investment factor performance.",
+    "authors": "Eugene F. Fama, Kenneth R. French",
+    "year": "2015",
+    "publication": "Journal of Financial Economics 116(1), 1–22",
+    "doi": "10.1016/j.jfineco.2014.10.010",
+    "empirical_frequency": "monthly factor portfolios",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_hxz2015",
+    "title": "Digesting Anomalies: An Investment Approach",
+    "url": "https://doi.org/10.1093/rfs/hhu068",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Presents q-factor model: market, size, investment-to-assets and return-on-equity profitability factors; offers investment-theory mechanism and anomaly tests.",
+    "limitations": "Core evidence is US; definitions are mechanisms to test, not prevalidated A-share daily predictors.",
+    "authors": "Kewei Hou, Chen Xue, Lu Zhang",
+    "year": "2015",
+    "publication": "Review of Financial Studies 28(3), 650–705",
+    "doi": "10.1093/rfs/hhu068",
+    "empirical_frequency": "monthly factor portfolios",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_houzhangchina2019",
+    "title": "The Profitability and Investment Factors in the Chinese Stock Market",
+    "url": "https://ira.lib.polyu.edu.hk/handle/10397/90137",
+    "source_type": "journal_article_repository",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Constructs FF5 and HXZ factors for China; finds investment factors insignificant while a modified size/profitability specification performs better in the studied sample.",
+    "limitations": "Chinese market evidence but not a blanket A-share daily signal result; factor construction and sample details should be checked before replication.",
+    "authors": "Fangfang Hou, Shaojun Zhang",
+    "year": "2019",
+    "publication": "China Accounting and Finance Review 21(2), 1–33",
+    "doi": null,
+    "empirical_frequency": "monthly factor model comparison",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_ff5china2017",
+    "title": "Whether profitability and investment factors have additional explanatory power comparing with Fama-French Three-Factor Model: empirical evidence on Chinese A-share stock market",
+    "url": "https://doi.org/10.1186/s40589-017-0051-5",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Direct A-share comparison reports little incremental explanatory power for profitability/investment factors over FF3 in the study sample.",
+    "limitations": "Factor-model spanning results vary across sample and construction; see later China work rather than treating one test as decisive.",
+    "authors": "Y. Huang, J. Li",
+    "year": "2017",
+    "publication": "China Finance and Economic Review",
+    "doi": null,
+    "empirical_frequency": "monthly factor-model tests",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_wan2018",
+    "title": "Is the idiosyncratic volatility anomaly driven by the MAX or MIN effect? Evidence from the Chinese stock market",
+    "url": "https://doi.org/10.1016/j.iref.2017.10.015",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Finds both IVOL and MAX effects in China; MAX does not subsume IVOL, while IVOL subsumes MAX in the reported analysis.",
+    "limitations": "Chinese-market evidence is not an assertion that daily MAX timing is profitable after costs.",
+    "authors": "Xiaoyuan Wan",
+    "year": "2018",
+    "publication": "International Review of Economics & Finance 53, 1–15",
+    "doi": "10.1016/j.iref.2017.10.015",
+    "empirical_frequency": "daily returns rolled into monthly signals; monthly sorts",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_hai2020",
+    "title": "Lottery mindset, mispricing and idiosyncratic volatility puzzle: Evidence from the Chinese stock market",
+    "url": "https://doi.org/10.1016/j.najef.2020.101266",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Reports a significant China MAX effect, stronger among overpriced groups, and evidence that MAX and IVOL contain independent information.",
+    "limitations": "Sample and anomaly portfolio results do not imply a market-neutral strategy can be shorted or traded cheaply in A-shares.",
+    "authors": "Hoang Van Hai, Jong Won Park, Ping-Chen Tsai, Cheoljun Eom",
+    "year": "2020",
+    "publication": "North American Journal of Economics and Finance 54, 101266",
+    "doi": "10.1016/j.najef.2020.101266",
+    "empirical_frequency": "daily returns rolled into monthly signals",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_peadchina2011",
+    "title": "Post-earnings announcement abnormal return in the Chinese equity market",
+    "url": "https://doi.org/10.1016/j.intfin.2011.04.002",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Studies Chinese market 1994–2009 and finds PEAD using analyst-forecast and time-series earnings surprises; drift persists in reported tests after controls.",
+    "limitations": "Older China sample and annual post-event long-short result; this does not verify a contemporary daily execution strategy.",
+    "authors": "Truong",
+    "year": "2011",
+    "publication": "Journal of International Financial Markets, Institutions & Money 21(5), 637–661",
+    "doi": "10.1016/j.intfin.2011.04.002",
+    "empirical_frequency": "event-time daily returns; one-year post-event horizon",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_peadattention2021",
+    "title": "How Attention Constraints Affect Post-earnings Announcement Drift: Evidence from the Chinese A-share Market",
+    "url": "https://xbbjb.cufe.edu.cn/EN/Y2021/V0/I6/27",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "A-share study reports stronger PEAD on market-moving days and robustness across alternative event windows and preliminary-earnings dates.",
+    "limitations": "Abstract-level evidence; do not treat event-day attention interaction as proof of stand-alone attention alpha.",
+    "authors": "Ming-fa Ding, Si-yu Li, Hao Wang, Mi Shen",
+    "year": "2021",
+    "publication": "Journal of Central University of Finance & Economics, 2021(6), 27–38",
+    "doi": null,
+    "empirical_frequency": "event-time daily returns",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_peadovernight2023",
+    "title": "Earnings announcements in China: Overnight-intraday disparity",
+    "url": "https://doi.org/10.1016/j.jcorpfin.2023.102471",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "China earnings-news study finds overnight announcement returns convey future-return information, while abnormal intraday announcement returns do not show comparable predictability.",
+    "limitations": "A decomposition and event result; it should not be conflated with a general overnight factor premium.",
+    "authors": "Authors verified on publisher page",
+    "year": "2023",
+    "publication": "Journal of Corporate Finance, article 102471",
+    "doi": "10.1016/j.jcorpfin.2023.102471",
+    "empirical_frequency": "daily close/open return decomposition around events",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_attnfactor2022",
+    "title": "Investor attention factors and stock returns: Evidence from China",
+    "url": "https://doi.org/10.1016/j.intfin.2021.101499",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Builds China attention-level and attention-change factors and reports improved pricing of a range of anomaly portfolios in the paper sample.",
+    "limitations": "Factor model evidence does not specify a universal daily attention signal; direct measure timing/data availability must be verified.",
+    "authors": "Dayong Dong, Keke Wu, Jianchun Fang, Giray Gozgor, Cheng Yan",
+    "year": "2022",
+    "publication": "Journal of International Financial Markets, Institutions & Money 77, 101499",
+    "doi": "10.1016/j.intfin.2021.101499",
+    "empirical_frequency": "monthly factor portfolio tests",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_aggregate_limits2022",
+    "title": "Investor attention, aggregate limit-hits, and stock returns",
+    "url": "https://doi.org/10.1016/j.irfa.2022.102265",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Uses upper/lower price-limit hit-day counts as attention proxy; reports negative cross-sectional return predictability for China and links it to individual investor net buying pressure.",
+    "limitations": "Monthly proxy and sample-specific result; limit rules, board bands and special-treatment status change over time.",
+    "authors": "Haidong Cai, Ying Jiang, Xiaoquan Liu",
+    "year": "2022",
+    "publication": "International Review of Financial Analysis 83, 102265",
+    "doi": "10.1016/j.irfa.2022.102265",
+    "empirical_frequency": "monthly stock-level aggregation of daily limit-hit counts",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_orderimbalance2007",
+    "title": "Order imbalance and stock returns: Evidence from China",
+    "url": "https://doi.org/10.1016/j.qref.2007.09.004",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Shanghai/Shenzhen evidence finds contemporaneous relation but no predictive power of daily order imbalance for subsequent returns in the short 2004 tick-data sample.",
+    "limitations": "Useful null result; old 6-month sample and specific market structure. Do not claim imbalance is a proven A-share alpha.",
+    "authors": "Catherine Shenoy, Ying Jenny Zhang",
+    "year": "2007",
+    "publication": "The Quarterly Review of Economics and Finance 47(5), 637–650",
+    "doi": "10.1016/j.qref.2007.09.004",
+    "empirical_frequency": "daily imbalance from intraday tick data",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_price_limit2019",
+    "title": "Daily price limits and destructive market behavior",
+    "url": "https://doi.org/10.1016/j.jeconom.2018.09.014",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Shenzhen account-level study finds large investors buy on +10% limit-hit days and sell next day; net buying predicts stronger long-run reversal, with ST-limit comparison.",
+    "limitations": "Behavioral/event mechanism; definition depends on historical limit rules and trade/account access.",
+    "authors": "Authors verified on publisher page",
+    "year": "2019",
+    "publication": "Journal of Econometrics 208(1), 249–264",
+    "doi": "10.1016/j.jeconom.2018.09.014",
+    "empirical_frequency": "daily event-time; account-level order/trade data",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_limitprehit2015",
+    "title": "Statistical Properties and Pre-hit Dynamics of Price Limit Hits in the Chinese Stock Markets",
+    "url": "https://arxiv.org/abs/1503.03548",
+    "source_type": "preprint",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Analyzes high-frequency A-share price-limit events and reports greater next-day continuation than reversal, especially after down-limit hits.",
+    "limitations": "Preprint and event-conditioned result; do not infer a cross-sectional daily factor or trade after-limit profitability.",
+    "authors": "Primary authors listed on arXiv",
+    "year": "2015",
+    "publication": "arXiv:1503.03548",
+    "doi": null,
+    "empirical_frequency": "intraday/high-frequency; next-trading-day outcomes",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_intradaymomentum2019",
+    "title": "Intraday momentum and stock return predictability: Evidence from China",
+    "url": "https://doi.org/10.1016/j.econmod.2018.08.009",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "China high-frequency evidence that first and seventh half-hour returns predict the final half-hour return; authors report in/out-of-sample tests and lunch-break half-day momentum.",
+    "limitations": "Intraday-price-data requirement; index/sample and execution conditions differ from daily OHLC factors.",
+    "authors": "Authors verified on publisher page",
+    "year": "2019",
+    "publication": "Economic Modelling 76, 319–329",
+    "doi": "10.1016/j.econmod.2018.08.009",
+    "empirical_frequency": "half-hour intraday returns; end-of-day tests",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_intradayreversal2019",
+    "title": "Intraday momentum and reversal in Chinese stock market",
+    "url": "https://doi.org/10.1016/j.frl.2019.04.002",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "First-half-hour signal is associated with intraday momentum and second-half-hour reversal in Chinese market; paper emphasizes noise trading and transaction costs.",
+    "limitations": "Requires intraday data; cost and T+1 restrictions affect implementability; not evidence for daily-bar entry timing.",
+    "authors": "X. Chu, Z. Gu, H. Zhou",
+    "year": "2019",
+    "publication": "Finance Research Letters 30, 83–88",
+    "doi": "10.1016/j.frl.2019.04.002",
+    "empirical_frequency": "half-hour intraday returns",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_overnightanoms2023",
+    "title": "Overnight versus intraday returns of anomalies in China",
+    "url": "https://doi.org/10.1016/j.pacfin.2023.102007",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "For tested strategies, some China anomalies are profitable overnight, some intraday and some neither; more strategies work overnight, unlike the US benchmark pattern.",
+    "limitations": "Monthly anomaly portfolios decomposed by session; it does not prove each signal can be traded at open/close net of costs.",
+    "authors": "Chaonan Lin, Hui-Wen Chang, Robin K. Chou",
+    "year": "2023",
+    "publication": "Pacific-Basin Finance Journal 79, 102007",
+    "doi": "10.1016/j.pacfin.2023.102007",
+    "empirical_frequency": "monthly anomaly strategy returns decomposed into overnight/daytime",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_overnightconstraint2026",
+    "title": "Overnight Returns, Trading Constraints, and Future Stock Returns: Evidence from the Chinese A-Share Market",
+    "url": "https://ssrn.com/abstract=6199399",
+    "source_type": "ssrn_preprint",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Recent A-share preprint reports positive intermediate-horizon predictive association for overnight returns but not intraday returns, attributing this to T+1 delayed response to negative information.",
+    "limitations": "Not peer-reviewed at access; preprint abstract only; do not treat as established factor or as validation of execution returns.",
+    "authors": "Rong Chen, Zhen Hu, Hai Lin",
+    "year": "2026",
+    "publication": "SSRN working paper, revised 8 Apr 2026",
+    "doi": null,
+    "empirical_frequency": "daily overnight/intraday returns and intermediate horizons",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_seasonal2024",
+    "title": "Return seasonalities in the Chinese stock market",
+    "url": "https://doi.org/10.1016/j.pacfin.2024.102391",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "China evidence: prior performance in a calendar month predicts returns in that same month in later years, with reversal in other months; authors attribute pattern to temporary mispricing.",
+    "limitations": "Monthly calendar-conditioned test; exact daily signal lookback, rebalancing and post-cost robustness need full text.",
+    "authors": "Chen Meng, Qingjie Du, Haibing Shu",
+    "year": "2024",
+    "publication": "Pacific-Basin Finance Journal 85, 102391",
+    "doi": "10.1016/j.pacfin.2024.102391",
+    "empirical_frequency": "calendar-month conditional cross-sectional returns",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_lunarjan2022",
+    "title": "One Country, Two Calendars: Lunar January Effect in China’s A-Share Stock Market",
+    "url": "https://doi.org/10.1111/ajfs.12404",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "A-share study finds no traditional solar January effect but a strong Lunar January effect, stronger for small firms; trading volume and buy orders help explain it.",
+    "limitations": "Calendar-calendar inference and small-firm concentration; not proof of stable daily alpha after costs.",
+    "authors": "Xiaobo Liang, Qianqiu Liu, Allan A. Zebedee",
+    "year": "2022",
+    "publication": "Asia-Pacific Journal of Financial Studies 51(6), 859–895",
+    "doi": "10.1111/ajfs.12404",
+    "empirical_frequency": "daily returns grouped by lunar/solar calendar periods",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_calendareffect2001",
+    "title": "The day-of-the-week regularity in the stock markets of China",
+    "url": "https://doi.org/10.1016/S1042-444X(00)00047-5",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "China index study finds weekday-effect conclusions depend on estimation and sample; Tuesday anomaly vanishes after adjusting non-normality and foreign spillovers.",
+    "limitations": "Index-level, historical evidence with weak trading relevance; use as caution against overfitting calendar dummies.",
+    "authors": "Gongmeng Chen, Chuck C. Y. Kwok, Oliver M. Rui",
+    "year": "2001",
+    "publication": "Journal of Multinational Financial Management 11(2), 139–163",
+    "doi": "10.1016/S1042-444X(00)00047-5",
+    "empirical_frequency": "daily index returns",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_accrualchina",
+    "title": "Sophistication of Chinese Mutual Funds and the Mispricing of Accruals",
+    "url": "https://doi.org/10.2308/jiar-52257",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "A-share sample 2003–2011 reports accrual mispricing concentrated in firms with large mutual-fund holdings.",
+    "limitations": "Annual accounting input; holdings interaction and sample-era market structure constrain transfer.",
+    "authors": "Author verified on publisher page",
+    "year": "2019",
+    "publication": "Journal of International Accounting Research",
+    "doi": null,
+    "empirical_frequency": "annual accounting characteristics; subsequent returns",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_sloan1996",
+    "title": "Do Stock Prices Fully Reflect Information in Accruals and Cash Flows about Future Earnings?",
+    "url": "https://www.cuhk.edu.hk/acy2/workshop/June2009Wasley/1996TAR%29.pdf",
+    "source_type": "academic_institution_pdf",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "full_text",
+    "license": "JSTOR/AAA copyright notice; public institution-hosted copy was read only, not saved or redistributed; follow JSTOR terms.",
+    "summary": "Read the hosted article: reports that prices fail to fully distinguish the persistence of accrual and cash-flow earnings components, establishing the classic US accrual-anomaly mechanism.",
+    "limitations": "US sample and annual financial characteristics; this does not establish an A-share anomaly. Link is institution-hosted, reuse terms not stated.",
+    "authors": "Richard G. Sloan",
+    "year": "1996",
+    "publication": "The Accounting Review 71(3), 289–315",
+    "doi": null,
+    "empirical_frequency": "annual accounting data and future returns",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_accrualchina_review",
+    "title": "The nature of information in accruals and cash flows in an emerging capital market: The case of China",
+    "url": "https://doi.org/10.1016/S0020-7063(01)00107-8",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Chinese listed-firm study examines whether accrual components and cash flows add information for valuation under PRC-GAAP; reports mixed usefulness of accrual components.",
+    "limitations": "Older broad listed-company sample, not a daily factor validation.",
+    "authors": "Authors verified on publisher page",
+    "year": "2002",
+    "publication": "International Journal of Accounting 37",
+    "doi": null,
+    "empirical_frequency": "annual firm-year fundamentals",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_max2023",
+    "title": "MAX, lottery-type stocks, and the cross-section of stock returns: Evidence from the Chinese stock market",
+    "url": "https://doi.org/10.1080/23322039.2023.2175471",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "China-market study reports negative pricing of lottery-type stocks and finds MAX is not a strong lottery proxy uniformly; effect differs by price.",
+    "limitations": "Sample and mechanism-specific; does not support universal MAX interpretation.",
+    "authors": "Authors verified on publisher page",
+    "year": "2023",
+    "publication": "Cogent Economics & Finance",
+    "doi": null,
+    "empirical_frequency": "daily data used to form monthly MAX/IVOL/IDSKEW characteristics",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_contrarian2015",
+    "title": "Profitability of contrarian strategies in the Chinese stock market",
+    "url": "https://arxiv.org/abs/1505.00328",
+    "source_type": "preprint",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Shanghai/Shenzhen data 1997–2012 show contrarian portfolio profitability at one-month and longer-than-12-month horizons in the reported tests.",
+    "limitations": "Preprint; monthly horizon evidence should not be converted into daily reversal claims.",
+    "authors": "Authors listed on arXiv",
+    "year": "2015",
+    "publication": "arXiv:1505.00328",
+    "doi": null,
+    "empirical_frequency": "monthly formation/holding portfolios",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_imom2019",
+    "title": "Horse race of weekly idiosyncratic momentum strategies with respect to various risk metrics: Evidence from the Chinese stock market",
+    "url": "https://arxiv.org/abs/1910.13115",
+    "source_type": "preprint",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "A-share preprint reports contrarian and idiosyncratic-momentum effects using weekly strategies, with profitability varying by market state/liquidity/sentiment.",
+    "limitations": "Preprint; weekly portfolio result, not daily factor validation.",
+    "authors": "Authors listed on arXiv",
+    "year": "2019",
+    "publication": "arXiv:1910.13115",
+    "doi": null,
+    "empirical_frequency": "weekly momentum portfolios, A-share sample 1997–2017",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_peadreview2020",
+    "title": "A review of the Post-Earnings-Announcement Drift",
+    "url": "https://doi.org/10.1016/j.jbef.2020.100446",
+    "source_type": "journal_review",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Review organizes SUE definitions based on time-series forecasts, analyst expectations, or return-based proxies and summarizes cross-country evidence including China.",
+    "limitations": "Review rather than new A-share experiment; its survey cannot validate any one contemporary signal.",
+    "authors": "Authors verified on publisher page",
+    "year": "2020",
+    "publication": "Journal of Behavioral and Experimental Finance, 100446",
+    "doi": "10.1016/j.jbef.2020.100446",
+    "empirical_frequency": "event-time daily returns; heterogeneous event windows",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_attention_baidu2021",
+    "title": "Does Investor Attention Affect Stock Trading and Returns? Evidence from Publicly Listed Firms in China",
+    "url": "https://doi.org/10.1080/15427560.2020.1785469",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; citation/abstract metadata only unless noted. Follow publisher/repository terms.",
+    "summary": "Chinese listed-firm weekly panel: abnormal Baidu search activity is associated with contemporaneous return/volume and subsequent return reversal in the reported sample.",
+    "limitations": "Search-volume data coverage and method changes require timestamped availability; weekly evidence is not daily alpha.",
+    "authors": "Dan Yang, Tingyu Ma, Yuetang Wang, Guojun Wang",
+    "year": "2021",
+    "publication": "Journal of Behavioral Finance 22(4), 368–381",
+    "doi": "10.1080/15427560.2020.1785469",
+    "empirical_frequency": "weekly Baidu search index and returns, 2011–2018",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_company_interaction_pead2024",
+    "title": "Investor-listed company interaction and post-earnings announcement drift for individual stocks",
+    "url": "https://doi.org/10.1016/j.frl.2024.105097",
+    "source_type": "journal_article",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "No full text copied; publisher abstract only. Follow publisher terms.",
+    "summary": "A-share sample for 2013–2018; the abstract reports online investor-company interaction is associated with lower post-announcement price drift, with stronger effect among non-SOEs and firms with higher institutional ownership.",
+    "limitations": "Abstract-level summary; interaction measure and precise event windows require full-text review.",
+    "authors": "Author metadata not captured in this pass",
+    "year": "2024",
+    "publication": "Finance Research Letters 62, article 105097",
+    "doi": "10.1016/j.frl.2024.105097",
+    "empirical_frequency": "A-share firm/event sample; post-event cumulative abnormal returns",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  },
+  {
+    "source_id": "src_marginshort2026",
+    "title": "Margin Trading, Short Selling, and Return Predictability: Evidence from the Chinese Stock Market",
+    "url": "https://ssrn.com/abstract=7516418",
+    "source_type": "ssrn_preprint",
+    "accessed_at": "2026-10-07",
+    "verified": true,
+    "verification_status": "abstract",
+    "license": "SSRN abstract/preprint record; no local copy. Listed as CC BY-NC-ND on SSRN record; respect license restrictions.",
+    "summary": "2026 SSRN preprint examines A-share margin-eligible stocks in 2010–2025; builds financing/short-selling measures from balance changes, relative trading intensity and sentiment momentum, and reports a PCA relative-strength factor predicts lower future returns at daily and weekly horizons.",
+    "limitations": "New, non-peer-reviewed preprint with abstract-level verification; sample restricted to eligible stocks and factor result needs independent replication/cost review.",
+    "authors": "Guohao Tang, Hanrui Xu, Jing Yang, Fanyining Zhang",
+    "year": "2026",
+    "publication": "SSRN working paper, posted 26 Sep 2026",
+    "doi": "10.2139/ssrn.7516418",
+    "empirical_frequency": "Daily and weekly return prediction",
+    "aliases": [],
+    "source_group": "论文与学术证据",
+    "record_files": [
+      "新增调研/论文与学术证据/sources.json"
+    ]
+  }
+]

@@ -10,9 +10,8 @@
 ## 缓存位置：`data/derived/<name>/year=YYYY/data.parquet`
 
 放在 `data/` 下但**与 `data/factors/` 平级** —— 因子遍历只扫 `data/factors/*`，
-不会被误认成因子。**故意不放进 `state/`**：`state/` 会被 `--sandbox` 重定向，
-而派生缓存是「上游数据的纯函数」，多个 Agent / 沙箱应当共享同一份，
-否则每个沙箱都要重跑几分钟的预聚合。
+不会被误认成因子。生产缓存保留在本项目 `data/derived/`；研究与审计缓存必须
+随运行命名空间隔离，禁止写入生产缓存，也不能复用更宽日期范围的审计缓存。
 
 ## 失效判定
 
@@ -43,6 +42,14 @@ class DerivedCache:
     version: int = 1               # 聚合逻辑变了就 +1，强制重建
 
     def __init__(self, up, cfg, codes: np.ndarray):
+        kernel_version = getattr(cfg, "raw", {}).get("compute", {}).get("kernel_version", 1)
+        if isinstance(kernel_version, bool) or not isinstance(kernel_version, int) or kernel_version < 1:
+            raise ValueError("compute.kernel_version 必须是正整数")
+        self._common_kernel_version = kernel_version
+        # v1 preserves the legacy integer manifest identity exactly. A reviewed
+        # common-kernel change must also rebuild aggregates used by the factors.
+        if kernel_version > 1:
+            self.version = f"{type(self).version}||common-kernels=v{kernel_version}"
         self.up = up                      # ★ 自己持有 up：这样 panel() 能自动 ensure()
         self.cfg = cfg
         self.codes = np.asarray(codes)
@@ -58,8 +65,12 @@ class DerivedCache:
         #
         #   `FEA_CACHE_DIR` 保留：`--sandbox` 与审计需要隔离位置，否则它们会重建
         #   生产的 chips/intraday 缓存（实测踩过）。
-        self.root = (Path(os.environ["FEA_CACHE_DIR"]) if os.environ.get("FEA_CACHE_DIR")
-                     else Path(cfg.root) / "data" / "derived") / self.name
+        base = Path(os.environ.get("FEA_CACHE_DIR") or
+                    getattr(cfg, "raw", {}).get("paths", {}).get("derived", "data/derived"))
+        base = (base if base.is_absolute() else Path(cfg.root) / base).resolve()
+        if not base.is_relative_to(Path(cfg.root).resolve()):
+            raise ValueError(f"派生缓存必须在本次项目运行目录内：{base}")
+        self.root = base / self.name
         self.man_path = self.root / "_manifest.json"
         self._cache: dict[tuple, np.ndarray] = {}
         self._frame: pd.DataFrame | None = None
@@ -93,14 +104,28 @@ class DerivedCache:
     def _fp(self, year: int) -> dict:
         """带记忆化的 `source_fingerprint`。子类内部一律走这个。"""
         c = self.__dict__.setdefault("_fp_cache", {})
-        if year not in c:
+        cutoff = getattr(self.up, "audit_cutoff", None)
+        key = year if cutoff is None else (year, int(cutoff))
+        if key not in c:
             fp = self.source_fingerprint(year)
             # Include the source file identity: same-row-count upstream repairs
             # must invalidate the daily aggregates as well.
             import hashlib
             fp["universe_sha256"] = hashlib.sha256("\n".join(map(str, self.codes)).encode()).hexdigest()
-            c[year] = fp
-        return c[year]
+            if cutoff is not None:
+                fp["audit_cutoff"] = int(cutoff)
+            c[key] = fp
+        return c[key]
+
+    def _audit_frame(self, frame: pd.DataFrame) -> pd.DataFrame:
+        cutoff = getattr(self.up, "audit_cutoff", None)
+        if cutoff is None or frame.empty:
+            return frame
+        if "trade_date" not in frame:
+            raise ValueError("审计派生缓存缺少 trade_date，无法截断未来记录")
+        from .upstream import Upstream
+        days = Upstream._audit_dates(frame["trade_date"])
+        return frame.loc[(days > 0) & (days <= int(cutoff))].copy()
 
     def build_year(self, year: int, up) -> pd.DataFrame:
         """重活：把该年的原始数据聚合成 (trade_date, stock_code, ...) 的日频宽表。"""
@@ -145,11 +170,31 @@ class DerivedCache:
         for y in dirty:
             t1 = time.time()
             df = self.build_year(y, up)
+            if df is not None:
+                df = self._audit_frame(df)
             if df is None or df.empty:
+                old_path = self.root / f"year={y}" / "data.parquet"
+                if (self._common_kernel_version > 1 or getattr(up, "audit_cutoff", None) is not None) and old_path.exists():
+                    if df is None or not len(df.columns):
+                        import pyarrow as pa
+                        import pyarrow.parquet as pq
+                        schema = pq.ParquetFile(old_path).schema_arrow
+                        df = pa.Table.from_batches([], schema=schema).to_pandas()
+                    # A versioned algorithm may validly remove every row. Never
+                    # let the previous algorithm's physical cache remain readable.
+                    store._atomic_write(df, old_path, self.cfg.compression)
+                    self.clear_raw()
+                    self._cache.clear()
+                    man["years"][str(y)] = self._fp(y)
+                    self._save_man(man)
+                    continue
                 man["years"][str(y)] = self._fp(y)
                 continue
             store._atomic_write(df, self.root / f"year={y}" / "data.parquet",
                                 self.cfg.compression)
+            if getattr(up, "audit_cutoff", None) is not None:
+                self.clear_raw()
+                self._cache.clear()
             man["years"][str(y)] = self._fp(y)
             self._save_man(man)     # 逐年落盘：中断了不用从头再来
             log.info("  %s year=%d 完成：%d 行 / %.1fs", self.name, y, len(df),
@@ -167,7 +212,7 @@ class DerivedCache:
         """
         w = self._frame_window
         if self._frame is not None and w is not None and w[0] <= y0 and w[1] >= y1:
-            return self._frame
+            return self._audit_frame(self._frame)
         y0 = min(y0, w[0]) if w else y0
         y1 = max(y1, w[1]) if w else y1
         frames = []
@@ -175,7 +220,7 @@ class DerivedCache:
             p = self.root / f"year={y}" / "data.parquet"
             if p.exists():
                 frames.append(pd.read_parquet(p))
-        self._frame = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+        self._frame = self._audit_frame(pd.concat(frames, ignore_index=True) if frames else pd.DataFrame())
         self._frame_window = (y0, y1)
         self._cache.clear()               # 窗口变了，面板缓存全部失效
         return self._frame

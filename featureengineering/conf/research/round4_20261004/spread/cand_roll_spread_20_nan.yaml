@@ -1,0 +1,16 @@
+name: r4f_roll_spread_20_nan_v1
+family_id: r4f_spread_micro_v1
+implementation: research.families.r4f_spread_micro_v1:build
+parameters: {signal: roll_spread_20_nan}
+units: 同 roll_spread_20（收益率尺度）；仅 cov≥0 的处置不同（NaN 而非 0.0）。
+availability: 只用信号日收盘及以前的日线（adj_factor 取截至当日累计值）经 PriceLayer 后复权；不读前复权；stock_daily/stock_adj_factor 不在可得性滞后名单，无需 lagged_ok。
+missing_policy: 与 roll_spread_20 相同的有效配对/成交/脏数据处理；差别在于协方差 ≥0（未检出负自相关）时取 NaN 而非 0.0——本变体在库内非空率显著更低（冒烟实测 2025 约 59% 行非空），为口径敏感性对照，须与主候选并报。
+spec:
+  group: research_spread_micro
+  desc: 未验证候选（口径敏感性对照）：Roll(1984) 20 日，cov≥0 → NaN 口径。
+  formula: 2*sqrt(max(-cov(r_t, r_{t-1}), 0))，cov≥0 时置 NaN；cov 为尾部 20 个有效配对的总体协方差，min_count=15
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 70
+  higher_is_better: true
+  version: 1
+  note: 非机制主张，仅口径敏感性对照；研究候选，不进生产。

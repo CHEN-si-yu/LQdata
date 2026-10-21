@@ -1,0 +1,17 @@
+name: r4a_sue_accel_v1
+family_id: r4a_earnings_surprise_v1
+implementation: research.families.r4a_earnings_surprise_v1:build
+parameters: {signal: sue_accel}
+units: 两个无量纲 SUE 之差，仍为无量纲。
+availability: 同 sue_seasonal_q：公告可得日 pit = max(ann_date, f_ann_date, end_date) 前不可见；单季同比差由财务层 lag_ttm 恒等式得到；asof 前向填充。
+missing_policy: 本期或上期 SUE 任一为 NaN（含分母窗口不足 6 个）则 NaN；不零填充。
+spec:
+  group: research_earnings
+  desc: 盈余惊喜加速度：本期 SUE 减上一期 SUE（对上一期也按同口径 8 期窗口标准化）。
+  formula: "SUE(p) - SUE(p-1), SUE 同 sue_seasonal_q 定义"
+  deps: [stock_income]
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: 需要 lag_ttm 深至 10 期（上一期 SUE 的 8 期分母窗口再往前一期）；先验弱，允许证伪。
+  fin_fields: [n_income_attr_p]

@@ -350,8 +350,8 @@ def _save(ds: R.DS, man: state.Manifest, df: pd.DataFrame,
         #   问题：`upsert` 只做"按 keys 合并、新数据赢"，**从不删行** ——
         #   于是成分股被调出、板块消失、股票退市之后，本地旧行**永久保留**（幽灵成员），
         #   下游按成员表算板块因子会带上"已经不在该板块"的股票。
-        #   受影响 5 张：`stock_list` / `tdx_blocks` / `dc_blocks` / `tdx_block_stocks` /
-        #   `index_ths_constituent_stocks`（判据见 `registry.replaces_whole`；
+        #   受影响表包括 `stock_list` / `tdx_blocks` / `dc_blocks` / `tdx_block_stocks`
+        #   （判据见 `registry.replaces_whole`；
         #   注意 `dc_blocks` 声明了 `trade_date` 但数据里并没有，所以不能只看声明）。
         #   ⚠️ 配套：`_Buf` 对这类表**只在收尾 flush 一次** —— 否则分批替换会丢数据。
         if R.replaces_whole(ds):
@@ -876,8 +876,8 @@ def _entity_periods(ds: R.DS, start: str, end: str) -> list[tuple]:
     """把 `[start, end]` 按该表的 `date_step` 切成"请求期"。
 
     ★★ 2026-09-15 补回**移植时丢掉的两条约定**（旧工程 `engine.make_payload` 有）：
-      · `entity_range=False` → 该表**没有日期轴**（纯快照，如 `tdx_block_stocks`、
-        `index_ths_constituent_stocks`）→ 请求里**不能带任何日期参数**；
+      · `entity_range=False` → 该表**没有日期轴**（纯快照，如 `tdx_block_stocks`）
+        → 请求里**不能带任何日期参数**；
       · `date_step="month"` → **月频**表（如 `index_weight`）→ 传
         `date_param=YYYY-MM`，**不是** start_time/end_time 区间。
 
@@ -919,9 +919,8 @@ def _entity_payload(ds: R.DS, g: list[str], a, b) -> dict:
 def _period_skip(ds: R.DS, man: state.Manifest) -> str | None:
     """快照型/低频表按 `snapshot_every_days` 周期刷新；没到期就跳过。
 
-    ★ 实测依据（2026-09-14）：`tdx_block_stocks`（618 实体）与
-      `index_ths_constituent_stocks`（1676 实体）每天全刷要 **20+ 分钟**、
-      2294 个请求，而成分股本来一周才变一次 —— 这是纯浪费。
+    ★ 实测依据（2026-09-14）：`tdx_block_stocks`（618 实体）每天全刷要
+      **20+ 分钟**、618 个请求，而成分股本来一周才变一次 —— 这是纯浪费。
     """
     every = int(ds.snapshot_every_days or 1)
     if every <= 1:
@@ -994,11 +993,8 @@ def _entity_list_dates(ds: R.DS) -> dict[str, str]:
     回填下界抬到上市日后，同一只票只需 1 个请求。
 
     ⚠️ **只在源表是 `stock_list` 时生效**（显式白名单，不是"有这列就用"）——
-       2026-09-18 实测：`index_ths_sector_categories`（`index_ths_daily` /
-       `index_ths_constituent_stocks` 的实体源）**也有** `list_date` 列，但它的语义是
-       **板块/指数自己的发布日期**（`700001.TI → 20061229`），跟"个股上市日"不是一回事。
-       若不收窄，`index_ths_daily` 的回填下界会被这些值改写 —— 那是一张完全无关的表，
-       不该被"新股特殊处理"顺手改掉。（`tdx_blocks` 没有该列，天然返回 `{}`。）
+       其他表即使也带 `list_date` 列，语义可能是"板块/产品自己的发布日期"，跟"个股上市日"
+       不是一回事；若不收窄，回填下界会被这些值改写。（`tdx_blocks` 没有该列，天然返回 `{}`。）
     ⚠️ 取不到某只票的上市日（列缺失/值为空）时**不猜**，该组回落到 `ds.start`（宁可多发请求）。
     """
     if not ds.entity_from or ds.entity_from[0] != "stock_list":
@@ -1099,17 +1095,17 @@ def _reconcile_entity_counts(ds, man, ctx, codes, hi):
 def run_per_entity(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
     """both 轴：**按请求数增长更慢的轴选策略**。
 
-    · `stock_history_5min` / `tdx_minute` / `index_ths_daily` / `tdx_daily`（实体数 618~5901）
-        → 尾部窗口 + **批量编组**（服务端支持数组时 1676→17、618→7 个请求）
+    · `stock_history_5min` / `tdx_minute` / `tdx_daily`（实体数 618~5901）
+        → 尾部窗口 + **批量编组**（服务端支持数组时 618→7 个请求）
     · `stock_cyq_chips`（3484 实体、单股单年 2.4 万行）
         → 尾部窗口 + 批量 100（2026-09-14 实测数组可用 → 3484→35 个请求）
-    · `tdx_block_stocks` / `index_ths_constituent_stocks`（**快照型**，无日期轴）
-        → 按 `snapshot_every_days` 周期刷新（默认每周）。实测每天全刷要
-          618 + 1676 个请求、**20+ 分钟**，而成分股本来一周才变一次。
+    · 快照型表（**无日期轴**）
+        → 按 `snapshot_every_days` 周期刷新（默认每周）。每天全刷成本高，
+          而成分股本来一周才变一次。
     · `index_weight`（月频）→ 按 30 天周期刷
 
     ★ 死锁解除：旧实现在 `done.entities` 满之后**每轮 0 个任务**，`max_date` 永久冻结
-      （`tdx_daily`/`index_ths_daily` 明天就会因此让旧闸门永久 exit 3）。
+      （`tdx_daily` 明天就会因此让旧闸门永久 exit 3）。
       这里对**已完成实体也补尾部窗口**，所以永远在前进。
     """
     res = Result(ds.name, ds.mode)
@@ -1130,7 +1126,7 @@ def run_per_entity(ds: R.DS, man: state.Manifest, ctx: Ctx) -> Result:
         return res
 
     win = ds.entity_window_days if ds.entity_window_days is not None else ds.window(ctx.redundancy)
-    lo, hi = ctx.data_window(ds, win)      # 上界 = T - delay（如 index_ths_daily delay=1）
+    lo, hi = ctx.data_window(ds, win)      # 上界 = T - delay（如 stock_margin_detail delay=1）
     # ★ 2026-09-16 修「尾部窗口会滑走」：把下界锚到本地最后一期，
     #   否则本地一落后，窗口就随 T 前移、把没抓到的期永久滑出视野。
     count_errors = _reconcile_entity_counts(ds, man, ctx, codes, hi)

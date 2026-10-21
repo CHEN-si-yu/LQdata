@@ -1,0 +1,16 @@
+name: r4r_price_granularity_v1
+family_id: r4r_price_level_v1
+implementation: research.families.r4r_price_level_v1:build
+parameters: {signal: price_granularity}
+units: 最小报价单位占价比（百分数表达）；tick=0.01 元，因子值 = 100×tick/close_raw = 1/close_raw，量纲为 1/元。与 log_price_level 在共同有效格上严格单调互逆（镜像，见 family note）。
+availability: 只用信号日 T 当日的原始收盘价（严格当日原始值，不外推）；tick 恒为 0.01 元（主板 A 股全区间不变，作为常数写入实现）；stock_daily 不在可得性滞后名单，无需 lagged_ok。
+missing_policy: 当日无成交（停牌=无行）/收盘价缺失/≤0 → NaN；不零填充、不前向填充。
+spec:
+  group: research_price_level
+  desc: 未验证候选：最小报价单位占价比 = 1/price 归一化（预登记方向 true）。
+  formula: 100*0.01/close_raw[T] = 1/close_raw[T]
+  deps: [stock_daily]
+  warmup_days: 10
+  higher_is_better: true
+  version: 1
+  note: 与 log_price_level 互为镜像（共同有效格上秩相关恒为 −1，构造使然）；报告按两侧对照解读。

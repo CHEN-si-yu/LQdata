@@ -1,0 +1,26 @@
+family_id: r9b_reason_taxonomy_v1
+idea_id: r9b_reason_taxonomy_v1
+trial_budget: 1
+allowed_variants:
+  - {signal: reason_trigger_churn, window: 60}
+baseline: |
+  强制并列报告（不进模型，只做去重与增量判据）：
+  1) 库内现存 177 个正式因子的 max|rho| 逐项枚举（报告给出因子名与系数）；
+  2) 已删同表基线 top_list_net_rate_20（stock_top_list 20 日净买率）与
+     efx_top_imbalance / efx_top_amount_rate（金额口径）—— 本因子不读金额；
+  3) 稀疏诊断：窗口内是否有 churn/dev 类上榜记录（二值），暴露零填充口径的缺失约定伪影；
+  4) G7 基础 8 控制：momentum_120, short_term_reversal_5, vol_120, idio_vol_60,
+     log_mv, turnover_std_20, bp, roe_ttm（全部实测存在）。
+  5) 分类学可审计性：报告输出两张表全部 distinct reason 值与行数的完整映射表，
+     并给出 UNMAPPED 清单与行覆盖率。
+parameters_frozen:
+  window: 60
+  taxonomy_rules: 10 条有序关键词规则（见 research/families/r9b_reason_taxonomy_v1.py::_RULES）
+  churn_set: [CHURN]
+  dev_set: [UP_DEV, DOWN_DEV]
+  amount_columns_used: none
+  lag_trading_days: 0
+  primary_missing_convention: NaN（窗口内 churn+dev = 0 → NaN）
+variants: >
+  不扩网格：窗口（60 交易日）、分类规则、churn/dev 集合、缺失口径全部在看任何 IC 之前冻结。
+  本 family 只登记 1 个候选，预算 1 用尽；不做窗口搜索、不做规则阈值搜索、不做事后反号。

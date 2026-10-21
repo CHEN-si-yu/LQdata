@@ -1,0 +1,9 @@
+idea_id: r4q_contract_liab_v1
+hypothesis: 合同负债（及旧准则预收款项）是「已收款、待履约」的订单储备——其同比增长、相对营收的覆盖率与增速的环比加速，携带未来营收兑现与预期收益的正向信息。
+mechanism: 合同负债前瞻（订单先行指标，Round 4 批 3 单元 V2）。机制1 contract_liab_growth_yoy=CL(p)/CL(p−4季)−1（订单增长）；机制2 contract_liab_to_revenue=CL/营收TTM（订单覆盖率）；机制3 contract_liab_accel=增速 g(p)−g(p−1)（增速的二阶）；变体：预收款项+合同负债合计口径的同两表达（adv_recv_cl_growth_yoy / adv_recv_cl_to_revenue）。数据=stock_balancesheet（contract_liab / adv_receipts；prepayment 实测为资产侧预付款项，不采用）+ stock_income.revenue，经财务层 PIT（ctx.point/ctx.ttm）。构念与已删 bs_net_contract_to_assets 相反（合同资产=收款权/风险侧；本单元=履约义务/订单侧）。已知危害：2020 新收入准则科目切换与 2023 IFRS17 保险合同负债并入（3 家险企），报告披露、不做事后修剪；全池含金融股。
+expected_direction: 事前冻结、不随结果翻转——五个信号全部 true（订单增长/覆盖/加速越高，预期收益越高）。合计口径变体用于修复 2020 科目切换前后的历史连续性（2018–2019 合同负债纯口径未启用）。
+target_horizons: [1, 5]
+falsifiable: declared RankIC 落入 HAC 95% 置信区间内、或 9 个日历年中与声明方向同号的年份 <7（合同负债纯口径 2018–2020 结构性不可算，分年覆盖如实报告、不做事后修剪）、或与定向对照（yoy_revenue / qf_sales_growth_accel / revenue_cagr_3y / asset_growth_qoq）|rho|>0.9 表明无新增信息、或覆盖不达 G1/G2（出现 Inf、有效截面天数不足、有效票<100 的交易日占比过高），则对应机制不支持。
+fields: [stock_balancesheet.contract_liab, stock_balancesheet.adv_receipts, stock_income.revenue]
+origin: round4_b3_lead_preregistered_20261004
+status: unvalidated_hypothesis

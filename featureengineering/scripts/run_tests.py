@@ -22,12 +22,19 @@ import glob
 import importlib.util
 import sys
 import unittest
+import os
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> int:
+    temporary=ROOT/'artifacts'/'tests'/'tmp'
+    temporary.mkdir(parents=True,exist_ok=True)
+    os.environ['TMPDIR']=str(temporary)
+    tempfile.tempdir=str(temporary)
+    sys.dont_write_bytecode=True
     sys.path.insert(0, str(ROOT))
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()

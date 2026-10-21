@@ -1,0 +1,74 @@
+idea_id: r11u1b_p2screened_v1
+hypothesis: >
+  前置事实（本单元实测，2026-10-05，`library_ic_scan.json`，125 个在产股票因子 × 2123 天）：
+  先登记的 idea `r11u1_crossfamily_v1` 三个机制（M1 估值×成交活跃度、M2 质量×超短反转、
+  M3 成长×隔夜—日内）的**全部 6 条腿全部被强制 P2 判据淘汰**，|t(IC_1d)| = 11.84 … 12.10、
+  6.90 / 11.06、10.82 —— 交易行为侧的「活跃/波动/反转」腿在产库里**没有一条是无条件无效的**。
+  按 v1 的预登记规则，三个机制**均不登记**（负结果，进 report.md）。
+
+  于是把 P2 判据**机械地**施加到**全部 42 个交易行为在产因子**（intraday 11 / momentum 8 /
+  pattern 7 / liquidity 6 / technical 5 / fundflow 5）上，|t(IC_1d)| ≤ 2.0 的**只有 3 条**：
+      mf_net_vol_surprise_20   t1 = −0.02   （主力净流入量的 20 日意外度）
+      mf_net_inflow_5d         t1 = −0.62   （5 日累计主力净流入率）
+      intraday_vol_ratio_5d    t1 = +1.69   （5 日 |日内收益|均值 ÷ |隔夜收益|均值）
+  本 idea 在**任何交互统计量（P3/G7）被计算之前**把这三条腿与各自的基本面状态、方向写死。
+  P2 是任务书**强制的**选择判据（「腿自身无条件 IC 不显著」），不是结果驱动的挑选；
+  三条腿的机制陈述是**先于**其条件 IC 的纯经济学推导。
+mechanism: |
+  三个机制（状态固定、腿由 P2 唯一确定、方向逐个冻结，全部 higher_is_better = True）：
+
+  A `valuation_x_flow_surprise`（hib=True）
+     状态 = ep_ttm（盈利收益率，hib=True，高 = 便宜）；
+     腿   = mf_net_vol_surprise_20（主力净流入量的 20 日意外度 = (净量 − 20 日均)/毛量 20 日均）。
+     机制：意外的大单净买入是**需求冲击**。Miller(1977) 分歧 + 卖空约束下，贵股票
+     （低盈利收益率）里的正向需求冲击更可能是情绪/拥挤交易，随后回吐；便宜股票里的
+     正向需求冲击更可能是价值知情的累积，倾向延续。故 E[ret] 随 (ep_ttm × 流入意外度)
+     **递增** ⇒ X = z(ep_ttm)·z(leg)，hib=True。
+
+  B `quality_x_net_inflow`（hib=True）
+     状态 = roa_ttm（总资产收益率 TTM，hib=True，高 = 高质量）；
+     腿   = mf_net_inflow_5d（5 日累计主力净流入率）。
+     机制：持续 5 日的净流入＝机构在累积。机构的信息优势只在**基本面可分析、盈利真实**的
+     公司里才转化为未来收益；低 ROA（junk）公司里的净流入更可能是散户/注意力驱动，
+     随后回吐。故 E[ret] 随 (roa_ttm × 净流入) **递增** ⇒ X = z(roa_ttm)·z(leg)，hib=True。
+     ★ 该配对的形态正是 R9-F 通过参照的形态：两条腿各自无条件 IC 都不显著
+       （roa_ttm t=+0.95、mf_net_inflow_5d t=−0.62），全部信息只可能在交互项里。
+
+  C `growth_x_intraday_overnight_vol`（hib=True）
+     状态 = revenue_cagr_3y（3 年营收复合增速，hib=True，高 = 高成长、估值不确定性大）；
+     腿   = intraday_vol_ratio_5d（5 日 |日内收益| 均值 ÷ 5 日 |隔夜收益| 均值）。
+     机制：日内/隔夜波动比刻画**价格发现在哪里发生**（Lou-Polk-Skouras 2019 的
+     隔夜—日内「拔河」）。高成长公司的估值不确定性最大，日内波动更多由信息（新闻、
+     分析师、机构盘中交易）驱动、倾向延续；成熟公司的日内波动更多是噪声/流动性冲击、
+     倾向回吐。故 E[ret] 随 (成长 × 日内隔夜波动比) **递增** ⇒ X = z(g)·z(leg)，hib=True。
+
+  ── 判据（与 v1 逐字相同，阈值先于结果冻结）──
+  P1  与 125 个在产股票因子的 frac_days_abs_rho_gt_0.99 ≈ 0；candidate_equals_signed_leg_frac ≈ 0。
+  P1b frac_days_abs_rho(candidate, 自己的腿)_gt_0.99 ≈ 0（不得是腿的逐日秩置换）。
+  P2  |t(IC_1d)| ≤ 2.0（**已在扫描中实测**：三条腿全部满足；诚实披露 t(IC_5d) 分别为
+      +2.72 / +2.36 / +3.82，即 5 日窗口上并非全部无效，见 report.md）。
+  P3a 状态中位数双重排序：ic_leg|state_high 与 ic_leg|state_low **符号相反**、各自 |t| ≥ 1.96，
+      且差序列 HAC |t| ≥ 3。
+  P3b 逐日截面 y ~ 1 + l + s + l*s，l*s 系数跨日 HAC |t| ≥ 3。
+  不满足 P1/P1b/P3 者**不登记**。
+expected_direction: >
+  三条全部预登记 higher_is_better = True（declared = raw）。方向在任何 P3/交互统计之前冻结；
+  登记后不得反号、不得改 higher_is_better、不得换版本把方向找回来。若被证伪，如实报 falsified。
+target_horizons: [1, 5]
+falsifiable: >
+  P1b 不达（候选是腿的逐日秩置换）或 P3a/P3b 不达 ⇒ 不登记（not-registered）。
+  已登记候选若 declared RankIC 分年同号 < 7/9、或 G7（冻结 base-8 控制后）FM 系数不显著
+  或符号与登记方向不一致、或 G2/G3 不达、或与任一在产因子 |rho| > 0.95 ⇒ 假设被证伪。
+  规则 3：腿与状态都来自在产因子，每条候选必须并报「冻结 base-8」与
+  「冻结 base-8 + 腿 + 状态」两套增量（base-8 = momentum_120, short_term_reversal_5,
+  vol_120, idio_vol_60, log_mv, turnover_std_20, bp, roe_ttm）。
+fields: [stock_daily, stock_adj_factor, stock_finance, stock_income, stock_balancesheet, stock_cashflow, stock_moneyflow]
+origin: round11_lead_preregistered_2026-10-05
+status: unvalidated_hypothesis
+preregistration_note: >
+  ★ 本 idea 的三条腿由**任务书强制的 P2 判据**在**全部 42 个交易行为在产因子**上机械筛出
+  （唯一判据 |t(IC_1d)| ≤ 2.0，阈值沿用 v1 已登记值），筛选本身不是交互结果。
+  三条腿的**机制陈述与方向**在本 idea 登记时写死，此时**尚未计算**
+  任何 (状态, 腿) 对的 P3a/P3b/G7/FM 统计量（第一条 prescreen 只覆盖 v1 的 6 条已淘汰腿：
+  turnover_anomaly_20 / amount_ratio_20 / vol_ratio_ma5_ma20 / reversal_2d / rsi_14 /
+  idt_overnight_minus_intraday —— 与本次三条腿无交集）。

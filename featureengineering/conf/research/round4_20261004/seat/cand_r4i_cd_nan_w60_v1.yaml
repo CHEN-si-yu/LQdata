@@ -1,0 +1,16 @@
+name: r4i_cd_nan_w60_v1
+family_id: r4i_seat_closeout_v1
+implementation: research.families.r4i_seat_v1:build
+parameters: {signal: class_divergence_nan_native, window: 60}
+units: 无量纲比率 =（窗口内机构专用净买额合计 − 窗口内游资净买额合计）/ 窗口内 gross 合计；金额单位为元、分子分母同源相除。
+availability: 仅用 trade_date <= T 的席位明细（stock_dragon_tiger 在 delay 契约中延迟 0 日，盘后披露当日可用）；机构/游资/北向分类与 org_name 规范化沿用 R3-A 冻结规则；游资的 PIT 计数只统计严格早于该记录日的池内记录。
+missing_policy: NaN 原生主口径——窗口内（含 T）该股无任何上榜记录 → NaN（不是 0）；窗口内有记录但 gross 合计为 0 → 0.0（与 R3 一致，并在报告披露受影响格数）；池外 → NaN。不填充、不外推。零填充对照由独立候选（w60）与离线复算（w20）并列提供。
+spec:
+  group: research_seat
+  desc: Lead 预登记机制 1：R3-A class_divergence 的 NaN 原生重表达（W60，Revise 符号翻转窗口）；机构相对游资净买越强 → 预期收益越高。主判据口径 = NaN 条件。
+  formula: num = roll_sum(inst_net, 60, min_count=1) − roll_sum(hot_net, 60, min_count=1); den = roll_sum(gross, 60, min_count=1); value = where(den>0, num/den, 0.0); value = where(roll_sum(obs,60,min_count=1)>0, value, NaN)
+  deps: [stock_dragon_tiger]
+  warmup_days: 420
+  higher_is_better: true
+  version: 1
+  note: 只用 net_buy_amount（权威净额），绝不用 buy−sell（2018 年约 94% 行买卖列整块互换）；gross=buy_amount+sell_amount 换位不变量仅用于归一；席位去重键 (day,code,key,gross,net) 与 R3 逐字一致。

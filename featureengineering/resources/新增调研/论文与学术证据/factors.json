@@ -1,0 +1,2505 @@
+[
+  {
+    "factor_id": "ch3_size_ex30",
+    "name": "CH-3 中国规模因子：剔除最小30%",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "规模/因子模型",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "月度形成、月度因子收益；非日频策略验证",
+    "definition_summary": "按市值断点剔除最小30%股票后构造中国规模因子，以降低壳公司价值造成的微盘扭曲。",
+    "required_data": [
+      "日收盘市值",
+      "历史股本/上市板块",
+      "收益与交易状态"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_lsy2019",
+      "src_replicating2024"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jfineco.2019.03.008",
+      "https://doi.org/10.1287/mnsc.2023.4904"
+    ],
+    "pit_notes": "市值/板块状态在形成月末可得，最早用于下一期；历史证券状态PIT。",
+    "limitations": "断点反映样本期制度背景；月频结果不等于每日收益预测。",
+    "usage_role": "portfolio_factor"
+  },
+  {
+    "factor_id": "ch3_cutoff_variants",
+    "name": "CH-3最小市值剔除比例变体",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "规模/因子模型",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "月度形成/回报测试；具体变体未核验",
+    "definition_summary": "将30%排除线改为相邻分位做稳健性分析；这些阈值是待测参数，非原文已验证结论。",
+    "required_data": [
+      "日收盘市值",
+      "历史股本/上市板块",
+      "收益与交易状态"
+    ],
+    "a_share_relevance": "中国机制直接、参数待验证；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国机制直接、参数待验证",
+    "source_ids": [
+      "src_lsy2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jfineco.2019.03.008"
+    ],
+    "pit_notes": "每月用当时市值和历史板块身份设断点。",
+    "limitations": "不能将候选分位记作已发表结果；参数搜索增加多重检验风险。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "ch3_ep",
+    "name": "CH-3盈利价格比价值因子",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "价值",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "月度因子排序及月度回报",
+    "definition_summary": "以盈利价格比构造中国价值因子；来源称E/P优于账面市值比捕捉中国价值效应。",
+    "required_data": [
+      "净资产或盈利",
+      "公告时间",
+      "市值/价格"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_lsy2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jfineco.2019.03.008"
+    ],
+    "pit_notes": "仅用已披露盈利与对应日期市值；公告后向前更新。",
+    "limitations": "负盈利处理、TTM口径、断点需核全文；月度因子非日频alpha。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "ep_variants",
+    "name": "E/P盈利和价格口径变体",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "价值/基本面",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "月度因子形成；本条替代口径未核实",
+    "definition_summary": "将E/P中的盈利分别替换TTM、最近年报等可得口径；各版本须独立记录。",
+    "required_data": [
+      "盈利字段",
+      "价格/市值",
+      "财报发布日期"
+    ],
+    "a_share_relevance": "中国机制直接，参数待验证；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国机制直接，参数待验证",
+    "source_ids": [
+      "src_lsy2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jfineco.2019.03.008"
+    ],
+    "pit_notes": "公告日后更新，保存财报首发值和修订值。",
+    "limitations": "口径变体不等于源论文证实；财务数据只是日频落盘而非日频产生。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "bm_china",
+    "name": "账面市值比B/M替代价值指标",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "价值",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "月度组合测试；财报PIT后映射",
+    "definition_summary": "账面权益除以市值；作为CH-3 E/P的基准对照，不与E/P混为一项。",
+    "required_data": [
+      "净资产或盈利",
+      "公告时间",
+      "市值/价格"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_lsy2019",
+      "src_replicating2024"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jfineco.2019.03.008",
+      "https://doi.org/10.1287/mnsc.2023.4904"
+    ],
+    "pit_notes": "账面权益必须披露后才用；公告日与报告期分离。",
+    "limitations": "中国来源比较不同价值定义；负净资产与壳价值影响排序。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "ff_smb_china",
+    "name": "FF式小盘减大盘SMB",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "规模/因子模型",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "月度因子收益；中国复现说明微盘权重敏感",
+    "definition_summary": "依标准规模断点做多小盘、做空大盘；与剔除微盘壳股的CH-3版本分开。",
+    "required_data": [
+      "日收盘市值",
+      "历史股本/上市板块",
+      "收益与交易状态"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_lsy2019",
+      "src_replicating2024"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jfineco.2019.03.008",
+      "https://doi.org/10.1287/mnsc.2023.4904"
+    ],
+    "pit_notes": "形成期用当期市值，形成后滞后一持有期。",
+    "limitations": "A股size证据弱且等权微盘会放大收益；卖空与容量限制。",
+    "usage_role": "portfolio_factor"
+  },
+  {
+    "factor_id": "ff_hml_china",
+    "name": "FF式高B/M减低B/M HML",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "价值/因子模型",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "月度组合形成和月度回报",
+    "definition_summary": "按B/M形成高减低组合；与CH-3 E/P模型进行模型比较。",
+    "required_data": [
+      "个股日收益",
+      "历史股票状态"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_lsy2019",
+      "src_replicating2024"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jfineco.2019.03.008",
+      "https://doi.org/10.1287/mnsc.2023.4904"
+    ],
+    "pit_notes": "财务变量报告披露后使用。",
+    "limitations": "价值度量适配性是中国市场重要问题，不能将美股HML结果直接迁移。",
+    "usage_role": "portfolio_factor"
+  },
+  {
+    "factor_id": "ff_rmw_china",
+    "name": "FF5盈利因子RMW（强减弱）",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "盈利/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "月度因子回报；中国结论跨研究/更新频率不一",
+    "definition_summary": "按经营盈利能力形成高减低因子组合；中国研究结果混合。",
+    "required_data": [
+      "利润表",
+      "资产",
+      "公告时间"
+    ],
+    "a_share_relevance": "A股/中国直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股/中国直接",
+    "source_ids": [
+      "src_ff2015",
+      "src_houzhangchina2019",
+      "src_ff5china2017",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jfineco.2014.10.010",
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137",
+      "https://doi.org/10.1186/s40589-017-0051-5",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "按财报公告时间更新TTM财务字段。",
+    "limitations": "国际定义映射中国科目需校验；日频落盘不代表盈利每日更新。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "q_roe",
+    "name": "q-factor ROE盈利因子",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "盈利/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "月度因子组合/定价检验",
+    "definition_summary": "q-factor以ROE/盈利能力高低构造盈利因子；中国模型测试有非一致结果。",
+    "required_data": [
+      "利润表",
+      "资产",
+      "公告时间"
+    ],
+    "a_share_relevance": "A股/中国直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股/中国直接",
+    "source_ids": [
+      "src_hxz2015",
+      "src_houzhangchina2019",
+      "src_ff5china2017"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1093/rfs/hhu068",
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137",
+      "https://doi.org/10.1186/s40589-017-0051-5"
+    ],
+    "pit_notes": "权益取滞后可得数据，亏损和负权益单列。",
+    "limitations": "各论文的ROE分子/分母定义可能不同；不声称日频预测。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "gross_profit_assets",
+    "name": "毛利/资产盈利能力",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "盈利/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "月/季财报映射，月度收益组合检验",
+    "definition_summary": "以毛利相对资产度量基本面盈利质量；精确分子和资产时点需全文复核。",
+    "required_data": [
+      "利润表",
+      "资产",
+      "公告时间"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021",
+      "src_houzhangchina2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137"
+    ],
+    "pit_notes": "公告之后更新；TTM流量按季差分并留版本。",
+    "limitations": "A股异常研究指出盈利指标对更新频率敏感。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "operating_profitability",
+    "name": "营业盈利能力",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "盈利/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "财报低频更新，组合收益主要月频",
+    "definition_summary": "使用营业利润或经营利润类盈利相对资产/权益，具体定义需按来源全文锁定。",
+    "required_data": [
+      "利润表",
+      "资产",
+      "公告时间"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021",
+      "src_houzhangchina2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137"
+    ],
+    "pit_notes": "财报披露日后生效，科目映射保持版本化。",
+    "limitations": "中国质量类证据混合，摘要不支持具体公式核验。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "roe_level",
+    "name": "ROE水平",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "盈利/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "财报季/年更新，月频组合测试",
+    "definition_summary": "已披露净利润相对滞后或平均权益；不同分母口径需分字段。",
+    "required_data": [
+      "利润表",
+      "资产",
+      "公告时间"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021",
+      "src_houzhangchina2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137"
+    ],
+    "pit_notes": "用当时已披露值，报告重述不得回填到历史决策点。",
+    "limitations": "精确ROE口径未核；亏损/负净资产样本处理会改变结果。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "cash_profitability",
+    "name": "经营现金流/资产",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "现金流质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "年/季披露后更新；原典主要低频财务检验",
+    "definition_summary": "经营现金流相对资产衡量现金盈利质量；与会计应计拆分分开。",
+    "required_data": [
+      "现金流量表",
+      "资产",
+      "公告日期"
+    ],
+    "a_share_relevance": "机制迁移及中国会计信息研究；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "机制迁移及中国会计信息研究",
+    "source_ids": [
+      "src_accrualchina_review",
+      "src_sloan1996"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/S0020-7063(01)00107-8",
+      "https://doi.org/10.2308/accr.1996.71.3.289"
+    ],
+    "pit_notes": "现金流披露时间及年初至今累计流量差分必须准确。",
+    "limitations": "中国研究关注会计信息含量，不等于已验证日频选股收益。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "asset_growth",
+    "name": "总资产增长率",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "投资",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "财报低频更新；原文月度因子形成",
+    "definition_summary": "按总资产跨期变化衡量公司投资扩张；同比/跨年窗口应分开。",
+    "required_data": [
+      "历期资产/投资科目",
+      "财报公告日"
+    ],
+    "a_share_relevance": "A股/中国直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股/中国直接",
+    "source_ids": [
+      "src_hxz2015",
+      "src_houzhangchina2019",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1093/rfs/hhu068",
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "只在财报公布后更新并记录首次公告版本。",
+    "limitations": "中国投资因子收益混合；不能用财年末字段提前。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "investment_assets",
+    "name": "q-factor I/A投资因子",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "投资",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "月度因子组合；基本面变量年/季频",
+    "definition_summary": "按投资/资产增长特征形成高投资与低投资组合。",
+    "required_data": [
+      "历期资产/投资科目",
+      "财报公告日"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_hxz2015",
+      "src_houzhangchina2019",
+      "src_ff5china2017"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1093/rfs/hhu068",
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137",
+      "https://doi.org/10.1186/s40589-017-0051-5"
+    ],
+    "pit_notes": "历史财报可用时间向后映射。",
+    "limitations": "中国研究报告投资因子常较弱/不显著，定义因子并不代表收益稳定。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "investment_book",
+    "name": "账面投资增长率",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "投资",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "财报更新、月度截面检验",
+    "definition_summary": "账面投资变化相对资本基数的强弱；资本支出科目需统一。",
+    "required_data": [
+      "历期资产/投资科目",
+      "财报公告日"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021",
+      "src_houzhangchina2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137"
+    ],
+    "pit_notes": "按原始公告日使用，变更会计科目时做映射。",
+    "limitations": "摘要层级证据显示投资指标可能弱或符号不符预期。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "investment_growth_variants",
+    "name": "投资增长的年/季口径变体",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "投资",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "月度排序；替代财报频率未逐项核验",
+    "definition_summary": "对同比资产增长、季度滚动和年度增长分别定义，禁止在同一字段混写。",
+    "required_data": [
+      "历期资产/投资科目",
+      "财报公告日"
+    ],
+    "a_share_relevance": "A股直接但变体待验证；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接但变体待验证",
+    "source_ids": [
+      "src_houzhangchina2019",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "季报实际公开后才更新。",
+    "limitations": "频率与会计期间会造成前视和定义差异，参数搜索须控制。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "total_accruals",
+    "name": "总应计/资产",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "应计/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "年度/季度财务特征，月度收益排序",
+    "definition_summary": "以盈利减经营现金流等估计应计并按资产缩放；精确方法需锁定。",
+    "required_data": [
+      "利润表",
+      "现金流量表",
+      "资产负债表",
+      "公告时间"
+    ],
+    "a_share_relevance": "A股直接且证据偏弱；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接且证据偏弱",
+    "source_ids": [
+      "src_sloan1996",
+      "src_jansen2021",
+      "src_accrualchina"
+    ],
+    "source_urls": [
+      "https://doi.org/10.2308/accr.1996.71.3.289",
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://doi.org/10.2308/jiar-52257"
+    ],
+    "pit_notes": "所有报表变量按发布日期生效，现金流累计值先季度差分。",
+    "limitations": "中国应计证据偏弱/混合；会计制度与应计公式敏感。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "working_capital_accrual",
+    "name": "营运资本应计",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "应计/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "低频财报；原典年度排序",
+    "definition_summary": "由流动经营资产负债项目变动估计营运资本应计；Sloan型机制迁移。",
+    "required_data": [
+      "利润表",
+      "现金流量表",
+      "资产负债表",
+      "公告时间"
+    ],
+    "a_share_relevance": "境外机制+中国信息含量研究；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "境外机制+中国信息含量研究",
+    "source_ids": [
+      "src_sloan1996",
+      "src_accrualchina_review"
+    ],
+    "source_urls": [
+      "https://doi.org/10.2308/accr.1996.71.3.289",
+      "https://doi.org/10.1016/S0020-7063(01)00107-8"
+    ],
+    "pit_notes": "严格用公告后科目和可用的期初余额。",
+    "limitations": "本地收益效应弱或混合；本文未核精确A股计算公式。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "accrual_cashflow_split",
+    "name": "盈利的应计/现金流拆分",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "应计/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "季度/年度财务信息；月度形成常见",
+    "definition_summary": "将盈利拆成应计部分与现金流部分，比较未来盈利持续性和后续回报。",
+    "required_data": [
+      "利润表",
+      "现金流量表",
+      "资产负债表",
+      "公告时间"
+    ],
+    "a_share_relevance": "中国市场直接研究+全球经典机制；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接研究+全球经典机制",
+    "source_ids": [
+      "src_sloan1996",
+      "src_accrualchina_review",
+      "src_accrualchina"
+    ],
+    "source_urls": [
+      "https://doi.org/10.2308/accr.1996.71.3.289",
+      "https://doi.org/10.1016/S0020-7063(01)00107-8",
+      "https://doi.org/10.2308/jiar-52257"
+    ],
+    "pit_notes": "财报披露后使用并保留首次公告值。",
+    "limitations": "中国会计信息含量研究结论混合，非日频收益证明。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "net_operating_assets",
+    "name": "净经营资产NOA",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "应计/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "财报低频更新；月度组合测试",
+    "definition_summary": "经营资产减经营负债或其增长；应以资产缩放和水平值分列。",
+    "required_data": [
+      "利润表",
+      "现金流量表",
+      "资产负债表",
+      "公告时间"
+    ],
+    "a_share_relevance": "A股直接、弱证据；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接、弱证据",
+    "source_ids": [
+      "src_jansen2021",
+      "src_accrualchina"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://doi.org/10.2308/jiar-52257"
+    ],
+    "pit_notes": "公告日后更新。",
+    "limitations": "来源显示NOA/应计为弱异常；口径未核全文。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "accrual_fund_ownership",
+    "name": "应计 × 共同基金持股",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "应计/机构行为",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "年度/季度特征与持仓披露后分组",
+    "definition_summary": "按基金持股高低分层考察应计错价强弱。",
+    "required_data": [
+      "应计特征",
+      "基金持仓公告时间"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_accrualchina"
+    ],
+    "source_urls": [
+      "https://doi.org/10.2308/jiar-52257"
+    ],
+    "pit_notes": "基金持仓使用实际披露日，不把期末持仓提前。",
+    "limitations": "交互关系和样本较旧；持仓内生性及披露延迟限制解释。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "profitability_update_freq",
+    "name": "盈利因子年度/季度更新比较",
+    "record_kind": "parameter_variant",
+    "definition_verified": true,
+    "category": "盈利/质量",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "原文比较财务更新频率，因子组合月度回报",
+    "definition_summary": "分别以年度与季度/TTM更新质量特征；A股异常研究明确报告频率会改变结果。",
+    "required_data": [
+      "利润表",
+      "资产",
+      "公告时间"
+    ],
+    "a_share_relevance": "A股直接方法学证据；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接方法学证据",
+    "source_ids": [
+      "src_jansen2021",
+      "src_houzhangchina2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://ira.lib.polyu.edu.hk/handle/10397/90137"
+    ],
+    "pit_notes": "各个版本都在公告后更新。",
+    "limitations": "季度更新结果较强不代表财报数据日更或每日存在新信息。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "amihud_illiq",
+    "name": "Amihud日度非流动性",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "流动性/交易",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日线生成原值；A股原文月度排序/月度收益检验",
+    "definition_summary": "日度绝对收益除以成交额，按窗口聚合；越高是越不流动的价格冲击代理。",
+    "required_data": [
+      "复权收益",
+      "成交额/成交量",
+      "历史流通股本"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_amihud2002",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/S1386-4181(01)00024-6",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "用收盘后t数据形成t+1信号，停牌/零成交单独处理。",
+    "limitations": "人民币成交额与复权收益对齐；日频指标不表示日频盈利已证实。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "amihud_20d",
+    "name": "约20日滚动Amihud变体",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "流动性/交易",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日频派生；此精确窗口未核原文",
+    "definition_summary": "对|日收益|/成交额取近一个月滚动均值；窗口为待测参数。",
+    "required_data": [
+      "复权收益",
+      "成交额/成交量",
+      "历史流通股本"
+    ],
+    "a_share_relevance": "A股直接因子家族证据、参数待测；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接因子家族证据、参数待测",
+    "source_ids": [
+      "src_amihud2002",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/S1386-4181(01)00024-6",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "窗口截至t收盘并滞后到t+1。",
+    "limitations": "窗口敏感，需扣成本并避免把短窗口等同论文基准。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "turnover_1y",
+    "name": "过去一年平均换手率",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "交易活动/流动性",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日换手可逐日落盘；论文用一年特征并做月度收益检验",
+    "definition_summary": "按过去一年滚动聚合成交股数相对流通股数的换手；A股异常研究明确测试past-year turnover。",
+    "required_data": [
+      "日成交股数",
+      "流通股本"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021",
+      "src_datar1998"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://doi.org/10.1016/S1386-4181(97)00004-9"
+    ],
+    "pit_notes": "流通股本用当日历史值调整解禁/送转。",
+    "limitations": "中国高换手可能代理投机/情绪；价值加权显著性弱。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "turnover_short",
+    "name": "短期换手率",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "交易活动",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "A股基准是过去一年特征；本参数未核验",
+    "definition_summary": "以近月或近几日换手聚合，作为长期换手特征的短窗变体。",
+    "required_data": [
+      "日成交量/额",
+      "历史基准",
+      "流通股数"
+    ],
+    "a_share_relevance": "A股机制直接、变体未证实；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股机制直接、变体未证实",
+    "source_ids": [
+      "src_jansen2021",
+      "src_datar1998"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://doi.org/10.1016/S1386-4181(97)00004-9"
+    ],
+    "pit_notes": "按当日可流通股份和完整日线生成。",
+    "limitations": "不得把短窗结果借用长窗论文结论；短持有成本显著。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "abnormal_volume",
+    "name": "过去一个月异常成交量",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "交易活动/注意力",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日量聚合为月度特征，月度组合回报",
+    "definition_summary": "近期成交量相对历史常态的异常；A股研究检验past-month abnormal trading volume，具体基准待全文核实。",
+    "required_data": [
+      "日量能",
+      "历史基准",
+      "公告日历"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "数据截至交易日收盘，历史股本一致调整。",
+    "limitations": "精确基准窗口未核；等权收益和成本/容量约束。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "abnormal_volume_attention",
+    "name": "异常量作为注意力代理",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "注意力/交易",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "中国研究主要周频或事件检验",
+    "definition_summary": "以相对基准的异常成交量作注意力代理，不等于净买入方向。",
+    "required_data": [
+      "个股日收益",
+      "历史股票状态"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_attention_baidu2021",
+      "src_peadattention2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1080/15427560.2020.1785469",
+      "https://xbbjb.cufe.edu.cn/EN/Y2021/V0/I6/27"
+    ],
+    "pit_notes": "基准均值/波动只用历史值，保留公告时点。",
+    "limitations": "量能同时包含信息、流动性与噪声交易。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "net_turnover",
+    "name": "净换手率（因子索引）",
+    "record_kind": "factor_id_only",
+    "definition_verified": false,
+    "category": "交易活动",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "文献异常列表可见交易类因子，具体更新/排序未核",
+    "definition_summary": "个股换手中剔除市场或行业共同变动；精确残差化公式未核实。",
+    "required_data": [
+      "日成交量/额",
+      "历史基准",
+      "流通股数"
+    ],
+    "a_share_relevance": "A股机制索引；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股机制索引",
+    "source_ids": [
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "滚动基准仅用历史行业和市场序列。",
+    "limitations": "仅机制索引，不声称原文定义、结果或日频预测已核。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "turnover_sentiment",
+    "name": "换手率作为噪声交易/情绪代理",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "投资者行为",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "A股证据以月度组合和市场状态为主",
+    "definition_summary": "将高换手视为可能的散户情绪与噪声交易代理，同时保留流动性解释。",
+    "required_data": [
+      "关注者身份/时间戳或代理"
+    ],
+    "a_share_relevance": "A股/中国直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股/中国直接",
+    "source_ids": [
+      "src_jansen2021",
+      "src_datar1998"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://doi.org/10.1016/S1386-4181(97)00004-9"
+    ],
+    "pit_notes": "历史换手与流通股本按日期对齐。",
+    "limitations": "代理变量非账户身份；方向与市场状态可能变化。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "ivol",
+    "name": "特质波动率IVOL",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "风险/波动",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日收益估计、月度形成/收益排序为常见原文频率",
+    "definition_summary": "市场/因子模型残差收益的标准差；因子集和估计窗口需锁定。",
+    "required_data": [
+      "个股日收益",
+      "基准因子收益"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_wan2018",
+      "src_hai2020",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.iref.2017.10.015",
+      "https://doi.org/10.1016/j.najef.2020.101266",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "仅用当期及历史日收益拟合；短历史新股另标。",
+    "limitations": "A股研究发现MAX不能完全解释IVOL；滚动日值本身未获每日策略验证。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "ivol_window_variant",
+    "name": "IVOL窗口变体",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "风险/波动",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "原文月度形成；日滚动变体待验证",
+    "definition_summary": "比较月内估计与滚动交易日窗残差波动；具体窗口逐一标记。",
+    "required_data": [
+      "个股日收益",
+      "基准因子收益"
+    ],
+    "a_share_relevance": "A股直接、参数未核；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接、参数未核",
+    "source_ids": [
+      "src_wan2018",
+      "src_hai2020"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.iref.2017.10.015",
+      "https://doi.org/10.1016/j.najef.2020.101266"
+    ],
+    "pit_notes": "估计窗截于t，不能含未来数据。",
+    "limitations": "微结构噪声、限价和估计模型改变结果。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "max_month",
+    "name": "MAX彩票特征",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "极值/彩票",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日收益滚入月度MAX，论文通常月度横截面排序",
+    "definition_summary": "过去形成期最大单日收益作为彩票型特征；中国研究争论其是否解释IVOL。",
+    "required_data": [
+      "个股复权日收益",
+      "价格",
+      "滚动窗口"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_wan2018",
+      "src_hai2020",
+      "src_max2023"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.iref.2017.10.015",
+      "https://doi.org/10.1016/j.najef.2020.101266",
+      "https://doi.org/10.1080/23322039.2023.2175471"
+    ],
+    "pit_notes": "窗口截至t；注意涨跌停截断、停牌复牌。",
+    "limitations": "摘要未确认所有论文完全相同的窗；解释与IVOL的关系有争论。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "max_topk",
+    "name": "MAX最高K日收益均值变体",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "极值/彩票",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "月度特征候选；精确参数未核",
+    "definition_summary": "用形成期最高若干日收益的均值代替单日最大值，K值单列。",
+    "required_data": [
+      "个股复权日收益",
+      "价格",
+      "滚动窗口"
+    ],
+    "a_share_relevance": "中国市场直接、参数待验；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接、参数待验",
+    "source_ids": [
+      "src_hai2020",
+      "src_max2023"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.najef.2020.101266",
+      "https://doi.org/10.1080/23322039.2023.2175471"
+    ],
+    "pit_notes": "只按截至形成期的日回报选极值。",
+    "limitations": "多个K值会增加数据挖掘风险；非源文公式确认。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "min_month",
+    "name": "MIN最小单日收益",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "极值/尾部风险",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日收益滚动后月度检验",
+    "definition_summary": "过去形成期最低单日回报的极值特征，用于与MAX比较。",
+    "required_data": [
+      "个股日收益",
+      "涨跌停/停牌状态"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_wan2018"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.iref.2017.10.015"
+    ],
+    "pit_notes": "只使用过去窗口，跌停价被截断需标。",
+    "limitations": "文章研究MAX/MIN与IVOL关系；不可推断MIN方向稳定。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "idiosyncratic_skew",
+    "name": "特质偏度",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "极值/彩票",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日收益滚动估计，月度组合测试",
+    "definition_summary": "个股对市场/因子回归残差的偏度，捕捉彩票型右尾。",
+    "required_data": [
+      "个股复权日收益",
+      "价格",
+      "滚动窗口"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_max2023"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1080/23322039.2023.2175471"
+    ],
+    "pit_notes": "残差样本截至t并记录基准模型。",
+    "limitations": "偏度对尾部值、窗口和样本量敏感。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "total_volatility",
+    "name": "总波动率",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "风险/波动",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日频输入，异常复现月度排序",
+    "definition_summary": "滚动日收益标准差，含系统性与个股特质波动。",
+    "required_data": [
+      "个股日收益",
+      "基准因子收益"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021",
+      "src_replicating2024"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://doi.org/10.1287/mnsc.2023.4904"
+    ],
+    "pit_notes": "滚动窗口止于t，停牌处理明确。",
+    "limitations": "风险族整体有直接证据不代表每个波动代理都显著。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "downside_volatility",
+    "name": "下行波动/下行特质风险",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "风险/尾部风险",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "月度或周度组合证据；日频窗口待测",
+    "definition_summary": "只对负收益或低于阈值的收益计算波动；阈值与窗口另行定义。",
+    "required_data": [
+      "个股日收益",
+      "历史股票状态"
+    ],
+    "a_share_relevance": "A股直接/预印本；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接/预印本",
+    "source_ids": [
+      "src_jansen2021",
+      "src_imom2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://arxiv.org/abs/1910.13115"
+    ],
+    "pit_notes": "所有样本截至t；价格限制对下行尾部截断。",
+    "limitations": "精确定义未由摘要确认，作为候选机制而非已验证参数。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "low_price_lottery",
+    "name": "低价股彩票偏好代理",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "彩票偏好",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "月度横截面分组，日价可落盘",
+    "definition_summary": "名义股价低作为彩票偏好表征之一，常与IVOL/偏度联合分析。",
+    "required_data": [
+      "价格",
+      "日收益",
+      "公司行动"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_max2023",
+      "src_hai2020"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1080/23322039.2023.2175471",
+      "https://doi.org/10.1016/j.najef.2020.101266"
+    ],
+    "pit_notes": "拆并股和送转调整，保留真实交易报价。",
+    "limitations": "低价效应和彩票需求是不同机制；价格规则变化需注意。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "lottery_composite",
+    "name": "价格、IVOL、偏度彩票综合特征",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "彩票偏好",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "月度特征组合",
+    "definition_summary": "结合股价、特质波动和特质偏度形成彩票属性排序；精确合成权重待核。",
+    "required_data": [
+      "价格",
+      "日收益",
+      "公司行动"
+    ],
+    "a_share_relevance": "A股/中国直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股/中国直接",
+    "source_ids": [
+      "src_max2023",
+      "src_hai2020"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1080/23322039.2023.2175471",
+      "https://doi.org/10.1016/j.najef.2020.101266"
+    ],
+    "pit_notes": "输入特征全部截至形成日。",
+    "limitations": "合成权重、断点和误价组定义会引入自由度。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "short_reversal",
+    "name": "短期反转",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "动量/反转",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "中国异常检验多为月度排序/持有",
+    "definition_summary": "近期收益与后续收益方向相反；窗口和跳月应明确区分。",
+    "required_data": [
+      "复权收益",
+      "交易日历"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021",
+      "src_contrarian2015"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://arxiv.org/abs/1505.00328"
+    ],
+    "pit_notes": "收益截止于信号日，成交从下一可交易时间起。",
+    "limitations": "不能把月度反转泛化成日频反转；成本和限价约束。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "one_day_reversal",
+    "name": "前一交易日收益反转变体",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "动量/反转",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "候选日频定义，文献直接证据未覆盖此精确窗口",
+    "definition_summary": "将前一交易日close-to-close收益取反；此一日窗口尚非来源精确口径。",
+    "required_data": [
+      "复权收益",
+      "交易日历"
+    ],
+    "a_share_relevance": "A股信号家族直接、参数待验；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股信号家族直接、参数待验",
+    "source_ids": [
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "t日收盘后形成、最早t+1交易；前收成交不成立。",
+    "limitations": "隔夜跳空、涨跌停、微观结构影响，不能从月频推断。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "long_reversal",
+    "name": "多年长期反转",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "动量/反转",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "月度形成和持有；中国预印本月频策略",
+    "definition_summary": "多年累计收益扣除近期一年后反向排序，常见5年形成方案；准确窗口待全文确认。",
+    "required_data": [
+      "复权收益",
+      "交易日历"
+    ],
+    "a_share_relevance": "A股直接/预印本；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接/预印本",
+    "source_ids": [
+      "src_jansen2021",
+      "src_contrarian2015"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://arxiv.org/abs/1505.00328"
+    ],
+    "pit_notes": "保留退市收益与历史股票池。",
+    "limitations": "长期月频效果不能声称日频因子alpha；样本结构变化影响。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "weekly_contrarian",
+    "name": "周度反转/contrarian",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "动量/反转",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "原研究周频策略与收益检验",
+    "definition_summary": "基于过去周收益做反向排序；回看和持有期需读全文。",
+    "required_data": [
+      "复权收益",
+      "交易日历"
+    ],
+    "a_share_relevance": "A股预印本；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股预印本",
+    "source_ids": [
+      "src_imom2019"
+    ],
+    "source_urls": [
+      "https://arxiv.org/abs/1910.13115"
+    ],
+    "pit_notes": "依交易周定义计算收益，周末后才形成。",
+    "limitations": "预印本周频证据不是日频策略验证。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "cross_section_momentum",
+    "name": "横截面中期价格动量",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "动量/反转",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "经典口径月频；A股past-return总体证据较弱",
+    "definition_summary": "按过去累计收益排序赢家与输家，常见中期形成期只作迁移机制参照。",
+    "required_data": [
+      "复权收益",
+      "交易日历"
+    ],
+    "a_share_relevance": "A股直接证据较弱/机制可迁移；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接证据较弱/机制可迁移",
+    "source_ids": [
+      "src_jansen2021",
+      "src_contrarian2015"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://arxiv.org/abs/1505.00328"
+    ],
+    "pit_notes": "只使用完成的形成期收益；退市纳入。",
+    "limitations": "不将美股经典6–12月动量说成A股已验证。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "residual_momentum",
+    "name": "残差动量",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "特质动量",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "月度组合收益；日收益用于估残差",
+    "definition_summary": "先剥离市场/因子收益，再按个股残差收益趋势排序；窗口待全文核。",
+    "required_data": [
+      "个股日收益",
+      "市场/因子收益"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "基准模型滚动只拟合历史。",
+    "limitations": "摘要确认异常类别/表现，不确认精确残差窗口；月频不等于日频。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "residual_reversal",
+    "name": "残差反转",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "特质反转",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "月度组合检验和样本外分析",
+    "definition_summary": "基于个股特质残差的近期反向收益排序。",
+    "required_data": [
+      "个股日收益",
+      "市场/因子收益"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "估计窗口和持有期不能重叠。",
+    "limitations": "摘要支持A股信号类别，不足以确认参数及净收益。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "weekly_imom",
+    "name": "周度特质动量IMOM",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "特质动量",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "明确周频形成/持有",
+    "definition_summary": "按残差/特质周收益形成动量策略；源文对多种风险度量进行horse race。",
+    "required_data": [
+      "个股日收益",
+      "市场/因子收益"
+    ],
+    "a_share_relevance": "A股预印本；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股预印本",
+    "source_ids": [
+      "src_imom2019"
+    ],
+    "source_urls": [
+      "https://arxiv.org/abs/1910.13115"
+    ],
+    "pit_notes": "只使用已完成周的数据，保留停牌股票。",
+    "limitations": "预印本、周频研究，不支持日频结论。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "momentum_skip_month",
+    "name": "中期动量跳过最近月变体",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "动量",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "经典形成期按月；该具体中国效应未核",
+    "definition_summary": "形成动量时跳过最近一个月，减少与短期反转混淆；作为经典机制变体。",
+    "required_data": [
+      "个股日收益",
+      "历史股票状态"
+    ],
+    "a_share_relevance": "境外机制迁移；这是可迁移机制，A股尚待验证。",
+    "evidence_level": "境外机制迁移",
+    "source_ids": [
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "仅用完整历史月份。",
+    "limitations": "中国总体动量结果弱；未核具体参数的A股直接证据。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "overnight_return",
+    "name": "隔夜收益（前收盘至今开盘）",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "隔夜/日内",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日组件可落盘；文献测试月度组合或中期后续收益",
+    "definition_summary": "以今开盘相对前收盘计算；中国研究将隔夜与日内收益拆分。",
+    "required_data": [
+      "前收盘、开盘、收盘价格",
+      "公司行动"
+    ],
+    "a_share_relevance": "A股直接、含一项预印本；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接、含一项预印本",
+    "source_ids": [
+      "src_overnightanoms2023",
+      "src_overnightconstraint2026",
+      "src_peadovernight2023"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2023.102007",
+      "https://ssrn.com/abstract=6199399",
+      "https://doi.org/10.1016/j.jcorpfin.2023.102471"
+    ],
+    "pit_notes": "开盘价格只在开盘后可见，因子形成/执行时点分开。",
+    "limitations": "月度分解不验证日频收益策略；近年预测证据含SSRN未审稿。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "intraday_return",
+    "name": "日内收益（今开盘至今收盘）",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "隔夜/日内",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日收益组件；策略结果按月汇总",
+    "definition_summary": "当日收盘相对开盘收益；与close-to-close拆分时保持复合一致。",
+    "required_data": [
+      "前收盘、开盘、收盘价格",
+      "公司行动"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_overnightanoms2023",
+      "src_peadovernight2023"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2023.102007",
+      "https://doi.org/10.1016/j.jcorpfin.2023.102471"
+    ],
+    "pit_notes": "收盘后观察的信号只能用于下一可成交时点。",
+    "limitations": "日线实现价格不等于可执行价；中国研究报告与隔夜组件不同。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "overnight_predictability",
+    "name": "隔夜收益预测未来收益机制",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "隔夜/日内",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "2026 SSRN为日频信号/中期预测；其他文献按月拆分",
+    "definition_summary": "测试前收至开盘收益对后续收益的预测，与日内回报单独比较。",
+    "required_data": [
+      "前收盘、开盘、收盘价格",
+      "公司行动"
+    ],
+    "a_share_relevance": "A股预印本+期刊背景；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股预印本+期刊背景",
+    "source_ids": [
+      "src_overnightconstraint2026",
+      "src_overnightanoms2023"
+    ],
+    "source_urls": [
+      "https://ssrn.com/abstract=6199399",
+      "https://doi.org/10.1016/j.pacfin.2023.102007"
+    ],
+    "pit_notes": "开盘时才可生成，且做市/涨跌停状态以可见时点定义。",
+    "limitations": "最新关系未同行评审；预测中期回报不等于隔夜策略收益。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "first_half_hour_mom",
+    "name": "首半小时收益预测尾盘半小时",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "日内动量",
+    "frequency": "需要日内/逐笔数据；不是普通日线因子",
+    "evidence_frequency": "半小时数据；非日频因子",
+    "definition_summary": "中国高频论文以首个半小时收益预测当日最后半小时收益。",
+    "required_data": [
+      "半小时价格/成交序列",
+      "交易时段表"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_intradaymomentum2019",
+      "src_intradayreversal2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.econmod.2018.08.009",
+      "https://doi.org/10.1016/j.frl.2019.04.002"
+    ],
+    "pit_notes": "信号在首30分钟结束后才存在，后续执行时点须滞后。",
+    "limitations": "需要分时行情；T+1与手续费/冲击成本限制。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "seventh_half_hour_mom",
+    "name": "倒数第二个半小时收益预测尾盘",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "日内动量",
+    "frequency": "需要日内/逐笔数据；不是普通日线因子",
+    "evidence_frequency": "半小时预测回归与样本外测试",
+    "definition_summary": "中国高频研究报告第七半小时对最后半小时的预测作用。",
+    "required_data": [
+      "半小时价格/成交序列",
+      "交易时段表"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_intradaymomentum2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.econmod.2018.08.009"
+    ],
+    "pit_notes": "严格按交易时段和午休标注。",
+    "limitations": "无法用普通日线还原。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "second_half_hour_reversal",
+    "name": "早盘第二半小时反转",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "日内反转",
+    "frequency": "需要日内/逐笔数据；不是普通日线因子",
+    "evidence_frequency": "分时收益研究",
+    "definition_summary": "A股日内论文报告以首半小时收益研究到第二半小时的反转。",
+    "required_data": [
+      "半小时价格/成交序列",
+      "交易时段表"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_intradayreversal2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.frl.2019.04.002"
+    ],
+    "pit_notes": "首个区间结束后才形成，避免同段收益前视。",
+    "limitations": "费用阻碍套利；非日频策略证据。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "halfday_momentum",
+    "name": "午休前后半日动量",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "日内动量",
+    "frequency": "需要日内/逐笔数据；不是普通日线因子",
+    "evidence_frequency": "半日/半小时高频实证",
+    "definition_summary": "中国高频论文报告90分钟午休与半日动量相关，具体区间公式待核。",
+    "required_data": [
+      "半小时价格/成交序列",
+      "交易时段表"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_intradaymomentum2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.econmod.2018.08.009"
+    ],
+    "pit_notes": "交易时段表按历史规则，午休不填充合成价格。",
+    "limitations": "仅高频数据和特定市场制度下的结果。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "intraday_cross_section_reversal",
+    "name": "首半小时横截面反转",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "日内反转",
+    "frequency": "需要日内/逐笔数据；不是普通日线因子",
+    "evidence_frequency": "论文有分时回报检验；精确横截面窗口待全文确认",
+    "definition_summary": "横截面按个股首半小时收益排序并测试随后日内收益反向关系。",
+    "required_data": [
+      "半小时价格/成交序列",
+      "交易时段表"
+    ],
+    "a_share_relevance": "A股直接待全文核；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接待全文核",
+    "source_ids": [
+      "src_intradayreversal2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.frl.2019.04.002"
+    ],
+    "pit_notes": "用完整30分钟后数据形成信号。",
+    "limitations": "时间序列动量与横截面反转须分开，定义未核。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "t1_effect",
+    "name": "T+1约束引发隔夜与日内差异",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "制度/交易约束",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日/隔夜分解，部分中期回归；制度效应不是独立因子",
+    "definition_summary": "用T+1可卖性/收益分段交互观察日内套利与隔夜价格压力。",
+    "required_data": [
+      "个股日收益",
+      "历史股票状态"
+    ],
+    "a_share_relevance": "中国市场直接/部分预印本；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接/部分预印本",
+    "source_ids": [
+      "src_overnightanoms2023",
+      "src_price_limit2019",
+      "src_overnightconstraint2026"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2023.102007",
+      "https://doi.org/10.1016/j.jeconom.2018.09.014",
+      "https://ssrn.com/abstract=6199399"
+    ],
+    "pit_notes": "按历史板块、账户和规则变更记录有效交易约束。",
+    "limitations": "机制交互不是因子alpha；2026结果尚未同行评审。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "pead_sue_analyst",
+    "name": "分析师预期型盈余惊喜SUE",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "公告/盈利预期",
+    "frequency": "公告/事件触发；按可交易公告时间逐日跟踪",
+    "evidence_frequency": "事件日特征，后续日收益事件窗最长达一年",
+    "definition_summary": "公告EPS与此前分析师一致预期之差，按误差波动/价格等标准化；具体缩放因文献不同。",
+    "required_data": [
+      "EPS",
+      "公告时间",
+      "公告前预测快照"
+    ],
+    "a_share_relevance": "中国直接PEAD；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国直接PEAD",
+    "source_ids": [
+      "src_peadchina2011",
+      "src_peadreview2020",
+      "src_peadattention2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.intfin.2011.04.002",
+      "https://doi.org/10.1016/j.jbef.2020.100446",
+      "https://xbbjb.cufe.edu.cn/EN/Y2021/V0/I6/27"
+    ],
+    "pit_notes": "只用公告前有效预测快照；公告时间到首次可交易日。",
+    "limitations": "覆盖偏差、预测修订泄漏；长期事件收益不是日频策略证明。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "pead_sue_timeseries",
+    "name": "历史盈利模型型SUE",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "公告/盈利预期",
+    "frequency": "公告/事件触发；按可交易公告时间逐日跟踪",
+    "evidence_frequency": "事件频率构造，后续按日事件时间回报",
+    "definition_summary": "实际季度EPS相对历史时间序列预期值的标准化惊喜。",
+    "required_data": [
+      "EPS",
+      "公告时间",
+      "公告前预测快照"
+    ],
+    "a_share_relevance": "中国直接PEAD；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国直接PEAD",
+    "source_ids": [
+      "src_peadchina2011",
+      "src_peadreview2020"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.intfin.2011.04.002",
+      "https://doi.org/10.1016/j.jbef.2020.100446"
+    ],
+    "pit_notes": "模型训练数据限于公告前历史季度。",
+    "limitations": "季节性和会计变化会影响预测；模型细节需核全文。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "earnings_announcement_car",
+    "name": "公告期异常收益CAR",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "公告/事件",
+    "frequency": "公告/事件触发；按可交易公告时间逐日跟踪",
+    "evidence_frequency": "事件时间日收益；公告窗具体频率/长度因论文而异",
+    "definition_summary": "公告窗口市场/因子调整的累计异常收益作为公告冲击表征。",
+    "required_data": [
+      "公告时间戳",
+      "日收益",
+      "市场基准"
+    ],
+    "a_share_relevance": "中国直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国直接",
+    "source_ids": [
+      "src_peadchina2011",
+      "src_peadovernight2023"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.intfin.2011.04.002",
+      "https://doi.org/10.1016/j.jcorpfin.2023.102471"
+    ],
+    "pit_notes": "盘后公告下一交易日作为首个可交易响应。",
+    "limitations": "窗口及基准未核统一，不能事后选最优事件窗。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "pead_overnight_abret",
+    "name": "公告隔夜异常收益",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "公告/隔夜",
+    "frequency": "公告/事件触发；按可交易公告时间逐日跟踪",
+    "evidence_frequency": "事件日分解；跟踪后续日收益",
+    "definition_summary": "公告日隔夜异常收益与日内异常收益分别估计；中国论文发现隔夜分量有未来收益信息。",
+    "required_data": [
+      "公告时间戳",
+      "前收盘/开盘价",
+      "基准收益"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_peadovernight2023"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jcorpfin.2023.102471"
+    ],
+    "pit_notes": "准确公告时间戳决定是否计入当夜。",
+    "limitations": "摘要层结果不支持一般化隔夜因子。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "pead_intraday_abret",
+    "name": "公告日内异常收益",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "公告/日内",
+    "frequency": "公告/事件触发；按可交易公告时间逐日跟踪",
+    "evidence_frequency": "事件日内回报",
+    "definition_summary": "公告发生后的日内市场调整收益；与公告隔夜收益分列。",
+    "required_data": [
+      "盘中公告时间",
+      "开盘/收盘或分时价"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_peadovernight2023"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jcorpfin.2023.102471"
+    ],
+    "pit_notes": "盘中公告仅计入公告后的价格变动。",
+    "limitations": "该论文未发现同等预测力不等于日内公告反应无效。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "pead_attention_interaction",
+    "name": "PEAD × 市场移动日注意力",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "公告/注意力",
+    "frequency": "公告/事件触发；按可交易公告时间逐日跟踪",
+    "evidence_frequency": "事件日分组，后续事件窗",
+    "definition_summary": "按市场大幅波动与普通日分组比较公告后漂移强弱。",
+    "required_data": [
+      "SUE",
+      "市场日收益",
+      "公告时间"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_peadattention2021"
+    ],
+    "source_urls": [
+      "https://xbbjb.cufe.edu.cn/EN/Y2021/V0/I6/27"
+    ],
+    "pit_notes": "分组阈值用当日可见市场收益定义，事件日之后才交易。",
+    "limitations": "摘要未给阈值；交互机制不代表独立attention alpha。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "pead_attention_online",
+    "name": "公告后投资者互动与PEAD",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "公告/投资者行为",
+    "frequency": "公告/事件触发；按可交易公告时间逐日跟踪",
+    "evidence_frequency": "事件/面板研究；具体互动论文需核原文",
+    "definition_summary": "以投资者与上市公司在线互动强度刻画公告后的信息交流；A股2013–2018研究报告在线互动与较低PEAD相关。互动原始指标的精确构造仍需全文核对。",
+    "required_data": [
+      "互动内容时间戳",
+      "公告数据",
+      "日收益"
+    ],
+    "a_share_relevance": "中国直接机制索引；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国直接机制索引",
+    "source_ids": [
+      "src_company_interaction_pead2024"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.frl.2024.105097"
+    ],
+    "pit_notes": "互动需时间戳，保存原始内容与平台更新记录。",
+    "limitations": "摘要支持交互与漂移关系，但不支持具体互动窗口公式；在线数据的时间戳、删除及实时可得性需核验。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "announcement_volume",
+    "name": "盈余公告附近异常交易量",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "公告/交易量",
+    "frequency": "公告/事件触发；按可交易公告时间逐日跟踪",
+    "evidence_frequency": "事件日/日频观察，相关研究各异",
+    "definition_summary": "公告附近成交量相对常态的变化，用于测量意见分歧/注意力。",
+    "required_data": [
+      "成交量",
+      "公告时间",
+      "历史量能基准"
+    ],
+    "a_share_relevance": "中国/机制迁移；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国/机制迁移",
+    "source_ids": [
+      "src_jansen2021",
+      "src_peadreview2020"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://doi.org/10.1016/j.jbef.2020.100446"
+    ],
+    "pit_notes": "只纳入公告后交易时段；历史量能基准截止公告前。",
+    "limitations": "异常量与方向不等价；所用来源未核同一精确公式。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "pead_sue_good_bad",
+    "name": "正/负SUE非对称PEAD",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "公告/盈利预期",
+    "frequency": "公告/事件触发；按可交易公告时间逐日跟踪",
+    "evidence_frequency": "事件时间日回报，多窗口检验",
+    "definition_summary": "分别估计正惊喜和负惊喜漂移，不强制假设对称。",
+    "required_data": [
+      "EPS",
+      "公告时间",
+      "公告前预测快照"
+    ],
+    "a_share_relevance": "中国直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国直接",
+    "source_ids": [
+      "src_peadchina2011",
+      "src_peadattention2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.intfin.2011.04.002",
+      "https://xbbjb.cufe.edu.cn/EN/Y2021/V0/I6/27"
+    ],
+    "pit_notes": "事件公告后逐日更新累计回报。",
+    "limitations": "方向非对称未由所查摘要精确量化；多窗口增加检验数。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "calendar_month_stock",
+    "name": "个股同日历月历史收益季节性",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "季节性",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "按月匹配日历期；月度条件回报测试",
+    "definition_summary": "历史表现好的个股在未来同一日历月继续表现较好；中国市场2024研究直接报告此关系。",
+    "required_data": [
+      "交易所日历",
+      "日收益"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_seasonal2024",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2024.102391",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "当月开始前只能取过往同月收益。",
+    "limitations": "精确回看年数需全文复核；信号只在相应月份有效。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "seasonal_reversal",
+    "name": "其他日历月历史收益反转",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "季节性/反转",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "按月季节/反转收益检验",
+    "definition_summary": "同月季节性之外，其他月份存在回报反转；与月份持续分别建模。",
+    "required_data": [
+      "日历月收益历史"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_seasonal2024",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2024.102391",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "以此前年份完整月份收益形成。",
+    "limitations": "摘要未提供精确因子窗口；收益频率为月度，不是日频验证。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "seasonality_joint",
+    "name": "季节性与季节反转联合",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "季节性",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "月度因子排序",
+    "definition_summary": "组合同月延续与其他月反转信息；具体权重/双排序未核。",
+    "required_data": [
+      "交易所日历",
+      "日收益"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_seasonal2024",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2024.102391",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "当月形成前冻结组合规则。",
+    "limitations": "联合因子加入自由度，需控制多重检验。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "lunar_january",
+    "name": "农历春节后首月效应",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "季节性/文化日历",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "按日回报分组、以月度/节令效应报告",
+    "definition_summary": "A股研究报告农历日历的January效应显著，公历一月效应不显著，且小公司更强。",
+    "required_data": [
+      "官方节假日日历",
+      "日收益",
+      "成交量"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_lunarjan2022"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1111/ajfs.12404"
+    ],
+    "pit_notes": "使用历史官方春节和交易日历，不用固定公历日期代替。",
+    "limitations": "样本量少、效应可能随市场和制度变化。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "solar_january",
+    "name": "公历一月效应",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "季节性",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "月度分组；A股研究报告传统效应缺失",
+    "definition_summary": "公历January收益差异；专门与农历January区分。",
+    "required_data": [
+      "交易所日历",
+      "日收益"
+    ],
+    "a_share_relevance": "A股直接反证；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接反证",
+    "source_ids": [
+      "src_lunarjan2022"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1111/ajfs.12404"
+    ],
+    "pit_notes": "按实际交易所月份归属。",
+    "limitations": "历史研究未发现稳定传统January溢价，不应照搬美股结论。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "weekday_effect",
+    "name": "星期几效应",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "季节性",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日收益按weekday分组；历史中国结论敏感",
+    "definition_summary": "按星期分组或星期虚拟变量比较日收益，不预设收益方向；早期中国研究发现结论依赖样本和估计方法。",
+    "required_data": [
+      "交易所日历",
+      "日收益"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_calendareffect2001"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/S1042-444X(00)00047-5"
+    ],
+    "pit_notes": "采用交易所真实交易日映射和节假日日历。",
+    "limitations": "旧研究的Tuesday异常控制非正态/国际溢出后消失。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "turn_month",
+    "name": "月末月初转月效应",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "季节性",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日收益事件标记，窗口需测试",
+    "definition_summary": "以自然月末和月初若干交易日为事件窗，比较回报。",
+    "required_data": [
+      "交易所日历",
+      "日收益"
+    ],
+    "a_share_relevance": "中国指数/市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国指数/市场直接",
+    "source_ids": [
+      "src_calendareffect2001",
+      "src_lunarjan2022"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/S1042-444X(00)00047-5",
+      "https://doi.org/10.1111/ajfs.12404"
+    ],
+    "pit_notes": "节假日跨月按官方交易日历处理。",
+    "limitations": "具体窗口未核；窗口搜寻会带来数据挖掘。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "cny_window",
+    "name": "春节前后短事件窗",
+    "record_kind": "parameter_variant",
+    "definition_verified": false,
+    "category": "季节性/假日",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日收益分组，原文主要节令/月份测试",
+    "definition_summary": "分开定义春节前、休市后首日及春节后数日回报；本窗口是待测变体。",
+    "required_data": [
+      "历史交易所节假日",
+      "事件日收益"
+    ],
+    "a_share_relevance": "中国市场直接、变体待验；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接、变体待验",
+    "source_ids": [
+      "src_lunarjan2022",
+      "src_calendareffect2001"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1111/ajfs.12404",
+      "https://doi.org/10.1016/S1042-444X(00)00047-5"
+    ],
+    "pit_notes": "每年按交易所休市公告建立节前后交易日序号。",
+    "limitations": "农历January全月研究不直接证明任何短事件窗alpha。",
+    "usage_role": "research_hypothesis"
+  },
+  {
+    "factor_id": "limit_hit_count",
+    "name": "涨跌停触及日数注意力代理",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "注意力/限价",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "每日事件计数后月度聚合并做横截面收益测试",
+    "definition_summary": "滚动聚合个股触及上/下限价的天数；中国研究按月计算该注意力代理。",
+    "required_data": [
+      "历史涨跌停价",
+      "每日触及状态",
+      "历史板块/ST"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_aggregate_limits2022"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.irfa.2022.102265"
+    ],
+    "pit_notes": "板块、ST、上市阶段的限幅按历史有效规则。",
+    "limitations": "限价规则不断变化；月度因子结果不是日频盈利证明。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "upper_limit_event",
+    "name": "涨停触及事件",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "限价/行为",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日事件与次日/长期回报",
+    "definition_summary": "标记涨停触价或封板事件，事件定义和排队状态分开。",
+    "required_data": [
+      "适用限价比例",
+      "逐笔成交/盘口",
+      "日收益"
+    ],
+    "a_share_relevance": "A股直接/预印本；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接/预印本",
+    "source_ids": [
+      "src_price_limit2019",
+      "src_limitprehit2015"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jeconom.2018.09.014",
+      "https://arxiv.org/abs/1503.03548"
+    ],
+    "pit_notes": "按当日适用涨幅比例及逐笔盘口确认。",
+    "limitations": "日OHLC不能区分盘中触板、封板和成交排队。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "lower_limit_nextday",
+    "name": "跌停次日延续/反转",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "限价/事件",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "高频事件研究、次日条件收益",
+    "definition_summary": "比较跌停后首个可交易日回报延续还是反转。",
+    "required_data": [
+      "限价事件",
+      "后续交易日收益",
+      "停牌状态"
+    ],
+    "a_share_relevance": "预印本直接；这是可迁移机制，A股尚待验证。",
+    "evidence_level": "预印本直接",
+    "source_ids": [
+      "src_limitprehit2015"
+    ],
+    "source_urls": [
+      "https://arxiv.org/abs/1503.03548"
+    ],
+    "pit_notes": "停牌时延长事件时钟到下个可交易日。",
+    "limitations": "预印本事件证据，不等于一般横截面alpha或可成交收益。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "limit_buy_reversal",
+    "name": "涨停日大投资者净买入与后续反转",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "限价/资金行为",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日事件并检验长期后续回报",
+    "definition_summary": "账户级涨停日净买入与下一日卖出/长期反转的机制。",
+    "required_data": [
+      "投资者账户交易",
+      "涨停事件",
+      "未来回报"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_price_limit2019"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.jeconom.2018.09.014"
+    ],
+    "pit_notes": "账户级数据的真实可得时点需要单独确认。",
+    "limitations": "不是普通行情日频因子；来源是深圳账户级样本。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "baidu_attention_level",
+    "name": "百度搜索关注度水平ASVI",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "注意力",
+    "frequency": "建议按周频落盘，遵循百度指数原生更新；不把周频值插值为日频新信息",
+    "evidence_frequency": "中国实证为周频firm-week或月频因子",
+    "definition_summary": "个股名搜索量异常水平作为投资者注意力代理。",
+    "required_data": [
+      "带日期搜索指数",
+      "个股关键词映射"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_attention_baidu2021",
+      "src_attnfactor2022"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1080/15427560.2020.1785469",
+      "https://doi.org/10.1016/j.intfin.2021.101499"
+    ],
+    "pit_notes": "保存搜索数据真实抓取日，防止历史指数回填。",
+    "limitations": "周频论文不能声称日频策略验证；关键词映射易偏。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "baidu_attention_change",
+    "name": "百度关注度变化",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "注意力",
+    "frequency": "建议按周频落盘，遵循百度指数原生更新；不把周频值插值为日频新信息",
+    "evidence_frequency": "周频/因子月频证据",
+    "definition_summary": "搜索关注度相对滞后基准的变化；精确transform待全文确认。",
+    "required_data": [
+      "带日期搜索指数",
+      "个股关键词映射"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_attention_baidu2021",
+      "src_attnfactor2022"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1080/15427560.2020.1785469",
+      "https://doi.org/10.1016/j.intfin.2021.101499"
+    ],
+    "pit_notes": "采用当期真实可见搜索值和时间戳。",
+    "limitations": "来源未核具体变化公式，数据接口和搜索量会变。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "attention_level_factor",
+    "name": "注意力水平因子组合",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "注意力/因子模型",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "中国论文月频因子模型/定价检验",
+    "definition_summary": "横截面依关注度排序构造多空因子，区别于原始搜索量指标。",
+    "required_data": [
+      "注意力水平/变化",
+      "股票收益"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_attnfactor2022"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.intfin.2021.101499"
+    ],
+    "pit_notes": "组合使用时点可得attention并滞后一期。",
+    "limitations": "定价改善非交易策略收益；精确排序规则需全文复核。",
+    "usage_role": "portfolio_factor"
+  },
+  {
+    "factor_id": "attention_change_factor",
+    "name": "注意力变化因子组合",
+    "record_kind": "mechanism",
+    "definition_verified": false,
+    "category": "注意力/因子模型",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "月度因子组合检验",
+    "definition_summary": "依注意力变化排序形成因子；变化定义、方向和断点未由摘要充分确认。",
+    "required_data": [
+      "注意力水平/变化",
+      "股票收益"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_attnfactor2022"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.intfin.2021.101499"
+    ],
+    "pit_notes": "时间戳和历史搜索快照版本化。",
+    "limitations": "仅摘要核验，不能把泛称当可复现公式。",
+    "usage_role": "portfolio_factor"
+  },
+  {
+    "factor_id": "new_attentive",
+    "name": "新增关注投资者比例（概念索引）",
+    "record_kind": "factor_id_only",
+    "definition_verified": false,
+    "category": "投资者行为",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "论文理论/经验模型月频因子",
+    "definition_summary": "区分持续关注者与新关注者的投资者构成；实际个股可观测代理未确认。",
+    "required_data": [
+      "关注者身份/时间戳或代理"
+    ],
+    "a_share_relevance": "中国市场机制；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场机制",
+    "source_ids": [
+      "src_attnfactor2022"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.intfin.2021.101499"
+    ],
+    "pit_notes": "不得把搜索用户直接认作有账户交易的投资者。",
+    "limitations": "摘要无可复现字段定义，仅保留机制索引。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "daily_order_imbalance",
+    "name": "日度订单不平衡",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "资金流/微观结构",
+    "frequency": "需要日内/逐笔数据；不是普通日线因子",
+    "evidence_frequency": "中国研究用2004年tick数据形成日频量",
+    "definition_summary": "基于逐笔成交方向汇总日买卖不平衡；需要可靠的主动买卖方向分类。",
+    "required_data": [
+      "逐笔买卖方向",
+      "订单或成交量"
+    ],
+    "a_share_relevance": "中国市场直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接",
+    "source_ids": [
+      "src_orderimbalance2007"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.qref.2007.09.004"
+    ],
+    "pit_notes": "交易方向用当时逐笔数据估计，不能以总成交量替代。",
+    "limitations": "旧沪深样本发现同期相关而无后续预测力；不支持通用alpha。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "order_imbalance_prediction",
+    "name": "滞后订单不平衡预测收益",
+    "record_kind": "factor_id_only",
+    "definition_verified": false,
+    "category": "资金流/微观结构",
+    "frequency": "需要日内/逐笔数据；不是普通日线因子",
+    "evidence_frequency": "原中国日频研究未发现后续预测力",
+    "definition_summary": "滞后买卖订单不平衡预测未来收益的候选特征。",
+    "required_data": [
+      "逐笔买卖方向",
+      "订单或成交量"
+    ],
+    "a_share_relevance": "中国市场直接反证/待测；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "中国市场直接反证/待测",
+    "source_ids": [
+      "src_orderimbalance2007"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.qref.2007.09.004"
+    ],
+    "pit_notes": "仅用已完成逐笔数据，分别保存level与change。",
+    "limitations": "现有直接来源为不显著结果，不可宣传为已验证因子。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "margin_short_activity",
+    "name": "融资融券活动相对强度因子（余额、交易强度、情绪动量）",
+    "record_kind": "mechanism",
+    "definition_verified": true,
+    "category": "资金流/交易约束",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "2026 SSRN摘要报告对融资融券合成信号进行日频及周频预测检验；非同行评审证据。",
+    "definition_summary": "分别使用融资/融券余额变动、相对交易强度、情绪动量构造输入，并用PCA形成两融相对强弱指标；摘要报告低因子组未来收益较高。",
+    "required_data": [
+      "融资融券余额/成交数据",
+      "标的资格历史"
+    ],
+    "a_share_relevance": "中国A股直接预印本证据；样本限两融标的且未同行评审。",
+    "evidence_level": "预印本直接证据",
+    "source_ids": [
+      "src_marginshort2026"
+    ],
+    "source_urls": [
+      "https://ssrn.com/abstract=7516418"
+    ],
+    "pit_notes": "保留每日两融标的历史名单及余额/交易汇总的真实可见时点；盘后数据最早次日用于信号。",
+    "limitations": "仅SSRN预印本摘要核验；需全文核实分项公式、PCA训练时点、两融资格样本、成本和可复现性。",
+    "usage_role": "alpha_candidate"
+  },
+  {
+    "factor_id": "mainboard_breakpoints",
+    "name": "主板断点及市值加权稳健测试",
+    "record_kind": "method",
+    "definition_verified": true,
+    "category": "检验方法",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "月度异常组合测试",
+    "definition_summary": "以主板断点和价值加权降低A股全样本等权对微盘股的过度赋权。",
+    "required_data": [
+      "历史成分、收益、因子与交易成本"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_replicating2024"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1287/mnsc.2023.4904"
+    ],
+    "pit_notes": "历史板块身份按每期保存。",
+    "limitations": "方法学控制，不是因子。",
+    "usage_role": "research_method"
+  },
+  {
+    "factor_id": "pit_financial_alignment",
+    "name": "财报Point-in-time对齐",
+    "record_kind": "method",
+    "definition_verified": true,
+    "category": "检验方法",
+    "frequency": "财报披露后更新并可日频落盘；基本面信息低频产生",
+    "evidence_frequency": "财报事件后逐日可更新；文献收益通常月/事件频率",
+    "definition_summary": "财务信号最早可用时间按正式公告披露日而非报告期末对齐。",
+    "required_data": [
+      "历史成分、收益、因子与交易成本"
+    ],
+    "a_share_relevance": "A股日频实现必要条件；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股日频实现必要条件",
+    "source_ids": [
+      "src_peadchina2011",
+      "src_peadreview2020",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.intfin.2011.04.002",
+      "https://doi.org/10.1016/j.jbef.2020.100446",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "盘后公告最早次日可交易，保存首发与修订版本。",
+    "limitations": "无历史版本的最终态数据无法重建真PIT。",
+    "usage_role": "research_method"
+  },
+  {
+    "factor_id": "cost_adjusted_returns",
+    "name": "交易成本后收益验证",
+    "record_kind": "method",
+    "definition_verified": true,
+    "category": "检验方法",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "文献不少毛收益按月报告；日内成本敏感",
+    "definition_summary": "扣除手续费、税费、冲击、涨跌停和卖空限制后重算组合收益。",
+    "required_data": [
+      "历史成分、收益、因子与交易成本"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_jansen2021",
+      "src_intradayreversal2019",
+      "src_replicating2024"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1016/j.pacfin.2021.101607",
+      "https://doi.org/10.1016/j.frl.2019.04.002",
+      "https://doi.org/10.1287/mnsc.2023.4904"
+    ],
+    "pit_notes": "成本/费率按历史时间调整，成交逻辑不能用未来价优化。",
+    "limitations": "中国研究常提示短持有成本重要；数据不足应明示而非假设为零。",
+    "usage_role": "research_method"
+  },
+  {
+    "factor_id": "multiple_testing",
+    "name": "多重检验与样本外复核",
+    "record_kind": "method",
+    "definition_verified": true,
+    "category": "检验方法",
+    "frequency": "建议月末形成/更新；日频重复存储仅为快照",
+    "evidence_frequency": "469异常月度组合复现与分期检验",
+    "definition_summary": "控制大量候选因子的多重比较并报告样本外与不同断点/权重结果。",
+    "required_data": [
+      "历史成分、收益、因子与交易成本"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_replicating2024"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1287/mnsc.2023.4904"
+    ],
+    "pit_notes": "时序切分，不随机洗牌；所有选参限训练期。",
+    "limitations": "复现研究的高失败率是集合结论，不等于单项全无效。",
+    "usage_role": "research_method"
+  },
+  {
+    "factor_id": "survivorship_control",
+    "name": "退市/停牌/历史股票池控制",
+    "record_kind": "method",
+    "definition_verified": false,
+    "category": "样本构造",
+    "frequency": "建议日频盘后落盘（由日行情推导）",
+    "evidence_frequency": "日频股票池构造并月度回报检验",
+    "definition_summary": "纳入历史曾上市公司、退市收益、停牌和不可交易日，减轻幸存者偏差。",
+    "required_data": [
+      "退市/停牌/证券主表"
+    ],
+    "a_share_relevance": "A股直接；注意其原文频率，不代表日频策略验证。",
+    "evidence_level": "A股直接",
+    "source_ids": [
+      "src_replicating2024",
+      "src_jansen2021"
+    ],
+    "source_urls": [
+      "https://doi.org/10.1287/mnsc.2023.4904",
+      "https://doi.org/10.1016/j.pacfin.2021.101607"
+    ],
+    "pit_notes": "使用历史证券主表与退市状态。",
+    "limitations": "数据源对停牌填充和退市收益差异需要透明记录。",
+    "usage_role": "research_method"
+  }
+]

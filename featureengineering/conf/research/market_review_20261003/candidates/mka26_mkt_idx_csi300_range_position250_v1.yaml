@@ -1,0 +1,28 @@
+{
+  "name": "mka26_mkt_idx_csi300_range_position250_v1",
+  "family_id": "mkta26_index_family_v1",
+  "implementation": "research.families.market_gate_audit_v1:build",
+  "parameters": {
+    "original_name": "mkt_idx_csi300_range_position250",
+    "definition_sha256": "25eb336042fbd4398600eb77ad47075f37c3a43e6a88b243a9d2b69bf5f31571"
+  },
+  "units": "与正式因子 mkt_idx_csi300_range_position250 完全一致（本候选仅做逐值复算，不改变任何口径）；单位与可用性详见其正式 note。",
+  "availability": "与正式因子 mkt_idx_csi300_range_position250 一致：T 日值于 T 日收盘后可用；无额外滞后；上午族截面时点 11:30 但生产可用时点为收盘后。",
+  "missing_policy": "与正式因子一致：缺失保持 NaN，不用未来值回填；对齐前缀按正式声明（align_fill 或 NaN）。",
+  "spec": {
+    "group": "market",
+    "desc": "沪深300 在 250 日区间中的位置",
+    "formula": "(close-min250)/(max250-min250)",
+    "deps": [
+      "index_daily",
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": "2018-01-01",
+    "warmup_days": 300,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "市场审计别名（mka26 复审）：逐值复算正式因子 mkt_idx_csi300_range_position250@v1；市场标量，每天恰好一行、无股票列、无横截面 rank；未做收益有效性承诺。指数按官方编制范围，不限制为固定池；均为价格指数，收益不含分红。 缺失保持 NaN，不用未来值回填。",
+    "is_market": true
+  }
+}

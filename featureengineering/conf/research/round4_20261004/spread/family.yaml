@@ -1,0 +1,15 @@
+family_id: r4f_spread_micro_v1
+idea_id: r4f_effective_spread_v1
+trial_budget: 5
+baseline: amihud_daily_5 与 turnover_std_20 —— 现库最接近的 Amihud 非流动性与换手摩擦类表达；同 run 内比较 RankIC 与横截面相关。
+allowed_variants:
+  - {signal: roll_spread_20}
+  - {signal: corwin_schultz_spread_20}
+  - {signal: roll_spread_60}
+  - {signal: corwin_schultz_spread_60}
+  - {signal: roll_spread_20_nan}
+note: |
+  预登记集合 = 2 个核心机制（Roll-20、CS-20）+ 2 个窗口变体（60）+ 1 个口径敏感性对照，
+  共 5 个，恰好用满预算，不额外搜索窗口/方向。roll_spread_20_nan 是机制 1 的
+  「cov≥0 取 NaN 而非 0.0」口径对照（非新机制主张），只用于报告口径敏感性。
+  两窗口 min_count 均为窗口的 75%（15/45），事前定死；见模块 docstring。

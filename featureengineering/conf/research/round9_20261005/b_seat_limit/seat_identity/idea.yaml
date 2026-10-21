@@ -1,0 +1,34 @@
+idea_id: r9b_seat_identity_v1
+hypothesis: >
+  龙虎榜上榜席位里「可识别席位的身份分散度」（窗口内不同席位个数 / 可识别席位出现次数，
+  60 个交易日）在固定 2115 只主板池上，对下一开盘 1 日与 5 日横截面收益有稳定的负向
+  横截面解释力：可识别席位越分散（同一席位很少重复），后续收益越低。
+mechanism: >
+  席位身份宽度，不是席位集中度也不是净买额。匿名名下（「机构专用」「沪/深股通专用」）
+  是多个互不相识的机构/通道共享一个字符串，必须整体排除，否则会把「很多机构」误读成
+  「一个席位」。可识别席位高度重复（宽度低）= 有稳定的具名对手方在持续参与该股；
+  可识别席位极度分散（宽度高）= 每次上榜都是新面孔、没有持续对手方，接近散户/过路资金的
+  一次性参与，预期后续收益更低。零金额构造：完全不读 buy_amount / sell_amount /
+  net_buy_amount，因此与 2018 年买卖列整块互换、以及 net_buy_amount 符号争议都无关。
+  ★ 与 s26_structure_side_hhi_v1 的差异：那个因子度量「多大的单」（stock_main_fund_flow
+  的四档委托规模 sm/md/lg/elg 在买/卖侧的 HHI 之差），本因子度量「多少个可识别的谁」，
+  输入表不同、对象不同、且本因子有窗口内身份集合的概念。
+expected_direction: higher_is_better=false（身份宽度越大 → 预期未来收益越低）。
+target_horizons: [1, 5]
+falsifiable: >
+  declared RankIC 在 h=1 或 h=5 落在 HAC 95% 区间外且分年一致为负 ≥7/9 才算方向获支持；
+  与任何库内正式因子 |rho| > 0.95；G1 截断/增量复算不一致；覆盖率 <60% 交易日有
+  ≥100 只有效票；零填充口径与 NaN 原生口径符号不一致 —— 任一成立即不支持本假设。
+fields:
+  - stock_dragon_tiger.trade_date
+  - stock_dragon_tiger.stock_code
+  - stock_dragon_tiger.org_name
+origin: round9_lead_preregistered_2026-10-05_unitB_revised
+status: unvalidated_hypothesis
+dedup: >
+  dragon_tiger_org_net_20（已删）：机构专用净买额/成交额，金额水平，本因子零金额且排除机构专用。
+  s26_structure_side_hhi_v1（库内）：stock_main_fund_flow 四档规模 HHI 差，度量单子大小。
+  R3-A r3seat_*（14 个候选，从未执行：200 个 run 目录 0 命中、ledger 0 条、evaluations 0 个）
+  的 seat_concentration（金额 HHI）/seat_persistence（跨全历史是否老面孔）/seat_novelty
+  （全局首次出现占比）与本因子的「窗口内身份集合大小/出现次数」都不同。
+  R4-I r4i_seat_closeout_v1（唯一评价过的席位单元，4/4 不晋级）全部是净额类机制。

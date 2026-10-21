@@ -1,0 +1,73 @@
+{
+  "run_name": "wave2_20261005",
+  "checked_at": "2026-10-05 17:55:44",
+  "score_source": "training_predictions",
+  "reads_model_train": true,
+  "loads_model_weights": true,
+  "strategies": [
+    "top5_5d",
+    "top1_1d"
+  ],
+  "strategy_rows": 2,
+  "quarterly_rows": 8,
+  "evaluation_days": 242,
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 644339,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 639937,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 635558,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 624824,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 603712,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "quarterly_returns_compound": true,
+  "date_axis_matches_price_axis": true,
+  "realized": {
+    "top5_5d": {
+      "return_value": 0.12100556264973106,
+      "max_drawdown": -0.16815771534006674,
+      "sharpe": 0.718361776292019,
+      "trades": 108,
+      "total_fees": 1208.4685350270001,
+      "gross_return_same_positions": 0.14016000000000028,
+      "fee_drag": 0.012084685350270003,
+      "slippage_drag": 0.007069751999999244,
+      "avg_exposure": 0.4416848710855284,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    },
+    "top1_1d": {
+      "return_value": -0.20253358753444906,
+      "max_drawdown": -0.4280044342875997,
+      "sharpe": -0.3365169575945391,
+      "trades": 262,
+      "total_fees": 15202.795053446001,
+      "gross_return_same_positions": 0.038929999999999465,
+      "fee_drag": 0.1520279505344601,
+      "slippage_drag": 0.0894356369999885,
+      "avg_exposure": 0.9921011143720696,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    }
+  }
+}

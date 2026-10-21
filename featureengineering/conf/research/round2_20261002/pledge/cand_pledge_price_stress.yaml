@@ -1,0 +1,44 @@
+# 事前登记假设，不构成收益证明；机制集合、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r2_pledge_stress_v1",
+  "family_id": "r2_pledge_family_v1",
+  "implementation": "research.families.r2_pledge_v1:build",
+  "parameters": {
+    "signal": "pledge_price_stress"
+  },
+  "units": "两个分量都是 (0,1] 的池内百分位，乘积无量纲；价格用后复权，窗口只含当日及以前。",
+  "availability": "质押分量同机制 1；价格分量只用 T 日收盘与过去 250 个交易日的后复权收盘（roll_max 含当日，不外推）。",
+  "missing_policy": "当日不成交或非法价格的行先置 NaN 再进 roll_max；有效样本不足 200 个交易日的深度为 NaN。质押分量为 NaN 或深度为 NaN 时结果为 NaN；截面有效样本少于 100 只的日子整体置 NaN。",
+  "closest_existing_baselines": [
+    "price_to_52w_high",
+    "max_drawdown_120",
+    "momentum_20",
+    "total_leverage_ratio"
+  ],
+  "semantic_difference": "交互项要求「高质押」与「深回撤」同时成立，单独的回撤或动量因子不含质押维度；对照 price_to_52w_high / max_drawdown_120 检查是否只是回撤因子的重写。",
+  "source_fields": [
+    "stock_pledge_stat.stock_code",
+    "stock_pledge_stat.end_date",
+    "stock_pledge_stat.unrest_pledge",
+    "stock_pledge_stat.rest_pledge",
+    "stock_pledge_stat.total_share",
+    "stock_daily.close",
+    "stock_adj_factor.adj_factor"
+  ],
+  "pre_registered_direction": "lower_is_better",
+  "spec": {
+    "group": "r2_pledge",
+    "desc": "高质押 × 相对一年高点的深度回撤（接近平仓线）",
+    "formula": "cs_pct_rank(log1p(100*L))*cs_pct_rank(1 - hfq_close/roll_max(hfq_close,250,min_count=200))，L 为滞后 15 个交易日的质押比例",
+    "deps": [
+      "stock_pledge_stat",
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": null,
+    "warmup_days": 420,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "R2-I1 机制 3；方向事前冻结 higher_is_better=false。"
+  }
+}

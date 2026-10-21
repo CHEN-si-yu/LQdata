@@ -187,7 +187,7 @@ def trackable(ds: R.DS) -> bool:
 
     ★★ 2026-09-15 深夜抽出：改造前这条判据**三处各写一遍**
       （`runner.py` 的每轮阶段、`dayhash.init_hashes`、以及报告侧），
-      而它们已经漂移过 —— `tdx_block_stocks` / `index_ths_constituent_stocks` 因为
+      而它们已经漂移过 —— `tdx_block_stocks` 因为
       `mode='per_entity'` 躲过了 `mode in ("snapshot","dump")` 那条，成了"既不被跳过、
       又永远算不出指纹"的表。现在统一到这一个函数，三处共用。
     """

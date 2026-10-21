@@ -1,0 +1,24 @@
+{
+  "name": "r5b_detrended_profit_persistence_v1",
+  "family_id": "r5b_profit_persistence_v1",
+  "implementation": "research.families.r5b_profit_persistence_v1:build",
+  "parameters": {
+    "signal": "detrended_profit_persistence",
+    "window": 16
+  },
+  "units": "无量纲Pearson相关系数，[-1,1]",
+  "availability": "按报告期累计差分得到单季，Q1=累计本身。pit=max(ann_date,f_ann_date,end_date)，仅使用可考公告的季度末报告并保留现存修订版本。仅晚间可得、次日交易；供应商未保留旧版不可重构。缺失不零填充，不借用独立日频季度网格。只在income公告/旧期修订事件上重估，Q为当时已披露最新报告期前缀最大值；修订旧期不使Q倒退。",
+  "missing_policy": "至少16个连续单季净利有效，窗口均绝对利润>1e6元；金额以此均绝对值归一化，投影后两15点残差序列各自中心化，其总体方差>1e-12，否则NaN。真零/负净利保留，缺季则NaN替代旧信号，不回填、不保留旧有效值。",
+  "spec": {
+    "group": "research_financial_dynamics",
+    "desc": "去除季节和确定性趋势后的盈利状态更持久，减少暂时性利润反转，预期收益更高；这是弱质量先验，持续亏损亦可能持久。",
+    "formula": "p=[S(n_income_attr_p,Q-j),j=0..15]; X=[1,j-mean(j),3 quarter dummies]; e=p-X*pinv(X)*p; value=corr(e[0:15],e[1:16])",
+    "deps": [
+      "stock_income"
+    ],
+    "warmup_days": 2200,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "现库ROE/ROA为盈利水平，qf_core_roe_vol_4q为波动，已删growth_stability为收入同比mean/std，qf_cash_margin_vol_4q为现金利润率std，SUE为当前盈余冲击。此处测去线性趋势和季节后的序列相关，非水平、增长、std或当前shock。持续低盈利/亏损也会持续，方向属弱质量先验。严格float64算、Store转float32。范围完整2115键与2018起日期轴；raw/declared双报，G7秩与消费变换分列。"
+  }
+}

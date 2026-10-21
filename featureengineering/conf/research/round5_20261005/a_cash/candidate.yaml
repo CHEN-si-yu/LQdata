@@ -1,0 +1,25 @@
+{
+  "name": "r5a_cash_collection_promptness_v1",
+  "family_id": "r5a_cash_promptness_v1",
+  "implementation": "research.families.r5a_cash_promptness_v1:build",
+  "parameters": {
+    "signal": "cash_collection_promptness",
+    "window": 16
+  },
+  "units": "无量纲Pearson相关系数，[-1,1]",
+  "availability": "按报告期累计差分得到单季，Q1=累计本身。pit=max(ann_date,f_ann_date,end_date)，仅使用可考公告的季度末报告并保留现存修订版本。仅晚间可得、次日交易；供应商未保留旧版不可重构。缺失不零填充，不借用独立日频季度网格。共同可得边界由每期max(收入首公告pit,现金流首公告pit)构造，Q取已共同披露的最新实际交集报告期；合并两表全部后续公告及修订事件，每个事件用相同Q及pit重查全部历史版本。收入先披露时不提前推进Q。",
+  "missing_policy": "至少16个完整同比创新三元组：21个连续单季收入、20个连续单季销售收款均有效；单季收入>0，单季收款>=0，收入平均绝对金额>1e6元。x/y/z各以自身均绝对值缩放，中心化后控制z；z和两残差总体方差>1e-12，否则NaN。新事件窗口缺失即NaN替代旧状态；不少行、不回退旧报告。",
+  "spec": {
+    "group": "research_financial_dynamics",
+    "desc": "同期收入创新传入客户收现更及时，意味着营运资金回收迟滞更少，预期横截面收益更高；收益方向未验证。",
+    "formula": "x_q=S(revenue,q)-S(revenue,q-4); y_q=S(c_fr_sale_sg,q)-S(c_fr_sale_sg,q-4); z_q=x_(q-1); value=partial_corr(y_q,x_q|z_q) over q=Q-15..Q",
+    "deps": [
+      "stock_income",
+      "stock_cashflow"
+    ],
+    "warmup_days": 2200,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "cash_sales_ratio是TTM比例水平；CCC/inventory_turnover是存量流量水平；afx_fi_ar_turn/arturn_days/inv_turn年度差已删。本候选是收入惯性控制后的历史收现同期相关，无静态单调同构。严格float64算、Store转float32。范围完整2115键与2018起日期轴；raw/declared双报，G7秩与消费变换分列。"
+  }
+}

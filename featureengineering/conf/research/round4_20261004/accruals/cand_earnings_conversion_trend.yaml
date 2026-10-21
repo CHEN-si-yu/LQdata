@@ -1,0 +1,17 @@
+name: r4c_earnings_conversion_trend_v1
+family_id: r4c_accruals_v1
+implementation: research.families.r4c_accruals_v1:build
+parameters: {signal: earnings_conversion_trend}
+units: 比率之差（无因次）。正值=最近四季 OCF/NI 转化率高于更早四季（盈利现金含量改善）。
+availability: 8 个连续报告期的单季 OCF/NI 均为自算累计差分（q 与 q−1 累计值取 pit≤当日最新版本；Q1 单季=累计本身），每期的 pit 均为公告时点，无未来信息。
+missing_policy: 最近四季或更早四季中任一单季比率缺失（任一单季 NI 绝对值≤1e6、OCF 或 NI 不可考）则整窗 NaN；单季比率截幅 ±10 抑制近零净利；非有限值输出为 NaN。
+spec:
+  group: research_accruals
+  desc: 未验证候选（U3 机制3）：经营现金流对净利的转化率，最近四季均值−更早四季均值（改善方向）。
+  formula: mean_{k=0..3} clip(S_OCF(Q−k)/S_NI(Q−k),±10) − mean_{k=4..7} clip(S_OCF(Q−k)/S_NI(Q−k),±10)，S=自算单季
+  deps: [stock_income, stock_cashflow]
+  fin_fields: [n_income_attr_p, n_cashflow_act]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: 方向事前冻结 true（转化率改善=盈余质量改善）；要求 8 期全部有效、不用 nanmean 掩盖缺季；fin_fields 仅用于收窄引擎衍生层构建范围，本候选计算不消费 ttm/point。

@@ -1,0 +1,13 @@
+idea_id: r3_intraday_moments_v1
+hypothesis: 日内 5min 收益的高阶矩与跳跃结构（已实现偏度、BNS 跳跃变异占比、有符号跳跃），以及日内量价协动斜率，携带日频波动率因子之外的横截面预期收益信息。
+mechanism: |
+  1) 已实现偏度：日内收益分布的负偏（崩盘风险）对应崩盘风险溢价，负偏度越高预期收益越高；
+  2) 跳跃变异占比：BNS 口径下 (RV-BPV)/RV 高，说明当日变异主要来自跳跃而非连续扩散，跳跃风险不可分散、定价为负；
+  3) 有符号跳跃：上涨跳跃主导 vs 下跌跳跃主导的不对称性；
+  4) 日内量价扩散：|5min 收益| 对 5min 成交量份额的日内回归斜率（价格冲击弹性），斜率越高说明同样的量能推动更大的价格波动、流动性越差，预期收益越低。
+expected_direction: rv_skewness 为 true（因子取 -RS，负偏度=预期收益高）；rv_jump_share 为 false；rv_signed_jump 为 true；volume_price_diffusion 为 false；朴素基线 rv_daily 按低波动异象登记为 false。
+target_horizons: [1, 5]
+falsifiable: 与 idt_rv_daily / id2_parkinson_vol / id2_rv_parkinson_gap / var_95_20 / vol_120 / idio_vol_60 任一 |rho|>0.9，或 declared RankIC 分年同号 < 7/9，则不支持。
+fields: [stock_history_5min.stock_code, stock_history_5min.trade_time, stock_history_5min.close, stock_history_5min.vol]
+origin: round3_lead_preregistered_2026-10-02
+status: unvalidated_hypothesis

@@ -30,7 +30,7 @@ STATE = "/autodl-fs/data/datadownload/state"
 
 # 2026-09-19 冻结的编号 → 数据集名。**这是权威，不要重排。**
 FROZEN: dict[int, str] = {
-    1: "dc_daily", 2: "index_daily", 3: "index_ths_daily", 4: "stock_adj_factor",
+    1: "dc_daily", 2: "index_daily", 4: "stock_adj_factor",
     5: "stock_cyq_chips", 6: "stock_daily", 7: "stock_finance",
     8: "stock_main_fund_flow", 9: "stock_margin_detail", 10: "tdx_daily",
     11: "stock_adj_factor_changes", 12: "stock_dragon_tiger", 13: "stock_limit_list",
@@ -45,9 +45,9 @@ FROZEN: dict[int, str] = {
 }
 
 # 展示层频率归并：分钟级并入日频（注册表里的 freq 不动，见 DATA_TABLES.md）
-GROUP = {"daily_full": "日频", "daily_sparse": "日频", "minute": "日频",
+GROUP = {"daily_full": "日频", "daily_sparse": "日频", "minute": "日频", "weekly": "日频",
          "quarterly": "季频", "irregular": "不定期", "snapshot": "快照"}
-ORDER = ["daily_full", "daily_sparse", "minute", "quarterly", "irregular", "snapshot"]
+ORDER = ["daily_full", "daily_sparse", "minute", "weekly", "quarterly", "irregular", "snapshot"]
 
 
 def years(a: str | None, b: str | None) -> str:

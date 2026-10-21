@@ -194,9 +194,8 @@ def audit_one(name: str, spec, fq: dict, cal: list[str], rep: Report,
                      "exempt_last_n": lag0})
 
     # ---- B2. 日期连续性（**不依赖 coverage**）----
-    # ★ 为什么要另做这一道：`per_entity` 模式的表（如 index_ths_daily）根本不用 coverage，
+    # ★ 为什么要另做这一道：`per_entity` 模式的表根本不用 coverage，
     #   走的是 done.entities —— 只查 coverage 会把它们整个漏掉。
-    #   实测 index_ths_daily 缺 2026-09-08 / 09-09 两天，第一版审计就是这么漏过去的。
     #   这里改成直接看数据本身：在 [最早, 最新] 之间的交易日里，哪些一天数据都没有。
     if fq.get("freq") == "daily_full" and cal and actual_dates:
         have = set(actual_dates)

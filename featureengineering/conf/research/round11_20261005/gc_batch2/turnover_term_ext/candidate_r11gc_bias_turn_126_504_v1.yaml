@@ -1,0 +1,27 @@
+{
+  "name": "r11gc_bias_turn_126_504_v1",
+  "family_id": "r11gc_turnover_term_ext_v1",
+  "implementation": "research.families.r11gc_turnover_term_ext_v1:build",
+  "parameters": {
+    "kind": "bias_turn",
+    "short": 126,
+    "long": 504
+  },
+  "units": "无量纲比值减 1（同序列短/长端之比）",
+  "availability": "T 日收盘后可得：stock_daily（vol）与 stock_finance（float_share）均 delay_days: 0。真实值起点 = default_start（2018-01-01）；更早年份仅用于 warmup（长端 504 个交易日）。",
+  "missing_policy": "停牌日 vol 为 NaN → 两个窗口各自按 min_count=n//2 统计有效值，不足一半 → NaN；长端不足 → NaN（2018-01-02 起因 warmup 已满足 504 日长端）。分母 <= 地板（1e-9 / 1e-12）→ NaN。不零填充、不前向填充。",
+  "spec": {
+    "group": "r11_gc_liquidity",
+    "desc": "换手率波动短长偏离（均线）：126 日 / 504 日均值之比减 1",
+    "formula": "Mean(turnover, 126) / Mean(turnover, 504) - 1",
+    "deps": [
+      "stock_daily",
+      "stock_finance"
+    ],
+    "fin_fields": [],
+    "warmup_days": 850,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "绿卡候选（只主张三项基础门槛：非空 / 非常数 / 无泄露；G4–G7 未主张）。higher_is_better=true 仅表示 declared=raw（不做反号），不代表任何预测方向，不主张预测有效性，不写「已验证信号」。；Tushare 对应名：bias_turn_126d_504d（原文窗口写作 w=2421 的为 24 个月 = 504 交易日）。；【窗口语义·必读】Tushare 原文的 w=121/221/321/621/1221/2421 是「月数拼接 21」的损坏渲染（1|21、2|21、3|21、6|21、12|21、24|21），不是交易日数；本对象按**交易日**实现，照抄字面数字会得到 1221/2421 个交易日的窗口，长于样本可得区间。；【无泄露】输入 stock_daily（vol/amount）与 stock_finance（float_share），conf/frequency.yaml 均 delay_days: 0；vol/amount 是流量（停牌日 NaN，不前向填充）；float_share 是状态量（前向填充）；模块内无 shift / 无前向填充 / 无全样本标准化。；【与在产对象的差异】在产 `turnover_std_20` = Std(turnover,20)（其 note 原文自述公式同 std_turnover_21d 一族）；在产 `turnover_anomaly_20` / `amount_ratio_20` / `vol_ratio_ma5_ma20` 分别是量比类与短长比构造。本批登记的是**期限结构上批 1 未覆盖的点**（水平 5/10/20/42/126、波动 63、24 个月长端的多组短长偏离、成交额 20 日均值），不是对在产对象的重新登记；实测近邻日频秩对齐见 gc_report.md 预检 A 节。"
+  }
+}

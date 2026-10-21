@@ -1,0 +1,19 @@
+{
+  "idea_id": "r8a_gross_profitability_v1",
+  "hypothesis": "严格毛利TTM/同季前一年资产是资产承载的生产端盈利表达，true弱先验；美国年度会计/月度证据不保证A股1/5日收益，不宣称第三种原始信息。",
+  "mechanism": "gross margin × lagged-asset turnover; accounting gross profitability prior, not literal contemporaneous-assets author replication",
+  "expected_direction": "higher_is_better=true, predeclared weak prior",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "Official G1-G7, raw/declared and both FM kernels; explicit M/U and matched-asset NI controls; screened-out nearby static gross/invested-capital must be preserved as evidence.",
+  "fields": [
+    "stock_income.revenue",
+    "stock_income.oper_cost",
+    "stock_balancesheet.total_assets"
+  ],
+  "origin": "round8_lead_approved_20261005",
+  "status": "unvalidated_hypothesis",
+  "dedup": "No exact formula in124 stock catalog/374 deletion/all R2-R7 families; strongest deleted afx_fi_gross_margin, original invested-capital deflator not interchangeable."
+}

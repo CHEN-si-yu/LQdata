@@ -1,0 +1,28 @@
+{
+  "name": "mka26_mkt_sector_dispersion_v1",
+  "family_id": "mkta26_sector_family_v1",
+  "implementation": "research.families.market_gate_audit_v1:build",
+  "parameters": {
+    "original_name": "mkt_sector_dispersion",
+    "definition_sha256": "30d64e3ae22f9b31ddf7cba0aa7f230883bad9e652f5cad742a49bf1568803c4"
+  },
+  "units": "与正式因子 mkt_sector_dispersion 完全一致（本候选仅做逐值复算，不改变任何口径）；单位与可用性详见其正式 note。",
+  "availability": "与正式因子 mkt_sector_dispersion 一致：T 日值于 T 日收盘后可用；无额外滞后；上午族截面时点 11:30 但生产可用时点为收盘后。",
+  "missing_policy": "与正式因子一致：缺失保持 NaN，不用未来值回填；对齐前缀按正式声明（align_fill 或 NaN）。",
+  "spec": {
+    "group": "market",
+    "desc": "行业板块当日收益的横截面离散",
+    "formula": "std(ret_ind)；行业候选经 dc_blocks「行业板块」名称交叉核验",
+    "deps": [
+      "tdx_daily",
+      "tdx_blocks",
+      "dc_blocks"
+    ],
+    "start": "2018-01-01",
+    "warmup_days": 80,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "市场审计别名（mka26 复审）：逐值复算正式因子 mkt_sector_dispersion@v1；市场标量，每天恰好一行、无股票列、无横截面 rank；未做收益有效性承诺。板块指数层口径（不需要成分股映射，本地没有历史成分表）；收益由板块指数点位现算；不使用总市值/涨跌家数这类统计序列当行业。 缺失保持 NaN，不用未来值回填。",
+    "is_market": true
+  }
+}

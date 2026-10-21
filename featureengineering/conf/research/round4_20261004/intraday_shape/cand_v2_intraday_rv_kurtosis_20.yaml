@@ -1,0 +1,21 @@
+name: r4b_intraday_rv_kurtosis_20
+family_id: r4b_intraday_shape_v2
+implementation: research.families.r4b_intraday_shape_v2:build
+parameters: {signal: intraday_rv_kurtosis_20}
+units: 无量纲（非去均值标准化 4 阶矩，截尾口径下定义域 ≥1 且上界有界）；只用收益比，不涉绝对量。
+availability: 只用信号日 15:00 收盘前当日 5min bar；不跨日、无未来数据；stock_history_5min
+  经 fea/delay.py / conf/frequency.yaml 实测 delay_days=0，无需位移。
+missing_policy: 当日可用收益（close-to-close 有限且价格为正，午休跨段剔除）<40 或截尾后
+  s2<=0 为 NaN；停牌/无该日分区为 NaN；不零填充。20 日窗内有效日 <15 为 NaN。
+spec:
+  group: research_intraday
+  desc: Lead 纠偏替换机制 v2-3：日内 5min 收益已实现峰度（±6σ_bpv 截尾）的 20 日均。
+    高峰度=厚尾/投机性交易活跃 → 未来收益低（方向先验弱）。
+  formula: mean20( n_used·Σtrunc⁴ / (Σtrunc²)² )，trunc = clip(r, ±6σ_bpv)，
+    σ_bpv = √((π/2)·Σ|r_j||r_{j-1}| / n_used)
+  deps: [stock_history_5min]
+  warmup_days: 45
+  higher_is_better: false
+  version: 1
+  note: 与 r3b rv_skewness 逐项同口径（分段、午休剔除、BPV 尺度、±6σ 截尾、n 缩放），
+    仅阶数 3→4；非去均值（与 rv_skewness 一致）。

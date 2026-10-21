@@ -1,0 +1,39 @@
+# 事前登记假设，不构成收益证明；机制集合、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r2_pledge_level_lag5_v1",
+  "family_id": "r2_pledge_family_v1",
+  "implementation": "research.families.r2_pledge_v1:build",
+  "parameters": {
+    "signal": "pledge_level_lag5"
+  },
+  "units": "同机制 1。",
+  "availability": "把保守滞后从 15 个交易日缩短到 5 个交易日。这是 PIT 敏感性对照，不是主口径：若信号只在短滞后下显著、在 15 日滞后下消失，说明结果依赖尚未证实的更早公开时点，应按未解决的 PIT 风险处理。",
+  "missing_policy": "同机制 1。",
+  "closest_existing_baselines": [
+    "total_leverage_ratio",
+    "bp",
+    "log_mv"
+  ],
+  "semantic_difference": "与机制 1 同公式、只改可用滞后，用于分离「机制信号」与「发布时点假设」。",
+  "source_fields": [
+    "stock_pledge_stat.stock_code",
+    "stock_pledge_stat.end_date",
+    "stock_pledge_stat.unrest_pledge",
+    "stock_pledge_stat.rest_pledge",
+    "stock_pledge_stat.total_share"
+  ],
+  "pre_registered_direction": "lower_is_better",
+  "spec": {
+    "group": "r2_pledge",
+    "desc": "质押比例水平（发布滞后 5 个交易日的 PIT 敏感性对照）",
+    "formula": "log1p(100*(unrest_pledge+rest_pledge)/total_share)，as-of 前向填充后滞后 5 个交易日",
+    "deps": [
+      "stock_pledge_stat"
+    ],
+    "start": null,
+    "warmup_days": 120,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "R2-I1 试验预算内的 PIT 敏感性变体；方向事前冻结 higher_is_better=false。"
+  }
+}

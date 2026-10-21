@@ -1,0 +1,23 @@
+idea_id: r4h_state_interaction_v2
+hypothesis: |
+  股票信号的有效性依赖市场状态（第二批腿组合，与 U4/v1 无重复配对）：市场流动性紧张时
+  流动性提供补偿更大，短期反转更强；市场横截面分歧大时动量容易被过度反应修正（动量崩），
+  动量暴露相对更差；市场宽度强（多数股票位于 60 日均线上方）的上行状态中低波动异象更强。
+  交互项在控制两腿主效应后应仍有剩余信息。
+mechanism: |
+  1) rev5_x_illiqstate     = z_cs(−ret5)        × z_time(mkt_illiquidity_median)   [true]
+  2) mom120_x_dispstate    = z_cs(momentum_120) × z_time(mkt_dispersion)           [false]
+  3) lowvol_x_breadthstate = z_cs(−vol_120)     × z_time(mkt_above_ma60_ratio)     [true]
+  变体（窗口变体，事前登记）：rev10_x_illiqstate = z_cs(−ret10) × z_time(mkt_illiquidity_median) [true]；
+  mom60_x_dispstate = z_cs(momentum_60) × z_time(mkt_dispersion) [false]。
+  股票腿 = 截面 winsor+zscore；市场状态 = 252 日滚动 z（min_periods=120）；交互值 = 两腿乘积。
+expected_direction: 机制 1/3（含 rev10 变体）为 true；机制 2（含 mom60 变体）为 false（值大 = 高分歧状态下的动量暴露，预期收益低）。方向在本文件落盘前冻结，执行期不得翻转。
+target_horizons: [1, 5]
+falsifiable: |
+  控制两腿主效应后交互项不显著（交互只是两腿的可加效应）；或 declared 分年同号 < 7/9；
+  或与单腿正式因子（short_term_reversal_5 / momentum_120 / vol_120 / amihud_daily_5）
+  或现存耦合因子（cp_momentum_lowvol_20 / cp_value_momentum_div）|rho|>0.95。
+fields: [stock_daily.close, stock_daily.amount, stock_adj_factor.adj_factor,
+         mkt_illiquidity_median, mkt_dispersion, mkt_above_ma60_ratio]
+origin: round4_b2_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

@@ -1,0 +1,59 @@
+name: r9d_abnormal_pledge_shift_v1
+family_id: r9d_abnormal_pledge_shift_family_v1
+implementation: research.families.r9d_abnormal_pledge_shift_v1:build
+parameters: {signal: abnormal_pledge_shift, lag: 15, step: 65, z_lookback: 4, z_min_prior: 3}
+units: 无量纲（该股自身历史质押季度变化尺度下的标准差倍数）
+availability: |
+  ★★ 可用性假设 —— 这是**局限**，不是已证事实。
+  stock_pledge_stat 只有 end_date（周频快照截止日），上游**没有发布时刻合同**：
+  conf/frequency.yaml 的 delay_days: 0 是无实测支撑的默认值，本表 gap_checkable: false，
+  doc/AGENTS.md F.3 亦确认不存在发布时刻字段。因此本表数据的真实可得时刻**未知**。
+  本候选采用**保守假设 LAG_DEFAULT = 15 个交易日**，依据是可复核的观测而非文档推断：
+  R2 于 2026-09-30 22:17 实测上游落盘最新 end_date = 2026-09-11（陈旧 13 个交易日），
+  15 > 13，故假设比观测到的最坏陈旧度更保守。
+  实现：ctx.asof_daily（只前向填充，绝不用 end_date 之后的未来值回填）→ ctx.lag_grid(..., 15)。
+  **不含任何比 15 更短的滞后变体**：R2 的 pledge_level_lag5 已被判定为前视变体。
+  若供应商真实发布更慢，本候选仍可能含轻微前视；该风险无法用本项目现有字段证伪，如实登记为局限。
+missing_policy: |
+  · 上游行无效判定：任一字段非有限 / unrest_pledge 或 rest_pledge 为负 / total_share <= 0 /
+    end_date 不可解析 -> 该行不进入状态（本带实测无效行数见交付报告）。
+  · (股票 × 周) 稠密网格，**缺席记 0**（= 该周没有存续质押）。依据是 R2 的字段行为实测
+    （「本周为正质押者下周仍被报告」概率 0.9964；显式 0 行远多于非整截面日），
+    这是有证据的零填充，不是「无记录当无事件」的默认推断。本带用 tools/audit_proof.py 复测。
+  · 前序有效季度变化数 < 3，或历史标准差 <= 1e-12（无波动）-> z 未定义 -> NaN。
+    理由：无波动时 z 是 0/0，不是 0；写成 0 会伪造一个观测。
+  · 池外股票 -> NaN。完整输入下 z 恰为 0 是观测到的 0，保留。
+  · 全池从未质押过的股票 P 恒为 0 -> 历史标准差为 0 -> NaN（不伪造信号）。
+source_fields:
+  - stock_pledge_stat.stock_code
+  - stock_pledge_stat.end_date
+  - stock_pledge_stat.unrest_pledge
+  - stock_pledge_stat.rest_pledge
+  - stock_pledge_stat.total_share
+spec:
+  group: r9d_pledge
+  desc: R9-D 异常质押位移：滞后 15 交易日的质押水平（百分点）最近一个季度变化相对于该股自身前 4 个季度变化的标准差倍数；z 越大 = 异常加杠杆，预期收益越低（higher_is_better=false）
+  formula: "P = 100*(unrest_pledge+rest_pledge)/total_share 在(股票×周)稠密网格(as-of, 缺席=0)上 lag 15 交易日; d0=P(t)-P(t-65); h_k=P(t-65k)-P(t-65(k+1)), k=1..4; z=(d0-mean(h))/std(h,ddof=1), 需 >=3 个有效 h 且 std>1e-12"
+  deps: [stock_pledge_stat]
+  warmup_days: 600
+  higher_is_better: false
+  version: 1
+  fin_fields: [revenue]
+  note: |
+    【去重论证与死亡条件】R2（6 候选）与 R4s（5 候选）已把本表 9 个构念全部证伪：
+    水平(pledge_level)、裸一阶差分 13 周/5 周(pledge_change/_fast)、高质押×回撤交互
+    (pledge_price_stress)、rest/unrest 结构(pledge_structure)、前视变体 lag5、
+    二阶加速度(pledge_change_accel)、增解不对称(pledge_unpledge_asym)、解押连续(pledge_release_streak)。
+    本候选是**唯一未被测过**的构念：除以该股自身历史波动的标准化量（信息比率式对象），
+    与裸一阶差分不是同一个随机变量。
+    ★ 事前登记的死亡条件：本候选日频面板与 R2 `pledge_change` 构念
+    （100 × (P(t) − P(t−65))，与 R2 模块同式）的**日截面秩相关** |rho| >= 0.9
+    ⇒ 判定重蹈、立即停止、不再寻找逃出该判据的变体。实测值在交付报告 §2 给出（两个方向都报）。
+    【known framework defect §11.1】stock_pledge_stat 只有 end_date，不在
+    Upstream._audit_columns 白名单内，故任何设 audit_cutoff 的运行会抛 ValueError。
+    本模块在**自身进程内**为该数据集声明日期列，仍委托框架原有 _audit_frame(mode="dated")
+    截断；不关闭审计、不直接读 parquet、不改任何共享源码。截断逐行证据见 tools/audit_proof.py。
+    【fin_fields 说明】本因子不使用任何财务字段；但 fea/engine.py:1502 对"任一 spec 未声明
+    fin_fields"的 run 会退回"全建 80 个财务字段"，故按 r7c / r9c 的既有先例声明一个**未使用**的
+    占位字段 revenue —— 资源约束下的兼容性声明，不是数据依赖。
+    【方向】higher_is_better=false，事前固定，未按结果翻转。

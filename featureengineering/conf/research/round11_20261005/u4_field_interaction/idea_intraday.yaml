@@ -1,0 +1,26 @@
+idea_id: r11u4_intraday_interaction_idea_v1
+hypothesis: |
+  日内族内两个字段之间存在条件关系：日内成交量的时间集中度（`r4b_intraday_volume_hhi_20`）
+  会显著翻转"日内/隔夜波动比"（`intraday_vol_ratio_5d`）与未来收益的关系；两个字段各自
+  对未来收益都没有稳定的无条件预测力。
+mechanism: |
+  唯一事前固定机制 `intraday_shape_x_volume_concentration`（同族两字段的字段级条件交互）：
+    X(t,i) = z_cs(state)(t,i) × z_cs(leg)(t,i)
+    state = r4b_intraday_volume_hhi_20  （日内成交量在时间上的集中度）
+    leg   = intraday_vol_ratio_5d       （日内/隔夜波动比 = 价格发现在哪里发生）
+  两者都高＝"日内既承担价格发现、成交又高度集中在少数时段"，是信息驱动但**流动性脆弱**的状态，
+  随后反转；成交量分散时日内波动更可能是噪声、无方向性 ⇒ 预期收益随乘积递减 ⇒ hb=false。
+  与 U1（跨族）机制不同：本候选两腿同属**日内族**。
+  重蹈审计（§8.8 三重去重）：清理记录已删的 intraday 族因子是**无条件量**
+  （`close30_volume_share_20`、`intraday_volume_hhi_20`、`upbar_volume_share_20` 等水平量），
+  没有"两个日内字段的条件交互"；`doc/历史报告.md` 与 `conf/research/roundN_*/` 亦无该构念。
+expected_direction: higher_is_better = false。方向在写第一行代码前固定，未按任何结果翻转。
+target_horizons: [1, 5]
+falsifiable: 同 U4 family v1：P1/P2/P3 任一不成立、或 declared RankIC 两期限 HAC95 均跨 0、
+  或分年一致为负 < 7/9、或同源增量归零、或 verify 不一致 ⇒ 不支持本假设。
+fields:
+  - r4b_intraday_volume_hhi_20_2462d9ca21d9adf8（在产因子）
+  - intraday_vol_ratio_5d（在产因子）
+  - conf/universe_frozen.tsv（固定 2115 只主板池）
+origin: Lead 事前登记 R11-U4；执行者用 P1/P2/P3 强制预筛从 954 配对中筛出 2 个双筛存活者，本候选为其一
+status: unvalidated_hypothesis

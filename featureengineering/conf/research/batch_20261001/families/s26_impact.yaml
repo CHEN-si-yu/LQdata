@@ -1,0 +1,30 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "family_id": "s26_impact_family_v1",
+  "idea_id": "s26_impact_idea_v1",
+  "trial_budget": 4,
+  "allowed_variants": [
+    {
+      "signal": "downside_impact_surprise"
+    },
+    {
+      "signal": "upside_impact_fragility"
+    },
+    {
+      "signal": "sell_shock_next_day_repair"
+    },
+    {
+      "signal": "liquidity_drought_gap"
+    }
+  ],
+  "baseline": [
+    "amihud_asymmetry_20",
+    "liquidity_shock_20",
+    "amihud_daily_5",
+    "gap_down_recover_freq_20d",
+    "volume_dry_up",
+    "overnight_gap_vol_20"
+  ],
+  "hypothesis_boundary": "以个股相对过去成交额的量能归一化价格冲击，区分下跌失衡、上涨脆弱、下一日修复和历史流动性枯竭时的跳空。",
+  "search_policy": "只登记四种机制，不扩窗口或方向搜索"
+}

@@ -12,14 +12,23 @@
 
 用法：python mem_trace.py <out.csv> [采样间隔秒]
 """
+import argparse
 import csv
 import os
 import sys
 import time
 from pathlib import Path
+if __package__:
+    from ._project_paths import project_output
+else:
+    from _project_paths import project_output
 
-OUT = Path(sys.argv[1])
-INTERVAL = float(sys.argv[2]) if len(sys.argv) > 2 else 5.0
+parser = argparse.ArgumentParser(description="记录因子工程内存与CPU占用")
+parser.add_argument("output", nargs="?", default="artifacts/audits/memory/trace.csv")
+parser.add_argument("interval", nargs="?", type=float, default=5.0)
+args = parser.parse_args()
+OUT = project_output(args.output)
+INTERVAL = args.interval
 
 # cgroup v1 / v2
 _V2 = Path("/sys/fs/cgroup/memory.stat")
@@ -68,6 +77,7 @@ def current_block() -> str:
     return logs[-1].stem.split("_")[-1] if logs else "?"
 
 
+OUT.parent.mkdir(parents=True, exist_ok=True)
 with OUT.open("w", newline="") as fh:
     w = csv.writer(fh)
     w.writerow(["t", "block", "cgroup_rss_gb", "cgroup_cache_gb", "batch_rss_gb",

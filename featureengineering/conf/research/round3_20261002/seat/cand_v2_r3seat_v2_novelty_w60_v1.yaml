@@ -1,0 +1,31 @@
+name: r3seat_v2_novelty_w60_v1
+family_id: r3_seat_family_v2
+implementation: research.families.r3_seat_v2:build
+parameters: {signal: seat_novelty, window: 60}
+units: 无量纲比率（金额单位为元，分子分母同源相除；HHI 为份额平方和）。
+availability: 只使用 trade_date <= T 的席位明细；T 日盘后披露的龙虎榜在 T 日收盘后可得，
+  与既有正式因子 dragon_tiger_org_net_20 / top_list_net_rate_20 的不滞后口径一致。
+  PIT 计数（prior_key / prior_stock）只统计严格早于该记录日的行，读表起点 2013（原始表起点）。
+missing_policy: 主口径为零填充 —— 窗口内没有任何上榜记录（未达上榜标准）记 0，这是有信息的状态，
+  不是缺失；NaN 口径作为敏感性分析单独报告。窗口内有记录但分母为 0 时记 0。pool 外股票一律 NaN。
+  不做前向填充，不使用成交量/成交额伪造。
+closest_existing_baselines: [dragon_tiger_org_net_20, top_list_net_rate_20, efx_top_imbalance, efx_top_amount_rate]
+semantic_difference: 既有因子只用「机构专用」一个标签的净买金额水平；本候选使用席位身份结构，
+  与金额水平不是同一维度；若实测 |rho| > 0.9 将如实报告为重复。
+source_fields:
+  - stock_dragon_tiger.trade_date
+  - stock_dragon_tiger.stock_code
+  - stock_dragon_tiger.org_name
+  - stock_dragon_tiger.buy_amount
+  - stock_dragon_tiger.sell_amount
+  - stock_dragon_tiger.net_buy_amount
+  - stock_dragon_tiger.direction
+spec:
+  group: r3_seat
+  desc: R3-A 机制5：首次出现的具名席位占全部具名席位记录的比例
+  formula: value(T) = #{具名席位记录且 prior_key==0} / #{具名席位记录}，窗口 W 内累加；无记录记 0
+  deps: [stock_dragon_tiger]
+  warmup_days: 420
+  higher_is_better: true
+  version: 2
+  note: 机制5；预期方向 true。prior_key 为 PIT 全局首现计数，规范化后的 key 口径。

@@ -34,9 +34,9 @@ class QuarterlyQualityTests(unittest.TestCase):
         self.assertNotIn("roe", IND_SAFE)
         self.assertNotIn("q_eps", IND_SAFE)
         specs = [s for s in REGISTRY.values() if s.group == "quarterly_quality"]
-        # ★ 2026-09-24 质检瘦身：`qf_roe_yoy_change`（零占比 100%、截面只有 2 个取值、
-        #   与 `qf_roa_yoy_change` |ρ|≥0.80）已删 ⇒ 该组由 12 个降到 11 个。
-        self.assertEqual(len(specs), 11)
+        # ★ 2026-10-03 清理复审：qf_sales_growth_floor_4q / qf_noncore_roe_gap /
+        #   qf_cash_margin_vol_4q 未通过最终审议并删除 ⇒ 该组由 11 个降到 8 个。
+        self.assertEqual(len(specs), 8)
         for spec in specs:
             self.assertEqual(spec.deps, ("stock_financial_indicator",))
             self.assertEqual(set(spec.fin_fields), set(qf.FIELDS))
@@ -49,14 +49,11 @@ class QuarterlyQualityTests(unittest.TestCase):
             "qf_core_roe_yoy_change": .07,
             "qf_roa_yoy_change": .07,
             "qf_sales_growth_accel": .04,
-            "qf_sales_growth_floor_4q": .06,
             "qf_sales_growth_vol_4q": np.std([6, 7, 8, 12]) / 100,
             "qf_core_roe_floor_4q": .03,
             "qf_core_roe_vol_4q": np.std([3, 4, 5, 9]) / 100,
-            "qf_noncore_roe_gap": -.01,
             "qf_cash_margin_yoy_change": .07,
             "qf_cash_margin_floor_4q": .05,
-            "qf_cash_margin_vol_4q": np.std([5, 6, 7, 11]) / 100,
         }
         for name, value in expected.items():
             with self.subTest(name=name):
@@ -105,7 +102,7 @@ class QuarterlyQualityTests(unittest.TestCase):
         raw = raw_reports()
         raw.loc[1, list(qf.FIELDS)] = 0.
         c = context(raw, [20240820, 20250420])
-        self.assertTrue(np.isnan(qf.qf_noncore_roe_gap(c)[0, 0]))
+        self.assertTrue(np.isnan(qf.qf_core_roe_yoy_change(c)[0, 0]))
         self.assertTrue(np.isnan(qf.qf_core_roe_floor_4q(c)[1, 0]))
         np.testing.assert_allclose(qf.qf_roa_yoy_change(c)[1, 0], .07)
 
@@ -115,7 +112,6 @@ class QuarterlyQualityTests(unittest.TestCase):
         raw.loc[4, "q_ocf_to_sales"] = -10.
         raw.loc[4, "q_npta"] = np.inf
         c = context(raw, [20250420])
-        np.testing.assert_allclose(qf.qf_noncore_roe_gap(c), .08)
         np.testing.assert_allclose(qf.qf_cash_margin_floor_4q(c), -.1)
         self.assertTrue(np.isnan(qf.qf_roa_yoy_change(c)).all())
 

@@ -1,0 +1,28 @@
+idea_id: r9b_reason_taxonomy_v1
+hypothesis: >
+  龙虎榜上榜原因（reason）的**触发类型构成**在固定 2115 只主板池上对下一开盘 1/5 日
+  横截面收益有稳定的横截面解释力：一只股票近 60 个交易日的上榜记录里，由流动性型原因
+  （换手率 / 振幅）触发的占比相对方向偏离型原因（涨幅 / 跌幅偏离值）越高，后续收益越低。
+mechanism: >
+  上榜原因是「这只票为什么被盯上」的外生标签：换手率/振幅型触发表示纯粹的筹码换手与
+  日内博弈（投机性关注），方向偏离型触发表示价格出现了方向性偏离（趋势/信息驱动的关注）。
+  两类触发的相对占比刻画了关注的性质，而不是关注的多少，也不是资金的方向或大小。
+  零金额构造：只读 trade_date / stock_code / reason 三列。
+expected_direction: higher_is_better=false（churn 占比相对 dev 越高 → 预期未来收益越低）。
+target_horizons: [1, 5]
+falsifiable: >
+  declared RankIC 在 h=1 或 h=5 落在 HAC 95% 区间外且分年一致为负 ≥7/9 才算方向获支持；
+  与任何库内正式因子 |rho| > 0.95；G1 截断/增量复算不一致；覆盖率 <60% 交易日有
+  ≥100 只有效票；零填充口径与 NaN 原生口径符号不一致 —— 任一成立即不支持本假设。
+fields:
+  - stock_top_list.trade_date
+  - stock_top_list.stock_code
+  - stock_top_list.reason
+origin: round9_lead_preregistered_2026-10-05_unitB_revised
+status: unvalidated_hypothesis
+dedup: >
+  reason 列在 177 个正式因子里零引用，doc/因子清理记录_20261003.md 的 374 个已删个股因子里
+  也没有任何因子对 reason 做分档。已删 efx_dragon_ratio_balance（buy_ratio−sell_ratio）、
+  efx_top_imbalance（l_buy/l_sell）、efx_dragon_net_intensity（net/gross）全部是金额口径，
+  本因子不读任何金额列。已删 efx_limit_* / efx_lu_* 系列用的是 stock_limit_list /
+  stock_limit_up（涨停封板微结构），表与事件都不同。

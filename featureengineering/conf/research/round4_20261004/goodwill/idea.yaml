@@ -1,0 +1,9 @@
+idea_id: r4p_goodwill_v1
+hypothesis: 商誉相对归母净资产越高，未来减值/摊薄风险越大，未来收益偏低；商誉同比增速越快（并购扩张强度越大），未来收益偏低。
+mechanism: 商誉与减值风险（Round 4 批 3 单元 V1）。机制1 goodwill_to_equity=商誉/归母净资产（时点值、经财务层 PIT）；机制3 goodwill_growth_yoy=商誉同比增速（同季对比 g_t/g_{t-4}−1）；变体 goodwill_to_equity_win=min(比率,1.0) 固定上帽；goodwill_growth_yoy_win=clip(增速,−1,2) 固定双帽（帽值先于任何数据查看固定）。机制2 goodwill_to_assets（商誉/总资产）经防重蹈检查（B2 §0）发现同名已删先行者（factors/fundamental3.py 去糟粕残留清单，2026-09-15/17 轮），对象/口径/机制说不出差异，按 B2 §0.1 停止、未登记未实现，证据链见交付报告「防重蹈检查」节。数据=stock_balancesheet（goodwill、total_hldr_eqy_exc_min_int），经财务层 PIT/保留版本。
+expected_direction: 事前冻结、不随结果翻转——goodwill_to_equity=false；goodwill_growth_yoy=false；goodwill_to_equity_win=false；goodwill_growth_yoy_win=false。
+target_horizons: [1, 5]
+falsifiable: 声明口径 RankIC 落入 HAC 95% 置信区间内、或 9 个日历年中与声明方向同号的年份 <7、或与定向对照因子（bs_other_receiv_to_assets / roe_ttm / asset_growth_qoq / log_mv / bp）|rho|>0.9 表明无新增信息（价值/规模代理）、或覆盖不达 G1/G2（出现 Inf、非空股票数中位数过低、有效截面天数不足），则对应机制不支持。
+fields: [stock_balancesheet.goodwill, stock_balancesheet.total_hldr_eqy_exc_min_int]
+origin: round4_b3_lead_preregistered_20261004
+status: unvalidated_hypothesis

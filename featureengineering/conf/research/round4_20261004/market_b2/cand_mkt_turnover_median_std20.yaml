@@ -1,0 +1,18 @@
+name: r4n_mkt_turnover_median_std20_v1
+family_id: r4n_market_b2_v1
+implementation: research.families.r4n_market_b2_v1:build
+parameters: {signal: mkt_turnover_median_std20}
+units: 百分点（%）；池内换手率中位数的 20 日滚动标准差（百分数口径的 std）。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily / stock_finance，delay=0）；滚动窗口只用 ≤T 的历史值；无未来数据。
+missing_policy: 停牌（无真实成交）与缺测不计入分母；有效票 < 100 的日中位数记 NaN；20 日滚动窗口至少 15 个有限值，否则 NaN；不零填充、不前向填充。
+spec:
+  group: market
+  desc: "池内换手率中位数的 20 日滚动标准差（绿卡描述量，无方向）"
+  formula: "turnover=vol/float_share*100（ctx.px('turnover') 生产同口径）；med=median(turnover) over 有效票；value=std20(med, ddof=0), min_count=15"
+  deps: [stock_daily, stock_finance]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  is_market: true
+  note: "绿卡通道预登记（无方向承诺）；中位数为直接观测统计量（绿卡列举项），对其取 20 日滚动标准差为活跃度波动的降噪压缩——该构造位于绿卡资格边缘（从严解读下『对已聚合量的再运算』条款可能覆盖），判定理由与披露见 freeze b2；固定2115只主板池；有效样本分母，缺测/停牌不计，少于100只为NaN；市场标量不做截面rank；缺失保持NaN；未做收益有效性承诺。"

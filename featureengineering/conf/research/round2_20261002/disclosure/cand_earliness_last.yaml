@@ -1,0 +1,28 @@
+# 机制1 disclosure_earliness：最近一期定期报告相对法定截止日的提前天数（日历日）。
+{
+  "name": "r2d_earliness_last_v1",
+  "family_id": "r2_disclosure_family_v1",
+  "implementation": "research.families.r2_disclosure_v1:disclosure_timing",
+  "parameters": {"signal": "earliness_last"},
+  "units": "日历日（法定截止日 - 首次可得日）；无价格/金额单位。",
+  "availability": "四张财报的同一报告期取最早可得日 avail = max(ann_date, f_ann_date, end_date)（与 fea/upstream.py 的截断审计口径逐字一致）；ann_date/f_ann_date 均早于 1990-01-01 的行按哨兵值剔除。用 ctx.asof_daily 从 avail 当日起前向填充到交易日网格，绝不用 end_date 作为可用时点。",
+  "missing_policy": "该股在该报告期无任何可得记录 -> 该期无值；窗口内首次披露之前为 NaN（不前向填充、不填0）。首次可得日晚于法定截止日 60 天以上的报告期按供应商补录/重述剔除（EARLINESS_FLOOR=-60）。",
+  "closest_existing_baselines": ["forecast_type_score", "forecast_profit_midpoint_change"],
+  "semantic_difference": "只使用公告日与报告期，不使用任何盈余数值；与预告类型水平无关。",
+  "source_fields": ["stock_income.ann_date", "stock_income.f_ann_date", "stock_income.end_date",
+                    "stock_balancesheet.ann_date", "stock_balancesheet.f_ann_date", "stock_balancesheet.end_date",
+                    "stock_cashflow.ann_date", "stock_cashflow.f_ann_date", "stock_cashflow.end_date",
+                    "stock_financial_indicator.ann_date", "stock_financial_indicator.end_date"],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r2_disclosure",
+    "desc": "最近一期定期报告相对法定截止日的提前天数",
+    "formula": "earliness = ordinal(deadline(end_date)) - ordinal(min_avail(end_date)); deadline: Q1 04-30, H1 08-31, Q3 10-31, FY 04-30(next year); asof to daily grid at min_avail",
+    "deps": ["stock_income", "stock_balancesheet", "stock_cashflow", "stock_financial_indicator"],
+    "start": null,
+    "warmup_days": 400,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R2-I4 机制1；方向事前冻结。min_avail 取四张表同报告期的最早可得日，代表该期首次被市场看到的时刻。"
+  }
+}

@@ -1,0 +1,20 @@
+name: r4b_intraday_path_inefficiency_20
+family_id: r4b_intraday_shape_v1
+implementation: research.families.r4b_intraday_shape_v1:build
+parameters: {signal: intraday_path_inefficiency_20}
+units: 无量纲，取值 [0,1]（三角不等式保证）：1 − |Σ_bar 收益| / Σ_bar |收益|；只做日内比值，
+  不跨日比价，无需复权。
+availability: 只用信号日 15:00 收盘前当日 5min bar；不跨日、无未来数据；stock_history_5min
+  经 fea/delay.py / conf/frequency.yaml 实测 delay_days=0，无需位移。
+missing_policy: 当日可用 bar 收益（段内相邻 bar close 比值，剔除午休跨段收益）<40 或
+  Σ|收益|=0 为 NaN；停牌/无该日分区为 NaN；不零填充。20 日窗内有效日 <15 为 NaN。
+spec:
+  group: research_intraday
+  desc: Lead 预登记机制 2：价格路径无效率（来回度）的 20 日均，越高=噪音路径占比越高。
+  formula: mean20( 1 − |Σ_{可用 bar} r_i| / Σ_{可用 bar} |r_i| )，r_i 为段内 bar 收益，
+    午休跨段收益置 NaN（R3-B 口径）；净收益用同一可用集合的算术和。
+  deps: [stock_history_5min]
+  warmup_days: 45
+  higher_is_better: false
+  version: 1
+  note: 朴素对照 = |5 日收益|（纯幅度）；与 idt_vol_stability 同族维度但改用日内路径形状。

@@ -1,0 +1,29 @@
+family_id: r3_seat_family_v1
+idea_id: r3_seat_idea_v1
+trial_budget: 7
+allowed_variants:
+  - {signal: seat_class_divergence, window: 60}
+  - {signal: seat_concentration, window: 60}
+  - {signal: seat_persistence, window: 60}
+  - {signal: seat_buy_sell_overlap, window: 60}
+  - {signal: seat_novelty, window: 60}
+  - {signal: seat_class_divergence, window: 20}
+  - {signal: seat_persistence, window: 120}
+baseline:
+  - dragon_tiger_org_net_20
+  - top_list_net_rate_20
+  - efx_top_imbalance
+  - efx_top_amount_rate
+  - turnover_std_20
+  - log_mv
+hypothesis_boundary: >
+  只研究席位身份维度上的五个机制。已占用的表达是「机构专用净买额的 20 日滚动」
+  （dragon_tiger_org_net_20）与龙虎榜净买率（top_list_net_rate_20），两者都是金额水平；
+  本轮候选不得退化为金额水平的重复表达。不得扩展窗口或方向搜索。
+search_policy: >
+  5 个机制各 1 个候选（窗口 60 交易日）+ 2 个预登记窗口变体（机制1 的 20 日短窗、
+  机制3 的 120 日长窗）。窗口变体在看任何 IC 之前登记；不扩参数网格、不事后调阈值。
+  零填充为唯一主口径；NaN 口径不单独消耗候选预算。
+sparse_event_policy: >
+  「未上榜」不等于「无事件」：未达上榜标准本身是信息，故主口径把窗口内无上榜记录记为 0，
+  并同时报告 NaN（条件口径）的覆盖率与 RankIC。

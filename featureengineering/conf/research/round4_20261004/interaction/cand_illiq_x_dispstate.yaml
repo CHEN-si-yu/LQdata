@@ -1,0 +1,20 @@
+name: r4d_illiq_x_dispstate_v1
+family_id: r4d_state_interaction_v1
+implementation: research.families.r4d_state_interaction_v1:build
+parameters: {signal: illiq_x_dispstate}
+units: 交互值为两个标准化量的乘积（无量纲）；股票腿来自 5 日 Amihud 非流动性的截面 winsor+zscore，市场腿为池内日收益横截面离散度的 252 日滚动 z。
+availability: 只用信号日收盘及以前数据：价格腿用 T 日及以前的后复权日收益与成交额；市场腿为 T 日收盘后可得的市场标量（stock_daily/stock_adj_factor 实测 delay_days=0）再过 252 日滚动 z（含 T）。无额外未来数据。
+missing_policy: 任一腿缺失（停牌、未上市、窗口不足、固定池有效样本不足 100 只）→ 交互值 NaN；不零填充。252 日滚动 z 的 min_periods=120 由 mx 毒化语义保证。
+spec:
+  group: research_interaction
+  desc: 未验证候选（U4 机制4，方向预登记 true）：Amihud 非流动性腿 × 市场横截面分歧状态的乘积。
+  formula: value = z_cs(winsor_cs(amihud5)) × z_time(mkt_dispersion,252,120)；z_time = (x−roll_mean252)/roll_std252, min_periods=120
+  deps: [stock_daily, stock_adj_factor, mkt_dispersion]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: |
+    市场父因子 mkt_dispersion 按任务书进 deps（runner 会一并复算）。
+    框架不允许股票因子经 ctx.load_factor 读 is_market 标量（fea/factors_io.py:62 守卫），
+    市场腿在候选内部调用 factors.market._base 的同一实现在当前面板复算；
+    交付侧会把候选复算值与 run 命名空间里父因子落盘值逐值对照。

@@ -1,0 +1,50 @@
+{
+  "family_id": "mkta26_limit_family_v1",
+  "idea_id": "mkta26_limit_idea_v1",
+  "trial_budget": 9,
+  "allowed_variants": [
+    {
+      "original_name": "mkt_limit_up_ratio",
+      "definition_sha256": "d9080c642003256e5e3a50ac346dd2561f7c9da16f31f1313ac0a62c9cf18351"
+    },
+    {
+      "original_name": "mkt_limit_down_ratio",
+      "definition_sha256": "4c7bb48ba9476558f8ef5164b6fe1ac5838f180f7f2ee2167f0cc2803916547a"
+    },
+    {
+      "original_name": "mkt_limit_net_ratio",
+      "definition_sha256": "3caa18538b83176b637107922e7aed4436cf28313ea66a3f28c0f1af7399170b"
+    },
+    {
+      "original_name": "mkt_limit_streak_max",
+      "definition_sha256": "9d1fc595beddc83b5d23c31905121ac7855dd59eac28cfa7bb65d9cef6e8692a"
+    },
+    {
+      "original_name": "mkt_limit_streak_share",
+      "definition_sha256": "c920d058370c04a82441f73aa4ea44f7d5134567b5a0b56f54c6c71a5abcaf83"
+    },
+    {
+      "original_name": "mkt_limit_broken_ratio",
+      "definition_sha256": "1e2ad0ebd3d672b3a59551089df8c90bad5fff089226f6c36bbe757d1dc8ecef"
+    },
+    {
+      "original_name": "mkt_limit_seal_amount_share",
+      "definition_sha256": "f6070820ff7aeb415e1edc76175e409cea76c1107765694ef966b2160603b718"
+    },
+    {
+      "original_name": "mkt_full_flat_ratio",
+      "definition_sha256": "64092057a2a2df543a1eb03fb92511324e35019915cae69f8802d5878a3e93ba"
+    },
+    {
+      "original_name": "mkt_full_up_change5",
+      "definition_sha256": "cb3ac53feeca5920925eed70b2f283ed78dc34a042098dc00725fc6b2c4e883c"
+    }
+  ],
+  "baseline": [
+    "mkt_up_ratio",
+    "mkt_strong_up_ratio"
+  ],
+  "hypothesis_boundary": "涨跌停是 A 股情绪与赚钱效应的直接度量：扩散度（净额）偏延续，极端度（连板高度/炸板/吸金集中）偏退潮风险；方向与先验强度逐项预登记。limit 事件表 2020 年起可用。",
+  "search_policy": "只登记既有正式因子的逐值审计别名，不扩窗口、不改参数、不新增变体",
+  "registration_note": "本文件为 2026-10-03 市场因子复审的**追溯登记**（既有正式因子的逐值审计别名），非事前研究登记；方向与先验强度的预登记见 freeze 方向表，检验为回顾性筛选，不构成未触碰留出样本上的结论（retrospective_screening;historical_selection_is_not_untouched_holdout）。"
+}

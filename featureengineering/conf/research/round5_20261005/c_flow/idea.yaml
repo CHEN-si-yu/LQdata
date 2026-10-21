@@ -1,0 +1,17 @@
+{
+  "idea_id": "r5c_idea_v1",
+  "hypothesis": "Signed flow innovation incorporates after next open; forecast excludes own return and level/persistence.",
+  "mechanism": "Signed flow innovation incorporates after next open; forecast excludes own return and level/persistence.",
+  "expected_direction": "higher_is_better=true; fixed before results",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "G1-G7 frozen; declared positive >=7/9 years; incremental FM sign/significance required; no post-result direction or window change.",
+  "fields": [
+    "stock_daily.open/close/vol/amount",
+    "stock_adj_factor.adj_factor",
+    "stock_main_fund_flow.buy/sell_{sm,md,lg,elg}_amount"
+  ],
+  "status": "unvalidated_hypothesis"
+}

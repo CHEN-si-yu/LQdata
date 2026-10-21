@@ -479,36 +479,6 @@ register(Spec(
          "原先写 2010 会白跑 ~1944 个空交易日（约 8 分钟限速额度）",
 ))
 
-# ★★ 2026-09-19：`index_ths_sector_categories` / `index_ths_constituent_stocks`
-#   按用户指示**彻底删除**（快照表，无历史版本，回测必然前视）。
-#   `index_ths_sector_categories` 原是本表 `index_ths_daily` 的实体来源，故把名单
-#   **固化**到 everyday_tasks/conf/ths_index_codes.txt（1,676 只），两边共用同一份。
-#   ⚠️ 跨工程读同一个文件是有意的：**名单只能有一个真源**，复制一份迟早对不上。
-#   读取失败时大声报错，不返回空清单 —— 空清单会让本表一个指数都不抓且不报错。
-def _ths_roster() -> list[str]:
-    import pathlib
-    p = (pathlib.Path(__file__).resolve().parents[2]
-         / "everyday_tasks" / "conf" / "ths_index_codes.txt")
-    if not p.exists():
-        raise FileNotFoundError(f"THS 指数名单缺失：{p}（会让 index_ths_daily 静默停更）")
-    codes = [ln.strip() for ln in p.read_text(encoding="utf-8").splitlines()
-             if ln.strip() and not ln.startswith("#")]
-    if not codes:
-        raise ValueError(f"THS 指数名单为空：{p}")
-    return codes
-
-
-register(Spec(
-    name="index_ths_daily", group="ths", path="/index/ths_daily",
-    desc="THS 指数日线", mode="per_entity", partition="year",
-    keys=("ths_code", "trade_date"), date_field="trade_date",
-    code_param="ths_code", start="2007-08-01", tier="medium",
-    entity_codes=_ths_roster(), chunk_days=3660,
-    # ★ 同上，而且这里更极端：33520 个任务里约 90% 是空（多数 THS 指数是近年才发布的）。
-    #   实测本轮 53 任务/分钟 → ETA 10 小时；关掉重试后约 2.2 小时。
-    expect_rows=False,
-    note="两个日期都必传；字段用 pct_change 而非 pct_chg；最早几天 pre_close=0",
-))
 
 # ---------------------------------------------------------------- 特殊通道
 register(Spec(

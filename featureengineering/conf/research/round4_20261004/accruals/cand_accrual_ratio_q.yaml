@@ -1,0 +1,17 @@
+name: r4c_accrual_ratio_q_v1
+family_id: r4c_accruals_v1
+implementation: research.families.r4c_accruals_v1:build
+parameters: {signal: accrual_ratio_q}
+units: 无量纲比率（单季金额/总资产）。正值=单季应计高，负值=单季现金覆盖充分。
+availability: 单季归母净利、单季经营现金流为**自算累计差分**（财务层无单季水平字段）：取当日已知最新报告期 q 与 q−1 的累计值（各自取 pit≤当日的最新版本）作差，q 为 Q1 时单季=累计本身（财年重置）；总资产取公告时点值。全部落在 pit≤信号日，无未来信息。
+missing_policy: q 或 q−1 累计值不可考（Q1 只需 q）、总资产不可考或 |总资产|≤1e6 元时为 NaN；不做部分和回退；非有限值输出为 NaN。
+spec:
+  group: research_accruals
+  desc: 未验证候选（U3 机制2，单季口径）：单季应计利润占总资产比率。
+  formula: (S(n_income_attr_p) − S(n_cashflow_act)) / point(total_assets)，S=自算单季（累计差分，Q1=累计本身）
+  deps: [stock_income, stock_cashflow, stock_balancesheet]
+  fin_fields: [total_assets]
+  warmup_days: 500
+  higher_is_better: false
+  version: 1
+  note: 方向事前冻结 false，与机制1同源于应计异象、只换口径（单季 vs TTM），用于检验口径敏感性；自算差分只有 total_assets 走衍生层，其余字段经 ctx.dataset 原始表按 deriv 同规则自建版本-事件网格。

@@ -1,0 +1,15 @@
+idea_id: r4e_lottery_max_v1
+hypothesis: 彩票偏好/极端收益结构：过去窗口内最大单日收益（MAX）与极端上涨占比更高的股票，因投资者对彩票型收益的过度需求而被高估，未来收益更低（MAX 溢价为负）。价格层即可算，不依赖财务披露。
+mechanism: |
+  1) max_ret_20：过去 20 交易日（含 T）最大单日后复权收益；
+  2) idio_max_20：市场调整残差 (ret − mkt_ew_ret) 的 20 日最大值；
+  3) idio_max_60：同上 60 日版本；
+  4) extreme_up_share_60：60 日内单日收益 >7% 的交易日占比。
+  属波动率族：MAX 与波动水平高度相关，必须在基础 8 控制 + {idt_rv_daily, id2_parkinson_vol, atr_14_ratio}
+  附加波动控制下仍显著，否则只是波动代理。
+expected_direction: 四个机制全部登记为 false（值越高，预期未来收益越低）；方向在写任何代码前由任务书固定。
+target_horizons: [1, 5]
+falsifiable: 波动控制后不显著；declared RankIC 分年同号 <7/9；与 vol_120 的 |rho|>0.95；或与定向对照因子任一 |rho|>0.9。
+fields: [stock_daily.open, stock_daily.high, stock_daily.low, stock_daily.close, stock_adj_factor.adj_factor]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

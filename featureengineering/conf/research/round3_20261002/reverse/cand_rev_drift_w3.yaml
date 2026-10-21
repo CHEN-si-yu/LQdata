@@ -1,0 +1,45 @@
+# 事前登记假设，不构成收益证明；机制、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r3rc_rev_drift_w3",
+  "family_id": "r3_reverse_confirm_family_v1",
+  "implementation": "research.families.r3_reverse_confirm_v1:build",
+  "parameters": {
+    "signal": "rev_drift_w3"
+  },
+  "units": "D1 为无量纲的池内相对收益（比值差或加权日均对数收益）；D2 为事件次数或事件率（无量纲）。全部同表同尺度比值，无跨表单位换算。",
+  "availability": "唯一可用时点 = stock_holder_number.ann_date（end_date 只用于识别期次，从不作为可见日）。ann_date 落在非交易日时后移到下一个交易日。T 日只用 <=T 的后复权收盘价。stock_holder_number 在 conf/frequency.yaml 里 freq=irregular、date_field=end_date、delay_days=0 且 gap_checkable=false —— 本项目**没有**该表 ann_date 的公布时刻合同；公告日按『当日收盘后可知、次日起可用』的常规处理，属于保守方向（信号在公告生效日当天就用到了当日收盘价，而 ann_date 公告本身在盘中/盘后发布，这一点是本候选的残留 PIT 风险，见报告 §2.4）。",
+  "missing_policy": "同一 (signal 日, 股票) 不在 1..3 交易日窗内 -> NaN；停牌/非真实成交日 -> NaN（不做前向填充）。完整输入但窗内漂移恰为 0 保留 0。实测该窗口的截面有效票中位数约 110 只，接近协议 min_cross_section=100，是本候选的覆盖弱点。",
+  "closest_existing_baselines": [
+    "short_term_reversal_5",
+    "momentum_20",
+    "holder_number_chg"
+  ],
+  "semantic_difference": "公告后 3 个交易日的池内相对漂移取反（D1-P1）",
+  "source_fields": [
+    "stock_holder_number.ann_date",
+    "stock_holder_number.end_date",
+    "stock_holder_number.holder_num",
+    "stock_daily.stock_code",
+    "stock_daily.trade_date",
+    "stock_daily.close",
+    "stock_adj_factor.stock_code",
+    "stock_adj_factor.trade_date",
+    "stock_adj_factor.adj_factor"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r3_reverse_confirm",
+    "desc": "公告后 3 个交易日的池内相对漂移取反（D1-P1）",
+    "formula": "value(T) = -pool_demean(hfq_close(T)/hfq_close(eff)-1), 1<=(T-eff)<=3 交易日; eff=首个>=ann_date 的交易日",
+    "deps": [
+      "stock_holder_number",
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": null,
+    "warmup_days": 500,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R3-E 独立确认；值本身即反向信号量，declared==raw。任一条确认设计不过即判不可确认。"
+  }
+}

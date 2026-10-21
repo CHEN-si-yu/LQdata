@@ -1,0 +1,17 @@
+name: r4q_contract_liab_to_revenue_v1
+family_id: r4q_contract_liab_v1
+implementation: research.families.r4q_contract_liab_v1:build
+parameters: {signal: contract_liab_to_revenue}
+units: 无量纲比率（合同负债/营收TTM，如 0.05=订单存量约为年营收的 5%）。
+availability: 合同负债取 pit≤信号日最新可考版本（时点科目）；营收TTM 由财务层 ctx.ttm（三行式，累计制还原）同规则 PIT；两者同一公告时点口径。无未来信息。
+missing_policy: 合同负债不可考或不 >0（科目未启用的 0 实证为「无此科目」而非「订单为零」，不参与分母/分子）时为 NaN；营收TTM 不可考或 ≤1e6 元时为 NaN；非有限值输出 NaN；不零填充。
+spec:
+  group: research_contract_liab
+  desc: 未验证候选（V2 机制2）：合同负债/营收TTM——订单覆盖率 → 正向预期收益。
+  formula: point(contract_liab) / ttm(revenue)
+  deps: [stock_balancesheet, stock_income]
+  fin_fields: [contract_liab, revenue]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: 方向事前冻结 true。0 值处理口径：要求 CL>0（严格正）——2015–2019 全池 CL 为显式 0（未启用），零填充会造成「2020 前全市场覆盖率=0」的伪截面；缺口如实为 NaN。2023 年 3 家险企 IFRS17 并入使水平项放大（4.16/1.87/1.15 万亿），披露不修剪。

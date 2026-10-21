@@ -1,0 +1,20 @@
+{
+  "family_id": "r8b_local_amihud_shock_beta_v1",
+  "idea_id": "r8b_local_amihud_shock_beta_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "local_amihud_shock_beta",
+      "ar_window": 126,
+      "beta_window": 126,
+      "min_pairs": 100
+    }
+  ],
+  "baseline": "Exact controls file artifacts/research/round8_20261005/freeze/r8b_controls_v1.json: base8 + registered amihud_daily_5,turnover_anomaly_20,beta_60,momentum_20/60,R4downside120/coskew60 and R7salience true IDs/source hashes; NEW explicit turnover/Amihud20 and vol20/60 diagnostics plus raw current_return and same-fit market b. No common-state stock regressor.",
+  "definition_freeze": "artifacts/research/round8_20261005/freeze/r8b_definition_v1.json",
+  "index_clarification": "artifacts/research/round8_20261005/freeze/r8b_index_clarification.json",
+  "direction": false,
+  "warmup_days": 620,
+  "initial_pilot_reservation_decimal_gb": 3,
+  "variants": "none"
+}

@@ -172,50 +172,12 @@ def _mktcap(ctx) -> np.ndarray:
     return px * sh
 
 
-def _eps_ttm(ctx) -> np.ndarray:
-    """EPS(TTM) = 归母净利润TTM / 当期已披露总股本（元/股）。
-
-    上游白名单没有 `basic_eps` 字段，故按定义从三表重算。
-    地板 100 万元：TTM 净利低于此的公司 EPS 无意义（微利/盈亏平衡），
-    返回 NaN 而不是一个近似 0 的分母。
-    """
-    return _f64(ctx.safe_div(ctx.ttm(NP), ctx.point(SHARE), min_abs_den=MIN_CUR))
 
 
-def _yoy_ttm(ctx, field: str, k: int = 0, span: int = 4) -> np.ndarray:
-    """报告期 (p − k) 上的 TTM 增长率：`TTM_{p−k} / TTM_{p−k−span} − 1`。
-
-    ★ **两端都 > 0 才算**（与 `growth._cagr` 同一条纪律）：净利润为负时
-    「增长率」会让比值的符号反转（−1 亿 → +0.5 亿会被算成 −150% 的「下降」），
-    而 PEG 类因子对增长率的符号是敏感的（负增速必须判为无定义，不能当成「便宜」）。
-    """
-    cur = _f64(ctx.lag_ttm(field, k))
-    prev = _f64(ctx.lag_ttm(field, k + span))
-    r = _f64(ctx.safe_div(cur, prev, min_abs_den=1e-6))
-    return np.where((cur > 0) & (prev > 0), r - 1.0, np.nan)
 
 
-def _cagr_ttm(ctx, field: str, k: int, years: int) -> np.ndarray:
-    """k 个报告期（= years 年）的复合增速 `(TTM_t / TTM_{t−k})^(1/years) − 1`。
-
-    两端都 > 0 才有定义（理由同 `_yoy_ttm`）；严格 > 0 而不是 >= 0，
-    避免「近零基数 → 任意大的复合增速」。
-    """
-    cur = _f64(ctx.ttm(field))
-    prev = _f64(ctx.lag_ttm(field, k))
-    r = _f64(ctx.safe_div(cur, prev, min_abs_den=1e-6))
-    r = np.where((cur > 0) & (prev > 0), r, np.nan)
-    with np.errstate(invalid="ignore"):
-        return np.power(r, 1.0 / float(years)) - 1.0
 
 
-def _roe_at(ctx, k: int = 0) -> np.ndarray:
-    """报告期 (p − k) 上的 ROE(TTM) = 归母净利TTM / 期末归母权益。
-
-    与 `fundamental.roe_ttm` 同定义（期末权益、不做平均），
-    多一层 100 万元地板：近零净资产会把 ROE 炸成 ±1e5 量级。
-    """
-    return _f64(ctx.safe_div(ctx.lag_ttm(NP, k), ctx.point(EQ, lag=k), min_abs_den=MIN_CUR))
 
 
 def _roll_mean_causal(mat, n: int) -> np.ndarray:
@@ -251,20 +213,8 @@ def _roll_mean_causal(mat, n: int) -> np.ndarray:
     return out
 
 
-def _roa_at(ctx, k: int = 0) -> np.ndarray:
-    """报告期 (p − k) 上的 ROA(TTM) = 归母净利TTM / 期末总资产（同 `quality.roa_ttm`）。"""
-    return _f64(ctx.safe_div(ctx.lag_ttm(NP, k), ctx.point(TA, lag=k), min_abs_den=MIN_CUR))
 
 
-def _gpm_at(ctx, k: int = 0) -> np.ndarray:
-    """报告期 (p − k) 上的毛利率(TTM) = (营收TTM − 营业成本TTM) / 营收TTM。
-
-    `oper_cost` 在 deriv 层是 POSITIVE_ONLY（银行/券商的精确 0.0 → NaN），
-    所以金融股的毛利率天然是 NaN —— 这是有意的（否则它们恒为 100%）。
-    """
-    rev = _f64(ctx.lag_ttm(REV, k))
-    cost = _f64(ctx.lag_ttm(COST, k))
-    return _f64(ctx.safe_div(rev - cost, rev, min_abs_den=MIN_CUR))
 
 
 def _dv_ttm(ctx) -> np.ndarray:
@@ -292,7 +242,7 @@ def _dv_ttm(ctx) -> np.ndarray:
 
 
 @register(FactorSpec(
-    name="etp5", group="value", deps=DEP_IB + DEP_PX,
+    name="etp5", version=2, group="value", deps=DEP_IB + DEP_PX,
     desc="五年平均净利润 / 五年平均市值（≈ 5 年平均盈利收益率）",
     formula="ETP5 = RollingMean(NetProfit_Y, 1260) / RollingMean(MarketCap, 1260)\n"
             "   Factor = CrossSectionalRank(ETP5)",
@@ -326,7 +276,7 @@ def etp5(ctx):
 
 
 @register(FactorSpec(
-    name="ebitda_to_market", group="value",
+    name="ebitda_to_market", version=2, group="value",
     deps=DEP_CIB + DEP_PX,
     desc="EBITDA 市值比 = (EBIT + 折旧 + 无形资产摊销 + 长期待摊摊销)TTM / 总市值",
     formula="ebitda_to_market = EBITDA / (ClosePrice × TotalShares)",
@@ -359,7 +309,7 @@ def ebitda_to_market(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="dividend_yield_3y_avg", group="value", deps=DEP_PX,
+    name="dividend_yield_3y_avg", version=2, group="value", deps=DEP_PX,
     desc="3 年平均股息率 = 近 735 个交易日的（每股分红 ÷ 当期价）均值 / 当前价（%）",
     formula="dividend_yield_3y_avg = (SUM(ActualCashDiviRMB, 735) / 3) / ClosePrice\n"
             "   = AVG(ActualCashDiviRMB, 3年) / ClosePrice",
@@ -413,41 +363,3 @@ def dividend_yield_3y_avg(ctx):
 # 四、复合（1）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="quality_composite", group="quality", deps=DEP_CIB,
-    desc="质量复合 = ROE(TTM)、毛利率(TTM)、经营现金流/总资产 三项截面 z 分数等权均值",
-    formula="Ratio_i = ① NetProfit/Equity ② (Revenue−Cost)/Revenue ③ OCF/TotalAssets\n"
-            "Factor = mean_i( cs_zscore(Ratio_i) )   # 至少 2 项有效才合成",
-    start=FIN_START, warmup_days=FIN_WARMUP, higher_is_better=True,
-    fin_fields=(NP, EQ, REV, COST, OCF, TA),
-    note="★ **与参考库的有意偏离**：参考库 §5 Quality #10 是 AQR QMJ 的"
-         "「**6 项比率直接相加**」，本实现是「**3 项比率截面标准化后等权**」。两条理由："
-         "① 直接相加**量纲不可比**（ROE ~0.1、毛利率 ~0.3、(OCF+ICF)/总资产 ~0.05，"
-         "相加等于给毛利率 3 倍权重）；"
-         "② 参考库第 6 项 `NetProfit / (OpCashInflow + InvCashInflow)` 的分母可以为负/近零"
-         "（参考库自己要用 `filter=True` 挡 ±inf），在契约 §3.4「除法一律带保护」下"
-         "会被 NaN 掉大半样本。"
-         "★ **合成口径**：每项先 `ctx.cs_zscore(x, mask=ctx.universe)`（**逐交易日的截面**"
-         "标准化，只用当日主板股票，**绝不使用全样本统计量** —— 那会引入未来信息），"
-         "再等权平均。三项是：**盈利能力**（ROE_TTM）、**定价能力**（毛利率 TTM）、"
-         "**现金创造**（经营现金流 TTM / 期末总资产）—— 分别对应利润表、"
-         "利润表的毛利率结构、现金流量表，三张表各取一个，刻意不重叠。"
-         "★ **缺失处理**：允许**至少 2 项有效**（`nanmean`），此时用有效项的均值。"
-         "理由：银行/券商没有可比的 `oper_cost`（毛利率恒为 NaN），若要求 3 项全有，"
-         "整个金融板块会被排除；要求 2 项则它们由 ROE + 现金流质量代表。"
-         "只有 1 项有效的格子返回 NaN（**不给单因子冒充复合因子**）。"
-         "★ **与既有因子的关系（重要）**：本因子是三个已落盘因子"
-         "（`roe_ttm`、`gpm_ttm`、`ocf_to_asset` 的等价物）的线性组合，"
-         "**与 `roe_ttm` 的相关性最高**（ROE 的截面分散度最大）。"
-         "它的价值是「一次拿到一个已经中性化的质量分」，下游做因子筛选时"
-         "**不应**再同时保留全部成分因子（共线）。",
-))
-def quality_composite(ctx):
-    ocf_to_asset = ctx.safe_div(ctx.ttm(OCF), ctx.point(TA), min_abs_den=MIN_CUR)
-    zs = np.stack([_f64(ctx.cs_zscore(_roe_at(ctx, 0), mask=ctx.universe)),
-                   _f64(ctx.cs_zscore(_gpm_at(ctx, 0), mask=ctx.universe)),
-                   _f64(ctx.cs_zscore(ocf_to_asset, mask=ctx.universe))], axis=0)
-    ok = np.isfinite(zs)
-    n = ok.sum(axis=0)
-    tot = np.where(ok, zs, 0.0).sum(axis=0)
-    return np.where(n >= 2, tot / np.maximum(n, 1), np.nan)

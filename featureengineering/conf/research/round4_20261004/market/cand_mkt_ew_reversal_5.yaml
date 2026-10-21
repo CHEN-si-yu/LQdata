@@ -1,0 +1,18 @@
+name: r4m_mkt_ew_reversal_5_v1
+family_id: r4m_market_state_v1
+implementation: research.families.r4m_market_state_v1:build
+parameters: {signal: mkt_ew_reversal_5}
+units: 无量纲（收益率小数）；= 过去 5 个交易日等权池日收益的复利累计 ∏(1+ew)−1。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily / stock_adj_factor，delay=0，不在可得性滞后名单）；无未来数据、无跨日位移需求。
+missing_policy: 单日有效票 < 100 的等权收益记 NaN；5 日窗口内任一 NaN → 该日因子 NaN（min_count=5）；不零填充、不前向填充。
+spec:
+  group: market
+  desc: "市场层面短期反转：等权池过去 5 日累计收益（严格通道，方向 −1）"
+  formula: "r=单日后复权收益(停牌NaN)；ew=mean(r)；cum5=prod_{k=0..4}(1+ew_{T-k})-1"
+  deps: [stock_daily, stock_adj_factor]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: false
+  version: 1
+  is_market: true
+  note: "Round4-M1 严格通道预登记（方向 −1、先验中，封存于 round4 freeze 方向表）；固定2115只主板池；有效样本分母，缺测/停牌不计，少于100只为NaN；市场标量不做截面rank；T日收盘后可用；缺失保持NaN不用未来值回填；未承诺收益有效性，由 M0–M7 门序裁决。"

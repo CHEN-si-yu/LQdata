@@ -1,0 +1,28 @@
+family_id: r2_ownership_family_v2
+idea_id: r2_ownership_idea_v1
+trial_budget: 6
+allowed_variants:
+  - {signal: per_capita_value_level}
+  - {signal: per_capita_value_change}
+  - {signal: trend_persistence_k4}
+  - {signal: announcement_drift_d5}
+  - {signal: announcement_drift_d10}
+  - {signal: dispersion_residual}
+baseline:
+  - holder_number_chg
+  - log_mv
+  - turnover_std_20
+  - turnover_rate 类
+  - chip_concentration
+  - momentum_20
+  - short_term_reversal_5
+hypothesis_boundary: 只研究股东户数这一个数据维度上的四个机制；holder_number_chg 已占用"单期户数
+  变化率"，本轮候选必须论证它不是该生产因子的重复表达。不得扩展窗口或方向搜索。
+search_policy: 与 family v1 完全相同的 4 机制 + 2 个预登记窗口变体（M3 的 5日/10日漂移窗），
+  不扩参数网格、不事后调阈值。
+v1_defect_disclosure: family v1（r2_ownership_family_v1，6 个已登记候选）的实现模块
+  r2_ownership_v1.py 存在单位缺陷：把 YYYYMMDD 整数相减当作天数（20260630-20260331=299），
+  使 200 天的报告期间隔保护把正常季度配对全部拒掉。该缺陷由工程覆盖度自检（G1-G3，未计算
+  任何 IC 或收益）在 2026 年短窗冒烟中发现，v1 的 6 个候选**从未计算 IC、从未评价**，
+  不构成任何试验消耗。v2 只修正日期差单位，机制/窗口/方向/阈值全部不变；v1 定义与模块
+  按不可变原则保留在账本中，不删除、不复用。

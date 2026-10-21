@@ -1,0 +1,71 @@
+{
+  "family_id": "r10gc_liquidity_turnover_v1",
+  "idea_id": "r10gc_liquidity_turnover_v1",
+  "trial_budget": 10,
+  "allowed_variants": [
+    {
+      "kind": "lvl",
+      "window": 21
+    },
+    {
+      "kind": "lvl",
+      "window": 63
+    },
+    {
+      "kind": "lvl",
+      "window": 252
+    },
+    {
+      "kind": "std",
+      "window": 42
+    },
+    {
+      "kind": "std",
+      "window": 126
+    },
+    {
+      "kind": "std",
+      "window": 252
+    },
+    {
+      "kind": "bias_turn",
+      "short": 21,
+      "long": 252
+    },
+    {
+      "kind": "bias_turn",
+      "short": 63,
+      "long": 252
+    },
+    {
+      "kind": "bias_turn",
+      "short": 126,
+      "long": 252
+    },
+    {
+      "kind": "bias_std_turn",
+      "short": 21,
+      "long": 252
+    }
+  ],
+  "baseline": [
+    "turnover_std_20",
+    "turnover_anomaly_20",
+    "turnover_f_delta_5",
+    "amount_ratio_20",
+    "vol_ratio_ma5_ma20",
+    "log_mv",
+    "vol_120"
+  ],
+  "parameters_frozen": {
+    "window_unit": "trading days; 1 month = 21 trading days (Tushare 原文 w=121/1221/2421 是损坏渲染，不照抄)",
+    "bias_long_base": 252,
+    "min_count": "n//2",
+    "std_ddof": 0,
+    "turnover_definition": "stock_daily.vol / stock_finance.float_share * 100 (ctx.px('turnover'))",
+    "direction": "higher_is_better=true for all (declared=raw; no direction claimed)",
+    "bound": "登记 10 个期限点：水平{21,63,252}、波动{42,126,252}、均线偏离{21,63,126}vs252、波动偏离{21}vs252。另有 19 个 Tushare 窗口（avg_turnover_5/10/20/42/126、std_turnover_63、bias_*_{504d,42d,63d,126d}、bias_std_turn_ 的其余 7 个、amount_ma_20d）资格判定同为 IN，为限定批次规模（期限结构三点制）本轮不登记，名单在交付报告中留存。"
+  },
+  "variants": "none：10 个变体在同一模块内事前冻结（FROZEN 字典），build() 拒绝任何其它参数组合。",
+  "channel": "green-card candidate (basic thresholds only; G4-G7 not claimed)"
+}

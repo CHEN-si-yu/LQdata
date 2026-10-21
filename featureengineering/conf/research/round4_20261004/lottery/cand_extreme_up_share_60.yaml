@@ -1,0 +1,16 @@
+name: r4e_extreme_up_share_60_v1
+family_id: r4e_lottery_max_v1
+implementation: research.families.r4e_lottery_max_v1:build
+parameters: {signal: extreme_up_share_60}
+units: 因子值 = 过去 60 个交易日内「单日后复权收益 >7%」的交易日占比（[0,1] 分数，无量纲）。
+availability: 只用到信号日 T 收盘及以前的行情；阈值与取值均在 T 日收盘可见。stock_daily / stock_adj_factor 不在可得性滞后名单（实测 LAGGED_DATASETS 仅含 stock_margin_detail，延迟 1 日），无需位移。
+missing_policy: 窗口内有效交易日 <45 个 → NaN；分母 = 窗口内有效（真实成交）交易日数；停牌日不计入分子也不计入分母；严格大于 7%（不取等号）；不填充。
+spec:
+  group: research_lottery
+  desc: Lead 预登记机制 4：60 日内单日收益 >7% 的交易日占比（极端上涨频率）；越高预期收益越低。
+  formula: r = ret_clean(1); num = roll_sum(1[r>0.07], 60, min_count=45); den = roll_count(r, 60, min_count=45); value = num/den
+  deps: [stock_daily, stock_adj_factor]
+  warmup_days: 128
+  higher_is_better: false
+  version: 1
+  note: 与 extreme_move_event 的差异：后者用供应商 pct_chg 的 |·|≥7%（含下跌侧、衰减加权 5 日），本因子用后复权日收益的严格上穿 7%（仅上涨侧、60 日占比），报告披露。

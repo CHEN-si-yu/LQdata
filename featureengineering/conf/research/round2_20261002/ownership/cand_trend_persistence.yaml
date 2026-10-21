@@ -1,0 +1,23 @@
+name: r2own_v2_trend_persistence_v1
+family_id: r2_ownership_family_v2
+implementation: research.families.r2_ownership_v2:build
+parameters: {signal: trend_persistence_k4}
+units: 对数变化的均值（无量纲）乘以 0..1 的持续性占比。
+availability: 状态由 ann_date 逐日推进；T 日只使用 ann_date<=T 的记录。相邻报告期 end_date 间隔必须落在 (0,200] 日历天，否则该候选为 NaN。
+missing_policy: 披露期数不足4期或任一间隔越界 -> NaN；holder_num<=0 的行不进入状态机。不使用 0 填充缺失期。
+closest_existing_baselines: [holder_number_chg, log_mv, turnover_std_20, chip_concentration]
+semantic_difference: 机制2；刻意不是单期变化率。与 holder_number_chg 的 |rho| 是去重硬要求的核心。
+source_fields:
+  - stock_holder_number.ann_date
+  - stock_holder_number.end_date
+  - stock_holder_number.holder_num
+  - stock_finance.circ_mv
+spec:
+  group: r2_ownership
+  desc: R2-I3 机制2：最近4个报告期户数下降的持续性与趋势强度
+  formula: g_j=log(n_j)-log(n_{j+1}), j=1..3; value = mean(-g_j) * (share of g_j<0)
+  deps: [stock_holder_number]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: v2 修正日期差单位（YYYYMMDD 相减 -> 真实日历天），机制/窗口/方向/阈值与 v1 完全相同；机制2；刻意不是单期变化率。与 holder_number_chg 的 |rho| 是去重硬要求的核心。

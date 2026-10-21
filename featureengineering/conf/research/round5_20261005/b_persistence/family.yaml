@@ -1,0 +1,18 @@
+{
+  "family_id": "r5b_profit_persistence_v1",
+  "idea_id": "r5b_profit_persistence_v1",
+  "trial_budget": 1,
+  "baseline": "G7基础8（含roe_ttm）；额外独立控制SUE及qf_core_roe_vol_4q/qf_sales_growth_vol_4q，方向弱先验。原值与声明值相同，消费变换与秩回归分别报。",
+  "allowed_variants": [
+    {
+      "signal": "detrended_profit_persistence",
+      "window": 16
+    }
+  ],
+  "parameters_frozen": {
+    "window": 16,
+    "warmup_days": 2200,
+    "direction": true
+  },
+  "variants": "none"
+}

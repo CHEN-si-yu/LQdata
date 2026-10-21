@@ -79,6 +79,3 @@ call('tdx_daily','/tdx/daily',{'board_code':'880471','start_date':'2026-08-01','
 call('tdx_minute','/tdx/minute',{'board_code':'880201','level':'5min','start_time':D+' 09:00:00','end_time':D+' 15:30:00'})
 call('dc_blocks','/dc/blocks',{})
 call('dc_daily','/dc/daily',{'block_code':'BK0428.DC','trade_date':D})
-call('ths_sector_categories','/index/ths_sector_categories',{})
-call('ths_constituent_stocks','/index/ths_constituent_stocks',{'index_code':'882001.TI'})
-call('ths_daily','/index/ths_daily',{'ths_code':'881123.TI','start_time':'2026-08-01','end_time':E})

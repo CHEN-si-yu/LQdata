@@ -1,0 +1,18 @@
+name: r4o_mkt_cs_q90_q10_spread_v1
+family_id: r4o_market_b3_v1
+implementation: research.families.r4o_market_b3_v1:build
+parameters: {signal: mkt_cs_q90_q10_spread}
+units: 无量纲（收益率小数）；池内日收益截面 90 分位与 10 分位之差的 20 日均值。
+availability: T 日收盘后可用；只用当日及以前的日线（stock_daily / stock_adj_factor，delay=0）；20 日均与分位数只用 ≤T 的历史/当日值；无未来数据。
+missing_policy: 停牌（无真实成交）与缺测不计入分母；有效票 < 100 的日截面分位记 NaN；20 日均窗口至少 15 个有限值，否则 NaN；不零填充、不前向填充。
+spec:
+  group: market
+  desc: "池内收益截面 90–10 分位差（20 日均）（绿卡描述量，无方向）"
+  formula: "spread=q90(r)−q10(r)（np.nanquantile 线性插值，生产 _quantile 同口径）；value=MA20(spread), min_count=15"
+  deps: [stock_daily, stock_adj_factor]
+  start: '2018-01-01'
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  is_market: true
+  note: "绿卡通道预登记（无方向承诺）；分位数为绿卡允许清单列举项（直接观测统计量），分位差为同一截面同一变量的两分位之差（尾部峰谷幅度），20 日均为其降噪；该构造位于绿卡资格边缘（从严解读下『差』条款可能覆盖），判定理由与披露见 freeze b3 edge_notes；已删近邻 mkt_sector_leader_spread（板块内 q90−median(ret20)、非收益日频截面）差异见 report.md 防重蹈检查；固定2115只主板池；有效样本分母，缺测/停牌不计，少于100只为NaN；市场标量不做截面rank；缺失保持NaN；未做收益有效性承诺。"

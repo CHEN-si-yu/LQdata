@@ -1,0 +1,41 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "name": "s26_liq_shock_repair_v1",
+  "family_id": "s26_impact_family_v1",
+  "implementation": "research.families.selection_20261001_v1:build",
+  "parameters": {
+    "signal": "sell_shock_next_day_repair"
+  },
+  "units": "stock_daily的OHLC、vol、amount保留供应商原始尺度；本信号仅使用同字段时序比值、对数创新/标准化或同表同尺度比值，单位相消，不做跨表金额/成交量换算；不据字段名或跨表比例认定物理单位。",
+  "availability": "日终信号，仅T日及以前原始记录；拟合/历史基线均止于T-1，原始可见日期由审计cutoff控制。固定池偏离使用ctx.universe的当日有效样本，含ST屏蔽。",
+  "missing_policy": "当日不成交或实际必需源字段缺行/非法值为NaN；不前向填充资金流，不用未来标签有效性筛股票。前一日下跌冲击使用先60日至少48个的成交额基线、再60日至少12个下跌样本；当日修复风险尺度取T-1以前60日、至少48个。有效输入下未触发修复为0。完整依赖先60交易日成交额基线、再60交易日冲击基线，需120个历史交易日且修复项另滞后1日（共121个）。实际本地交易日历显示180日历预热存在不足边界；工程预热改240日历，最少有效样本与收益方向不变。用于lag/rolling的HFQ价格和成交额先按当日真实成交及OHLC/量额有效性屏蔽；收益/开盘缺口还要求前一交易日有效HFQ收盘，不把无效正价作为上一日观察。",
+  "closest_existing_baselines": [
+    "liquidity_shock_20",
+    "gap_down_recover_freq_20d"
+  ],
+  "semantic_difference": "明确前日冲击到当日修复的时间顺序；不是同日缺口回补频率。",
+  "source_fields": [
+    "stock_daily.open",
+    "stock_daily.high",
+    "stock_daily.low",
+    "stock_daily.close",
+    "stock_daily.vol",
+    "stock_daily.amount",
+    "stock_adj_factor.adj_factor"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "s26_impact",
+    "desc": "前日卖压冲击后的日内修复",
+    "formula": "max(lag1(downside_impact_surprise),0)*max(pool_relative_intraday/prior60_sigma,0)*max(close_location,0)",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": null,
+    "warmup_days": 240,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "selection_20261001_v1；使用前一日下跌冲击，不将当日修复写回前一日；侧创新clip±8。池偏离为固定池当日有效样本等权去均值，不是行业或完整beta中性。所有方向事前冻结，候选注册不等于生产批准。完整依赖先60交易日成交额基线、再60交易日冲击基线，需120个历史交易日且修复项另滞后1日（共121个）。实际本地交易日历显示180日历预热存在不足边界；工程预热改240日历，最少有效样本与收益方向不变。"
+  }
+}

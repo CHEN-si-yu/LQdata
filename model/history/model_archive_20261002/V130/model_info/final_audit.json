@@ -1,0 +1,297 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-10-02 09:44:30",
+  "score_source": "training_predictions",
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "score_window": [
+    "2025-07-01",
+    "2026-09-30"
+  ],
+  "model_train_read": false,
+  "weights_reloaded": false,
+  "folds_checked": 0,
+  "max_cpu_reload_error": null,
+  "audit": [],
+  "metrics_total": {
+    "quarter": "总计",
+    "days": 242,
+    "IC": 0.020149190925869483,
+    "ICIR": 0.17330514565725008,
+    "top_return": 0.0012903201804582553,
+    "top_return_stability": 0.0007100407504622313,
+    "total_return": -3.629963185571883,
+    "IC_1d": 0.020149190925869483,
+    "IC_5d": 0.03211970394623132,
+    "RankIC_1d": 0.03916432179721151,
+    "RankIC_5d": 0.05508122988135283
+  },
+  "realizable": {
+    "topk": 5,
+    "label": "label_ret_5d",
+    "ideal_mean_pct": 0.19241236910331716,
+    "realizable_mean_pct": 0.19211621525936012,
+    "ratio": 0.9984608378071681,
+    "days": 242,
+    "days_with_position": 242,
+    "gap_pct": -0.000296153843957038,
+    "gap_t": -1.0
+  },
+  "clean_blocks": {
+    "strategy": "top5_5d",
+    "blocks": [
+      {
+        "quarter": "2025Q3",
+        "fold": 4,
+        "start": "2023-07-21",
+        "end": "2025-04-25",
+        "days": 427,
+        "ideal_mean_pct": 0.8840615511650359,
+        "realizable_mean_pct": 0.8936340943034341,
+        "tradable_ratio": 1.010827914782385,
+        "strategy_return_value": 1.2489922139098235,
+        "strategy_net_annual_pct": 50.09904947098433,
+        "strategy_max_drawdown": -0.15242026523825347,
+        "idle_cash_pct": 37.63060930255851,
+        "trades": 342,
+        "gross_return_same_positions": 1.3311899999999999,
+        "total_fees": 5199.173109018,
+        "fee_drag": 0.05199173109018002,
+        "slippage_drag": 0.03020605499999636,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      },
+      {
+        "quarter": "2025Q4",
+        "fold": 4,
+        "start": "2023-09-28",
+        "end": "2025-08-01",
+        "days": 444,
+        "ideal_mean_pct": 1.3366516329591145,
+        "realizable_mean_pct": 1.3436166151485203,
+        "tradable_ratio": 1.005210768473747,
+        "strategy_return_value": 0.4945814749525843,
+        "strategy_net_annual_pct": 26.84689229266165,
+        "strategy_max_drawdown": -0.3798538644272639,
+        "idle_cash_pct": 38.65085013617192,
+        "trades": 282,
+        "gross_return_same_positions": 0.5425803730924899,
+        "total_fees": 3060.0308027980086,
+        "fee_drag": 0.030600308027980094,
+        "slippage_drag": 0.017398590111925568,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      },
+      {
+        "quarter": "2026Q1",
+        "fold": 4,
+        "start": "2023-12-08",
+        "end": "2025-11-03",
+        "days": 459,
+        "ideal_mean_pct": 1.197040051195716,
+        "realizable_mean_pct": 1.1969316231316558,
+        "tradable_ratio": 0.9999094198527846,
+        "strategy_return_value": 0.36188088947373265,
+        "strategy_net_annual_pct": 20.775291706861303,
+        "strategy_max_drawdown": -0.39406741243001286,
+        "idle_cash_pct": 45.87113437783274,
+        "trades": 272,
+        "gross_return_same_positions": 0.40423190184049096,
+        "total_fees": 2733.702279620767,
+        "fee_drag": 0.027337022796207686,
+        "slippage_drag": 0.015013989570550602,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      },
+      {
+        "quarter": "2026Q2",
+        "fold": 4,
+        "start": "2024-02-07",
+        "end": "2026-01-22",
+        "days": 473,
+        "ideal_mean_pct": 1.7156056424149204,
+        "realizable_mean_pct": 1.714471388589235,
+        "tradable_ratio": 0.999338860984341,
+        "strategy_return_value": 0.9481802690002246,
+        "strategy_net_annual_pct": 37.6889430523327,
+        "strategy_max_drawdown": -0.29975080240994567,
+        "idle_cash_pct": 41.95784938025453,
+        "trades": 318,
+        "gross_return_same_positions": 1.0265388398579578,
+        "total_fees": 4943.546320577893,
+        "fee_drag": 0.049435463205778976,
+        "slippage_drag": 0.028923107651954195,
+        "net_annual_definition": "actual net daily mean x 242; fees already included"
+      }
+    ],
+    "total_days": 1803,
+    "note": "这些 (季度, 折) 的训练集全部早于其验证块 ⇒ **无前视**；块与块之间日历不连续，**不可拼接**，只并列看。"
+  },
+  "bag_vs_argmax": {
+    "folds": 16,
+    "topk": 5,
+    "bag_epochs": [
+      [
+        1,
+        4,
+        6,
+        3,
+        7
+      ],
+      [
+        9,
+        3,
+        10,
+        2,
+        7
+      ],
+      [
+        7,
+        9,
+        8,
+        6,
+        2
+      ],
+      [
+        11,
+        9,
+        8,
+        5,
+        6
+      ],
+      [
+        6,
+        5,
+        3,
+        4,
+        2
+      ],
+      [
+        7,
+        8,
+        5,
+        4,
+        12
+      ],
+      [
+        5,
+        7,
+        8,
+        4,
+        2
+      ],
+      [
+        9,
+        13,
+        11,
+        5,
+        14
+      ],
+      [
+        5,
+        8,
+        10,
+        6,
+        2
+      ],
+      [
+        6,
+        2,
+        4,
+        9,
+        10
+      ],
+      [
+        6,
+        3,
+        8,
+        5,
+        4
+      ],
+      [
+        4,
+        7,
+        6,
+        10,
+        9
+      ],
+      [
+        2,
+        3,
+        5,
+        4,
+        8
+      ],
+      [
+        2,
+        3,
+        6,
+        7,
+        1
+      ],
+      [
+        6,
+        2,
+        10,
+        11,
+        3
+      ],
+      [
+        2,
+        7,
+        1,
+        4,
+        3
+      ]
+    ],
+    "metrics": {
+      "val_wei": {
+        "bagged": 0.10066725252589995,
+        "argmax": 0.10376292280941182,
+        "delta": -0.003095670283511858,
+        "t": -5.362387562876782,
+        "wins": 0
+      },
+      "IC_1d": {
+        "bagged": 0.0485410448274824,
+        "argmax": 0.04752055778817184,
+        "delta": 0.001020487039310567,
+        "t": 2.1206493481703337,
+        "wins": 13
+      },
+      "IC_5d": {
+        "bagged": 0.07944270886370494,
+        "argmax": 0.07901224763590821,
+        "delta": 0.00043046122779672987,
+        "t": 0.6391006106778037,
+        "wins": 10
+      },
+      "RankIC_1d": {
+        "bagged": 0.06155517048386115,
+        "argmax": 0.06396152730837923,
+        "delta": -0.0024063568245180802,
+        "t": -5.37494805336621,
+        "wins": 1
+      },
+      "RankIC_5d": {
+        "bagged": 0.09808690951522608,
+        "argmax": 0.10119527069865432,
+        "delta": -0.0031083611834282297,
+        "t": -5.4530016288536105,
+        "wins": 0
+      },
+      "val_return_proxy": {
+        "bagged": 0.009895828849200339,
+        "argmax": 0.009884100497047835,
+        "delta": 1.1728352152504552e-05,
+        "t": 0.03993325730110525,
+        "wins": 6
+      }
+    }
+  },
+  "fusion": {
+    "flow_weight": 0.5,
+    "rank_scale": "within submodel explicit family percentiles; raw fourfold sum afterward",
+    "absolute_gate": "separate training-fitted1d return, never percentile as return"
+  },
+  "auxiliary_forecast": "separate raw1d technical return; existing yearly parquet column; same fixed159 paths"
+}

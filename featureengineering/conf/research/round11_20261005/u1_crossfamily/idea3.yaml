@@ -1,0 +1,57 @@
+idea_id: r11u1c_gridscreen_v1
+hypothesis: >
+  任务书明示「首要交付物是事前预筛，不是候选数量」。idea v1（6 条腿）与 v2（3 条 P2 腿）
+  共 9 个预登记配对**全部**未过 P3（v1 全部连 P2 都不过，实测 |t(IC_1d)| = 6.90…12.10）。
+  单靠少数机制猜配对的信息量太低：真正缺的是一张**跨族交互可行域地图**。
+  本 idea 因此把判据变成**机械全网格筛查**：腿固定为**全库唯一 3 条通过 P2 判据的
+  交易行为在产因子**（42 → 3，|t(IC_1d)| ≤ 2.0），状态遍历**全部 48 个基本面侧在产因子**
+  （value 11 / quality 9 / quarterly_quality 8 / growth 5 / field_indicator 10 /
+  financial_detail 2 / field_cashflow 1 / field_income 2）⇒ 48 × 3 = **144 个配对**，
+  逐对施加与 v1/v2 逐字相同的 P1b / P3a / P3b 判据，产出完整筛查表。
+mechanism: |
+  ── 构造（对全部 144 对统一，无逐对自由度）──
+      X(t,i) = z_cs(state)(t,i) · z_cs(leg)(t,i)     （cs = 逐日截面，mask = universe）
+      值 = 在产因子落盘 value 的乘积，缺失传播、不填充。
+      状态与腿都经 `ctx.load_factor` 读在产因子（无自行重算、无窗口自由度）。
+  ── 方向（预先、盲、统一）──
+      全部 144 对一律 `higher_is_better = True`，即声明「状态与腿**同向共振**」。
+      依据：在产 `factors/coupling.py` 已冻结的乘积约定 ——「z(A) × z(B) 的符号语义是
+      两个维度同时高/同时低；需要同向的两个维度相乘」。本单元不逐对写经济学方向，
+      因为逐对方向必然退化为「看完符号再写」，那是方向纪律明令禁止的。
+      统一 hib=True 是**盲规则**：它使 G4（declared 分年同号）与 G7（控制后符号）
+      成为对「共振假设」的真检验，而不是对事后拟合方向的检验。
+  ── 判据（与 v1/v2 逐字相同）──
+      P1b  frac_days_abs_rho(candidate, 自己的腿)_gt_0.99 < 0.05 且
+           candidate_equals_signed_leg_frac ≈ 0（不得是腿的逐日秩置换）。
+      P3a  状态中位数双重排序：ic_leg|high 与 ic_leg|low **符号相反**、各自 |t| ≥ 1.96，
+           且 d = ic_hi − ic_lo 的 HAC |t| ≥ 3。
+      P3b  逐日截面 y ~ 1 + l + s + l*s（**秩语义**，doc/AGENTS.md §B），
+           l*s 系数在 h=1 或 h=5 的 HAC |t| ≥ 3。
+      P3a-light（**仅作筛查线索报告、不作为登记依据**）：
+           d 序列 HAC |t| ≥ 3 且 d 的符号与统一 hib 一致（d > 0）。
+      不满足 P1b 且 P3a 且 P3b 者**不登记**。
+  ── 登记规则（预先、机械）──
+      若通过者超过 trial_budget=3，按 h=5 的 |t(P3b l*s)| **降序**取前 3（先于结果冻结的
+      排序键）；若通过者不足 3，登记全部通过者；若为 0，**零登记**并交付筛查表。
+  ── 已知信息（如实披露）──
+      144 对中有 9 对已在 idea v1/v2 的预筛中被测过（结果已知且均未过 P3）；
+      其余 135 对在本 idea 登记时**尚未计算任何 P3/P3b 统计量**。
+      规则不依赖那 9 对的结果（规则在 144 对上统一施加）。
+expected_direction: >
+  全部 144 对预登记 higher_is_better = True（共振假设）。方向在本 idea 登记时冻结，
+  先于 135 对新配对的任何交互统计；登记后不反号、不改方向、不换版本找方向。
+  被证伪者如实报 falsified；P3a-light 仅作线索，不得据此登记。
+target_horizons: [1, 5]
+falsifiable: >
+  P1b 或 P3a 或 P3b 不达 ⇒ 不登记。已登记候选若 declared RankIC 分年同号 < 7/9、
+  或 G7（冻结 base-8 控制后）FM 系数不显著或符号与登记方向不一致、或 G2/G3 不达、
+  或与任一在产因子 |rho| > 0.95 ⇒ 共振假设被证伪。
+  规则 3：腿与状态都来自在产因子 ⇒ 每条候选必须并报「冻结 base-8」与
+  「冻结 base-8 + 腿 + 状态」两套增量（base-8 = momentum_120, short_term_reversal_5,
+  vol_120, idio_vol_60, log_mv, turnover_std_20, bp, roe_ttm）。
+fields: [stock_daily, stock_adj_factor, stock_finance, stock_income, stock_balancesheet, stock_cashflow, stock_financial_indicator, stock_moneyflow]
+origin: round11_lead_preregistered_2026-10-05
+status: unvalidated_hypothesis
+preregistration_note: >
+  ★ 本 idea 在 135 个新配对的任何 P3/P3b 统计量被计算之前登记。
+  网格、判据、统一方向、登记上限与排序键全部先于计算写死。

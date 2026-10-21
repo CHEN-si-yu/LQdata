@@ -1,0 +1,42 @@
+# 事前登记定义；方向与机制在计算前冻结。
+{
+  "family_id": "r2_supply_family_v1",
+  "idea_id": "r2_supply_idea_v1",
+  "trial_budget": 6,
+  "allowed_variants": [
+    {
+      "signal": "float_unlock_decay60",
+      "mechanism": "float_unlock_shock"
+    },
+    {
+      "signal": "float_unlock_decay120",
+      "mechanism": "float_unlock_shock",
+      "note": "唯一一个预登记窗口变体"
+    },
+    {
+      "signal": "total_share_dilution252",
+      "mechanism": "total_share_dilution"
+    },
+    {
+      "signal": "free_float_ratio_level",
+      "mechanism": "free_float_ratio_level"
+    },
+    {
+      "signal": "free_float_ratio_rank252",
+      "mechanism": "free_float_ratio_level",
+      "note": "同一机制的自身历史位置表达，预登记变体"
+    },
+    {
+      "signal": "supply_pressure_interaction",
+      "mechanism": "share_supply_pressure_interaction"
+    }
+  ],
+  "baseline": [
+    "circ_mv",
+    "turnover_std_20",
+    "efx_free_turnover",
+    "total_leverage_ratio"
+  ],
+  "hypothesis_boundary": "只用日频股东权益状态（stock_finance 的股本字段）与累计复权因子；不复用送转事件本身（R2-I2）的收益效应；不做任何事后窗口/阈值搜索。",
+  "search_policy": "四个机制固定，六个候选一次登记；方向与窗口在计算前冻结。"
+}

@@ -1,0 +1,45 @@
+name: r11u2_peak_timing_mktstate_gate_v1
+family_id: r11u2_gated_peak_timing_v1
+implementation: research.families.r11u2_gated_peak_timing_v1:build
+parameters: {signal: mkt_pm_state_x_shape_gate}
+units: >
+  无量纲。`vol_peak_pos` 是 [0,1] 归一化时点（argmax 成交量 ÷ (n_bars−1)），
+  门控 `gate` 是逐日截面 z（无量纲），状态只以符号进入（±1）。
+  股票级 (T, C)。
+availability: >
+  T 日收盘后可用：`vol_peak_pos`/`hi_pos` 由当日 48 根 5 分钟棒聚合，
+  `am_open5/am_close5/pm_open5/pm_close5` 同理；状态 = 当日池内等权午后收益的
+  z252（只用 ≤T 的历史，min_count=120）。T 日取值用于 T+1 开盘起的标签，无前视。
+  上游 `stock_history_5min` 冻结在 2026-09-11（`factors/intraday.py` §8 实测），
+  之后日内层没有行。
+missing_policy: >
+  腿、门控两个分量（`vol_peak_pos−hi_pos`、`am_ret−pm_ret`）或状态任一为 NaN →
+  该 (股票, 日) 为 NaN。z252 历史有效值不足 120 个 → 全横截面 NaN。
+  停牌 / 未上市 / 退市当日日内层没有行 → NaN（精确落格，不前向填充、不零填充）。
+spec:
+  group: research_intraday_gated
+  desc: >
+    日内放量**时点**（当日最大量 5 分钟棒的归一化时点）本身无无条件预测力；
+    仅在池内等权午后收益为正（趋势日）时对次日收益为正相关、午后为负时转为负相关。
+    为避免退化为腿的逐日秩置换，候选再乘一个**逐股**形状一致度门控
+    （放量相对价格高点的先后 × 收益路径前重/后重）。higher_is_better=true。
+  formula: >
+    leg = vol_peak_pos（[0,1] 归一化时点）；pm = pm_close5/pm_open5−1；
+    state = z252_120(mean_j pm_j)；gate = ½(z_cs(vol_peak_pos − hi_pos) + z_cs(am_close5/am_open5 − pm))；
+    value = sign(state) × (leg − 0.5) × (1 + gate)
+  deps: [stock_history_5min]
+  start: '2018-01-01'
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: >
+    ★ 预筛实测（2018-01-02~2026-09-30，2,123 日）：leg 无条件 h=1 RankIC +0.00086
+    (HAC t=+0.60) ⇒ P2 通过；state 两侧 leg IC = +0.00580 (t=+2.73, n=1,060) /
+    −0.00457 (t=−2.12, n=942)，斜率 HAC t=+3.32 ⇒ P3 通过。
+    纯交互（无门控）与腿逐日 |ρ| ≡ 1.0000 属秩置换，不登记；本变体逐日 |ρ| vs 腿
+    均值 0.547 / 最大 0.872 / frac>0.99 = 0。
+    ★ 与在产因子的差异：`r4b_intraday_volume_hhi_20_*` 是量的**集中度** 20 日均值；
+    `id2_hi_lo_pos_gap` 是日内最高/最低**时点**之差；二者都不是「量峰时点」，
+    也都没有条件/门控结构。`vol_peak_pos` 在 125 个在产股票因子中零使用者。
+    ★ 结构性披露：状态只以符号进入（引擎逐日 z-score 会抹掉 |state|），
+    这正是必须加逐股门控的原因。

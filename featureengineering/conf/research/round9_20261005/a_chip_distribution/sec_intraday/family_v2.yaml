@@ -1,0 +1,53 @@
+family_id: r9_sec_intraday_family_v2
+idea_id: r9_sec_intraday_idea_v1
+trial_budget: 1
+allowed_variants:
+  - {signal: sec_own_rv_beta, window: 60, min_count: 54}
+baseline:
+  - vol_120
+  - idio_vol_60
+  - momentum_120
+  - short_term_reversal_5
+  - turnover_std_20
+  - log_mv
+  - bp
+  - roe_ttm
+parameters_frozen:
+  window: 60
+  min_count: 54
+  min_returns_per_sector_day: 40
+  bars_per_day: 48
+  var_floor: 1.0e-12
+  direction: false
+  sector_map: "stock_list.industry == tdx_minute.board_name -> board_code"
+  warmup_days: 200
+variants: "none"
+v1_to_v2_defect_disclosure: >-
+  v1 -> v2 的唯一差异（按不可变原则，v1 的定义已保留在 catalog 中）：v1 的 candidate.yaml 声明
+  deps = [tdx_minute, stock_list, stock_daily]，但实现用 `ctx.ret(1)` 取个股收益，而
+  fea/context.py 的 `ret/ret_clean` 会在 accessed 集合里加入 `stock_adj_factor`（前复权因子）。
+  引擎在 fea/engine.py:1055 拒绝「实际读取了未声明依赖」并抛 ValueError。该缺陷由**冒烟运行**
+  （2018-01-02..2018-06-29 单半年窗口，2026-10-05）在计算任何 IC 之前捕获：v1 从未产生
+  run.json、从未 evaluate、从未消耗试验预算。v2 只把 `stock_adj_factor` 补进 deps，
+  机制、公式、常数、窗口、方向、模块源码全部逐字不变。
+hypothesis_boundary: >-
+  只研究一个机制：个股对**自身行业**日内已实现波动率的 60 日滚动 beta。不扩到 amplitude /
+  volume_concentration / weighted_pressure（已被删除因子占用）、不扩到全板块中位数口径、
+  不扩参数网格、不事后调窗口或阈值、不事后改方向。
+search_policy: >-
+  预算 1：单机制单候选。常数 WINDOW=60 / MIN_COUNT=54 / MIN_RET=40 / VAR_FLOOR=1e-12
+  在看到任何 IC 或收益结果之前写死在模块里。
+prior_negative_evidence: >-
+  ★ 本族有明确的逆风，必须如实披露、不得呈现为处女地：doc/因子清理记录_20261003.md
+  L1602/1609/1616 的三个已删除兄弟因子（mfx_minute_amplitude / volume_concentration /
+  weighted_pressure 的 60 日相关暴露）中，两个未过 IC 门槛，第三个
+  （weighted_pressure）**通过了 G1–G7 最低门槛**却因机制论证不足被移除。也就是说：
+  「过闸门」不足以救本族，本候选必须在机制层面站得住；负结果完全在预期之内。
+data_semantics_warning: >-
+  tdx_minute 是 TDX 板块**指数**的 5 分钟线，不是个股分钟线；它不能还原成分股，本地也没有
+  历史成分表（tdx_blocks / dc_blocks 只是分类字典，且在研究 run 的 audit 下直接抛 ValueError）。
+  因此行业映射用 stock_list.industry —— 该表是**当前快照**（freq=snapshot，无 as-of 日期），
+  把今天的行业分类回溯应用到 2018 年是**分类层面的前视**。实测（见
+  artifacts/.../lookahead_industry_map.json）：分类体系在 2020–2026 内对样本股的年度漂移率为
+  X，且两套可用分类（TDX 风格 vs DC 风格）词表基本不相交，无法做逐股逐年核对。
+  信号本身只用同日及以前的 tdx_minute 与收益；该前视必须如实披露，不得当作不存在。

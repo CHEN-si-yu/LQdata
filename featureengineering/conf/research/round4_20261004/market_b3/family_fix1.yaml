@@ -1,0 +1,25 @@
+family_id: r4o_market_b3_v1_fix1
+idea_id: r4o_market_b3_v1
+trial_budget: 1
+baseline: >
+  与 v1 家族（r4o_market_b3_v1）完全相同：严格候选朴素对照 = 量腿与价格腿的近亲生产因子
+  （mkt_amount_total_log 存量能水平、mkt_illiquidity_median 量能/冲击水平、mkt_ew_reversal_5
+  的价格腿口径〔批 1 市场单元候选〕、mkt_idx_csi300_ret1 / mkt_idx_csi300_momentum20 指数价格腿）
+  与 b2 严格候选 mkt_breadth_price_divergence_5（宽度侧背离）；控制集 v1（继承 r4m round4 freeze，
+  不得改动）。本族为**纯工程修复的重发布**：v1 家族候选 mkt_amount_median
+  （r4o_mkt_amount_median_v1_88ac1e24a25fdb20）在 smoke（2025-01-01..2025-12-31 短窗）被引擎
+  拒绝写入——候选 yaml deps 仅声明 stock_daily，而实现掩码（universe & finite(ret_clean)）
+  实际读取 stock_adj_factor，触发「实际读取了未声明依赖，拒绝写入以免增量漏算」
+  （trial_failed，run r_e19e88213e9a4efe80520c913e38ade2，rc=1，无任何产出）。fix1 =
+  v1 + deps 补正（[stock_daily, stock_adj_factor]）；候选公式、参数、方向（绿卡无方向）、
+  缺失口径与预登记完全一致，不构成新机制、不改变有效预算计数（预算 1 = 该重发布候选）。
+allowed_variants:
+  - {signal: mkt_amount_median}
+hypothesis_boundary: >
+  与 v1 家族相同：市场标量没有同日股票间排序，不计算虚构的横截面 IC；绿卡通道 M0∧M2∧M3
+  （描述性上下文量，无方向承诺）；规则与控制集继承批 1/批 2 的 round4 freeze 链，不重开任何阈值。
+  本族仅承载 r4o_market_b3_v1 的工程修复重发布（fix1），不引入任何新机制。
+search_policy: 仅 1 个重发布候选；不扩窗口、不改参数、不改方向；z252 口径（min_count=120）与
+  `_base` 掩码口径先于结果冻结，登记后不得因结果改判。
+registration_note: 本族为 Round 4 批 3 单元 V6 的工程修复重发布登记（先于该候选任何结果统计）；
+  freeze b3 以 reseal amendment 记录 cid 替换、引擎拒绝写入证据与退役记录；不覆盖、不改动 v1 家族与前件。

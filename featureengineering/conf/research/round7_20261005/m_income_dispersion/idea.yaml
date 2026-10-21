@@ -1,0 +1,16 @@
+{
+  "idea_id": "r7m_income_dispersion_v1",
+  "hypothesis": "Cross-company operating earnings differentiation may reflect uncertainty/resource reallocation and a persistent risk premium; weak positive future 1/5-day prior. Aggregate annual contemporaneous and price-leading literature is not predictive evidence.",
+  "mechanism": "linear Q75(asinh([S(n_income,q)-S(n_income,q-4)]/S(revenue,q-4)))-linear Q25(same); one global disclosed q, no stockwise latest-q mixing; asinh dimensionless scale=1",
+  "expected_direction": "higher_is_better=true; weak, no reversal",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "Standard market gates plus preregistered same-supported-horizon HAC19/63 baseline+additional controls; failed direction or incremental support rejects.",
+  "fields": [
+    "stock_income.n_income",
+    "stock_income.revenue"
+  ],
+  "status": "unvalidated_hypothesis"
+}

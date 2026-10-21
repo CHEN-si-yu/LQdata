@@ -1,0 +1,25 @@
+{
+  "family_id": "r7d_lagged_capex_profit_conversion_v1",
+  "idea_id": "r7d_lagged_capex_profit_conversion_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "lagged_capex_profit_conversion",
+      "window": 4,
+      "lag_quarters": 4
+    }
+  ],
+  "baseline": "正式base8 G7；另行强制base8+G+L，G=deltaOP/max(abs(OPprev),1e6)，L=max(abs(OPprev),1e6)/Kprev，raw=G*L，同候选PIT与资格掩码。固定旧近邻：roa_ttm,asset_growth_qoq,ind_dt_netprofit_yoy,qf_core_roe_yoy_change,r4a_sue_seasonal_q_v1_f1def0b01eb0b979,r4a_sue_accel_v1_4b443eb2d4fda83c,ocf_to_profit,qf_cash_margin_floor_4q。rank FM与消费FM分列。",
+  "parameters_frozen": {
+    "window": 4,
+    "lag_quarters": 4,
+    "warmup_days": 1500,
+    "max_common_report_age_days": 550,
+    "strict_amount_floor_yuan": 1000000,
+    "positive_current_ocf": true,
+    "negative_delta_preserved": true,
+    "direction": true
+  },
+  "variants": "none",
+  "freeze_reference": "artifacts/research/round7_20261005/freeze/d_capex_definition_v1.json"
+}

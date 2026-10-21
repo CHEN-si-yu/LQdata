@@ -1,0 +1,21 @@
+# 事前登记定义；方向与机制在计算前冻结。
+{
+  "idea_id": "r2_supply_idea_v1",
+  "hypothesis": "股票供给的机械增加（限售解禁、增发稀释、自由流通比例抬升）会压低固定2115股池的下一开盘1/5日排序。",
+  "mechanism": "股本供给冲击：float_share/total_share 跳升捕捉解禁；经复权因子剔除送转后的 total_share 净增长捕捉增发/转债转股/回购注销；free_share/total_share 水平与自身历史位置代表真实可交易供给；供给冲击与换手/流动性的交互代表冲击的价格影响弹性。",
+  "expected_direction": "四个机制全部预登记为 higher_is_better=false（供给增加，预期收益低），不依据事后 IC 翻转。",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "若股本字段没有真实时点变化（常量/快照），或机制与规模/换手因子 |rho|>0.95，或分年符号同号少于 7/9 年，则不支持本假设。",
+  "fields": [
+    "stock_finance.total_share",
+    "stock_finance.float_share",
+    "stock_finance.free_share",
+    "stock_adj_factor.adj_factor",
+    "stock_daily.vol"
+  ],
+  "origin": "lead_research_brief_round2_R2-I5",
+  "status": "unvalidated_hypothesis"
+}

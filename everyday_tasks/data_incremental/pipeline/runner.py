@@ -31,7 +31,6 @@ from . import viz
 ORDER = [
     # ---- 快照/基础（很小，先跑，后续都要用）
     "stock_list", "tdx_blocks", "dc_blocks",
-    # index_ths_sector_categories 已于 2026-09-19 删除（名单已固化进 conf/ths_index_codes.txt）
     # ---- range（date 轴，每表 1~3 请求）
     "stock_daily", "stock_cyq_perf", "stock_adj_factor", "stock_finance", "index_daily",
     "stock_main_fund_flow", "stock_margin_detail",
@@ -50,8 +49,8 @@ ORDER = [
     "stock_financial_indicator", "stock_income", "stock_balancesheet",
     "stock_cashflow", "stock_forecast",
     # ---- per_entity（both 轴；窗口/批量见 registry 的调度元数据）
-    "tdx_daily", "index_ths_daily", "tdx_minute",
-    # tdx_block_stocks / index_ths_constituent_stocks 已于 2026-09-19 删除（快照表）
+    "tdx_daily", "tdx_minute",
+    # tdx_block_stocks 已于 2026-09-19 删除（快照表）
     "stock_cyq_chips",
     # ---- dump（最大的一张，靠 1 个请求吃饱）
     "stock_daily_dump", "stock_history_5min",
@@ -289,7 +288,7 @@ def _run_group(ds_list: list[R.DS], ctx: strat.Ctx, runner: P.Runner,
                 #    于是哪怕本次是 ⊘ 跳过，时间戳也被刷成"刚刚" →
                 #    age ≈ 0 < snapshot_every_days 恒成立 → **该表永远跳过、再也不刷新**。
                 #    实测受害：`index_weight`（30 天）冻在 2026-07-01、
-                #    `tdx_block_stocks` / `index_ths_constituent_stocks`（7 天）同样。
+                #    `tdx_block_stocks`（7 天）同样。
                 #    现在只记一笔"跳过了"，finished_at 保持上一次**真正跑完**的时刻。
                 man.last_run = {**(man.last_run or {}),
                                 "skipped_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

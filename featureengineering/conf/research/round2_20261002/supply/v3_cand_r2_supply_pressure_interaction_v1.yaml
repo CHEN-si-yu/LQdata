@@ -1,0 +1,38 @@
+# 事前登记定义；方向与机制在计算前冻结。
+{
+  "name": "r2_supply_pressure_interaction_v1",
+  "family_id": "r2_supply_family_v3",
+  "implementation": "research.families.r2_supply_v1:build",
+  "parameters": {
+    "signal": "supply_pressure_interaction"
+  },
+  "units": "两个截面 zscore 的乘积（无量纲）：log1p(20 日衰减解禁冲击) 与 -log(20 日流通股换手均值)。",
+  "availability": "解禁冲击只用 T 日及以前股本状态；换手用 T 日及以前真实成交的 stock_daily.vol 除以当时 float_share；均无未来位移。",
+  "missing_policy": "非真实成交日的成交量不参与换手（NaN 毒化而不是前向填充）；20 日窗口必须完整；截面有效样本 <30 的日期为 NaN；不成交日输出 NaN。",
+  "closest_existing_baselines": [
+    "turnover_std_20",
+    "efx_free_turnover",
+    "circ_mv"
+  ],
+  "semantic_difference": "不是单纯的低流动性或低换手溢价：只有同时存在近期解禁供给冲击时才取值，衡量供给冲击的价格影响弹性。",
+  "source_fields": [
+    "stock_finance.total_share",
+    "stock_finance.float_share",
+    "stock_daily.vol"
+  ],
+  "pre_registered_direction": "higher_is_better=false",
+  "spec": {
+    "group": "research_round2_supply",
+    "desc": "解禁供给冲击 × 低流动性交互",
+    "formula": "cs_zscore(log1p(decay_linear(max(diff(float/total),0),20))) * cs_zscore(-log(roll_mean(vol/float_share,20)))",
+    "deps": [
+      "stock_finance",
+      "stock_daily"
+    ],
+    "start": null,
+    "warmup_days": 120,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "vol 采用供应商原始尺度，仅在同一截面内做 zscore，不做跨表单位换算。 ctx.traded() 的真实成交掩码读取 stock_daily，已在 deps 显式声明。"
+  }
+}

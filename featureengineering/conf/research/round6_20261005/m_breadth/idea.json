@@ -1,0 +1,19 @@
+{
+  "idea_id": "r6m_breadth_path_area_v1",
+  "hypothesis": "在控制上午末和收盘广度后，下午较早占优而后续边际消退的参与广度可能较弱延续，较晚加入可能更持续，因此有符号面积高对应随后1/5日市场收益较低；弱先验，非单调路径不保证该逐条解释。",
+  "mechanism": "供应商全市场分钟广度相对11:30/15:00端点连线的持续偏离面积；同端点同PM均值的分钟重排可能同值，不声称完整事件排序。",
+  "expected_direction": "larger raw signed area predicts lower future formal market return; higher_is_better=false",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "Reject when fixed negative direction, year stability, M4 independence or fixed M6 incremental effect unsupported; no flip, new variant, green-card or volatility-target rescue.",
+  "fields": [
+    "stock_market_distribution_history.trade_time",
+    "stock_market_distribution_history.up_count",
+    "stock_market_distribution_history.down_count",
+    "stock_market_distribution_history.flat_count"
+  ],
+  "origin": "Round6 Lead-approved static path-semantic design before any candidate values or return statistics; R5 source-only probe and full-definition comparison archived.",
+  "prior_strength": "weak"
+}

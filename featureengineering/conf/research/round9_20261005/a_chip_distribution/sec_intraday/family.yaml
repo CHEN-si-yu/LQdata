@@ -1,0 +1,37 @@
+family_id: r9_sec_intraday_family_v1
+idea_id: r9_sec_intraday_idea_v1
+trial_budget: 1
+allowed_variants:
+  - {signal: sec_own_rv_beta, window: 60, min_count: 54}
+baseline:
+  - vol_120
+  - idio_vol_60
+  - momentum_120
+  - short_term_reversal_5
+  - turnover_std_20
+  - log_mv
+  - bp
+  - roe_ttm
+parameters_frozen:
+  window: 60
+  min_count: 54
+  min_returns_per_sector_day: 40
+  bars_per_day: 48
+  var_floor: 1.0e-12
+  direction: false
+  sector_map: "stock_list.industry == tdx_minute.board_name -> board_code"
+  warmup_days: 200
+variants: "none"
+hypothesis_boundary: >-
+  只研究一个机制：个股对**自身行业**日内已实现波动率的 60 日滚动 beta。不扩到 amplitude /
+  volume_concentration / weighted_pressure（已被删除因子占用）、不扩到全板块中位数口径、
+  不扩参数网格、不事后调窗口或阈值、不事后改方向。
+search_policy: >-
+  预算 1：单机制单候选。常数 WINDOW=60 / MIN_COUNT=54 / MIN_RET=40 / VAR_FLOOR=1e-12
+  在看到任何 IC 或收益结果之前写死在模块里。
+data_semantics_warning: >-
+  tdx_minute 是 TDX 板块**指数**的 5 分钟线，不是个股分钟线；它不能还原成分股，本地也没有
+  历史成分表（tdx_blocks / dc_blocks 只是分类字典，且在研究 run 的 audit 下直接抛 ValueError）。
+  因此行业映射用 stock_list.industry —— 这是**当前快照**，没有 as-of 日期，把今天的行业分类
+  回溯应用到 2018 年是分类层面的前视。行业分类变动缓慢，且信号本身只用同日及以前的
+  tdx_minute 与收益，但该前视必须如实披露，不得当作不存在。

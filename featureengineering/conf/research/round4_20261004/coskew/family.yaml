@@ -1,0 +1,18 @@
+family_id: r4g_coskew_v1
+idea_id: r4g_coskew_v1
+trial_budget: 5
+baseline: beta_60（总 beta，对沪深300）、idio_vol_60（残差波动）、vol_120（波动水平）；朴素对照按 declared 口径逐日配对比较。另报「控制 beta_60/idio_vol_60 主效应后」的剩余显著性（U7 专项要求）。
+allowed_variants:
+  - {signal: coskew_60}
+  - {signal: downside_beta_60}
+  - {signal: coskew_120}
+  - {signal: downside_beta_120}
+note: |
+  机制集合固定 4 个（任务书 B2 §2 U7），方向预登记不可改；预算 ≤5 个候选，预留 1 个位置
+  仅用于实现缺陷修复（不得用于扩网格/改方向）。
+  市场基准事前定死：mkt_ew_ret = 冻结池内当日等权平均日收益（与 U5 r4e 同口径，自包含偏差 1/n 忽略）；
+  与正式 beta_60 的沪深300 口径不同、与已删 bw_beta_*（宽度变化）/ind_beta_60（行业指数）
+  回归量不同——报告「防重蹈检查」一节说明。
+  coskew 冻结为标准化偏回归口径（去量纲，防与个股波动水平机械共线；任务书允许的两种表达之一，
+  另一表达 = 原始量纲 OLS 系数 = 本值 × σ_r/σ_m²，报告中说明换算关系但不作为候选）。
+  窗口 min_count：coskew 45/90（ceil(0.75n)，与 ret_skew_20 的 15/20 同比例）；downside_beta 8/16（任务书固定）。

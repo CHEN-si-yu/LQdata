@@ -1,0 +1,23 @@
+idea_id: r2_corpaction_idea_v1
+hypothesis: 复权因子的跳变日就是除权除息日，跳变比对应分红/送转强度；A 股高送转除权后短期贴权，持续现金分红公司存在股利溢价。
+mechanism: ratio(T)=adj_factor(T)/adj_factor(T-1) 度量当日除权除息强度；ratio>=1.10 记为送转/转增（股本增加），1e-4<ratio-1<1.10
+  记为现金分红。四个机制：送转强度、除权新鲜度与除权后表现、除权除息频次、现金分红连续性/水平。
+expected_direction: split_magnitude=false / ex_days_since=false / corpaction_frequency=false
+  / dividend_stability=true；方向在写第一行代码前固定，不按 IC 翻转。
+target_horizons:
+- 1
+- 5
+falsifiable: 若送转强度与短期反转或规模高度重复（|rho|>0.9），或信号只集中在 2018-2019 的极端送转年份，或分年度同号少于 7/9，则不支持本假设。
+fields:
+- stock_adj_factor_changes.stock_code
+- stock_adj_factor_changes.date
+- stock_adj_factor.stock_code
+- stock_adj_factor.trade_date
+- stock_adj_factor.adj_factor
+- stock_daily.stock_code
+- stock_daily.trade_date
+- stock_daily.close
+- stock_daily.pre_close
+- stock_daily.vol
+origin: round2_lead_preregistered
+status: unvalidated_hypothesis

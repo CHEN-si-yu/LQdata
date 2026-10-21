@@ -1,0 +1,19 @@
+name: r4b_intraday_volume_hhi_20
+family_id: r4b_intraday_shape_v1
+implementation: research.families.r4b_intraday_shape_v1:build
+parameters: {signal: intraday_volume_hhi_20}
+units: 无量纲 Σv²/V²（当日成交量份额的 HHI，bar 数 48 时的下界 1/48）；份额口径对 vol 的
+  手/股单位翻转（2025-12-01）严格不变。
+availability: 只用信号日 15:00 收盘前当日 5min bar；不跨日、无未来数据；stock_history_5min
+  经 fea/delay.py / conf/frequency.yaml 实测 delay_days=0，无需位移。
+missing_policy: 当日可用 bar（vol 有限且 ≥0）<40 或 Σvol<=0 为 NaN；停牌/无该日分区为 NaN；
+  不零填充。20 日窗内有效日 <15 为 NaN。
+spec:
+  group: research_intraday
+  desc: Lead 预登记机制 1：日内成交量份额 HHI 的 20 日均（高集中=流动性供给薄弱/博弈化）。
+  formula: mean20( Σ_bar(vol/V)^2 )，V=Σ_bar vol
+  deps: [stock_history_5min]
+  warmup_days: 45
+  higher_is_better: false
+  version: 1
+  note: 与 R3-B 同分段口径（日期变化|时段回跳切段、不依赖 48 网格）；份额类对单位翻转不变。

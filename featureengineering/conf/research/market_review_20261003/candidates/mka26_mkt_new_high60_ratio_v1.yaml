@@ -1,0 +1,27 @@
+{
+  "name": "mka26_mkt_new_high60_ratio_v1",
+  "family_id": "mkta26_breadth_daily_family_v1",
+  "implementation": "research.families.market_gate_audit_v1:build",
+  "parameters": {
+    "original_name": "mkt_new_high60_ratio",
+    "definition_sha256": "127b1b83ea4a0517b15aa455e1dc0159a991d6a0249679bb46b3b04bafef3e98"
+  },
+  "units": "与正式因子 mkt_new_high60_ratio 完全一致（本候选仅做逐值复算，不改变任何口径）；单位与可用性详见其正式 note。",
+  "availability": "与正式因子 mkt_new_high60_ratio 一致：T 日值于 T 日收盘后可用；无额外滞后；上午族截面时点 11:30 但生产可用时点为收盘后。",
+  "missing_policy": "与正式因子一致：缺失保持 NaN，不用未来值回填；对齐前缀按正式声明（align_fill 或 NaN）。",
+  "spec": {
+    "group": "market",
+    "desc": "收盘 突破前60日新高的比例",
+    "formula": "count(hfq_close>lag(MAX60,1))/count(valid)；r=单日后复权收益",
+    "deps": [
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": "2018-01-01",
+    "warmup_days": 500,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "市场审计别名（mka26 复审）：逐值复算正式因子 mkt_new_high60_ratio@v3；固定2115只主板池；有效样本分母，缺测/停牌不计，少于100只为NaN。当日收盘后可用。离散比较容差为1e-12+1e-12*abs(基准)：阈值相等计入至少/至多，不计入严格高于/低于。市场标量不做截面rank；属于市场状态候选特征，未做收益有效性承诺。",
+    "is_market": true
+  }
+}

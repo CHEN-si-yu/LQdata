@@ -1,0 +1,47 @@
+{
+  "family_id": "r10gc_fund_yoy_v1",
+  "idea_id": "r10gc_fund_yoy_v1",
+  "trial_budget": 5,
+  "allowed_variants": [
+    {
+      "variant": "yoy_net_profit"
+    },
+    {
+      "variant": "yoy_ocf"
+    },
+    {
+      "variant": "yoy_total_asset"
+    },
+    {
+      "variant": "yoy_net_asset"
+    },
+    {
+      "variant": "income_tax_yoy"
+    }
+  ],
+  "baseline": [
+    "yoy_revenue",
+    "asset_growth_qoq",
+    "roe_ttm",
+    "roa_ttm",
+    "ocf_to_profit",
+    "ind_dt_netprofit_yoy",
+    "ind_bps_yoy"
+  ],
+  "parameters_frozen": {
+    "lag_report_periods": 4,
+    "ratio_definition": "safe_div(cur - prev, |prev|, min_abs_den=1e-6)",
+    "modes": {
+      "yoy_net_profit": "ttm",
+      "yoy_ocf": "ttm",
+      "yoy_total_asset": "point",
+      "yoy_net_asset": "point",
+      "income_tax_yoy": "ttm"
+    },
+    "warmup_days": 700,
+    "direction": "higher_is_better=true for all (declared=raw; no direction claimed)",
+    "bound": "5 个候选覆盖 5 条不同科目序列（无族内层级共线）。资格判定同为 IN 但本轮未登记的：lra_yoy、tax_surcharge_yoy（★ 规则 IN 但**不可实现**：fea/deriv.py::FIELD_SOURCE 的 127 个字段里没有长期应收款、也没有营业税金及附加 —— 这两个缺口如实记录，不绕过框架自读 parquet）。"
+  },
+  "variants": "none：5 个变体在同一模块内事前冻结（FROZEN 字典），build() 拒绝任何其它参数组合。",
+  "channel": "green-card candidate (basic thresholds only; G4-G7 not claimed)"
+}

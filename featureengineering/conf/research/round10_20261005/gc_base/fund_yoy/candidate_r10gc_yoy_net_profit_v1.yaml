@@ -1,0 +1,26 @@
+{
+  "name": "r10gc_yoy_net_profit_v1",
+  "family_id": "r10gc_fund_yoy_v1",
+  "implementation": "research.families.r10gc_fund_yoy_v1:build",
+  "parameters": {
+    "variant": "yoy_net_profit"
+  },
+  "units": "无量纲比率（同比，保留符号）",
+  "availability": "唯一可用时点 = 财务报表的公告日 ann_date / f_ann_date（fea/deriv.py 的版本表），T 日只用 ann_date <= T 的最新已披露版本；报告期 end_date 只用于确定「哪一期」，不作为可见日期。lag=4 的单位是**报告期**（四个季度前），不是交易日位移。真实值起点 = default_start（2018-01-01）；更早的报告期仅用于 warmup 预热。",
+  "missing_policy": "当期或去年同期缺失 / 从未披露 ⇒ NaN，不用旧报告顶替、不跨不可得报告前向填充、不补零。分母 |去年同期值| <= 1e-6 ⇒ NaN（避免跨零科目的假巨值）；净利润跨零产生的大绝对值保留，交由引擎的 1%/99% 逐日缩尾，不在因子内截断（与在产 yoy_revenue 同口径）。池外股票 ⇒ NaN。",
+  "spec": {
+    "group": "r10_gc_fund_yoy",
+    "desc": "归母净利润（TTM）同比：Value_t / Value_{t−4Q} − 1",
+    "formula": "yoy = Value_t / Value_{t-4Q} - 1, implemented as safe_div(cur - prev, |prev|, 1e-6); cur = ttm(stock_income.n_income_attr_p), prev = lag 4 report periods",
+    "deps": [
+      "stock_income"
+    ],
+    "fin_fields": [
+      "n_income_attr_p"
+    ],
+    "warmup_days": 700,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "绿卡候选（只主张三项基础门槛：非空 / 非常数 / 无泄露；G4–G7 未主张）。higher_is_better=true 仅表示 declared=raw（不做反号），不代表任何预测方向，不主张预测有效性，不写「已验证信号」。；Tushare yoy_net_profit。★ 实测该名**不在** artifacts/catalog/factors.csv 的 name 列（不在产）；最接近的在产对象 ind_dt_netprofit_yoy 是供应商**扣非**净利润同比字段、afx_fi_q_netprofit_qoq 是**单季度**环比，分子/口径都不同。Lead 首版任务书曾误列其为在产，已由 Lead 更正。；【资格依据】对**单条原始会计科目序列**做同比比率（Value_t / Value_{t−4Q} − 1），即规则明文 IN 的「a difference or year-on-year ratio of a single fundamental series / 对单序列原始字段的标准变换」。操作数不是比率、不是聚合量的再运算、无跨序列复合。；【PIT / 无泄露】TTM（最近四个报告期累计值，按 ann_date 版本表前向沿用）；T 日只用 ann_date ≤ T 的最新已披露版本，追溯修订不改写历史生效日；lag=4 的单位是**报告期**不是交易日；模块内无 shift / 无前向填充 / 无全样本标准化。；【与在产对象的差异论证】逐一核对 catalog 中所有涉及 `n_income_attr_p` / 净利润的口径：`ind_dt_netprofit_yoy` 是**供应商扣非净利润同比字段**（stock_financial_indicator，不同分子）；`afx_fi_q_netprofit_qoq` 是**单季度**环比（供应商字段，且经 asinh 年度差变换）；`r4a_sue_seasonal_q*` 是季节标准化盈利意外（不同机制）；`yoy_revenue` 是营收同比（不同科目）；`roe_ttm`/`roa_ttm` 是水平比率（不同变换）。**没有任何在产对象计算「单科目 TTM/时点值的同比比率」**（除 `yoy_revenue` 的营收一项，本批不重复登记）。已删记录 374 个中，`np_to_opex_yoy`、`afx_fi_basic_eps_yoy`、`afx_fi_cfps_yoy`、`afx_fi_equity_yoy` 等全部是**比率/每股量**的同比，与本批「单科目水平值同比」在操作数上不同；本批 5 个科目的同比均无在产、无已删、无历史报告关闭记录、无 round2–round9 定义。★ 与在产 `asset_growth_qoq` 的邻近性披露：同为 `total_assets` 序列，但它是**环比（lag=1 报告期）**，本批 `yoy_total_asset` 是**同比（lag=4 报告期）**，两个不同期限点；实测两两相关见交付报告 §6。；【Growth 类在严格读法下的自查（Lead 要求：不得沿用其早前 IN 裁定）】按规则「对已聚合量的再运算（变化率 of ratio）」逐名复核 Tushare Growth 15 名：· IN（单科目序列的同比）：yoy_net_profit、yoy_ocf、yoy_net_asset、yoy_total_asset —— 本批登记；· OUT：yoy_roa、yoy_roe（操作数是 ROA/ROE = 两聚合量之比）、gross_margin_qoq（毛利率之比的变化率）、np_ttm_qoq（TTM 聚合量的环比，其差分等于相隔四季的两笔单季值之差）、np_to_inventory_yoy（比率的同比）、sa/pa/eaa/eap（变化的再变化＝加速度）、peg_252d（PE ÷ EPS 增速 = 跨序列复合）；· 已开采：yoy_revenue、asset_growth_qoq（均在产同名）。⇒ 结论：Growth 15 名在严格读法下只剩 4 个可用，本批已全部登记（4/4）。"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "run_name": "current",
+  "checked_at": "2026-10-02 00:21:01",
+  "score_source": "training_predictions",
+  "reads_model_train": true,
+  "loads_model_weights": true,
+  "strategies": [
+    "top5_5d",
+    "top1_1d"
+  ],
+  "strategy_rows": 2,
+  "quarterly_rows": 8,
+  "evaluation_days": 242,
+  "evaluation_window": [
+    "2025-07-01",
+    "2026-06-30"
+  ],
+  "label_price_check": [
+    {
+      "horizon": 1,
+      "checked": 644339,
+      "max_abs_error": 1.4519080160368958e-08
+    },
+    {
+      "horizon": 3,
+      "checked": 639937,
+      "max_abs_error": 2.236930574106566e-08
+    },
+    {
+      "horizon": 5,
+      "checked": 635558,
+      "max_abs_error": 2.9352775543500798e-08
+    },
+    {
+      "horizon": 10,
+      "checked": 624824,
+      "max_abs_error": 5.7581510226611954e-08
+    },
+    {
+      "horizon": 20,
+      "checked": 603712,
+      "max_abs_error": 6.462628165948558e-08
+    }
+  ],
+  "quarterly_returns_compound": true,
+  "date_axis_matches_price_axis": true,
+  "realized": {
+    "top5_5d": {
+      "return_value": 0.11219291021162126,
+      "max_drawdown": -0.20775714255861932,
+      "sharpe": 0.5422303845732805,
+      "trades": 140,
+      "total_fees": 1724.145778838,
+      "gross_return_same_positions": 0.13954,
+      "fee_drag": 0.01724145778837999,
+      "slippage_drag": 0.010105631999998732,
+      "avg_exposure": 0.6617326270985071,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    },
+    "top1_1d": {
+      "return_value": -0.3463904202792484,
+      "max_drawdown": -0.505592680504074,
+      "sharpe": -1.0362115053781777,
+      "trades": 320,
+      "total_fees": 16020.488227926,
+      "gross_return_same_positions": -0.09191999999999911,
+      "fee_drag": 0.16020488227925997,
+      "slippage_drag": 0.09426553799998924,
+      "avg_exposure": 0.9929410121819873,
+      "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment"
+    }
+  }
+}

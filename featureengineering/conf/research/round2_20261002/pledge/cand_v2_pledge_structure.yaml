@@ -1,0 +1,38 @@
+# 事前登记假设，不构成收益证明；机制集合、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r2_pledge_structure_v2",
+  "family_id": "r2_pledge_family_v2",
+  "implementation": "research.families.r2_pledge_v2:build",
+  "parameters": {
+    "signal": "pledge_structure"
+  },
+  "units": "比例，无单位；分子分母同表同为万股。",
+  "availability": "同机制 1 的周频稠密网格 + 15 个交易日保守滞后。",
+  "missing_policy": "无质押（分子分母同为 0）定义为 0：没有质押敞口就没有限售质押敞口，这是机制定义。仅在 total_share<=0 或字段非有限时置 NaN。实测 rest_pledge>0 的行占比从 2018 年 32% 降到 2026 年 4%，覆盖随时间下降但在池内始终足够。",
+  "closest_existing_baselines": [
+    "total_leverage_ratio",
+    "log_mv"
+  ],
+  "semantic_difference": "限售质押是大股东可动用抵押品枯竭的代理，与质押水平/变化都不同。",
+  "source_fields": [
+    "stock_pledge_stat.stock_code",
+    "stock_pledge_stat.end_date",
+    "stock_pledge_stat.unrest_pledge",
+    "stock_pledge_stat.rest_pledge",
+    "stock_pledge_stat.total_share"
+  ],
+  "pre_registered_direction": "lower_is_better",
+  "spec": {
+    "group": "r2_pledge",
+    "desc": "限售股质押占全部质押的比例",
+    "formula": "rest_pledge/(unrest_pledge+rest_pledge)（无质押时为 0），as-of 前向填充后滞后 15 个交易日",
+    "deps": [
+      "stock_pledge_stat"
+    ],
+    "start": null,
+    "warmup_days": 120,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "v2：公式/窗口/方向与 v1 逐字相同，仅将实现模块换成 r2_pledge_v2.py（为 stock_pledge_stat 声明 end_date 为可得日期列，使框架原有截断生效）；v1 零 run、零 IC。原 note：R2-I1 机制 4；方向事前冻结 higher_is_better=false。"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "idea_id": "r7a_tax_expense_v1",
+  "hypothesis": "Tax expense seasonal change may supplement after-tax profit change; weak positive 1/5-day prior, not independent of joint pre/after-tax accounting identity.",
+  "mechanism": "[S(income_tax,q)-S(income_tax,q-4)]/point(total_assets,q-4); q is income latest disclosed frontier, not joint current frontier",
+  "expected_direction": "higher_is_better=true; no reversal",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "G1-G7 and preregistered additional controls; failure=>reject, no formula/window/sign rescue.",
+  "fields": [
+    "income_tax",
+    "total_assets",
+    "stock_daily real-traded mask"
+  ],
+  "origin": "Lead-approved R7 proposals and tax_control_algebra_amendment before implementation/returns",
+  "status": "unvalidated_hypothesis"
+}

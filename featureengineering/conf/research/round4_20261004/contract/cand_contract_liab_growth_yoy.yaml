@@ -1,0 +1,17 @@
+name: r4q_contract_liab_growth_yoy_v1
+family_id: r4q_contract_liab_v1
+implementation: research.families.r4q_contract_liab_v1:build
+parameters: {signal: contract_liab_growth_yoy}
+units: 无量纲增速（比率）。正值=合同负债同比增长（订单储备扩张），负值=收缩。
+availability: 合同负债为资产负债表时点科目，经财务层 ctx.point：pit=max(ann_date,f_ann_date,end_date)≤信号日的最新可考版本（保留历次修订）；同比=同一公告时点上的当期报告期 p 与 p−4 期（报告期口径，不是日频减 252 天）；无未来信息。
+missing_policy: 当期或四季度前合同负债不可考、或四季度前值 ≤1e6 元（含科目未启用期的显式 0）时为 NaN；当期=0 而基期>1e6 保留为真实 −100%；非有限值输出 NaN；不零填充、不向更旧报告回退。
+spec:
+  group: research_contract_liab
+  desc: 未验证候选（V2 机制1）：合同负债同比增速——订单储备增长 → 正向预期收益。
+  formula: CL(p)/CL(p−4季) − 1，CL=point(contract_liab)
+  deps: [stock_balancesheet]
+  fin_fields: [contract_liab]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: 方向事前冻结 true。2020 新收入准则后科目才全池启用：2018–2019 仅早采用者（106/126 家）>0，2021 起全池；覆盖曲线见 delivery 报告。2023 年 3 家险企 IFRS17 保险合同负债并入（601318/601601/601336）——分母 0 → NaN，次年项被重分类放大，披露不修剪。

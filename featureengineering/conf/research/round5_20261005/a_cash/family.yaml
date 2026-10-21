@@ -1,0 +1,18 @@
+{
+  "family_id": "r5a_cash_promptness_v1",
+  "idea_id": "r5a_cash_promptness_v1",
+  "trial_budget": 1,
+  "baseline": "G7基础8控制；邻近额外诊断cash_sales_ratio/cash_conversion_cycle/cf_purchase_cash_intensity，保留G7秩回归及消费变换双口径。",
+  "allowed_variants": [
+    {
+      "signal": "cash_collection_promptness",
+      "window": 16
+    }
+  ],
+  "parameters_frozen": {
+    "window": 16,
+    "warmup_days": 2200,
+    "direction": true
+  },
+  "variants": "none"
+}

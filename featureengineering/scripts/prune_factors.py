@@ -34,6 +34,10 @@ import re
 import shutil
 import sys
 from pathlib import Path
+if __package__:
+    from ._project_paths import project_output
+else:
+    from _project_paths import project_output
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -115,10 +119,8 @@ DELETE: dict[str, str] = {
     "afx_fi_profit_to_op": "【重复】与 `afx_fi_ebit_of_gr` |ρ|∈[0.924,0.998]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 5 个）；本簇保留代表 `afx_fi_ebit_of_gr`",
     "mfx_minute_pressure": "【重复】与 `mfx_dc_pressure` |ρ|∈[0.883,0.988]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 4 个）；本簇保留代表 `mfx_dc_pressure`",
     "mfx_tdx_pressure": "【重复】与 `mfx_dc_pressure` |ρ|∈[0.883,0.988]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 4 个）；本簇保留代表 `mfx_dc_pressure`",
-    "mfx_ths_pressure": "【重复】与 `mfx_dc_pressure` |ρ|∈[0.883,0.988]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 4 个）；本簇保留代表 `mfx_dc_pressure`",
     "mfx_dc_swing": "【重复】与 `mfx_dc_range` |ρ|∈[0.963,0.998]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 4 个）；本簇保留代表 `mfx_dc_range`",
     "mfx_tdx_range": "【重复】与 `mfx_dc_range` |ρ|∈[0.963,0.998]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 4 个）；本簇保留代表 `mfx_dc_range`",
-    "mfx_ths_range": "【重复】与 `mfx_dc_range` |ρ|∈[0.963,0.998]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 4 个）；本簇保留代表 `mfx_dc_range`",
     "afx_fi_dt_eps": "【重复】与 `afx_fi_diluted2_eps` |ρ|∈[0.961,0.997]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 3 个）；本簇保留代表 `afx_fi_diluted2_eps`",
     "afx_fi_eps": "【重复】与 `afx_fi_diluted2_eps` |ρ|∈[0.961,0.997]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 3 个）；本簇保留代表 `afx_fi_diluted2_eps`",
     "chip_resistance_distance": "【重复】与 `avg_cost_premium` |ρ|∈[0.943,0.992]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 3 个）；本簇保留代表 `avg_cost_premium`",
@@ -149,8 +151,6 @@ DELETE: dict[str, str] = {
     "efx_annual_sales_yield": "【重复】与 `sp_ttm` |ρ|∈[0.974,0.974]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 2 个）；本簇保留代表 `sp_ttm`",
     "efx_top_participation": "【重复】与 `efx_top_amount_rate` |ρ|∈[1.000,1.000]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 2 个）；本簇保留代表 `efx_top_amount_rate`",
     "efx_top_net_rate": "【重复】与 `efx_top_imbalance` |ρ|∈[0.968,0.968]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 2 个）；本簇保留代表 `efx_top_imbalance`",
-    "mfx_ths_pct_change": "【重复】与 `mfx_dc_pct_change` |ρ|∈[0.988,0.988]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 2 个）；本簇保留代表 `mfx_dc_pct_change`",
-    "mfx_ths_turnover_rate": "【重复】与 `mfx_dc_turnover_rate` |ρ|∈[0.965,0.965]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 2 个）；本簇保留代表 `mfx_dc_turnover_rate`",
     "mfx_minute_realized_vol": "【重复】与 `mfx_minute_amplitude` |ρ|∈[0.959,0.959]（2018~2026 全窗 · dedup 2026-09-22 · 簇内 2 个）；本簇保留代表 `mfx_minute_amplitude`",
     # ---- 以下 1 个同样在 2026-09-22 的重复簇里，但**保留**（同 09-17 轮的道理）----
     #   `momentum_60` ← cp_momentum_highvol_60 / cp_quality_momentum（两个存活耦合因子的父依赖）。
@@ -326,7 +326,7 @@ def _kind(spec, root: Path) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="按分诊清单三层删除因子")
-    ap.add_argument("--apply", action="store_true", help="真的删（默认只预览）")
+    ap.add_argument("--apply", action="store_true", help="已停用；因子状态通过 main.py library status 管理")
     ap.add_argument("--report", default="", help="可选独立导出路径；默认记入 README.md")
     ap.add_argument("--list", default="", dest="list_path",
                     help="从 JSON 读本轮清单（替代源码里的 DELETE 字典）。"
@@ -334,6 +334,11 @@ def main() -> int:
                          "200 个名字写死在源码里不可维护，大轮次一律走这个参数")
     ap.add_argument("--why", default="", help="写进源码注释的理由标签（--list 时用）")
     args = ap.parse_args()
+    if args.apply:
+        ap.error("旧生产删除入口已停用。请使用 main.py library status <name> paused|retired --reason <理由>；本脚本仅保留预览。")
+    output = project_output(args.report) if args.report else None
+    if output == (ROOT / "README.md").resolve():
+        raise ValueError("不要通过 --report 覆盖总手册；省略该参数即可追加报告")
 
     from fea import store
     from fea.config import load as load_cfg
@@ -395,9 +400,7 @@ def main() -> int:
             "  同时它们换手≈0，无法独立产生交易信号 —— 作为**风格暴露/控制变量**保留。",
             "- `ac1 < 0.10` 的日内/资金流瞬时因子：日频全换手，必须按**成本后**收益复核。"]
     if args.report:
-        out = ROOT / args.report
-        if out.resolve() == (ROOT / "README.md").resolve():
-            raise ValueError("不要通过 --report 覆盖总手册；省略该参数即可追加报告")
+        out = output
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text("\n".join(rep) + "\n", encoding="utf-8")
     else:

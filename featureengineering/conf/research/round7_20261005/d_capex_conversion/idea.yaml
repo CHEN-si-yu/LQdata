@@ -1,0 +1,19 @@
+{
+  "idea_id": "r7d_lagged_capex_profit_conversion_v1",
+  "hypothesis": "在当前经营利润与经营现金均为正的公司中，较高的年度经营利润增量/前一年度现金资本开支可能反映较好的利润转化或资本节约，弱正方向事前先验。该指标也等于利润增长腿×低历史capex腿；不归因真实项目回报或因果投资效率。",
+  "mechanism": "年度利润增量相对于前一年现金资本开支的表示，附正经营规模和正现金资格；利润与项目不匹配、宏观/M&A/非核心利润、资产轻重可混淆；prior weak。",
+  "expected_direction": "higher_is_better=true，独立事前冻结；R5/R6收益拒绝不用于本项变体、反号或资格修正。",
+  "target_horizons": [
+    1,
+    5
+  ],
+  "falsifiable": "遵循官方G1-G7与冻结2115池；base8+G+L及固定邻近增量诊断解释两腿。不得将控制后消失仍称独立项目回报；只登记，未验证。",
+  "fields": [
+    "stock_income.operate_profit",
+    "stock_cashflow.c_pay_acq_const_fiolta",
+    "stock_cashflow.n_cashflow_act"
+  ],
+  "origin": "round7_lead_approved_20261005",
+  "status": "unvalidated_hypothesis",
+  "dedup": "现金流capex前一年流量分母，不是ROIC期初投入资本存量；区别已删静态capex比、资产周转及R6C在建下降/固定增加配对。批准提案已查R2/R3/R4与374删除；无精确同构，不否认利润增长与低capex近邻。"
+}

@@ -1,0 +1,30 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "family_id": "s26_transmission_family_v1",
+  "idea_id": "s26_transmission_idea_v1",
+  "trial_budget": 4,
+  "allowed_variants": [
+    {
+      "signal": "buy_flow_underresponse"
+    },
+    {
+      "signal": "sell_flow_resilience"
+    },
+    {
+      "signal": "tier_response_divergence"
+    },
+    {
+      "signal": "dip_buy_flow_innovation"
+    }
+  ],
+  "baseline": [
+    "mf_flow_price_absorption_20",
+    "mf_big_order_ratio",
+    "mf_elg_lg_split_20",
+    "mf_big_mid_net_corr_20",
+    "mf_net_inflow_5d",
+    "super_large_order_intensity"
+  ],
+  "hypothesis_boundary": "不用未自证的net_mf。由lg/elg买卖金额构造净流比例，比较T日价格与截至T-1的60日关系，并识别层次响应分歧和跌后异常买入。",
+  "search_policy": "只登记四种机制，不扩窗口或方向搜索"
+}

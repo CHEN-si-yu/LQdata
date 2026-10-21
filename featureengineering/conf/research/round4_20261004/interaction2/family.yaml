@@ -1,0 +1,18 @@
+family_id: r4h_state_interaction_v2
+idea_id: r4h_state_interaction_v2
+trial_budget: 5
+baseline: |
+  四条单腿正式因子（short_term_reversal_5、momentum_120、vol_120、amihud_daily_5）做朴素对照；
+  定向对照 = cp_momentum_lowvol_20、cp_value_momentum_div；
+  关键检验 = 在两腿主效应都进入截面控制后交互项的剩余显著性（Fama-MacBeth 两阶段 +
+  日固定效应面板，raw/declared 双列）。
+allowed_variants:
+  - {signal: rev5_x_illiqstate}
+  - {signal: mom120_x_dispstate}
+  - {signal: lowvol_x_breadthstate}
+  - {signal: rev10_x_illiqstate}
+  - {signal: mom60_x_dispstate}
+variant_notes: |
+  后两个为事前登记的**窗口变体**（rev10 = 机制 1 的反转腿 5→10 日；mom60 = 机制 2 的动量腿
+  120→60 日），标注变体性质、不单列新机制主张；其余口径（股票腿 winsor+zscore、状态 252 日
+  滚动 z min120、交互=乘积）与核心机制完全相同。

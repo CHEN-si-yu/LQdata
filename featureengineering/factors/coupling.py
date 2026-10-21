@@ -42,6 +42,8 @@ from __future__ import annotations
 import numpy as np
 
 from fea.spec import FactorSpec, register
+from .coupling_private_basis import _private_basis_values, _PRIVATE_EQUITY, _PRIVATE_RETURN
+
 
 GROUP = "coupling"
 
@@ -58,6 +60,10 @@ def _z(ctx, mat: np.ndarray) -> np.ndarray:
 
 def _f(ctx, name: str) -> np.ndarray:
     """读一个父因子的值（精确对齐到当前面板）。"""
+    if name == "cp_internal_book_value":
+        return np.asarray(_private_basis_values(ctx, _PRIVATE_EQUITY), dtype=np.float64)
+    if name == "cp_internal_short_return":
+        return np.asarray(_private_basis_values(ctx, _PRIVATE_RETURN), dtype=np.float64)
     return np.asarray(ctx.load_factor(name), dtype=np.float64)
 
 
@@ -86,8 +92,8 @@ def _diff(ctx, a: str, b: str) -> np.ndarray:
 # A. 价格 × 风险（3 个）
 # ══════════════════════════════════════════════════════════════════════════
 @register(FactorSpec(
-    name="cp_momentum_lowvol_20", group=GROUP,
-    deps=("momentum_20", "idio_vol_60"),
+    name="cp_momentum_lowvol_20", version=2, group=GROUP,
+    deps=('stock_daily', 'stock_adj_factor', 'idio_vol_60'),
     desc="防守型动量 = z(20日动量) × z(−特质波动)",
     formula="CP = z(momentum_20) × z(−idio_vol_60)",
     start=None, warmup_days=W_LONG, higher_is_better=True,
@@ -97,21 +103,9 @@ def _diff(ctx, a: str, b: str) -> np.ndarray:
          "预期非空率 ≈ 两父因子交集（两者都是价格类，接近 100%）。",
 ))
 def cp_momentum_lowvol_20(ctx):
-    return _mul(ctx, "momentum_20", "idio_vol_60", flip_b=True)
+    return _mul(ctx, 'cp_internal_short_return', "idio_vol_60", flip_b=True)
 
 
-@register(FactorSpec(
-    name="cp_momentum_highvol_60", group=GROUP,
-    deps=("momentum_60", "vol_120"),
-    desc="进攻型动量 = z(60日动量) × z(120日波动)",
-    formula="CP = z(momentum_60) × z(vol_120)",
-    start=None, warmup_days=W_LONG, higher_is_better=True,
-    note="与 `cp_momentum_lowvol_20` 是**对照组**（同样两个维度、方向相反）。"
-         "两个都留着是有意的：A 股在不同区间对「高波动动量」的定价方向会翻，"
-         "下游回归可以各自取值。预期非空率 ≈ 100%。",
-))
-def cp_momentum_highvol_60(ctx):
-    return _mul(ctx, "momentum_60", "vol_120")
 
 
 
@@ -119,21 +113,10 @@ def cp_momentum_highvol_60(ctx):
 # ══════════════════════════════════════════════════════════════════════════
 # B. 价值 × 质量 × 成长 × 资金结构（4 个）
 # ══════════════════════════════════════════════════════════════════════════
-@register(FactorSpec(
-    name="cp_value_quality", group=GROUP, deps=("bp", "roe_ttm"),
-    desc="价值质量共振 = z(账面市值比 BP) × z(ROE TTM)",
-    formula="CP = z(bp) × z(roe_ttm)",
-    start=None, warmup_days=700, higher_is_better=True,
-    note="经典的「便宜且好」（格雷厄姆式）。★ 两个父因子的 ac1 都 ≈0.999（季度才变一次），"
-         "所以本因子**也是慢变量**：2026 单年只有约 4 个独立样本，IC 不可信；"
-         "它的价值在于作为**风格暴露**进模型，而不是独立 alpha。",
-))
-def cp_value_quality(ctx):
-    return _mul(ctx, "bp", "roe_ttm")
 
 
 @register(FactorSpec(
-    name="cp_value_momentum_div", group=GROUP, deps=("bp", "momentum_20"),
+    name="cp_value_momentum_div", version=2, group=GROUP, deps=('stock_balancesheet', 'stock_daily', 'stock_finance', 'stock_adj_factor'),
     desc="价值−动量分歧 = z(BP) − z(20日动量)",
     formula="CP = z(bp) − z(momentum_20)",
     start=None, warmup_days=W_LONG, higher_is_better=True,
@@ -142,105 +125,26 @@ def cp_value_quality(ctx):
          "本文件只保留 3 个分歧型（价值-动量、两融-趋势、筹码-换手各一）。",
 ))
 def cp_value_momentum_div(ctx):
-    return _diff(ctx, "bp", "momentum_20")
-
-
-@register(FactorSpec(
-    name="cp_quality_momentum", group=GROUP, deps=("roe_ttm", "momentum_60"),
-    desc="质量动量共振 = z(ROE TTM) × z(60日动量)",
-    formula="CP = z(roe_ttm) × z(momentum_60)",
-    start=None, warmup_days=700, higher_is_better=True,
-    note="质量动量（QMJ 的 A 股版本）。慢变量（roe_ttm 季度才变） × 快变量（动量）→ "
-         "整体换手由动量部分决定。预期非空率 ≈ 100%。",
-))
-def cp_quality_momentum(ctx):
-    return _mul(ctx, "roe_ttm", "momentum_60")
-
-
-@register(FactorSpec(
-    name="cp_moneyflow_momentum_res", group=GROUP,
-    deps=("mf_order_size_entropy", "momentum_20"),
-    desc="资金流结构 × 动量 = z(订单规模熵) × z(20日动量)",
-    formula="CP = z(mf_order_size_entropy) × z(momentum_20)",
-    start=None, warmup_days=W_LONG, higher_is_better=False,
-    note="`mf_order_size_entropy` 实测是 fundflow 族里最单调的因子（分层单调性 −0.99）："
-         "熵高 = 订单规模分散 = 散户主导。乘以动量后表达「散户主导的上涨」。"
-         "预期非空率 ≈ 100%（两张表都是全市场日频）。",
-))
-def cp_moneyflow_momentum_res(ctx):
-    return _mul(ctx, "mf_order_size_entropy", "momentum_20")
+    return _diff(ctx, 'cp_internal_book_value', 'cp_internal_short_return')
 
 
 
 
-@register(FactorSpec(
-    name="cp_rsi_moneyflow_res", group=GROUP,
-    deps=("rsi_14", "mf_net_inflow_ratio"),
-    desc="RSI × 主力净流入 = z(RSI14) × z(净流入占比)",
-    formula="CP = z(rsi_14) × z(mf_net_inflow_ratio)",
-    start=None, warmup_days=W_SHORT, higher_is_better=False,
-    note="技术面超买 × 资金面流入同时高 = 情绪与资金共振，A 股里通常是反向信号。"
-         "⚠️ `mf_net_inflow_ratio` 的 ac1 ≈ 0.04（日频全换手），本因子换手也很高，"
-         "必须按**成本后**收益复核。预期非空率 ≈ 100%。",
-))
-def cp_rsi_moneyflow_res(ctx):
-    return _mul(ctx, "rsi_14", "mf_net_inflow_ratio")
 
 
-@register(FactorSpec(
-    name="cp_margin_trend_div", group=GROUP,
-    deps=("margin_velocity", "trend_strength_60"),
-    desc="两融加速 − 趋势强度 = z(融资余额速度) − z(60日趋势强度)",
-    formula="CP = z(margin_velocity) − z(trend_strength_60)",
-    start="2011-01-01", warmup_days=W_LONG, higher_is_better=True,
-    note="分歧型：杠杆资金在加速、但价格趋势还没走出来（或反之）。"
-         "★ 父因子 `margin_velocity` 是**滞后表**（stock_margin_detail 晚 1 个交易日）做出来的，"
-         "它自己已经 `lag_grid(1)` 过了，所以本因子**不需要**再位移 —— 父因子的滞后处置会被继承，"
-         "重复位移等于白丢一天信息。预期非空率 ≈ 50%（只有两融标的）。",
-))
-def cp_margin_trend_div(ctx):
-    return _diff(ctx, "margin_velocity", "trend_strength_60")
 
 
-@register(FactorSpec(
-    name="cp_bigflow_margin_20", group=GROUP,
-    deps=("mf_large_order_avg_price", "margin_velocity"),
-    desc="大单成本 × 两融加速 = z(大单成交均价偏离) × z(融资余额速度)",
-    formula="CP = z(mf_large_order_avg_price) × z(margin_velocity)",
-    start="2011-01-01", warmup_days=W_LONG, higher_is_better=True,
-    note="两个「聪明钱」维度：大单成交价（成本端）与杠杆资金加速（资金端）。"
-         "预期非空率 ≈ 50%（受 margin 覆盖限制）。",
-))
-def cp_bigflow_margin_20(ctx):
-    return _mul(ctx, "mf_large_order_avg_price", "margin_velocity")
+
+
+
+
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # D. 筹码 × 价格/量（3 个）
 # ══════════════════════════════════════════════════════════════════════════
-@register(FactorSpec(
-    name="cp_chip_support_reversal_5", group=GROUP,
-    deps=("chip_position", "short_term_reversal_5"),
-    desc="筹码位置 × 短期反转 = z(收盘相对筹码分布位置) × z(5日反转)",
-    formula="CP = z(chip_position) × z(short_term_reversal_5)",
-    start="2018-01-02", warmup_days=W_SHORT, higher_is_better=True,
-    note="筹码位置高 = 收盘价高于大部分持仓成本（获利盘多）；叠加超跌 → "
-         "「获利盘被套」的反转机会。★ 起点受上游 `stock_cyq_chips` 限制（2018-01-02 起）。"
-         "预期非空率 ≈ 90%（筹码层覆盖主板，与股票池一致）。",
-))
-def cp_chip_support_reversal_5(ctx):
-    return _mul(ctx, "chip_position", "short_term_reversal_5")
 
 
-@register(FactorSpec(
-    name="cp_chip_turnover", group=GROUP, deps=("chip_concentration", "turnover_std_20"),
-    desc="筹码集中 × 换手波动 = z(筹码集中度) × z(换手率波动)",
-    formula="CP = z(chip_concentration) × z(turnover_std_20)",
-    start="2018-01-02", warmup_days=W_SHORT, higher_is_better=False,
-    note="筹码集中 + 换手剧烈 = 典型的「变盘前夜」。预期非空率 ≈ 90%。",
-))
-def cp_chip_turnover(ctx):
-    return _mul(ctx, "chip_concentration", "turnover_std_20")
 
 
 
@@ -251,7 +155,7 @@ def cp_chip_turnover(ctx):
 # F. 自算微观结构（5 个）—— 不依赖父因子，直接由价格/成交额派生
 # ══════════════════════════════════════════════════════════════════════════
 @register(FactorSpec(
-    name="rv_term_structure", group=GROUP, deps=("stock_daily", "stock_adj_factor"),
+    name="rv_term_structure", version=2, group=GROUP, deps=("stock_daily", "stock_adj_factor"),
     desc="波动率期限结构 = 20 日 RV / 60 日 RV（短端相对长端的高低）",
     formula="RV_n = std(ret(1), n);  TermStructure = RV_20 / RV_60",
     start=None, warmup_days=W_LONG, higher_is_better=False,
@@ -268,7 +172,7 @@ def rv_term_structure(ctx):
 
 
 @register(FactorSpec(
-    name="vol_of_rv", group=GROUP, deps=("stock_daily", "stock_adj_factor"),
+    name="vol_of_rv", version=2, group=GROUP, deps=("stock_daily", "stock_adj_factor"),
     desc="波动的波动 = 20 日 RV 在 60 日窗口内的标准差（不稳定度）",
     formula="VoV = std( roll_std(ret(1), 20), 60 )",
     start=None, warmup_days=W_LONG, higher_is_better=False,

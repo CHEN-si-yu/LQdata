@@ -119,26 +119,14 @@ def _roll(ctx, x: np.ndarray, n: int, mc: int) -> np.ndarray:
     return np.where(np.isfinite(x), ctx.roll_mean(x, n, mc), np.nan)
 
 
-def _am(ctx) -> tuple:
-    return _rng(ctx, "am_hi", "am_lo", "am_open5", "am_close5")
 
 
-def _pm(ctx) -> tuple:
-    return _rng(ctx, "pm_hi", "pm_lo", "pm_open5", "pm_close5")
 
 
-def _am_ret(ctx) -> np.ndarray:
-    """上午段收益 = am_close5(11:30) / am_open5(09:35) − 1。同日比值，无需复权。"""
-    return ctx.safe_div(_f(ctx, "am_close5"), _f(ctx, "am_open5"), 1e-8) - 1.0
 
 
-def _pm_ret(ctx) -> np.ndarray:
-    """下午段收益 = close5(15:00) / pm_open5(13:05) − 1。同日比值，无需复权。"""
-    return ctx.safe_div(_f(ctx, "close5"), _f(ctx, "pm_open5"), 1e-8) - 1.0
 
 
-def _am_vwap(ctx) -> np.ndarray:
-    return ctx.safe_div(_f(ctx, "am_amt"), _f(ctx, "am_vol"), 1e-6)
 
 
 def _pm_vwap(ctx) -> np.ndarray:
@@ -152,7 +140,7 @@ def _pm_vwap(ctx) -> np.ndarray:
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="id2_parkinson_vol",
+    name="id2_parkinson_vol", version=2,
     group="intraday",
     deps=("stock_history_5min",),
     desc="Parkinson 极差波动（当日）= sqrt( ln(hi/lo)^2 / (4 ln2) )",
@@ -175,53 +163,8 @@ def id2_parkinson_vol(ctx):
     return ctx.safe_sqrt(pk)
 
 
-@register(FactorSpec(
-    name="id2_rv_parkinson_gap",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="连续 vs 跳跃诊断 = ln(已实现波动 / Parkinson 极差波动)",
-    formula="efficiency = safe_divide(rv_5min, parkinson_vol + 1e-10); rank(-efficiency)",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=False,
-    note=(_DEG5 + " 源自参考库 Class5 增强 `microstructure_efficiency`"
-          "（`rv_5min / parkinson_vol`，方向取负）。原式是比值，本因子取 ln —— "
-          "比值在截面上的分布极度右偏（分母可以极小），ln 后可比性更好，"
-          "且与排名的单调关系不变。"
-          "**经济含义**：Parkinson 只用当日极差，看不到路径；RV 用逐棒收益平方和。"
-          "两者相等 ⇒ 价格走的是**单调趋势**（每根棒都在同一方向积累）；"
-          "RV 远大于 Parkinson ⇒ 路径**来回震荡**；RV 远小于 Parkinson ⇒ "
-          "**一根大棒 + 其余不动**（跳空/集合竞价式重定价）。"
-          "参考库的方向是负（「效率高」排后），此处沿用。"),
-))
-def id2_rv_parkinson_gap(ctx):
-    hi, lo = _day_range(ctx)
-    with np.errstate(all="ignore"):
-        rv = ctx.safe_sqrt(_f(ctx, "ret2_sum"))
-        pk = ctx.safe_sqrt(ctx.safe_div(np.log(ctx.safe_div(hi, lo, 1e-12)) ** 2,
-                                       4.0 * np.log(2.0)))
-        return ctx.safe_log(ctx.safe_div(rv, pk, 1e-12))
 
 
-@register(FactorSpec(
-    name="id2_rv_parkinson_gap_20",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="连续 vs 跳跃诊断的 20 日水平（单日太噪，20 日均值才稳）",
-    formula="roll_mean(ln(rv_5min/parkinson_vol), 20, min_count=10)",
-    start=ID2_START,
-    warmup_days=W_20,
-    higher_is_better=False,
-    note=(_DEG5 + " `id2_rv_parkinson_gap` 的 20 日滚动均值。"
-          "★ 为什么必须平均：单日的 `rv/parkinson` 分母可以极小"
-          "（一字板日极差趋 0），单日值的截面分布有长尾；20 日均值把它压成"
-          "「这只股票**一贯**是趋势型还是震荡型」的稳定描述。"
-          "min_count=10 = N//2，见模块 docstring §一.5；`_roll()` 另外要求当日输入有限。"
-          "与单日版**不是**同一维度的重标定（一个是当日状态、一个是风格），"
-          "两者并存由 `dedup` 定量裁决。"),
-))
-def id2_rv_parkinson_gap_20(ctx):
-    return _roll(ctx, id2_rv_parkinson_gap(ctx), 20, 10)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -229,7 +172,7 @@ def id2_rv_parkinson_gap_20(ctx):
 # ══════════════════════════════════════════════════════════════════════
 
 @register(FactorSpec(
-    name="id2_ret_concentration",
+    name="id2_ret_concentration", version=2,
     group="intraday",
     deps=("stock_history_5min",),
     desc="日内收益路径的集中度 = n·Σr² / (Σ|r|)²（反参与比）",
@@ -254,7 +197,7 @@ def id2_ret_concentration(ctx):
 
 
 @register(FactorSpec(
-    name="id2_hi_lo_pos_gap",
+    name="id2_hi_lo_pos_gap", version=2,
     group="intraday",
     deps=("stock_history_5min",),
     desc="当日最高点与最低点的**时点**间隔（日内在时间轴上的铺开程度）",
@@ -280,145 +223,18 @@ def id2_hi_lo_pos_gap(ctx):
 #       层里的 am_/pm_ 前缀字段**此前只被 0 个因子消费过**。
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="id2_am_ret",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="上午段收益 = 11:30 价 / 09:35 价 − 1",
-    formula="am = _compute_intraday_factor(context, 'am_momentum')",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + " 抄参考库 Class3 `am_momentum`。"
-          "★ 与已注册的三个同类**都不重复**：`overnight_intraday_ratio_20d` 是"
-          "隔夜腿 vs 全天日内腿的占比；`intraday_ret_momentum` 是"
-          "**全天** close/open−1；`intraday_ma_{5,20,60}d` 是全天日内收益的"
-          "多日滚动均值。本因子是**上午这半天单独**的收益，"
-          "与下午段正交（A 股的上午段承载了大部分信息发布后的即时反应）。"
-          "同日比值，价格未复权也无妨（同一天内复权因子是常数）。"
-          "★ 09:35 是 5min 首根棒的结束时刻，不是开盘价 —— 这不是偏离，"
-          "是 5min 口径的固有粒度（参考库 1min 版从 09:31 起）。"),
-))
-def id2_am_ret(ctx):
-    return _am_ret(ctx)
-
-
-@register(FactorSpec(
-    name="id2_pm_ret",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="下午段收益 = 收盘价 / 13:05 价 − 1",
-    formula="pm = _compute_intraday_factor(context, 'pm_momentum')",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + " 抄参考库 Class3 `pm_momentum`。下午段 = 13:05 开盘到 15:00 收盘，"
-          "含尾盘集合竞价（A 股 14:57-15:00）。"
-          "与上午段**不是**互补关系（两者之间还夹着午间跳空，见 `id2_lunch_gap`），"
-          "所以 `am + pm + 午间` 才等于全天。同日比值，无需复权。"),
-))
-def id2_pm_ret(ctx):
-    return _pm_ret(ctx)
 
 
 
 
-@register(FactorSpec(
-    name="id2_lunch_gap",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="午间跳空 = 13:05 价 / 11:30 价 − 1",
-    formula="lb = _compute_intraday_factor(context, 'lunch_break_ret')",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + " 抄参考库 Class3 `lunch_break_ret`。"
-          "★ 这是**日线层完全看不见**的量：日线只有 昨收/开/高/低/收，"
-          "而 11:30→13:05 这条断口把「上午收盘」和「下午开盘」连接起来，"
-          "期间是午间公告、午间舆情、以及 12:00 前后发布的宏观数据的反应窗口。"
-          "同日比值、未复权，量级通常极小（中位数 < 0.2%），"
-          "但截面上的**符号与大小**承载了午间信息的即时定价。"),
-))
-def id2_lunch_gap(ctx):
-    return ctx.safe_div(_f(ctx, "pm_open5"), _f(ctx, "am_close5"), 1e-8) - 1.0
 
 
-@register(FactorSpec(
-    name="id2_am_vol_share",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="上午段成交量占全天的比重",
-    formula="avs = _compute_intraday_factor(context, 'am_vol_share'); rank(avs)",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + " 抄参考库 Class3 `am_vol_share`。"
-          "★ 单位自动约掉：日内层已逐 (股票,日) 判过 `vol` 是「手」还是「股」"
-          "并 ×100 归一（`fea/intraday.py` 的 `vol_mult`），`am_vol` 与 `vol` "
-          "用的是**同一个** `mult`，所以比值在任何年份都成立 —— "
-          "跨 2025-11/12 的单位翻转边界**没有** 100 倍假跳变。"
-          "取值域 [0,1]。★ 不做 `pm_vol/vol`：那是本因子的**精确补集**"
-          "（1 − x），截面排名会完全反向，纯属重复。"
-          "高 ⇒ 交易集中在上午（信息驱动）；低 ⇒ 尾盘/下午放量（资金驱动）。"),
-))
-def id2_am_vol_share(ctx):
-    return ctx.safe_div(_f(ctx, "am_vol"), _f(ctx, "vol"), 0.0)
 
 
-@register(FactorSpec(
-    name="id2_am_pm_range_ratio",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="上午振幅 / 下午振幅（取 ln，会话波动的时间分配）",
-    formula="return cross_sectional_rank(-_metric(context, 'am_pm_hl_range_ratio'))",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=False,
-    note=(_DEG5 + " 源自参考库 Class3 `am_pm_hl_range_ratio`（方向负）。"
-          "★ 与已被删的 `idt_am_pm_rv_ratio` 是**同一个构念、不同的估计量**："
-          "那个用两段各自的 `ret2_sum`（真实已实现波动，需要逐 session 的二阶量，"
-          "本项目层里**没有**分段的 ret2_sum），本因子退一步用 Parkinson 式"
-          "「极差」做段内波动代理。参考库只此一个版本，"
-          "而「上下午波动比」是 A 股日内择时文献里的标准量，故保留。"
-          "★ 必须区间扩张，否则极差可能 ≤0 使 ln 出 NaN。"),
-))
-def id2_am_pm_range_ratio(ctx):
-    ah, al = _am(ctx)
-    ph, pl = _pm(ctx)
-    with np.errstate(all="ignore"):
-        ra = np.log(ctx.safe_div(ah, al, 1e-12))
-        rp = np.log(ctx.safe_div(ph, pl, 1e-12))
-    return ctx.safe_div(ra, rp, 1e-12)
 
 
-@register(FactorSpec(
-    name="id2_session_range_overlap",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="跨会话区间结构 = (上午振幅 + 下午振幅) / 全天振幅 ∈ [1,2]",
-    formula="(am_range + pm_range) / day_range",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=False,
-    note=(_DEG5 + " **本文件新造**（参考库没有跨会话区间结构的任何因子）。"
-          "数学性质：上午与下午是两个不相交的时间段，"
-          "`max(am_hi,pm_hi) − min(am_lo,pm_lo) ≥ max(段内振幅)`，"
-          "而全天振幅由区间扩张后的 hi/lo 给出，故比值 ∈ [1,2]。"
-          "= 1 ⇒ **下午从未走出上午的区间**（盘整、方向未变）；"
-          "= 2 ⇒ 两个会话探索了**互不相交**的价格区间（重定价、方向翻转）。"
-          "与 `id2_am_pm_range_ratio` 的关键区别：那个是两段**振幅之比**"
-          "（只看大小），本因子是**区间是否错开**（看位置），"
-          "两个会话可以振幅相同但完全错开（比值=1，本因子=2）。"
-          "分母全天振幅趋 0（一字板）时由 `safe_div` 给 NaN —— 正确语义：无信息。"),
-))
-def id2_session_range_overlap(ctx):
-    ah, al = _am(ctx)
-    ph, pl = _pm(ctx)
-    dh, dl = _day_range(ctx)
-    ra = ah - al
-    rp = ph - pl
-    rd = dh - dl
-    return ctx.safe_div(ra + rp, rd, 1e-12)
+
+
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -428,7 +244,7 @@ def id2_session_range_overlap(ctx):
 
 
 @register(FactorSpec(
-    name="id2_close_vs_pm_vwap",
+    name="id2_close_vs_pm_vwap", version=2,
     group="intraday",
     deps=("stock_history_5min",),
     desc="收盘价相对下午 VWAP 的偏离（收盘集合竞价的定价压力）",
@@ -452,7 +268,7 @@ def id2_close_vs_pm_vwap(ctx):
 
 
 @register(FactorSpec(
-    name="id2_close_vs_pm_vwap_20",
+    name="id2_close_vs_pm_vwap_20", version=2,
     group="intraday",
     deps=("stock_history_5min",),
     desc="收盘相对下午 VWAP 偏离的 20 日水平（持续性尾盘溢价/折价）",
@@ -476,205 +292,27 @@ def id2_close_vs_pm_vwap_20(ctx):
 # 5. 日内路径的极值 / 放量时点（4 个）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="id2_intraday_max_runup",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="日内最大反弹（从段内低点到其后高点的最大涨幅）",
-    formula="ru = _compute_intraday_factor(context, 'intraday_max_runup'); rank(ru)",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + " 抄参考库 Class3 `intraday_max_runup`。"
-          "★ **层里早就算好了 `max_ru`，但此前 0 个因子用它** —— "
-          "已注册的 `idt_intraday_max_drawdown` 只做了回撤那一侧"
-          "（层里 `_path_stats` 同时产出 `max_dd` 与 `max_ru`，"
-          "参考库也是两个都发，本项目只建了回撤侧）。"
-          "注意口径：这是**日内路径**上的最大反弹，不是「从昨日低点反弹」，"
-          "与 `price_distance_from_52w_low` / `rebound_from_low_20` 无关。"
-          "≥ 0。"),
-))
-def id2_intraday_max_runup(ctx):
-    return _f(ctx, "max_ru")
 
 
-@register(FactorSpec(
-    name="id2_dd_ru_asym",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="日内行程的不对称 = |最大回撤| / (|最大回撤| + 最大反弹) ∈ [0,1]",
-    formula="abs(max_dd) / (abs(max_dd) + max_ru)",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=False,
-    note=(_DEG5 + " **本文件新造**。层里 `max_dd ≤ 0`（= min(seg/run_max − 1)，"
-          "回撤是负的）而 `max_ru ≥ 0`（反弹是正的），所以取绝对值后相加"
-          "是「这天所有极端行程的总量」，比值就是**向下的占比**。"
-          "= 0.5 ⇒ 上下对称；> 0.5 ⇒ 向下行程占主导（日内抛压）。"
-          "与已注册的 `gain_loss_asymmetry_60` 的区别：那个是 60 日**逐日收益**"
-          "的正负半方差比（跨日、低频），本因子是**单日之内**的路径极值比"
-          "（同日、路径形状）—— 两者衡量的时间尺度完全不同。"
-          "分母趋 0（全天几乎不动）时由 `safe_div` 给 NaN，语义正确。"),
-))
-def id2_dd_ru_asym(ctx):
-    dd = np.abs(_f(ctx, "max_dd"))
-    ru = _f(ctx, "max_ru")
-    return ctx.safe_div(dd, dd + ru, 1e-12)
 
 
-@register(FactorSpec(
-    name="id2_vol_peak_pos",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="当日成交量的峰值时点（层已归一化到 [0,1]）",
-    formula="vpt = _compute_intraday_factor(context, 'volume_peak_time'); rank(-vpt)",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=False,
-    note=(_DEG5 + " 抄参考库 Class3 `volume_peak_time`（方向负：放量越晚排越后）。"
-          "★ 层里 `vol_peak_pos = argmax(vol) / (n_bars − 1)` **已经是 [0,1] "
-          "的归一化时点**，不要再除 `n_bars`。"
-          "与已注册的 `idt_vol_stability` 不重复：那个是 `Σv²/(Σv)²`"
-          "（成交量的**离散度**），本因子是**峰值在哪**（位置的**一阶**统计量）——"
-          "同样的离散度可以对应早盘放量或尾盘放量。"
-          "值小 ⇒ 开盘/早盘放量（隔夜信息消化）；值大 ⇒ 尾盘放量"
-          "（资金驱动、可能的收盘操纵）。"),
-))
-def id2_vol_peak_pos(ctx):
-    return _f(ctx, "vol_peak_pos")
 
 
-@register(FactorSpec(
-    name="id2_vol_peak_std_20",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="放量时点的 20 日标准差（日内流动性节奏稳不稳）",
-    formula="roll_std(vol_peak_pos, 20, min_count=10)",
-    start=ID2_START,
-    warmup_days=W_20,
-    higher_is_better=False,
-    note=(_DEG5 + " **本文件新造**。`id2_vol_peak_pos` 看「今天几点放量」，"
-          "本因子看「**每天几点放量这件事稳不稳**」。"
-          "稳定的日内流动性节奏（标准差小）= 有固定的做市/被动资金，"
-          "峰位乱跳 = 交易由事件驱动、不可预期。"
-          "与 `vol_of_vol_20` / `vol_clustering_20` 的区别：那两个算的是"
-          "**收益率波动**的波动，本因子算的是**成交量时点**的波动 —— "
-          "一个是价格维、一个是时间维。"),
-))
-def id2_vol_peak_std_20(ctx):
-    return ctx.roll_std(_f(ctx, "vol_peak_pos"), 20, 10)
 
 
 # ══════════════════════════════════════════════════════════════════════
 # 6. 成交结构的日频代理（3 个）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="id2_zero_bar_share",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="零收益 5min 棒占比 = (n_zero − 1) / (n_bars − 1)",
-    formula="(n_zero - 1) / (n_bars - 1)",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=False,
-    note=(_DEG5 + " **本文件新造**（已注册的 `zero_return_fraction_20` 是"
-          "**日频**的 |pct_chg| < 0.1% 占比，20 日窗口；本因子是**单日之内**"
-          "在 5min 粒度上的零收益棒占比，灵敏度高一个数量级）。"
-          "★★ `−1` 是**强制**的：层里每个 (股票,日) 段的**第一根棒** "
-          "`prev_c = NaN → r = NaN → r0 = 0`，于是 `n_zero` 恒含一个假零。"
-          "不减去它，全市场每只股票每天都凭空多一根零收益棒"
-          "（48 根里多 1 根 = 2.1% 的系统性高估），而且**不报错**。"
-          "分母同时减 1（第一根本来就没有收益可比）。"
-          "经济含义：一字板 / 极度不活跃 / 长时间无成交。"),
-))
-def id2_zero_bar_share(ctx):
-    n = _f(ctx, "n_bars")
-    z = _f(ctx, "n_zero")
-    return ctx.safe_div(z - 1.0, np.maximum(n - 1.0, 0.0), 1e-12)
 
 
-@register(FactorSpec(
-    name="id2_vol_amt_hhi_gap",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="成交**额**集中度 − 成交**量**集中度（大单是否集中在高价区）",
-    formula="n*amt2_sum/amt**2 - n*vol2_sum/vol**2",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + " **本文件新造**。`n·Σx²/(Σx)²` 是逆参与比形式的集中度"
-          "（与 `id2_ret_concentration` 同一族，但用在成交量/额上）∈ [1, n]。"
-          "两项之差 > 0 ⇒ 成交**额**比成交**量**更集中 ⇒ "
-          "放量的那几根棒价格**高于**当日均价（大单成交在高位）；"
-          "< 0 ⇒ 放量集中在低价区（承接/吸筹）。"
-          "★ 用到的 `amt2_sum` **此前 0 个因子消费过**。"
-          "★ 单位：`vol2_sum` 层里已按 `mult²` 修正（`fea/intraday.py` 的注释），"
-          "所以本比值跨 2025-11/12 单位翻转边界**量纲一致**，无需在因子内补偿。"
-          "⚠ 与 `idt_vol_stability` 的关系：那个是**单个** HHI 的水平，"
-          "本因子是**两个不同物理量**的 HHI 之差，不是它的重标定。"),
-))
-def id2_vol_amt_hhi_gap(ctx):
-    n = _f(ctx, "n_bars")
-    amt = _f(ctx, "amt")
-    vol = _f(ctx, "vol")
-    with np.errstate(all="ignore"):
-        h_amt = ctx.safe_div(n * _f(ctx, "amt2_sum"), amt ** 2, 1e-12)
-        h_vol = ctx.safe_div(n * _f(ctx, "vol2_sum"), vol ** 2, 1e-12)
-    return h_amt - h_vol
 
 
-@register(FactorSpec(
-    name="id2_am_close_position",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="上午收盘价在上午区间中的位置 ∈ [0,1]",
-    formula="return cross_sectional_rank(_metric(context, 'am_hl_position'))",
-    start=ID2_START,
-    warmup_days=W_D,
-    higher_is_better=True,
-    note=(_DEG5 + " 抄参考库 Class3 `am_hl_position`（上午收盘在上午高低区间的位置）。"
-          "★ 与已被删的 `idt_close_position` **构念相同、对象不同**："
-          "那个是**全天**收盘在全天区间的位置，本因子是**上午 11:30** 在"
-          "**上午区间**的位置。保留它的理由是本文件 docstring §一.2 ——"
-          "`am_close5`（11:30）是日内层**唯一新增的两个价格点之一**，"
-          "日线层与已注册因子都拿不到它。"
-          "若 `dedup` 实测与全天版 |ρ| ≥ 0.95 则砍掉。"),
-))
-def id2_am_close_position(ctx):
-    ah, al = _am(ctx)
-    return ctx.safe_div(_f(ctx, "am_close5") - al, ah - al, 1e-12)
 
 
 # ══════════════════════════════════════════════════════════════════════
 # 7. 20 日滚动：会话一致性与日内流动性冲击（2 个）
 # ══════════════════════════════════════════════════════════════════════
 
-@register(FactorSpec(
-    name="id2_session_sign_agreement_20",
-    group="intraday",
-    deps=("stock_history_5min",),
-    desc="上午与下午同向的频率（20 日）∈ [0,1]",
-    formula="roll_mean(sign(am_ret) == sign(pm_ret), 20, min_count=10)",
-    start=ID2_START,
-    warmup_days=W_20,
-    higher_is_better=True,
-    note=(_DEG5 + " **本文件新造**。上午与下午的**符号**是否一致 —— "
-          "高 ⇒ 日内方向持续（趋势型股票），低 ⇒ 日内反转频繁（震荡型）。"
-          "★ 用 `==` 比较**有限值掩码后**的符号，不用 `np.sign(a) != np.sign(b)`："
-          "后者在任一侧为 NaN 时 `np.sign(NaN) = NaN`，`NaN != NaN` 为 **True**，"
-          "会把缺失日静默计成「方向不一致」（这类 bug 已在 "
-          "`mf_flow_stability_20d` 的 note 里记录过一次）。"
-          "★★ **截面取值卡片化警告**：20 日均值只有 21 个可能取值"
-          "（0, 1/20, …, 1），且大多数股票会挤在两端。"
-          "`fea/eval.py` 的退化判据是「单值占比 > 75%」，本因子可能触发 ——"
-          "沙箱自检阶段必看每日截面唯一值数，不足就地砍。"),
-))
-def id2_session_sign_agreement_20(ctx):
-    am = _am_ret(ctx)
-    pm = _pm_ret(ctx)
-    both = np.isfinite(am) & np.isfinite(pm)
-    agree = np.where(both, (np.sign(am) == np.sign(pm)).astype(np.float64), np.nan)
-    return ctx.roll_mean(agree, 20, 10)
 
 

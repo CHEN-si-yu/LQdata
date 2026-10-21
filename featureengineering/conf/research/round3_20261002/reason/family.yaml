@@ -1,0 +1,21 @@
+# R3-D 事前登记：机制集合、基线、试验预算。登记后不可原地修改。
+{
+  "family_id": "r3_reason_family_v1",
+  "idea_id": "r3_reason_idea_v1",
+  "trial_budget": 6,
+  "allowed_variants": [
+    {"signal": "main_business"},
+    {"signal": "nonrecurring"},
+    {"signal": "demand_cycle"},
+    {"signal": "quality_composite"}
+  ],
+  "baseline": [
+    "forecast_type_score",
+    "forecast_profit_midpoint_change",
+    "forecast_profit_range_uncertainty",
+    "roe_ttm",
+    "momentum_20"
+  ],
+  "hypothesis_boundary": "只使用 change_reason 文本与 ann_date 可用时点；end_date 只作数据分区与配对信息，绝不作为特征输入。reason_impairment 机制已按预登记命中率门槛（<20%）判为不支持，不登记候选。",
+  "search_policy": "关键词表在模块常量中冻结，不看 IC 增删；不扩窗口、不扩方向。"
+}

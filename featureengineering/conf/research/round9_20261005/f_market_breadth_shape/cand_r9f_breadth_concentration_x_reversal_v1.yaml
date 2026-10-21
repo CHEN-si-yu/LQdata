@@ -1,0 +1,37 @@
+name: r9f_breadth_concentration_x_reversal_v1
+family_id: r9f_breadth_shape_v1
+implementation: research.families.r9f_breadth_shape_v1:build
+parameters: {signal: breadth_concentration_x_reversal}
+units: 无量纲（有符号 z252 状态 × 5 日累计收益），股票级 (T, C)。
+availability: >
+  T 日收盘后可用：状态取当日 15:00 那一行（11 个收益桶的 HHI），腿用 ≤T 的日线；
+  z252 只用 ≤T 的历史值；T 日取值用于 T+1 开盘起的标签，无前视。
+missing_policy: >
+  状态在 15:00 行缺失或 z252 历史不足 120 个有效值 → 全横截面 NaN；个股停牌/未上市/
+  5 日收益缺失 → 该格 NaN。不零填充、不前向填充。
+spec:
+  group: research_breadth_shape
+  desc: >
+    市场宽度分布**桶集中度**状态（全市场 15:00 的 11 桶 HHI = Σp_b²，z252(min120)）
+    × 个股 5 日动量。HHI 高＝截面收益紧聚在零附近（安静盘面），个股 5 日涨跌更可能是
+    流动性/噪声驱动而反转；HHI 低＝离散度大、更可能由信息驱动而延续。故交互项对未来
+    1/5 日收益偏负（higher_is_better=false）。
+  formula: >
+    total = up_count+down_count+flat_count（全市场口径）；p_b = bucket_b/total（11 个收益桶）；
+    hhi = Σ_b p_b² at 15:00；state = (hhi − roll_mean252(hhi))/(roll_std252(hhi, ddof=0))，min_count=120；
+    mom5 = ctx.ret(5)；value = state × mom5
+  deps: [stock_market_distribution_history, stock_daily, stock_adj_factor]
+  start: '2018-01-01'
+  warmup_days: 700
+  higher_is_better: false
+  version: 1
+  note: >
+    ★ 与在库市场因子的差异：mkt_dispersion 是 2,115 只冻结池的收益**标准差**（尺度矩、市场标量、
+    无方向）；本状态是**全市场约 4,770 只**在**固定宽度收益桶**上的**集中度**（形状矩），
+    实测与当日上市家数的 Spearman 仅 −0.079（不是「股票变多」的伪影），且作为**有符号条件变量**
+    使用而非直接当信号。与已删 breadth 族（个股对宽度序列的滚动敏感度）、已删 field_markets 族
+    （分钟振幅/量集中/加权压力/指数层）不同构念。
+    ★ 腿 = 5 日动量，其相反数是生产 short_term_reversal_5；交互的当日截面秩恒等于 mom5 的秩
+    （只差当日符号），**增量信息在符号/尺度的时间序列**上：日均 RankIC 检验的是「状态是否调制了
+    反转/动量关系」。G5 按面板合并口径读，报告同时给出两列。
+    环境指纹: python 3.14.7 / numpy 2.5.3 / 数值指纹 7c7d05c7564f。

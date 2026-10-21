@@ -7,7 +7,7 @@ from data_incremental import paths,registry as R,config
 from data_incremental.core import state,store
 from data_incremental.core.client import Client,ApiError
 from data_incremental.core import client as client_mod
-from data_incremental.pipeline import strategies as S,roster,runner,calendar,probe,dump_bridge
+from data_incremental.pipeline import strategies as S,runner,calendar,probe,dump_bridge
 
 class FakeClient:
     max_rows_per_query=100000
@@ -126,11 +126,6 @@ class MaintenanceTests(unittest.TestCase):
         cli=FakeClient(lambda *_:[])
         with patch.object(probe,'trailing_nonzero_ratio',return_value=0):S.run_per_date(ds,man,self.ctx(cli))
         self.assertIn('2026-08-21',[p[ds.date_param] for _,p in cli.calls])
-    def test_sweep_failure_does_not_advance_success_watermark(self):
-        p=self.root/'sweep.json';ds=copy.deepcopy(R.get('index_ths_daily'));ds.entity_codes=['a']
-        with patch.object(roster,'SWEEP_STATE',p),patch.object(R,'get',return_value=ds):
-            result=roster.sweep(self.cfg,FakeClient(lambda *_:(_ for _ in ()).throw(ApiError('injected failure'))))
-            self.assertFalse(result['ok']);self.assertTrue(roster._due()[0])
     def test_snapshot_dependencies_precede_daily_consumers(self):
         order=[]
         selected=[R.get('stock_list'),R.get('stock_cyq_chips')]
@@ -201,22 +196,6 @@ class MaintenanceTests(unittest.TestCase):
     def test_partial_gate_is_actionable(self):
         rep=runner.report_mod.build([],self.ctx(FakeClient(lambda *_:[])),gate_info={'timed_out':True,'blocking':['stock_st_info']})
         self.assertTrue(rep['alerts_actionable'])
-    def test_sweep_failure_enters_cli_report_and_exit(self):
-        import main
-        args=main.build_parser().parse_args(['run','--no-wait','--only','index_ths_daily'])
-        rep={'groups':{'daily':[{'name':'index_ths_daily'}]},'alerts':[],'alerts_actionable':[]}
-        self.cfg['viz']['summary']=False
-        with patch.object(main,'_new_client',return_value=FakeClient(lambda *_:[])),patch.object(roster,'sync',return_value={'ok':True,'added':0}),patch.object(roster,'sweep_if_due',return_value={'ok':False,'failed':1,'note':'injected'}),patch.object(runner,'run',return_value=rep),patch.object(runner.report_mod,'save'):
-            rc=main.cmd_run(args,self.cfg)
-        self.assertEqual(rc,1);self.assertTrue(rep['alerts_actionable'])
-    def test_strict_gate_does_not_execute_sweep(self):
-        import main
-        args=main.build_parser().parse_args(['run'])
-        rep={'T':None,'groups':{},'alerts':['strict'],'alerts_actionable':['strict']}
-        self.cfg['viz']['summary']=False
-        with patch.object(main,'_new_client',return_value=FakeClient(lambda *_:[])),patch.object(roster,'sync',return_value={'ok':True,'added':0}),patch.object(roster,'sweep_if_due') as sweep,patch.object(runner,'run',return_value=rep),patch.object(runner.report_mod,'save'):
-            main.cmd_run(args,self.cfg)
-        sweep.assert_not_called()
     def test_old_failed_financial_announcement_retries(self):
         ds=copy.deepcopy(R.get('stock_income'));man=state.Manifest.load(ds.name)
         man.mark_suspect('ann|2025-01-05|error');cli=FakeClient(lambda *_:[])

@@ -96,12 +96,10 @@ def _run(mode: str, names: list[str], years: list[int], jobs: int, base: Path) -
           `w3` = 新口径 + **warmup ×3**（用于「warmup 够不够」的全量筛查）。
     """
     cfg = cfg_mod.load()
-    cfg.raw["default_start"] = "2012-01-01"
     sbx = base / mode
+    cfg = cfg.sandbox(sbx)
     for sub in ("factors", "state"):
         (sbx / sub).mkdir(parents=True, exist_ok=True)
-    cfg.raw["paths"]["factors"] = str(sbx / "factors")
-    cfg.raw["paths"]["state"] = str(sbx / "state")
 
     if mode.startswith("w") and mode[1:].isdigit() and mode != "w1":
         # ★ 测试专用：临时把样本因子的 warmup 放大 K 倍（mode = "w4" → ×4）。
@@ -212,7 +210,7 @@ def main() -> int:
     ap.add_argument("--all", action="store_true", help="全部因子 × 全部年份（慢）")
     ap.add_argument("--jobs", type=int, default=8, help="并行进程数（默认 8）")
     ap.add_argument("--keep", action="store_true", help="保留沙箱目录")
-    ap.add_argument("--tmp", default=None, help="沙箱父目录（默认 /tmp）")
+    ap.add_argument("--tmp", default=str(ROOT/"artifacts/audits/anchor/tmp"), help="项目内沙箱父目录")
     ap.add_argument("--scaled-warmup", nargs="?", const=3, type=int, default=None,
                     metavar="K",
                     help="改跑「warmup ×1 vs ×K」（默认 K=3）：全量筛查每个因子的实际回看窗口"
@@ -224,12 +222,16 @@ def main() -> int:
     args = ap.parse_args()
 
     names = args.factors or (sorted(REGISTRY) if args.all else DEFAULT_FACTORS)
-    years = args.years or (list(range(2012, 2027)) if args.all else DEFAULT_YEARS)
+    years = args.years or (list(range(2018, 2027)) if args.all else [y for y in DEFAULT_YEARS if y>=2018])
     bad = [n for n in names if n not in REGISTRY]
     if bad:
         raise SystemExit(f"未知因子：{bad}")
 
-    base = Path(tempfile.mkdtemp(prefix="anchor_ab_", dir=args.tmp)) \
+    parent=Path(args.tmp).resolve()
+    if not parent.is_relative_to(ROOT.resolve()):
+        raise ValueError("Audit sandbox must stay inside project")
+    parent.mkdir(parents=True,exist_ok=True)
+    base = Path(tempfile.mkdtemp(prefix="anchor_ab_", dir=parent)) \
         if not args.compare_only else None
     if base is not None:
         print(f"沙箱父目录 {base}")

@@ -1,0 +1,33 @@
+{
+  "name": "r8d_net_principal_cash_raising_v1",
+  "family_id": "r8d_net_principal_cash_raising_v1",
+  "implementation": "research.families.r8d_net_principal_cash_raising_v1:build",
+  "parameters": {
+    "signal": "net_principal_cash_raising",
+    "window": 4,
+    "asset_lag_quarters": 4
+  },
+  "units": "dimensionless, raw signed; false direction only in metadata",
+  "availability": "each row pit=max(valid ann,f_ann), pit>=end required, strictnextTD effective; prefix-max truly common CF/BS report Q; every source/revision event refetches all necessary historical versions <=event pit; missing new frontier/revision NaN clears old; no Q fallback or future revision replay; all events refetch whole row versions; age<=550 daily",
+  "missing_policy": "strict continuous four single quarters of each of4 gross cash fields, all16 finite>=0; exact lag4 assets>1e6; comp_type1 CF+BS common Q; negative net raising valid; missing quarter/gross negative/latest invalid/revision clears previous value, no fallback",
+  "spec": {
+    "group": "research_financial_financing",
+    "desc": "显式吸收资本+借款+发债−偿债的严格四季现金净募集/期初资产可能带有融资依赖/融资用途信息，false主观弱先验；非完整Richardson/Sloan XFIN，不保证A股1/5日收益。",
+    "formula": "[strictTTM(c_recp_cap_contrib)+strictTTM(c_recp_borrow)+strictTTM(proc_issue_bonds)-strictTTM(c_prepay_amt_borr)]/total_assets(Q-4)",
+    "deps": [
+      "stock_cashflow",
+      "stock_balancesheet"
+    ],
+    "fin_fields": [
+      "c_recp_cap_contrib",
+      "c_recp_borrow",
+      "proc_issue_bonds",
+      "c_prepay_amt_borr",
+      "total_assets"
+    ],
+    "warmup_days": 1500,
+    "higher_is_better": false,
+    "version": 1,
+    "note": "base8 deduplicated=momentum_120,short_term_reversal_5,vol_120,idio_vol_60,log_mv,turnover_std_20,bp,roe_ttm; +roa_ttm,asset_growth_qoq,R4SUE,R4accruals. Exact current/source/legacy controls fixed in delivery r8d_controls_manifest_v1.json (semantic digest ddea618ffb9b37b6b6f3154e412b84a0db4bf5c111ab10b66bc426ff31195d10; file SHA f1819201f2e3516f4730d3a0169b5e255deb1ec2c3f5a5cca3b505d80e09d802). F=E+D; each leg separately substituted; joint original values unidentifiable, never delete columns or call rank residual new primitive. Old borrowing/share source removed: documentary definition hashes, not recovered source hashes, faithful original control reproduction required. Signed optional current CF controls plus cash-change control do not tighten raw eligibility; exact old definitions/clock followed independently and intersected on raw mask. Float64 then official float32 Store, full date+2115 axes; not complete XFIN."
+  }
+}

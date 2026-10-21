@@ -1,0 +1,53 @@
+{
+  "family_id": "r11gc_vol_range_ext_v1",
+  "idea_id": "r11gc_vol_range_ext_v1",
+  "trial_budget": 4,
+  "allowed_variants": [
+    {
+      "kind": "ret_std",
+      "window": 42
+    },
+    {
+      "kind": "ret_std",
+      "window": 126
+    },
+    {
+      "kind": "high_low",
+      "window": 42
+    },
+    {
+      "kind": "high_low",
+      "window": 126
+    }
+  ],
+  "baseline": [
+    "vol_120",
+    "idio_vol_60",
+    "atr_14_ratio",
+    "price_to_52w_high",
+    "price_distance_from_52w_low",
+    "rv_term_structure",
+    "ret_skew_20"
+  ],
+  "parameters_frozen": {
+    "windows_trading_days": {
+      "ret_std": [
+        42,
+        126
+      ],
+      "high_low": [
+        42,
+        126
+      ]
+    },
+    "window_semantics": "交易日；Tushare 原文的 w=221/621 是「月数 × 21」拼接，不是交易日数，不得照抄（见模块 docstring §二）",
+    "min_count": "n//2",
+    "std_ddof": 0,
+    "return_definition": "ctx.ret_clean(1) —— 停牌日 NaN",
+    "price_definition": "ctx.hfq('close') —— 后复权（PIT 安全）",
+    "direction": "higher_is_better=true for all (declared=raw; no direction claimed)",
+    "bound": "本族只登记批 1 未覆盖的四个窗口；批 1 的 21/63/252 六点不重复登记。"
+  },
+  "variants": "none：4 个变体在同一模块内事前冻结（FROZEN 字典），build() 拒绝任何其它参数组合。",
+  "channel": "green-card candidate (basic thresholds only; G4-G7 not claimed)"
+}

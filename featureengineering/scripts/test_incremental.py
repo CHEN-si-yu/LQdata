@@ -189,13 +189,17 @@ def main() -> int:
     ap.add_argument("stage", choices=["prepare", "run", "verify", "all"])
     ap.add_argument("--cutoff", default="2026-09-11",
                     help="裁到哪一天（含）；默认 2026-09-11 = 最后交易日 09-14 的前一天")
-    ap.add_argument("--ref", default="/tmp/inc_ref", help="全量参照目录")
+    ap.add_argument("--ref", default=str(ROOT/"artifacts/audits/incremental/reference"), help="项目内全量参照目录")
     ap.add_argument("--jobs", type=int, default=8)
     ap.add_argument("--top", type=int, default=25, help="耗时榜显示前 N 个")
     args = ap.parse_args()
+    if args.stage != "verify":
+        ap.error("旧生产裁剪和增量重跑入口已停用。请使用 main.py research verify <run_id>；本脚本仅保留 verify 只读比对。")
 
     from fea.config import load as load_cfg
     cfg = load_cfg()
+    if not Path(args.ref).resolve().is_relative_to(ROOT.resolve()):
+        raise ValueError("Incremental audit reference must stay inside project")
     for stage in (["prepare", "run", "verify"] if args.stage == "all" else [args.stage]):
         rc = {"prepare": cmd_prepare, "run": cmd_run, "verify": cmd_verify}[stage](args, cfg)
         if rc:

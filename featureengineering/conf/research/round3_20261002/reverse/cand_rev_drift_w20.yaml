@@ -1,0 +1,45 @@
+# 事前登记假设，不构成收益证明；机制、方向与试验预算在计算前冻结，不因任何 IC/收益结果改变。
+{
+  "name": "r3rc_rev_drift_w20",
+  "family_id": "r3_reverse_confirm_family_v1",
+  "implementation": "research.families.r3_reverse_confirm_v1:build",
+  "parameters": {
+    "signal": "rev_drift_w20"
+  },
+  "units": "D1 为无量纲的池内相对收益（比值差或加权日均对数收益）；D2 为事件次数或事件率（无量纲）。全部同表同尺度比值，无跨表单位换算。",
+  "availability": "同 D1-P1。窗口更长意味着同一公告的生效日更久远，但锚点仍是该公告的生效日，不含未来信息。",
+  "missing_policy": "同 D1-P1，窗口换成 1..20。20 日窗口可能与下一次公告重叠——此时 since 由**最近一次**公告决定，锚点也换成最近一次，这是有意的（机制按最近一次信息释放定义）。",
+  "closest_existing_baselines": [
+    "short_term_reversal_5",
+    "momentum_20",
+    "holder_number_chg"
+  ],
+  "semantic_difference": "公告后 20 个交易日的池内相对漂移取反（D1-P2）",
+  "source_fields": [
+    "stock_holder_number.ann_date",
+    "stock_holder_number.end_date",
+    "stock_holder_number.holder_num",
+    "stock_daily.stock_code",
+    "stock_daily.trade_date",
+    "stock_daily.close",
+    "stock_adj_factor.stock_code",
+    "stock_adj_factor.trade_date",
+    "stock_adj_factor.adj_factor"
+  ],
+  "pre_registered_direction": "higher_is_better",
+  "spec": {
+    "group": "r3_reverse_confirm",
+    "desc": "公告后 20 个交易日的池内相对漂移取反（D1-P2）",
+    "formula": "value(T) = -pool_demean(hfq_close(T)/hfq_close(eff)-1), 1<=(T-eff)<=20 交易日",
+    "deps": [
+      "stock_holder_number",
+      "stock_daily",
+      "stock_adj_factor"
+    ],
+    "start": null,
+    "warmup_days": 500,
+    "higher_is_better": true,
+    "version": 1,
+    "note": "R3-E 独立确认；值本身即反向信号量，declared==raw。任一条确认设计不过即判不可确认。"
+  }
+}

@@ -1,0 +1,17 @@
+idea_id: r4g_coskew_v1
+hypothesis: 个股与市场的协同风险结构（协偏度、下行贝塔）携带总 beta 与特质波动之外的横截面预期收益信息：协偏度被负定价（Harvey–Siddique 1997），高协偏度股票未来收益更低；下行贝塔承载下行风险溢价（Ang et al. 2006），高下行贝塔股票未来收益更高。仅需价格层与自算池等权收益即可估计。
+mechanism: |
+  1) coskew_60：60 日窗口（含 T）内 r 对 [r_m, r_m²] 的**标准化偏回归** r_m² 系数（协偏度归因；
+     闭式：(S_y2 − γρ)/(Var(z_m²) − γ²)，见模块 docstring）；方向 false（值越高越差）。
+  2) downside_beta_60：仅 r_m<0 且成对有效的交易日上 r 对 r_m 的 OLS 斜率（60 日窗，min 8 个下行日）；
+     方向 true（值越高越好）。
+  3) 变体：coskew_120、downside_beta_120（同机制窗口变体，仅用于显著性变体，标注变体性质）。
+  市场 r_m = 冻结池内当日等权平均日收益（自算，与 U5 r4e 同口径）。
+  属波动率族：G7 附加控制 {idt_rv_daily, id2_parkinson_vol, atr_14_ratio} 必须加；
+  另报控制 beta_60 / idio_vol_60 主效应后的剩余（协同矩与总 beta 可能同源）。
+expected_direction: coskew_60 = false、coskew_120 = false（高协偏度 → 低预期收益）；downside_beta_60 = true、downside_beta_120 = true（高下行贝塔 → 高预期补偿）。方向在写第一行代码前由任务书 B2 §2 固定，不随结果调整。
+target_horizons: [1, 5]
+falsifiable: 与 beta_60 或 vol_120 的 |rho|>0.9（协同性只是 beta/波动水平的代理）；波动附加控制（G7）后 FM 系数 t 不显著或符号与登记方向相反；declared RankIC 分年同号 <7/9。
+fields: [stock_daily.close, stock_adj_factor.adj_factor]
+origin: round4_lead_preregistered_2026-10-04
+status: unvalidated_hypothesis

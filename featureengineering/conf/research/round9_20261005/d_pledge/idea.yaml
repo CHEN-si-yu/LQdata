@@ -1,0 +1,35 @@
+idea_id: r9d_abnormal_pledge_shift_v1
+hypothesis: |
+  股权质押水平相对于**该股自身**历史季度变化的异常程度（自身历史标准化后的异常质押位移），
+  可能在固定 2115 只主板池上改善下一开盘 1/5 日排序；而质押的水平、裸一阶差分、二阶加速度与
+  增解不对称已被 R2/R4s 共 9 个构念全部证伪。
+mechanism: |
+  唯一事前固定机制 abnormal_pledge_shift。记 P(t) = 100 × (unrest_pledge + rest_pledge) / total_share
+  （百分点），经 (股票 × 周) 稠密网格 -> as-of 前向填充 -> 整体滞后 LAG_DEFAULT = 15 个交易日，
+  得到"滞后的水平序列" P。当前季度变化 d0(t) = P(t) − P(t−65)；前序 4 个**互不重叠**季度变化
+  h_k(t) = P(t−65k) − P(t−65(k+1))，k=1..4；z = (d0 − mean(h)) / std(h, ddof=1)。
+  这是「幅度 ÷ 该股自身波动」的信息比率式对象，**不是** R2 `pledge_change` 的裸一阶差分，
+  也不是 R4s 的二阶加速度或路径不对称。
+  ★ 事前登记的**死亡条件**（Lead 授权时硬性要求，在任何结果之前写定）：
+    计算本候选日频面板与 R2 `pledge_change` 构念（= 100 × (P(t) − P(t−65))，与 R2 模块
+    `value = 100.0 * (lagged - mx.shift(lagged, 65))` 同式）的**日截面秩相关**。
+    若 |rho| >= 0.9，则判定为重蹈、**立即停止**，不再寻找能逃出该判据的变体；两个方向的数值都如实上报。
+  已完成并放弃的重蹈审计：D1（水平 + 价格下跌交互）= R2 `pledge_level` / `pledge_price_stress`；
+  D2（变化 + 加速度）= R2 `pledge_change`/`pledge_change_fast` + R4s `pledge_change_accel`；
+  D3（rest/unrest 构成）= R2 `pledge_structure`。全部为既有研究，故放弃。
+expected_direction: higher_is_better=false（异常加杠杆 = 预期收益越低）。方向在写第一行代码前固定，
+  未按任何 IC 或收益结果翻转。
+target_horizons: [1, 5]
+falsifiable: 若与 R2 `pledge_change` 构念的日截面 |rho| >= 0.9（重蹈判据成立）；或 declared RankIC
+  在 h=1 与 h=5 的 HAC95 区间均跨 0；或分年同号为负的年数 < 7/9；或与任一现有正式因子 |rho| > 0.95；
+  或 verify 截断/增量不一致；或控制 G7 冻结控制集后 Fama-MacBeth 系数不显著或符号与登记方向不一致，
+  则该机制不支持本假设。
+fields:
+  - stock_pledge_stat.stock_code
+  - stock_pledge_stat.end_date
+  - stock_pledge_stat.unrest_pledge
+  - stock_pledge_stat.rest_pledge
+  - stock_pledge_stat.total_share
+  - conf/universe_frozen.tsv（固定 2115 只主板池）
+origin: Lead 复核后授权的唯一 D 构念（在 R2/R4s 关闭 9 个构念之后）；执行者事先上报 D 为整体重蹈并建议放弃
+status: unvalidated_hypothesis

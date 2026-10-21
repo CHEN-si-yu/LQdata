@@ -1,0 +1,17 @@
+name: r4c_earnings_conversion_ttm_gap_v1
+family_id: r4c_accruals_v1
+implementation: research.families.r4c_accruals_v1:build
+parameters: {signal: earnings_conversion_ttm_gap}
+units: 比率之差（无因次）。正值=TTM 口径 OCF/NI 转化率同比改善。
+availability: TTM 与去年同期 TTM（lag_ttm k=4，按报告期而非日频位移）均由财务层提供，取 pit≤信号日最新版本；无未来信息。
+missing_policy: 当期或去年同期 TTM 净利不可考/绝对值≤1e6，或对应 OCF 不可考时为 NaN；比率截幅 ±10；非有限值输出为 NaN。
+spec:
+  group: research_accruals
+  desc: 未验证候选（U3 机制3变体）：TTM 口径 OCF/NI 同比变化，作为机制3的复杂度对照。
+  formula: clip(ttm(n_cashflow_act)/ttm(n_income_attr_p),±10) − clip(lag_ttm(n_cashflow_act,4)/lag_ttm(n_income_attr_p,4),±10)
+  deps: [stock_income, stock_cashflow]
+  fin_fields: [n_income_attr_p, n_cashflow_act]
+  warmup_days: 500
+  higher_is_better: true
+  version: 1
+  note: 方向事前冻结 true；若本变体与机制3（单季重构）结论一致，说明该机制不依赖自算差分机制；仅用 ctx.ttm/lag_ttm 两个框架入口。

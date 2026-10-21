@@ -1,0 +1,22 @@
+{
+  "family_id": "r6d_maturity_migration_v1",
+  "idea_id": "r6d_maturity_migration_v1",
+  "trial_budget": 1,
+  "allowed_variants": [
+    {
+      "signal": "cash_supported_maturity_migration",
+      "window": 4
+    }
+  ],
+  "baseline": "基础8正式G7；现库afx_fi_ocf_to_interestdebt、qf_cash_margin_floor_4q只作为偿债能力/现金资格邻近诊断，原值秩与消费变换分列。",
+  "parameters_frozen": {
+    "window": 4,
+    "warmup_days": 1100,
+    "max_common_report_age_days": 550,
+    "amount_floor_yuan": 1000000,
+    "positive_strict_ocf_ttm": true,
+    "direction": true,
+    "initial_near_share": 0.25
+  },
+  "variants": "none"
+}

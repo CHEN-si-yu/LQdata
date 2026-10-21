@@ -1,6 +1,6 @@
-"""第二批市场/情绪标量（40 个）—— 涨跌停生态 · 资金流结构 · 两融杠杆 · 板块轮动 · 指数情绪 · 量能 · 可交易性。
+"""第二批市场/情绪标量（12 个；2026-10-04 市场因子复审清理后，原注册 31 个）—— 涨跌停生态 · 资金流结构 · 两融杠杆 · 板块轮动 · 指数情绪 · 量能 · 可交易性。
 
-## 与 `factors/market.py`（第一批 30 个）的关系
+## 与 `factors/market.py`（第一批 22 个）的关系
 
 第一批只用了 `stock_daily` / `stock_adj_factor` / `stock_history_5min` / `index_daily`
 （且 `index_daily` 库里有一万多个指数码，只用掉了 4 个）。本模块专门开**上游里一直没人读过**的
@@ -22,8 +22,7 @@
    两融族每个因子都声明 `lagged_ok` 并把网格整体下移一行 —— 不做的话 T 日的值会在
    数据到达后**静默变化**（当天看着完全正确）。
 3. **资金流金额单位是万元**（实测：`stock_main_fund_flow` 四档买卖金额之和恰好等于
-   `stock_daily.amount ÷ 1e4`，逐行对齐）。所以只用**同表内部**的比率；
-   需要与成交额相比时走 `_pool_amount`（池内金额），不跨表相除。
+   `stock_daily.amount ÷ 1e4`，逐行对齐）。所以只用**同表内部**的比率，不跨表相除。
 4. `net_mf_amount` 字段**不用**：实测它不等于四档买卖之差
    （2025-01-02 000001.SZ：四档净额 ≈ 0，该字段 −64322.99），语义无法从源表自证。
    净额一律由四档原始列自行构造，可复核。
@@ -34,8 +33,6 @@
 """
 
 from __future__ import annotations
-
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -98,31 +95,12 @@ def _count_by_day(panel_days: np.ndarray, days, weights=None, cover=None) -> np.
     return out
 
 
-def _lag(x: np.ndarray, k: int) -> np.ndarray:
-    """`(T,)` 下移 k 行（第 t 个 = 原第 t−k 个）；不足处 NaN。"""
-    a = np.asarray(x, dtype=np.float64)
-    out = np.full(a.size, np.nan, dtype=np.float64)
-    if k < a.size:
-        out[k:] = a[:a.size - k]
-    return out
-
-
 def _lag2d(M: np.ndarray, k: int) -> np.ndarray:
     a = np.asarray(M, dtype=np.float64)
     out = np.full(a.shape, np.nan, dtype=np.float64)
     if k < a.shape[0]:
         out[k:] = a[:a.shape[0] - k]
     return out
-
-
-def _shift_mean(x: np.ndarray, n: int) -> np.ndarray:
-    """`(T,)` 的 n 日**滞后**均值（不含当日）。
-
-    ★ 不含当日是刻意的：当日值同时出现在分子和分母里会把比率拉向 1，
-      制造出「这个因子总是接近 1」的假象。
-    """
-    s = pd.Series(np.asarray(x, dtype=np.float64))
-    return s.shift(1).rolling(n, min_periods=max(2, n // 2)).mean().to_numpy()
 
 
 def _roll_sum_nan(M: np.ndarray, n: int) -> np.ndarray:
@@ -165,11 +143,6 @@ def _ratio_all(ctx, test: np.ndarray, valid: np.ndarray) -> np.ndarray:
     n = valid.sum(axis=1)
     hit = (test & valid).sum(axis=1).astype(np.float64)
     return np.where(n >= ctx.cfg.min_cross_section, _div(hit, n.astype(np.float64)), np.nan)
-
-
-def _pool_mask(ctx, x: np.ndarray) -> np.ndarray:
-    """池内、有真实成交、且该量本身有值。"""
-    return ctx.universe & ctx.traded() & np.isfinite(x)
 
 
 def _sum_ok(ctx, x: np.ndarray, valid: np.ndarray) -> np.ndarray:
@@ -267,20 +240,8 @@ def _load_axis(ctx, dataset: str, code_col: str, value_cols, suffix: str | None 
     return codes, out
 
 
-def _pool_amount(ctx) -> np.ndarray:
-    """池内真实成交额合计（`(T,)`，元）。"""
-    key = _pkey(ctx, "pool_amt")
-    hit = _cache_get(key)
-    if hit is not None:
-        return hit["amount"]
-    amt = ctx.px("amount")
-    tot = _sum_ok(ctx, amt, _pool_mask(ctx, amt))
-    _cache_put(key, {"amount": tot})
-    return tot
-
-
 # ══════════════════════════════════════════════════════════════════════
-# A 涨跌停生态（11 = 全市场 7 + 池内 4）
+# A 涨跌停生态（3；2026-10-04 复审清理后）
 # ══════════════════════════════════════════════════════════════════════
 LIMIT_DEPS_DIST = ("stock_market_distribution_history",)
 LIMIT_DEPS_LIST = ("stock_limit_list", "stock_daily", "stock_adj_factor")
@@ -328,12 +289,10 @@ def _limit_breadth(ctx) -> dict:
 
     up, dn, fl = num("up_count"), num("down_count"), num("flat_count")
     total = fold(up + dn + fl)
-    up_sum = fold(up)
     extreme = fold(num("up_over_10") + num("up_7_to_10"))
     same_day = np.isfinite(total) & (total > 0)
     out = {
                 "full_flat_ratio": _div(fold(fl), total),
-                "full_up_change5": _div(up_sum, total) - _div(_lag(up_sum, 5), _lag(total, 5)),
     }
     out = {k: np.where(same_day, v, np.nan) for k, v in out.items()}
     _cache_put(key, out)
@@ -341,10 +300,9 @@ def _limit_breadth(ctx) -> dict:
 
 
 def _limit_eco(ctx) -> dict:
-    """涨跌停**明细**生态：炸板、连板、封单（`stock_limit_list`，实测 2020 起）。
+    """涨跌停**家数**（`stock_limit_list`，实测 2020 起）：池内涨停/跌停家数占比。
 
-    `limit` 三态：U 涨停 / D 跌停 / Z 炸板（盘中触板但收盘未封住）。
-    Z 是「情绪转弱」的直接证据，第一批 30 个市场因子里完全没有这一类。
+    `limit` 三态 U/D/Z 中只取 U、D；Z（炸板）/连板/封单族于 2026-10-04 复审清理删除。
     """
     key = _pkey(ctx, "limit_eco")
     hit = _cache_get(key)
@@ -353,8 +311,7 @@ def _limit_eco(ctx) -> dict:
     p = ctx.panel
     years = (int(p.dates[0]) // 10000, int(p.dates[-1]) // 10000)
     df = ctx.dataset("stock_limit_list",
-                     columns=["trade_date", "stock_code", "limit", "limit_times",
-                              "fd_amount", "float_mv", "amount"],
+                     columns=["trade_date", "stock_code", "limit"],
                      years=years)
     if df is None or df.empty:
         raise RuntimeError("stock_limit_list 缺源")
@@ -364,47 +321,27 @@ def _limit_eco(ctx) -> dict:
     df = df.loc[ci >= 0]
     d = df["trade_date"].astype(str).str.replace("-", "", regex=False).to_numpy(dtype=np.int64)
 
-    def num(col):
-        return pd.to_numeric(df[col], errors="coerce").to_numpy(dtype=np.float64)
-
     lim = df["limit"].astype(str)
     is_u = (lim == "U").to_numpy()
-    is_z = (lim == "Z").to_numpy()
-    lt, fd, fmv, amt = num("limit_times"), num("fd_amount"), num("float_mv"), num("amount")
 
     n_pool = ctx.universe.sum(axis=1).astype(np.float64)
-    ok_pool = n_pool >= ctx.cfg.min_cross_section
-    pool_amt = _pool_amount(ctx)
 
     def count(mask):
         m = np.asarray(mask) & np.isfinite(d)
         return _count_by_day(p.dates, d[m], cover=cover)
 
-    def total(mask, values, agg="sum"):
-        m = np.asarray(mask) & np.isfinite(d) & np.isfinite(values)
-        if agg == "sum":
-            return _count_by_day(p.dates, d[m], weights=np.asarray(values)[m], cover=cover)
-        return _rows(p.dates, d[m], np.asarray(values)[m], agg=agg)
-
     is_d = (lim == "D").to_numpy()
-    n_u, n_z, n_d = count(is_u), count(is_z), count(is_d)
+    n_u, n_d = count(is_u), count(is_d)
     out = {
         "limit_up_ratio": _div(n_u, n_pool),
         "limit_down_ratio": _div(n_d, n_pool),
-        "limit_net_ratio": _div(n_u - n_d, n_pool),
-        "limit_streak_max": total(is_u, lt, agg="max"),
-        "limit_streak_share": _div(count(is_u & (lt >= 2.0)), n_u),
-        "limit_broken_ratio": _div(n_z, n_u + n_z),
-        "limit_seal_amount_share": _div(total(is_u, amt, "sum"), pool_amt),
     }
-    out = {k: (np.where(ok_pool, v, np.nan) if k == "limit_streak_max" else v)
-           for k, v in out.items()}
     _cache_put(key, out)
     return out
 
 
 # ══════════════════════════════════════════════════════════════════════
-# B 资金流结构（7）
+# B 资金流结构（2；2026-10-04 复审清理后）
 # ══════════════════════════════════════════════════════════════════════
 MF_DEPS = ("stock_main_fund_flow", "stock_daily", "stock_adj_factor")
 _TIERS = ("sm", "md", "lg", "elg")
@@ -444,7 +381,6 @@ def _money_flow(ctx) -> dict:
     pool = ctx.universe & ctx.traded() & fin
 
     den = _sum_ok(ctx, gross, pool)
-    big_r = _div(_sum_ok(ctx, big, pool), den)
     sml_r = _div(_sum_ok(ctx, sml, pool), den)
     # ★ 只留「大单净流入率」一个净额口径，理由是**恒等式**（不是经验观察）：
     #   每笔成交的买方与卖方金额相同 ⇒ Σ四档买 = Σ四档卖 ⇒
@@ -455,17 +391,15 @@ def _money_flow(ctx) -> dict:
     #   实测它与独立复算对不上（0.29 vs 0.44），正是"结果由求和顺序决定"的证据。
     #   独立复算把这个因子挑出来后已从本模块删除。
     out = {
-        "mf_large_net_ratio": big_r,
         "mf_large_breadth": _ratio_all(ctx, _gt(big, 0.0), pool),
         "mf_elg_turnover_share": _div(_sum_ok(ctx, elg, pool), den),
     }
-    out["mf_large_net_ratio_ma5"] = _shift_mean(out["mf_large_net_ratio"], 5)
     _cache_put(key, out)
     return out
 
 
 # ══════════════════════════════════════════════════════════════════════
-# C 两融杠杆情绪（6）—— 全库唯一的滞后源
+# C 两融杠杆情绪（1；2026-10-04 复审清理后）—— 全库唯一的滞后源
 # ══════════════════════════════════════════════════════════════════════
 MARGIN_DEPS = ("stock_margin_detail", "stock_daily", "stock_adj_factor")
 
@@ -484,17 +418,7 @@ def _margin(ctx) -> dict:
     _ = ctx  # lag_grid 已用到；保留这行是为了让"位移确实发生在这里"在源码上一目了然
     fin = np.isfinite(V).all(axis=2)
     pool = ctx.universe & ctx.traded() & fin
-    rzye = _sum_ok(ctx, V[:, :, 0], pool)
-    rzmre = _sum_ok(ctx, V[:, :, 1], pool)
-    rzche = _sum_ok(ctx, V[:, :, 2], pool)
-    rqye = _sum_ok(ctx, V[:, :, 3], pool)
-    amt = _pool_amount(ctx)
     out = {
-        "margin_buy_ratio": _div(rzmre, amt),
-        "margin_net_buy_ratio": _div(rzmre - rzche, amt),
-        "margin_balance_chg5": _div(rzye, _lag(rzye, 5)) - 1.0,
-        "margin_balance_chg20": _div(rzye, _lag(rzye, 20)) - 1.0,
-        "margin_short_chg20": _div(rqye, _lag(rqye, 20)) - 1.0,
         # ★ 原口径是「融资买入额>0 的家数占比」，实测恒在 99.2%~100%（std=0.001）——
         #   融资买入几乎是全市场行为，那个比率没有截面信息。改成**净买入**家数占比
         #   （rzmre>rzche），衡量的是"加杠杆 vs 还杠杆"的分歧，才有区分度。
@@ -505,7 +429,7 @@ def _margin(ctx) -> dict:
 
 
 # ══════════════════════════════════════════════════════════════════════
-# D 板块/行业轮动（7）—— 只做板块指数层，不需要成分股映射
+# D 板块/行业轮动（2；2026-10-04 复审清理后）—— 只做板块指数层，不需要成分股映射
 # ══════════════════════════════════════════════════════════════════════
 SECTOR_DEPS = ("tdx_daily", "tdx_blocks", "dc_blocks")
 
@@ -540,41 +464,26 @@ def _sector_cs(ctx) -> dict:
     if hit is not None:
         return hit
     boards = _industry_boards(ctx)
-    _, V = _load_axis(ctx, "tdx_daily", "board_code", ["close", "amount"],
+    _, V = _load_axis(ctx, "tdx_daily", "board_code", ["close"],
                       suffix=".TDX", keep=boards)
-    close, amount = V[:, :, 0], V[:, :, 1]
+    close = V[:, :, 0]
     ret = _div(close, _lag2d(close, 1)) - 1.0
     mom20 = np.expm1(_roll_sum_nan(np.log1p(np.where(np.isfinite(ret), ret, np.nan)), 20))
     need = 30                      # 核验后的行业数有数百个，30 个起算即视为截面够用
-    amt_sum = _cs(amount, "sum", need)
-    # 面板头部那几天（20 日窗口还没填满）整行全 NaN，nanquantile/nanmean 会各刷一条
-    # RuntimeWarning。这是**预期内的**（窗口未满就该是 NaN），压掉以免淹没真正的告警。
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        q90 = np.nanquantile(mom20, 0.90, axis=1)
-        med = np.nanmedian(mom20, axis=1)
-        rk = pd.DataFrame(mom20).rank(axis=1, pct=True).to_numpy(dtype=np.float64)
-        rot = np.nanmean(np.abs(rk - _lag2d(rk, 5)), axis=1)
-    n_ok = np.isfinite(mom20).sum(axis=1) >= need
     out = {
         "sector_dispersion": _cs(ret, "std", need),
                 "sector_mom20_dispersion": _cs(mom20, "std", need),
-        "sector_leader_spread": np.where(n_ok, q90 - med, np.nan),
-        "sector_rotation_speed": np.where(n_ok, rot, np.nan),
-        "sector_amount_hhi": _div(_cs(amount ** 2, "sum", need), amt_sum ** 2),
-        "sector_amount_ratio20": _div(amt_sum, _shift_mean(amt_sum, 20)),
     }
     _cache_put(key, out)
     return out
 
 
 # ══════════════════════════════════════════════════════════════════════
-# E 指数情绪（6）
+# E 指数情绪（3；2026-10-04 复审清理后）
 # ══════════════════════════════════════════════════════════════════════
 IDX_DEPS = ("index_daily", "stock_daily", "stock_adj_factor")
 _BROAD = ("000300.SH", "000905.SH", "000852.SH", "000001.SH", "399001.SZ",
           "399006.SZ", "000016.SH", "000688.SH", "000985.CSI")
-_STYLE = ("000918.CSI", "000919.CSI")     # 沪深300 成长 / 价值
 
 
 def _index_sentiment(ctx) -> dict:
@@ -584,10 +493,10 @@ def _index_sentiment(ctx) -> dict:
         return hit
     p = ctx.panel
     years = (int(p.dates[0]) // 10000, int(p.dates[-1]) // 10000)
-    want = set(_BROAD) | set(_STYLE)
+    want = set(_BROAD)
     df = ctx.dataset("index_daily",
                      columns=["ts_code", "trade_date", "close", "high", "low",
-                              "pre_close", "amount"],
+                              "pre_close"],
                      years=years)
     if df is None or df.empty:
         raise RuntimeError("index_daily 缺源")
@@ -611,12 +520,11 @@ def _index_sentiment(ctx) -> dict:
             pd.to_numeric(df[c], errors="coerce").to_numpy(dtype=np.float64)[ok]
         return out
 
-    close, high, low, pre, amount = (wide(c) for c in
-                                     ("close", "high", "low", "pre_close", "amount"))
+    close, high, low, pre = (wide(c) for c in
+                             ("close", "high", "low", "pre_close"))
     ret = _div(close, _lag2d(close, 1)) - 1.0
     j = col["000300.SH"]
     c3 = close[:, j]
-    r20 = lambda x: _div(x, _lag(x, 20)) - 1.0
 
     hi250 = pd.Series(c3).rolling(250, min_periods=125).max().to_numpy()
     lo250 = pd.Series(c3).rolling(250, min_periods=125).min().to_numpy()
@@ -625,7 +533,6 @@ def _index_sentiment(ctx) -> dict:
     out = {
         "idx_csi300_amplitude20": (pd.Series(_div(high - low, pre)[:, j])
                                    .rolling(20, min_periods=10).mean().to_numpy()),
-        "idx_csi300_amount_share": _div(amount[:, j], _pool_amount(ctx)),
         # ★ 原来是「9 个宽基里有几个上涨」—— 一个截面只有 10 个可能取值（卡片化）。
         #   换成**跨宽基指数的收益离散**：连续、且衡量的是风格/规模之间的分化强度，
         #   与已有的 `mkt_dispersion`（个股横截面离散）是两个层次的东西。
@@ -635,16 +542,12 @@ def _index_sentiment(ctx) -> dict:
         "idx_csi300_ret_skew20": (pd.Series(ret[:, j]).rolling(20, min_periods=10)
                                   .skew().to_numpy()),
             }
-    ga, va = col.get("000918.CSI"), col.get("000919.CSI")
-    out["idx_growth_value_spread20"] = (
-        (r20(close[:, ga]) - r20(close[:, va])) if (ga is not None and va is not None)
-        else np.full(p.dates.size, np.nan))
     _cache_put(key, out)
     return out
 
 
 # ══════════════════════════════════════════════════════════════════════
-# F 量能与可交易性（3）
+# F 量能与可交易性（1；2026-10-04 复审清理后）
 # ══════════════════════════════════════════════════════════════════════
 LIQ_DEPS = ("stock_daily", "stock_adj_factor")
 
@@ -676,7 +579,7 @@ def _register(name: str, desc: str, formula: str, deps: tuple, compute, *,
     fn.__name__ = name
     register(FactorSpec(
         name=name, group="market", is_market=True, desc=desc, formula=formula,
-        deps=deps, start=start, warmup_days=warmup, version=1, lagged_ok=lagged,
+        deps=deps, start=start, warmup_days=warmup, version=2, lagged_ok=lagged,
         align_fill=align_fill,     # 见 FactorSpec.align_fill（时间轴对齐）
         note=("市场标量，每天恰好一行、无股票列、无横截面 rank；未做收益有效性承诺。"
               + note + " 缺失保持 NaN，不用未来值回填。")))(fn)
@@ -687,7 +590,6 @@ _FULL_NOTE = ("★ 全市场口径：源表是上游按全市聚合好的家数�
 
 for _n, _d, _f in (
     ("mkt_full_flat_ratio", "全市场平盘家数占比", "flat_count/(up+down+flat)"),
-    ("mkt_full_up_change5", "上涨家数占比的 5 日变化", "up_ratio-lag(up_ratio,5)"),
 ):
     _register(_n, _d, _f + "；取每日 15:00 那一行", LIMIT_DEPS_DIST, _limit_breadth,
               warmup=40, note=_FULL_NOTE)
@@ -695,19 +597,11 @@ for _n, _d, _f in (
 for _n, _d, _f in (
     ("mkt_limit_up_ratio", "池内涨停家数占比", "count(limit=U)/count(pool)"),
     ("mkt_limit_down_ratio", "池内跌停家数占比", "count(limit=D)/count(pool)"),
-    ("mkt_limit_net_ratio", "池内涨停减跌停家数占比", "(count(U)-count(D))/count(pool)"),
-    ("mkt_limit_streak_max", "池内最高连板数", "max(limit_times where limit=U)"),
-    ("mkt_limit_streak_share", "池内连板≥2 家数占涨停家数比", "count(U且limit_times>=2)/count(U)"),
-    ("mkt_limit_broken_ratio", "池内炸板率", "count(Z)/(count(U)+count(Z))"),
-    ("mkt_limit_seal_amount_share", "池内涨停股成交额占池内成交额比",
-     "sum(amount where limit=U)/sum(池内成交额)"),
 ):
     _register(_n, _d, _f, LIMIT_DEPS_LIST, _limit_eco, start=START_LIMIT_LIST, warmup=40,
-              note="只统计冻结池内的股票；limit 三态 U涨停/D跌停/Z炸板。")
+              note="只统计冻结池内的股票；limit 三态 U/D/Z 中只取 U涨停/D跌停。")
 
 for _n, _d, _f in (
-    ("mkt_mf_large_net_ratio", "池内大单(大+超大)净流入占比", "sum(lg+elg 净额)/sum(四档买卖金额)"),
-    ("mkt_mf_large_net_ratio_ma5", "大单净流入率的 5 日均", "mean(前 5 日 large_net_ratio)"),
     ("mkt_mf_large_breadth", "池内大单净流入家数占比", "count(lg+elg净额>0)/count(有效)"),
     ("mkt_mf_elg_turnover_share", "池内超大单成交额占四档比", "sum(elg买+卖)/sum(四档买+卖)"),
 ):
@@ -716,11 +610,6 @@ for _n, _d, _f in (
                    "不使用 net_mf_amount 字段（实测其语义无法从源表自证），净额由四档原始列构造。")
 
 for _n, _d, _f in (
-    ("mkt_margin_buy_ratio", "池内融资买入额占成交额比", "sum(rzmre)/sum(池内成交额)"),
-    ("mkt_margin_net_buy_ratio", "池内融资净买入占成交额比", "sum(rzmre-rzche)/sum(池内成交额)"),
-    ("mkt_margin_balance_chg5", "池内融资余额 5 日变化率", "sum(rzye)/lag(sum(rzye),5)-1"),
-    ("mkt_margin_balance_chg20", "池内融资余额 20 日变化率", "sum(rzye)/lag(sum(rzye),20)-1"),
-    ("mkt_margin_short_chg20", "池内融券余额 20 日变化率", "sum(rqye)/lag(sum(rqye),20)-1"),
     ("mkt_margin_breadth", "池内融资净买入家数占比", "count(rzmre>rzche)/count(有效)"),
 ):
     _register(_n, _d, _f, MARGIN_DEPS, _margin, warmup=80,
@@ -729,10 +618,6 @@ for _n, _d, _f in (
 for _n, _d, _f in (
     ("mkt_sector_dispersion", "行业板块当日收益的横截面离散", "std(ret_ind)"),
     ("mkt_sector_mom20_dispersion", "行业板块 20 日收益离散", "std(ret20_ind)"),
-    ("mkt_sector_leader_spread", "领涨行业强度", "q90(ret20_ind)-median(ret20_ind)"),
-    ("mkt_sector_rotation_speed", "行业轮动速度", "mean|rank20(t)-rank20(t-5)|（名次已归一）"),
-    ("mkt_sector_amount_hhi", "行业板块成交额集中度", "sum(amt^2)/sum(amt)^2"),
-    ("mkt_sector_amount_ratio20", "行业成交额合计相对前 20 日均值", "sum(amt)/mean(前20日)"),
 ):
     _register(_n, _d, _f + "；行业候选经 dc_blocks「行业板块」名称交叉核验",
               SECTOR_DEPS, _sector_cs, warmup=80,
@@ -740,25 +625,12 @@ for _n, _d, _f in (
                    "收益由板块指数点位现算；不使用总市值/涨跌家数这类统计序列当行业。")
 
 for _n, _d, _f in (
-    # ★ 起点由**实测首个有效值**决定：000918.CSI（300成长）最早 2019-06-03，
-    #   000919.CSI（300价值）最早 2018-09-03 —— 两者的差要等到 2019-06-03，
-    #   而因子算的是 **20 日**动量差 ⇒ 真正有值的首日是 **2019-07-02**。
-    #   写 2019-06-03 会让前 20 个交易日是 NaN（预热不足），
-    #   `main.py check` 会报「全历史日期轴不完整」；写 2018-01-01 更糟（前 362 天全 NaN）。
-    ("mkt_idx_growth_value_spread20", "成长价值风格差", "ret20(000918.CSI)-ret20(000919.CSI)"),
     ("mkt_idx_csi300_amplitude20", "沪深300 20 日平均振幅", "mean((high-low)/pre_close,20)"),
-    ("mkt_idx_csi300_amount_share", "沪深300 成交额占池内成交额比",
-     "amount(000300.SH)/sum(池内成交额)"),
     ("mkt_idx_broad_dispersion", "宽基指数间收益离散", "std(ret1) 于 9 个宽基指数"),
     ("mkt_idx_csi300_range_position250", "沪深300 在 250 日区间中的位置",
      "(close-min250)/(max250-min250)"),
 ):
     _register(_n, _d, _f, IDX_DEPS, _index_sentiment, warmup=300,
-              start=("2019-07-02" if _n == "mkt_idx_growth_value_spread20" else START_DEFAULT),
-              # ★★ 2026-09-25 时间轴对齐：000918.CSI(300成长) 最早 2019-06-03、
-              #   000919.CSI(300价值) 最早 2018-09-03 —— **指数序列本身不存在**，
-              #   上游确实不支持。按用户约定该区间填 0（"没有风格差"）。
-              align_fill=(0.0 if _n == "mkt_idx_growth_value_spread20" else float("nan")),
               note="指数按官方编制范围，不限制为固定池；均为价格指数，收益不含分红。")
 
 for _n, _d, _f in (

@@ -1,0 +1,19 @@
+family_id: r4b_intraday_shape_v2
+idea_id: r4b_intraday_shape_v1
+trial_budget: 7
+baseline: 朴素基线 = idt_rv_daily（波动水平）与 idt_vol_stability（波动随时间）；机制 2 的朴素对照
+  = |5 日收益|（纯幅度）；机制 3 峰度的定向对照 = idt_rv_daily、r3b_intraday_rv_skewness_v2（同族
+  截尾口径的近邻）；机制 5 量价领先的定向对照 = 现有量价合成与 idt_overnight_minus_intraday；
+  另按 RESEARCH_BRIEF_B1.md §4-U2 的定向相关对照逐项报告，并对全库正式因子做相关性筛查。
+allowed_variants:
+  - {signal: intraday_volume_hhi_20}
+  - {signal: intraday_path_inefficiency_20}
+  - {signal: upbar_volume_share_20}
+  - {signal: intraday_rv_kurtosis_20}
+  - {signal: vol_lead_ret_corr_20}
+note: Lead 14:37 纠偏后的修正族。v1 的机制 3 close30_volume_share_20 / 机制 5 close_location_value_20
+  分别撞已删因子 close30_amt_share / idt_close_position（id2_am_close_position 同构念），已撤销为
+  「重蹈对照」（不占预算、不作新机制主张）；替换为 intraday_rv_kurtosis_20（方向 false）与
+  vol_lead_ret_corr_20（方向 true），两方向均已冻结不得再改。机制 1/2/4 参数不变、已登记在 v1
+  （family 记录不可变），本族只登记 2 个替换机制候选；与 v1 保留的 3 个机制合计 5 机制，预算 7
+  中的变体槽位不使用（避免看过结果后扩大搜索空间）。

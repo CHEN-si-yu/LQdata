@@ -1,0 +1,16 @@
+name: r3b_intraday_jump_share_v2
+family_id: r3_intraday_moments_v2
+implementation: research.families.r3_intraday_moments_v2:build
+parameters: {signal: jump_share}
+units: 因子值 = max(RV-BPV,0)/RV，取值 [0,1)，无量纲。
+availability: 只用信号日 15:00 收盘前的当日 5min bar；不跨日、无未来数据；fea/delay.py 实测 stock_history_5min 不在可得性滞后名单，无需位移。
+missing_policy: 当日可用 bar 收益 < 40 个、或 RV<=0 时为 NaN；停牌/无该日分区为 NaN；不零填充。
+spec:
+  group: research_intraday
+  desc: Lead 预登记机制 2：BNS 跳跃变异占比，越高越差。
+  formula: max(sum(r^2) - (pi/2)*sum|r_i||r_i-1|, 0) / sum(r^2)
+  deps: [stock_history_5min]
+  warmup_days: 1
+  higher_is_better: false
+  version: 1
+  note: BNS 标准构造：RV 不截尾（跳跃本身就是要测的极端项），BPV 为抗噪的连续部分。

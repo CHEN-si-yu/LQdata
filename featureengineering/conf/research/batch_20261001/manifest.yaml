@@ -1,0 +1,88 @@
+# 事前登记假设，不构成收益证明；收益方向与有限机制集合在计算前登记。
+{
+  "batch_id": "selection_20261001_v1",
+  "candidate_count": 16,
+  "family_count": 4,
+  "protocol": {
+    "stocks": 2115,
+    "output_start": "2018-01-01",
+    "primary_horizons": [
+      1,
+      5
+    ],
+    "auxiliary_horizons": [
+      3,
+      10,
+      20
+    ]
+  },
+  "evaluation_recommendation": {
+    "start": "2018-01-01",
+    "end": "2026-09-30",
+    "by_year": true,
+    "recent_comparison_start": "2022-01-01",
+    "interpretation": "historical_screening;not_untouched_holdout"
+  },
+  "source_evidence": {
+    "report": "既有《因子工程体系调研与规划建议（三）》§4与附录A为研究背景；不作为程序输入。可执行原始字段与正式配方证据使用本项目 actual_preflight。",
+    "actual_preflight": "artifacts/research/batches/reselection_20261001_v1/preflight.json",
+    "raw_schema_confirmed_by_root": "2026-10-01",
+    "same_table_flow_units": "现有factors/fundflow.py记录过逐年跨表规模比，但比例仅为数量级证据，不作为本批物理单位认证。本批四档金额占比及买/卖均价之比仅同表消元；daily同字段时序比值/对数创新保留原始尺度，不做跨表金额/量换算。",
+    "excluded_sources": [
+      "net_mf_amount",
+      "net_mf_vol",
+      "stock_pledge_stat",
+      "stock_holder_number",
+      "uncertain_event_sources",
+      "minute_raw_rebuild"
+    ],
+    "availability_contract": "conf/frequency.yaml daily/adj/four_bucket_flow delay_days=0",
+    "daily_scale_contract": "PriceLayer.raw_panel直接读取上游原值，未统一转换vol/amount单位；既有报告的amount/(vol×close)约1只是数量级相容。本批保留供应商原始尺度，不宣称vol为股或手、amount为元或千元。"
+  },
+  "definition_files": {
+    "ideas": [
+      "ideas/s26_activity.yaml",
+      "ideas/s26_impact.yaml",
+      "ideas/s26_transmission.yaml",
+      "ideas/s26_structure.yaml"
+    ],
+    "families": [
+      "families/s26_activity.yaml",
+      "families/s26_impact.yaml",
+      "families/s26_transmission.yaml",
+      "families/s26_structure.yaml"
+    ],
+    "candidates": [
+      "candidates/s26_pv_confirm.yaml",
+      "candidates/s26_pv_failed_breakout.yaml",
+      "candidates/s26_pv_quiet_advance.yaml",
+      "candidates/s26_pv_capitulation.yaml",
+      "candidates/s26_liq_down_shock.yaml",
+      "candidates/s26_liq_up_fragility.yaml",
+      "candidates/s26_liq_shock_repair.yaml",
+      "candidates/s26_liq_drought_gap.yaml",
+      "candidates/s26_flow_buy_underresponse.yaml",
+      "candidates/s26_flow_sell_resilience.yaml",
+      "candidates/s26_flow_tier_response.yaml",
+      "candidates/s26_flow_dip_buy.yaml",
+      "candidates/s26_structure_side_hhi.yaml",
+      "candidates/s26_structure_block_split.yaml",
+      "candidates/s26_structure_ladder.yaml",
+      "candidates/s26_structure_side_price.yaml"
+    ]
+  },
+  "production_policy": "必须完成真实多年度评价、差异性审查、raw截断与两阶段增量，以及当前计算/协议身份复核；再显式qualified→shadow→production。不得用事后IC反号扩展候选。",
+  "engineering_amendment": {
+    "evidence": "artifacts/research/batches/reselection_20261001_v1/warmup_calendar_review.json",
+    "timing": "before_any_candidate_return_calculation",
+    "reason": "本地真实calendar的180日历年度前缀在2019/2022/2025/2026仅120个观测，嵌套60+60与repair lag1需充分历史；240日历年度前缀161–164。",
+    "warmup_calendar_days": {
+      "s26_liq_down_shock_v1": 240,
+      "s26_liq_up_fragility_v1": 240,
+      "s26_liq_shock_repair_v1": 240,
+      "other_13": 180
+    },
+    "unchanged": "formula;direction;16_mechanisms;historical_min_counts",
+    "raw_validity_fix": "收益计算前有限synthetic fixture验证：非交易或非法OHLC行虽然最终输出NaN，其正金额/价格/资金档位仍可能污染未来基线。候选内部在lag/rolling前屏蔽无效金额/HFQ价/资金档位；收益和gap要求有效上一日收盘。PriceLayer、上游、合法inactive事件0不变。"
+  }
+}

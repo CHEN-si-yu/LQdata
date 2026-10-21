@@ -1,0 +1,12 @@
+family_id: r4a_earnings_surprise_v2
+idea_id: r4a_earnings_surprise_v1
+trial_budget: 7
+baseline: 与 v1 相同：朴素对照 = 正式因子 yoy_revenue、roe_ttm、ep_ttm；机制 3 的朴素对照 = 同窗口普通 60 日动量 momentum_60。定向相关对照 = momentum_60/120、short_term_reversal_5、ep_ttm、roe_ttm、yoy_revenue、qf_sales_growth_accel、qf_core_roe_yoy_change。不把模型贡献视为已完成。本族为 2026-10-04 Lead 纠偏后的修订版：撤销 forecast_implied_surprise（与已删因子 forecast_profit_midpoint_change 实质相同，标注重蹈对照、不占预算），替换为 forecast_revision_dir；其余 6 个变体沿用 v1 定义（候选仍登记于 v1 家族，不重跑）。
+allowed_variants:
+  - {signal: sue_seasonal_q}
+  - {signal: sue_accel}
+  - {signal: pead_drift_60, skip: 0}
+  - {signal: pead_drift_60, skip: 5}
+  - {signal: forecast_landing_gap}
+  - {signal: sue_seasonal_nostd}
+  - {signal: forecast_revision_dir}

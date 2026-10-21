@@ -1,0 +1,16 @@
+name: r4a_forecast_revision_dir_v1
+family_id: r4a_earnings_surprise_v2
+implementation: research.families.r4a_earnings_surprise_v2:build
+parameters: {signal: forecast_revision_dir}
+units: 预告净利中点的相对变化（除以最新记录 |last_parent_net|，万元口径），无量纲，arcsinh 压缩。
+availability: 配对键 (stock_code, 报告期 end_date)；取该配对首次公告中点与最新公告中点（同一天同配对多条取中点中位数）；事件铺在最新公告日 ann_l 上、asof 前向填充到下次事件；只用 ann_date ≥ 19900101 且中点完整的记录。
+missing_policy: 无配对（该报告期仅一条记录或首末公告时刻相同）、首末中点缺失、|last_parent_net| < 100 万元（微小基数失真）时为 NaN；不零填充、不回退旧配对、不跨报告期借用。
+spec:
+  group: research_earnings
+  desc: 预告修正方向：同一 (stock, 报告期) 配对的预告净利中点自首次公告到最新公告的相对变化（上修为正，盈余动量）。
+  formula: "arcsinh((mid_last - mid_first) / |last_parent_net_last|), mid=(net_profit_min+net_profit_max)/2 万元（同日多条取中位数），要求 ann_last > ann_first 且 |last_parent_net| ≥ 100 万元，placed at ann_last"
+  deps: [stock_forecast]
+  warmup_days: 700
+  higher_is_better: true
+  version: 1
+  note: Lead 纠偏（2026-10-04）：替换被撤销的 forecast_implied_surprise（其与已删因子 forecast_profit_midpoint_change 实质相同）；方向 true 见结果前冻结；口径为执行者自冻结并已在 progress.md / report.md「机制变更记录」写明。
