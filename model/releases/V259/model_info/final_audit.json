@@ -1,0 +1,197 @@
+{
+  "model": "V259",
+  "seed": 35253,
+  "quarter": "2026Q4",
+  "folds_checked": 4,
+  "phases_checked": 4,
+  "max_cpu_reload_error": 5.960464477539063e-08,
+  "audits": [
+    {
+      "fold": 1,
+      "errors": {
+        "delivery": 2.9802322387695312e-08
+      },
+      "sources": {
+        "delivery": {
+          "train_end": "2026-01-21",
+          "weight_sha256": "081de38b8886cbf352f5e9f97727ec2e7b86c22bc181a935d063f87c200d9b6e",
+          "teacher": null
+        }
+      },
+      "paired_selector_delivery": false,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 1,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2026-01-21",
+            "days": 1955
+          }
+        ],
+        "valid": [
+          {
+            "start": "2026-03-02",
+            "end": "2026-06-02",
+            "days": 63
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-23",
+            "days": 12
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-23",
+            "days": 12
+          }
+        ]
+      }
+    },
+    {
+      "fold": 2,
+      "errors": {
+        "delivery": 2.9802322387695312e-08
+      },
+      "sources": {
+        "delivery": {
+          "train_end": "2026-02-27",
+          "weight_sha256": "670114335d174768e2a22dbf730cda26fba0615a5d1f47b10442c3ac85c1077c",
+          "teacher": null
+        }
+      },
+      "paired_selector_delivery": false,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 2,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2026-02-27",
+            "days": 1976
+          }
+        ],
+        "valid": [
+          {
+            "start": "2026-03-31",
+            "end": "2026-07-02",
+            "days": 63
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-23",
+            "days": 12
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-23",
+            "days": 12
+          }
+        ]
+      }
+    },
+    {
+      "fold": 3,
+      "errors": {
+        "delivery": 5.960464477539063e-08
+      },
+      "sources": {
+        "delivery": {
+          "train_end": "2026-03-30",
+          "weight_sha256": "3635e6b9e315e8ba71b556fe34048bfd033d00c5a63ea10aa1241fe0d703fc59",
+          "teacher": null
+        }
+      },
+      "paired_selector_delivery": false,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 3,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2026-03-30",
+            "days": 1997
+          }
+        ],
+        "valid": [
+          {
+            "start": "2026-04-30",
+            "end": "2026-07-31",
+            "days": 63
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-23",
+            "days": 12
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-23",
+            "days": 12
+          }
+        ]
+      }
+    },
+    {
+      "fold": 4,
+      "errors": {
+        "delivery": 2.9802322387695312e-08
+      },
+      "sources": {
+        "delivery": {
+          "train_end": "2026-04-29",
+          "weight_sha256": "1af2887f1915c586b6f7531b26dd89dc024784d4429d27bd5f136cdf3a8a6a4c",
+          "teacher": null
+        }
+      },
+      "paired_selector_delivery": false,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 4,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2026-04-29",
+            "days": 2018
+          }
+        ],
+        "valid": [
+          {
+            "start": "2026-06-03",
+            "end": "2026-08-31",
+            "days": 63
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-23",
+            "days": 12
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-23",
+            "days": 12
+          }
+        ]
+      }
+    }
+  ],
+  "snapshot_meta_sha256": "d4c3dea169ea9c4305aeb04226c39bc473853e284eeb2d4ec5cdc18ceaa0c8e0",
+  "source_sha256": "76b96ed118fc29250f2e6d2325b2496624b64b7d64c0d6b702fad5a79dbe470b",
+  "strict_time_and_teacher_passed": true
+}

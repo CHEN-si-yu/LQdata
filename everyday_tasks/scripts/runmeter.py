@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """带计量的运行器：跑一条命令，记**墙钟耗时**与**峰值内存**，落一行 JSON 台账。
 
-为什么不用 `free`：本机 `free` 看到的是宿主机 461 GiB，而容器 cgroup 上限只有 90 GiB
-（`/sys/fs/cgroup/memory/memory.limit_in_bytes` = 96,636,764,160）。**看错了会批过头**
+为什么不用 `free`：`free` 看到的是宿主机内存，而容器 cgroup 上限远小于它
+（v1: `/sys/fs/cgroup/memory/memory.limit_in_bytes`；v2: `/sys/fs/cgroup/memory.max`）。**看错了会批过头**
 （项目实测爆过一次容器重启）。所以这里只读 cgroup：
 
-  · `memory.usage_in_bytes` —— 计费内存，含可回收页缓存；
+  · 计费内存：v1 `memory.usage_in_bytes` / v2 `memory.current` —— 含可回收页缓存；
   · `memory.stat` 的 `anon` —— 不可回收的匿名内存，**这才是"真占了多少"**；
   · 两个都采，取运行全程的**最大值**（1 秒一采，采样协程在独立子进程里，不干扰被测进程）。
+  · 2026-10-29 实例切换为纯 cgroup v2，脚本已加 v1/v2 自动探测（见当日台账）。
 
 ★ 为什么要独立子进程采样：被测进程自己也会爆内存；采样器必须是"即使它死了也还在"的那个。
   另外 cgroup 的用量是**整个容器**的（含同时段的别的进程），所以台账里同时记"基线用量"，
@@ -25,15 +26,23 @@ import sys
 import time
 from pathlib import Path
 
-CG = Path('/sys/fs/cgroup/memory')
-LIMIT = int((CG / 'memory.limit_in_bytes').read_text().strip())
+# cgroup v1: /sys/fs/cgroup/memory/{memory.limit_in_bytes,memory.usage_in_bytes}
+# cgroup v2: /sys/fs/cgroup/{memory.max,memory.current}（2026-10-29 实例切换，见当日台账）
+if Path('/sys/fs/cgroup/memory.max').exists():
+    CG = Path('/sys/fs/cgroup')
+    LIMIT = int((CG / 'memory.max').read_text().strip())
+    USAGE_FILE = 'memory.current'
+else:
+    CG = Path('/sys/fs/cgroup/memory')
+    LIMIT = int((CG / 'memory.limit_in_bytes').read_text().strip())
+    USAGE_FILE = 'memory.usage_in_bytes'
 #: 计量台账落点：默认放平台的 state/ 下，可用 --out 或 $MX_TIMINGS 覆盖。
 #: ★ 不要落在脚本自己的目录里 —— scripts/ 是代码目录，不该混进运行状态。
 OUT = Path(os.environ.get('MX_TIMINGS', '/root/autodl-fs/everyday_tasks/state/timings.jsonl'))
 
 
 def sample():
-    usage = int((CG / 'memory.usage_in_bytes').read_text().strip())
+    usage = int((CG / USAGE_FILE).read_text().strip())
     anon = 0
     for line in (CG / 'memory.stat').read_text().splitlines():
         if line.startswith('anon '):
@@ -63,11 +72,11 @@ def main():
     peakfile = OUT.parent / f'.peak_{os.getpid()}'
     sampler = subprocess.Popen([sys.executable, '-c', '''
 import time, sys
-CG = "/sys/fs/cgroup/memory"
+CG, uf = sys.argv[2], sys.argv[3]
 peak_u = peak_a = 0
 path = sys.argv[1]
 while True:
-    u = int(open(CG + "/memory.usage_in_bytes").read())
+    u = int(open(CG + "/" + uf).read())
     a = 0
     for line in open(CG + "/memory.stat"):
         if line.startswith("anon "):
@@ -78,7 +87,7 @@ while True:
         peak_u, peak_a = max(peak_u, u), max(peak_a, a)
         open(path, "w").write(f"{peak_u} {peak_a}")
     time.sleep(1.0)
-''', str(peakfile)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+''', str(peakfile), str(CG), USAGE_FILE], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     t0 = time.time()
     proc = subprocess.run(cmd, cwd=a.cwd)

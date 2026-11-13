@@ -1,10 +1,11 @@
 """日报命名、输入投影、融合与重复执行的关键合同。"""
 import importlib.util
-from datetime import datetime
+from datetime import datetime,timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -86,7 +87,8 @@ class DailyContractTests(unittest.TestCase):
         import json
         root = SCRIPT.parent
         contracts = json.loads((root / 'input_contracts.json').read_text())
-        for unit in ['V220', 'V230', 'V240', 'V252']:
+        for path in daily.discover_units(root):
+            unit = path.name
             info = json.loads((root / unit / 'model_train/2026Q4/fold1/training_info.json').read_text())
             features = info['feature_columns']
             meta = dict(semantics='zscore_win1_99_v1', columns={'direction': dict.fromkeys(features, 1)})
@@ -136,6 +138,54 @@ class DailyContractTests(unittest.TestCase):
         np.testing.assert_array_equal(daily.rank_order(np.array([1., 1., np.nan]),
                                                        np.array(['B', 'A', 'C'])), [1, 0])
 
+    def test_weighted_head_fusion_ignores_outside_common_pool(self):
+        scores = {'A': np.array([3., 2., 1., np.nan]),
+                  'B': np.array([1., 2., 3., 1000.])}
+        result, count = daily.fuse_scores(scores, 'rank_square', {'A': 2., 'B': 1.})
+        self.assertEqual(count, 3)
+        # The fourth stock must not affect B's within-pool ranks.
+        np.testing.assert_allclose(result[:3], [(2*25+1)/108, 1/4, (2+25)/108])
+        self.assertTrue(np.isnan(result[3]))
+        default, _ = daily.fuse_scores(scores)
+        np.testing.assert_allclose(default[:3], .5)
+
+    def test_all_declared_fusions_reject_invalid_weights_and_handle_ties(self):
+        scores = {'A': np.array([1., 1., 1.]), 'B': np.array([2., 2., 2.])}
+        for method, expected in [('rank_mean', .5), ('rank_square', .25),
+                                 ('gaussian_rank', 0.), ('zscore_clip3', 0.)]:
+            actual, count = daily.fuse_scores(scores, method)
+            self.assertEqual(count, 3)
+            np.testing.assert_allclose(actual, expected)
+        for weights in [{'A': 1.}, {'A': 0., 'B': 1.}, {'A': -1., 'B': 1.},
+                        {'A': float('nan'), 'B': 1.}]:
+            with self.assertRaises(ValueError):
+                daily.fuse_scores(scores, weights=weights)
+        with self.assertRaisesRegex(ValueError, '未知融合'):
+            daily.fuse_scores(scores, 'unknown')
+
+    def test_active_manifest_rejects_changed_weights_or_wrong_quarter(self):
+        import json
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            unit = root / 'V1'
+            fold = unit / 'model_train/2026Q4/fold1'
+            fold.mkdir(parents=True)
+            paths = [root/'main.py', *(unit/name for name in ('model.py', 'run.py', 'analysis.py')),
+                     *(fold/name for name in ('best.pt', 'training_info.json', 'complete.json'))]
+            for path in paths:
+                path.write_text('frozen artifact')
+            config = root/'release_config.json'
+            config.write_text(json.dumps(dict(quarter='2026Q4', files={
+                str(path.relative_to(root)): daily.sha256(path) for path in paths})))
+            plan = dict(unit=unit, quarter='2026Q4', checkpoints=[fold/'best.pt'])
+            with patch.object(daily, 'ROOT', root), patch.object(daily, 'CONFIG_PATH', config):
+                daily.verify_release_files([plan])
+                with self.assertRaisesRegex(ValueError, '季度'):
+                    daily.verify_release_files([dict(plan, quarter='2026Q3')])
+                (fold/'best.pt').write_text('changed weights')
+                with self.assertRaisesRegex(ValueError, '指纹变化'):
+                    daily.verify_release_files([plan])
+
     def test_merge_is_idempotent_and_preserves_manual_notes(self):
         dates = np.array(['2026-09-29', '2026-09-30'])
         entries = {day: entry(day) for day in dates}
@@ -159,6 +209,52 @@ class DailyContractTests(unittest.TestCase):
             before = path.stat().st_mtime_ns
             self.assertFalse(daily.atomic_text(path, 'report\n'))
             self.assertEqual(path.stat().st_mtime_ns, before)
+
+    def test_full_score_archive_retains_amplitudes_missingness_and_earliest_time(self):
+        scores={'V1':np.asarray([.01,.02,np.nan]),'V2':np.asarray([2.,1.,3.])}
+        fused,_=daily.fuse_scores(scores)
+        codes=np.asarray(['A','B','C'])
+        first_time=datetime(2026,10,24,21,tzinfo=timezone.utc)
+        with TemporaryDirectory() as directory:
+            item=daily.archive_scores(directory,'2026-10-23',codes,scores,fused,'2026-10-26','fp',{'models':[]},first_time)
+            later=daily.archive_scores(directory,'2026-10-23',codes,scores,fused,'2026-10-26','fp',{'models':[]},datetime(2026,10,27,tzinfo=timezone.utc))
+            self.assertEqual(item,later)
+            self.assertEqual(item['time_relation'],'recorded_before_next_open')
+            self.assertTrue(daily.score_archive_valid({'score_archive':item},directory))
+            with np.load(Path(directory)/item['path'],allow_pickle=False) as saved:
+                np.testing.assert_array_equal(saved['raw_scores'],[scores['V1'],scores['V2']])
+                np.testing.assert_array_equal(saved['common_mask'],[True,True,False])
+                np.testing.assert_array_equal(saved['fused_rank'],fused)
+            changed={k:v.copy() for k,v in scores.items()};changed['V1'][0]=.015
+            other=daily.archive_scores(directory,'2026-10-23',codes,changed,fused,'2026-10-26','fp',{'models':[]},first_time)
+            self.assertNotEqual(item['path'],other['path'])
+            self.assertTrue((Path(directory)/item['path']).exists())
+
+    def test_retrospective_archive_and_missing_file_are_not_live_cache(self):
+        scores={'V1':np.asarray([1.,2.])};fused,_=daily.fuse_scores(scores)
+        with TemporaryDirectory() as directory:
+            item=daily.archive_scores(directory,'2026-10-22',np.asarray(['A','B']),scores,fused,
+                '2026-10-23','fp',{},datetime(2026,10,24,tzinfo=timezone.utc))
+            self.assertEqual(item['time_relation'],'retrospective_after_next_open')
+            self.assertFalse(daily.score_archive_valid(entry('2026-10-22'),directory))
+            path=Path(directory)/item['path'];path.unlink()
+            self.assertFalse(daily.score_archive_valid({'score_archive':item},directory))
+            self.assertFalse(daily.score_archive_valid({'score_archive':dict(path='../escape.npz',sha256='x')},directory))
+
+    def test_corrupted_archive_is_detected_and_preserved(self):
+        import json
+        scores={'V1':np.asarray([1.,2.])};fused,_=daily.fuse_scores(scores)
+        with TemporaryDirectory() as directory:
+            args=(directory,'2026-10-23',np.asarray(['A','B']),scores,fused,'2026-10-26','fp',{})
+            item=daily.archive_scores(*args)
+            path=Path(directory)/item['path']
+            with np.load(path,allow_pickle=False) as saved:contents={k:saved[k] for k in saved.files}
+            contents['raw_scores']=contents['raw_scores']+1
+            np.savez_compressed(path,**contents)
+            self.assertFalse(daily.score_archive_valid({'score_archive':item},directory))
+            before=path.read_bytes()
+            with self.assertRaisesRegex(RuntimeError,'归档损坏'):daily.archive_scores(*args)
+            self.assertEqual(path.read_bytes(),before)
 
 
 if __name__ == '__main__':

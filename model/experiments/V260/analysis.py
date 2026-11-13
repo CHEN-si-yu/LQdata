@@ -1,10 +1,5 @@
-'V50: flow_temporal; seed 3253; fresh independent research unit, fixed project contract.'
-
-# =============================================================================
-# ① 导入
-#
-# matplotlib 只在下标曲线的函数里按需 import：IC-only 的运行不该为它付加载开销。
-# =============================================================================
+# 标准回测与可选近期冻结信号诊断。
+"""V50: flow_temporal; seed 3253; fresh independent research unit, fixed project contract."""
 import json
 import os
 import sys
@@ -14,27 +9,15 @@ import inspect
 import unicodedata
 from argparse import ArgumentParser
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 from scipy.stats import rankdata
-
-# 路径合同与固定布局在 model.py（2026-09-26 从 run.py 迁来，run.py 只剩训练调度）。
-from model import (ROOT, RECIPE, Panel, Prices, atomic_json, axis, corr, score_of,
-                   blend_linear, hot_filter, predict_heads, predict_absolute, quarters, PredictModel, predict, torch,
-                   run_root, analysis_input_root, info_root, run_name, output_file, validate_layout,
-                   stock_list_path, calendar_path, splits)
+from model import ROOT, RECIPE, Panel, Prices, atomic_json, axis, corr, score_of, blend_linear, hot_filter, predict_heads, predict_absolute, quarters, PredictModel, predict, torch, run_root, analysis_input_root, info_root, run_name, output_file, validate_layout, stock_list_path, calendar_path, splits
 RUN_ROOT = run_root()
 INPUT_ROOT = analysis_input_root()
 
-# =============================================================================
-# ② 指标：逐标签 IC 表
-# =============================================================================
-
-
 def ic_table(pred, panel, days):
-    """逐标签算 RankIC / ICIR / Pearson IC：先按日算，再在日间平均。"""
     results = []
     for label in panel.labels:
         ic = []
@@ -46,42 +29,13 @@ def ic_table(pred, panel, days):
                 continue
             ic.append(corr(rankdata(p[ok]), rankdata(y[ok])))
             pearson.append(corr(p[ok], y[ok]))
-        std = float(np.std(ic, ddof=1)) if len(ic) > 1 else 0.
-        results.append(dict(label=label, days=len(ic), RankIC=float(np.mean(ic)),
-                            ICIR=float(np.mean(ic) / std) if std else 0.,
-                            Pearson_IC=float(np.mean(pearson))))
+        std = float(np.std(ic, ddof=1)) if len(ic) > 1 else 0.0
+        results.append(dict(label=label, days=len(ic), RankIC=float(np.mean(ic)), ICIR=float(np.mean(ic) / std) if std else 0.0, Pearson_IC=float(np.mean(pearson))))
     return results
-
-# =============================================================================
-# ②b 逐头指标（四指标 IC/ICIR/top_return/top_return_stability 的口径出处：
-#     tmp/min_test.ipynb 的 get_ret_ic / get_metrics）
-#
-# 用户 2026-09-24 定：每版实验在 docs/iterations.md 里记录 IC / ICIR /
-# top_return / top_return_stability，另附季度表现表。这一节只做「逐日序列 →
-# 指标」的换算，组合与 IC 的定义照抄 min_test：
-#   · 组合：逐日调仓，按打分降序建仓，每只票建仓 min(剩余资金, 当日成交额)；
-#   · 收益：Σ(1日标签 × 仓位) / 资金，单位 %，不连乘；
-#   · IC：逐日截面 Pearson(打分, 1日标签)。
-# ★ 这里的 IC 是 Pearson，训练侧验证与 report.json 里的 RankIC 是逐日
-#   Spearman —— 同名不同源，报告里不能只写「IC」。
-# 用户 2026-09-26 定：再加 1d / 5d 的 RankIC（见 `rank_ic_horizons()`）。
-# ★ V3 起这两列**真的**与训练侧验证同源：`model.py:validation()` 与本节都算
-#   「**打分**对 h 日标签」的逐日截面相关（V2 那边 valid 算的是"第 h 个头对自己
-#   的标签"、test 算的是"5d 头对 h 日标签"，同名不同物，不能相减）。
-# =============================================================================
-
-TOP_PORTFOLIO = dict(topn=500, money=1.5e9, label='label_ret_1d')
-
+TOP_PORTFOLIO = dict(topn=500, money=1500000000.0, label='label_ret_1d')
 
 def rank_ic_horizons():
-    """评价窗与训练验证两侧都报 RankIC 的 horizon：1d 对照 + 打分主 horizon。
-
-    ★ V3 起 `RECIPE['score_label']` **只决定报表口径**（报哪两个 horizon），不再决定
-    "取哪个头"——打分是 `model.py:score_of()` 的多头秩平均。写成函数只因为
-    `horizon_of()` 定义在 §⑧b（文件靠后），模块级常量会在它之前求值。
-    """
     return (1, horizon_of(RECIPE['score_label']))
-
 
 def min_test_zscore(pred):
     out = np.asarray(pred, dtype=np.float64).copy()
@@ -91,37 +45,20 @@ def min_test_zscore(pred):
             continue
         std = row[known].std(ddof=1)
         if std > 0:
-            out[i,known] = (row[known] - row[known].mean()) / std
+            out[i, known] = (row[known] - row[known].mean()) / std
     return out
-
 
 def min_test_combinations(pred, panel, days):
     result = []
-    for topn, money in [(500,1.5e9),(50,1e8),(5,1e7),(5,1e5)]:
-        spec = dict(topn=topn,money=money,label='label_ret_1d')
-        daily,ic,rank = top_portfolio_daily(pred,panel,days,spec)
-        result.append(dict(params=spec,metrics=top_metrics(daily,ic,rank),
-            quarterly=[dict(quarter=q,top_return=float(daily[take].mean()),IC=float(ic[1][take].mean()))
-                for q in ['2025Q3','2025Q4','2026Q1','2026Q2']
-                for take in [np.asarray([str(pd.Period(str(panel.days[d]),freq='Q'))==q for d in days])]]))
+    for topn, money in [(500, 1500000000.0), (50, 100000000.0), (5, 10000000.0), (5, 100000.0)]:
+        spec = dict(topn=topn, money=money, label='label_ret_1d')
+        daily, ic, rank = top_portfolio_daily(pred, panel, days, spec)
+        result.append(dict(params=spec, metrics=top_metrics(daily, ic, rank), quarterly=[dict(quarter=q, top_return=float(daily[take].mean()), IC=float(ic[1][take].mean())) for q in ['2025Q3', '2025Q4', '2026Q1', '2026Q2'] for take in [np.asarray([str(pd.Period(str(panel.days[d]), freq='Q')) == q for d in days])]]))
     return result
 
-
 def top_portfolio_daily(pred, panel, days, spec=TOP_PORTFOLIO):
-    """评价窗内逐日的组合日收益（%）、逐头 Pearson IC 与逐头 RankIC 序列。
-
-    只读标签和成交额：不碰价格层、不套涨跌停/停牌掩码，也不计费用——这正是
-    min_test 的无摩擦口径，成交额在这里只当资金容量上限（缺失或为 0 的票拿
-    不到仓位）。标签缺失按 0 计，照抄 min_test 的 fillna(0)：本快照评价窗内
-    逐日缺失率 ≤0.05%，对结果无实质影响。
-
-    两个 IC 家族不同源，各自与训练侧同名指标同式，便于对照：
-      · IC：逐日截面 Pearson，**标签缺失补 0**（min_test 口径）；
-      · RankIC：逐日截面 Spearman，**只用成对有效值**（缺失标签剔除）——
-        补 0 会在一堆真实收益里插进一批并列的假值，秩相关会被它们带偏。
-    """
     pred = min_test_zscore(pred)
-    topn, money = spec['topn'], spec['money']
+    topn, money = (spec['topn'], spec['money'])
     label = spec['label']
     horizons = rank_ic_horizons()
     daily_ret = np.zeros(len(days))
@@ -129,221 +66,105 @@ def top_portfolio_daily(pred, panel, days, spec=TOP_PORTFOLIO):
     daily_rank_ic = {h: np.zeros(len(days)) for h in horizons}
     for i, d in enumerate(days):
         score = pred[i]
-        known = np.isfinite(score)          # 打分缺失的票既排不了序、也进不了 IC
+        known = np.isfinite(score)
         for h in horizons:
             yh = panel.Y[f'label_ret_{h}d'][d]
             ok = known & np.isfinite(yh)
-            # corr() 对「有效样本 <3」返回 0，与 ic_table 的跳过阈值同值。
             daily_rank_ic[h][i] = corr(rankdata(score[ok]), rankdata(yh[ok]))
-            daily_ic[h][i] = corr(score[known], np.where(np.isfinite(yh[known]), yh[known], 0.) * 100)
-        # 组合：打分降序取前 topn 只，仓位按「先到先得、单只不超过当日成交额」分配，
-        # 也就是累计建仓额取 min(资金, 累计成交额) 后的逐只差分；资金用尽后其余为 0。
+            daily_ic[h][i] = corr(score[known], np.where(np.isfinite(yh[known]), yh[known], 0.0) * 100)
         y = panel.Y[label][d]
-        # Literal min_test ordering/scalar allocation, including float32 scalar rounding.
         order = pd.Series(score).sort_values(ascending=False).index.to_numpy()
-        ret = np.where(np.isfinite(y), y, 0.) * 100
+        ret = np.where(np.isfinite(y), y, 0.0) * 100
         total_hold = 0
         total_earned = 0
         for num, c in enumerate(order):
             if num >= topn or money - total_hold < 1:
                 break
-            liquid = np.float64(panel.amount[d,c] if np.isfinite(panel.amount[d,c]) else 0.)
+            liquid = np.float64(panel.amount[d, c] if np.isfinite(panel.amount[d, c]) else 0.0)
             hold_money = min(money - total_hold, liquid)
             total_hold += hold_money
             total_earned += ret[c] * hold_money
         daily_ret[i] = total_earned / money
-    return daily_ret, daily_ic, daily_rank_ic
-
+    return (daily_ret, daily_ic, daily_rank_ic)
 
 def top_metrics(daily_ret, daily_ic, daily_rank_ic):
-    """逐头 PEARSON/RankIC + 三指标 + 区间总收益。
-
-    两个「稳定性」都是均值 ÷ 标准差，未年化；标准差用样本口径（ddof=1），
-    与 min_test 里的 pandas std 一致。top_return 是日均收益（%），不是区间累计。
-    `total_return` 则是把同一串逐日收益**复利**到整窗的总收益（%）：
-    ∏(1+r/100)−1，即「这段时间真按这个无摩擦组合跑下来赚了多少」——用户
-    2026-09-26 要求表里报这个。两个都留：min_test 四指标要 top_return，
-    评价表给 total_return。
-    `IC` 与 `IC_1d` 是同一个数（前者是 min_test 四指标里的名字，后者是逐头表头），
-    写两遍是为了两边都不必知道对方的命名习惯。
-    """
     h1, h5 = rank_ic_horizons()
     ic_1d = daily_ic[h1]
-    ic_std = float(np.std(ic_1d, ddof=1)) if len(ic_1d) > 1 else 0.
-    ret_std = float(np.std(daily_ret, ddof=1)) if len(daily_ret) > 1 else 0.
-    return dict(IC=float(np.mean(ic_1d)),
-                ICIR=float(np.mean(ic_1d) / ic_std) if ic_std else 0.,
-                top_return=float(np.mean(daily_ret)),
-                top_return_stability=float(np.mean(daily_ret) / ret_std) if ret_std else 0.,
-                total_return=float((np.prod(1. + daily_ret / 100) - 1) * 100),
-                **{f'IC_{h}d': float(np.mean(daily_ic[h])) for h in (h1, h5)},
-                **{f'RankIC_{h}d': float(np.mean(daily_rank_ic[h])) for h in (h1, h5)})
-
-
-# =============================================================================
-# ②d ★ V17：**可实现口径** —— 把"买不进的票"从 top-K 里剔掉再算一遍
-#
-# 执行缺口诊断（`tmp/vlines/exec_gap_lab.py`，见 docs/iterations.md）测出：
-# **表观 top5 alpha 的 38% 来自买不进的票**，其中 **93% 是一字板**
-# （开盘=最高=收在涨停、整日封死，任何日频口径都买不到）。于是所有"前 K 只标签均值"
-# 的报表都系统性偏乐观 —— 只看它会把"一半是真的"的改进当成"完全是真的"。
-#   实测例：epoch-bagging 的增益在理想口径 +0.377%（t=4.25）、可实现口径 +0.176%（t=2.38），
-#   而它的 top1 增益在可实现口径下**变负**（−0.266%）。
-# 两份数**都留**：理想口径与历史报表逐位可比，可实现口径才是账户够得着的那部分。
-# =============================================================================
-
+    ic_std = float(np.std(ic_1d, ddof=1)) if len(ic_1d) > 1 else 0.0
+    ret_std = float(np.std(daily_ret, ddof=1)) if len(daily_ret) > 1 else 0.0
+    return dict(IC=float(np.mean(ic_1d)), ICIR=float(np.mean(ic_1d) / ic_std) if ic_std else 0.0, top_return=float(np.mean(daily_ret)), top_return_stability=float(np.mean(daily_ret) / ret_std) if ret_std else 0.0, total_return=float((np.prod(1.0 + daily_ret / 100) - 1) * 100), **{f'IC_{h}d': float(np.mean(daily_ic[h])) for h in (h1, h5)}, **{f'RankIC_{h}d': float(np.mean(daily_rank_ic[h])) for h in (h1, h5)})
 REALIZABLE_K = 5
 
-
 def realizable_topk(pred, panel, prices, days, k=REALIZABLE_K, label=None):
-    """前 k 名的标签均值，两个口径：**理想**（不看可买性）与**可实现**（只留 T+1 买得进的）。
-
-    ★ 可实现口径**不回补**：买不进时回补下一名会换进别的票，那是"另一个策略"；
-      回补的代价单独测过（−0.0124 %/天，很小），所以这里只用"原来的票里买得进的那些"。
-    ★ 一只都买不进的日子记 **NaN**、不填 0 —— 填 0 会把"当天没有持仓"混进"持仓收益为 0"，
-      而且这两件事在配对检验里的含义完全不同。
-    """
     label = label or RECIPE['score_label']
     entry = prices.next_entry_ok()
-    ideal, real = [], []
+    ideal, real = ([], [])
     for i, d in enumerate(days):
         d = int(d)
-        p, y = pred[i], panel.Y[label][d]
+        p, y = (pred[i], panel.Y[label][d])
         known = np.isfinite(p)
         ranked = np.flatnonzero(known)[np.argsort(-p[known], kind='stable')][:k]
         if len(ranked) < k:
-            ideal.append(np.nan); real.append(np.nan)
+            ideal.append(np.nan)
+            real.append(np.nan)
             continue
         ideal.append(float(np.nanmean(y[ranked])))
         ok = entry[d][ranked] & np.isfinite(y[ranked])
         real.append(float(np.nanmean(y[ranked][ok])) if ok.sum() else np.nan)
-    return np.asarray(ideal), np.asarray(real)
-
+    return (np.asarray(ideal), np.asarray(real))
 
 def realizable_summary(pred, panel, prices, eval_days, rows):
-    """把两个口径的 top-K 指标汇成一块，写进 `final_audit.json` 并打日志。
-
-    `rows` 是评价窗的四季度 + 总计行（用来按季度切段），复用同一套切段口径。
-    """
     ideal, real = realizable_topk(pred, panel, prices, eval_days)
-    out = dict(topk=REALIZABLE_K, label=RECIPE['score_label'],
-               ideal_mean_pct=float(np.nanmean(ideal)) * 100,
-               realizable_mean_pct=float(np.nanmean(real)) * 100,
-               ratio=float(np.nanmean(real) / np.nanmean(ideal)),
-               days=int(len(ideal)), days_with_position=int(np.isfinite(real).sum()))
-    # 配对差：同一天两个口径之差 —— 这就是"买不到的票贡献了多少"
+    out = dict(topk=REALIZABLE_K, label=RECIPE['score_label'], ideal_mean_pct=float(np.nanmean(ideal)) * 100, realizable_mean_pct=float(np.nanmean(real)) * 100, ratio=float(np.nanmean(real) / np.nanmean(ideal)), days=int(len(ideal)), days_with_position=int(np.isfinite(real).sum()))
     diff = real - ideal
     se = float(np.nanstd(diff, ddof=1) / np.sqrt(np.isfinite(diff).sum()))
     out['gap_pct'] = float(np.nanmean(diff)) * 100
-    out['gap_t'] = float(np.nanmean(diff) / se) if se else 0.
-    text = (f'===== 可实现口径（前 {REALIZABLE_K} 名，{RECIPE["score_label"]}，'
-            f'{out["days"]} 天，**评价窗**）=====\n'
-            f'  ★ 只能当参照：242 天对 top5 没有统计功效（要 80% 功效检出 +0.27% 需约 37 年）。\n'
-            f'    有功效的版本在 **1893 天样本外**上，见 docs/iterations.md：'
-            f'那里可实现的 top5 只有理想的约 65%。\n'
-            f'  理想（不看可买性） {out["ideal_mean_pct"]:+.4f} %/天\n'
-            f'  可实现（只留买得进） {out["realizable_mean_pct"]:+.4f} %/天'
-            f'（{out["ratio"]:.1%}，有持仓 {out["days_with_position"]} 天）\n'
-            f'  差（买不到的票的贡献） {out["gap_pct"]:+.4f} %/天  t={out["gap_t"]:+.2f}')
+    out['gap_t'] = float(np.nanmean(diff) / se) if se else 0.0
+    text = f"===== 可实现口径（前 {REALIZABLE_K} 名，{RECIPE['score_label']}，{out['days']} 天，**评价窗**）=====\n  ★ 只能当参照：242 天对 top5 没有统计功效（要 80% 功效检出 +0.27% 需约 37 年）。\n    有功效的版本在 **1893 天样本外**上，见 docs/iterations.md：那里可实现的 top5 只有理想的约 65%。\n  理想（不看可买性） {out['ideal_mean_pct']:+.4f} %/天\n  可实现（只留买得进） {out['realizable_mean_pct']:+.4f} %/天（{out['ratio']:.1%}，有持仓 {out['days_with_position']} 天）\n  差（买不到的票的贡献） {out['gap_pct']:+.4f} %/天  t={out['gap_t']:+.2f}"
     print('\n' + text, flush=True)
-    return out, text
-
+    return (out, text)
 
 def display_width(text):
-    """文本在等宽字体下的列数：东亚全角字符占 2 列，其余 1 列。
-
-    pandas 的 `to_string` 按**字符数**排宽度，中文表头会整体错位；评价块要贴进
-    picks.md 的 ```text 围栏里，所以自己按显示宽度铺格。
-    """
-    return sum(2 if unicodedata.east_asian_width(ch) in 'WF' else 1 for ch in str(text))
-
+    return sum((2 if unicodedata.east_asian_width(ch) in 'WF' else 1 for ch in str(text)))
 
 def summary_table_text(rows, keys, headers):
-    """四季度行 + 总计行、表头下画一条横线的固定宽度表。
-
-    `keys` 是每行取数的键，`headers` 是对应表头文字；数值统一四位小数
-    （收益列由调用方先换成 %）。列宽按 `display_width` 算，中英混排也对齐。
-    """
     body = [[r['quarter'], *[f'{r[k]:.4f}' for k in keys]] for r in rows]
     table = [['季度', *headers], *body]
-    widths = [max(display_width(cell) for cell in col) for col in zip(*table)]
-    def line(cells):
-        return '  '.join(c + ' ' * (w - display_width(c)) for c, w in zip(cells, widths)).rstrip()
-    return '\n'.join([line(table[0]), '-' * (sum(widths) + 2 * (len(widths) - 1)),
-                      *[line(row) for row in table[1:]]])
+    widths = [max((display_width(cell) for cell in col)) for col in zip(*table)]
 
+    def line(cells):
+        return '  '.join((c + ' ' * (w - display_width(c)) for c, w in zip(cells, widths))).rstrip()
+    return '\n'.join([line(table[0]), '-' * (sum(widths) + 2 * (len(widths) - 1)), *[line(row) for row in table[1:]]])
 
 def metric_blocks_text(rows, valid_rows=None):
-    """两张同版式的五列表：评价窗（test）+ 训练验证集（valid）。
-
-    用户 2026-09-26 定：每张表四季度行 + 总计行、五列
-    `收益(%) / IC_1d / IC_5d / RankIC_1d / RankIC_5d`，不带折数；`收益` 是
-    **区间总收益**（复利到整窗，见 `top_metrics` / `training_validation_rows`），
-    不是日均。两表的行汇总口径不同：test 的季度行是各自季度窗、总计行是整窗 242 天
-    一次复利；valid 的行是各折自己验证窗的总收益再按 4 折 / 16 折取均值。
-    日志、picks.md 与报告用同一段文字，避免三处各写一份格式化代码。
-    """
     h1, h5 = rank_ic_horizons()
     headers = [f'IC_{h1}d', f'IC_{h5}d', f'RankIC_{h1}d', f'RankIC_{h5}d']
     keys = [f'IC_{h}d' for h in (h1, h5)] + [f'RankIC_{h}d' for h in (h1, h5)]
-    text = ('---单一模型评估---\n\n'
-            f'===== test 评价窗（{RECIPE["test_start"]}～{RECIPE["test_end"]}，'
-            f'{rows[-1]["days"]} 天）=====\n'
-            f'{summary_table_text(rows, ["total_return", *keys], ["收益(%)", *headers])}\n')
+    text = f"---单一模型评估---\n\n===== test 评价窗（{RECIPE['test_start']}～{RECIPE['test_end']}，{rows[-1]['days']} 天）=====\n{summary_table_text(rows, ['total_return', *keys], ['收益(%)', *headers])}\n"
     if valid_rows:
-        text += ('\n\n===== valid 训练验证集（各折 best epoch；'
-                 '季度=4 折均值，总计=16 折均值）=====\n'
-                 f'{summary_table_text(valid_rows, ["total_return", *keys], ["收益(%)", *headers])}\n')
+        text += f"\n\n===== valid 训练验证集（各折 best epoch；季度=4 折均值，总计=16 折均值）=====\n{summary_table_text(valid_rows, ['total_return', *keys], ['收益(%)', *headers])}\n"
     return text
 
-
 def print_metric_blocks(rows, valid_rows=None):
-    """把上面那段评价文字打到日志（数字以 main_metrics_1d.csv 为准）。"""
     print('\n' + metric_blocks_text(rows, valid_rows), flush=True)
 
-
 def evaluation_slice(pred, panel, days):
-    """固定四季度评价窗的（打分切片, 日期索引）；打分没覆盖满窗就直接报错。
-
-    入参 days 是全部打分日（含评价窗之后的尾段），这里只取评价窗那一段。
-    """
     selected = (panel.days[days] >= RECIPE['test_start']) & (panel.days[days] <= RECIPE['test_end'])
     eval_days = days[selected]
     expected = np.flatnonzero((panel.days >= RECIPE['test_start']) & (panel.days <= RECIPE['test_end']))
     if not np.array_equal(eval_days, expected):
         raise ValueError('打分未完整覆盖固定四季度评价窗')
-    return pred[selected], eval_days
-
+    return (pred[selected], eval_days)
 
 def evaluation_metrics(ev, panel, eval_days):
-    """评价窗的逐日序列与逐头指标行（口径见 §②b），供回测与 picks 共用。"""
     daily_ret, daily_ic, daily_rank_ic = top_portfolio_daily(ev, panel, eval_days)
     rows = []
     for q in [*quarters(panel.days), '总计']:
-        loc = (np.ones(len(eval_days), dtype=bool) if q == '总计'
-               else np.array([str(pd.Period(panel.days[d], freq='Q')) == q for d in eval_days]))
-        rows.append(dict(quarter=q, days=int(loc.sum()),
-                         **top_metrics(daily_ret[loc], {h: s[loc] for h, s in daily_ic.items()},
-                                       {h: s[loc] for h, s in daily_rank_ic.items()})))
+        loc = np.ones(len(eval_days), dtype=bool) if q == '总计' else np.array([str(pd.Period(panel.days[d], freq='Q')) == q for d in eval_days])
+        rows.append(dict(quarter=q, days=int(loc.sum()), **top_metrics(daily_ret[loc], {h: s[loc] for h, s in daily_ic.items()}, {h: s[loc] for h, s in daily_rank_ic.items()})))
     return dict(rows=rows, daily_ret=daily_ret, daily_ic=daily_ic, daily_rank_ic=daily_rank_ic)
 
-# =============================================================================
-# ②c 训练侧验证集表现（各折 `complete.json.best_validation` 的汇总）
-#
-# 用户 2026-09-26 定：picks.md 除了评价窗的指标，还要给出「训练过程中 valid 的
-# 表现」。数据源就是各折训练收尾时写进 `complete.json` 的 `best_validation`
-# （`model.py:validation()` 在被选中那个 epoch 上算的），不重新加载权重、不重算。
-# ★ 两条必须写进报告的限制：
-#   ① 这是**选轮指标本身**（best epoch 就是让 val_wei 最大的那一轮），带选择偏差，
-#      只能当训练侧参照；样本外口径以 test 表那五列为准。
-#   ② 两边的日期不重叠：验证段是各折切分里从 2018 起、四折互不重叠、最晚到 2025-04
-#      的那四块（见 `model.py:splits()`），评价窗从 2025-07-01 起。所以两边的数字
-#      **不能直接相减**说「衰减了多少」。
-# =============================================================================
-
-
 def fold_completions():
-    """按季度、折号读 16 份 `complete.json`（只读 JSON，不碰权重文件）。"""
     rows = []
     for q in quarters(axis()[0]):
         for f in range(1, 5):
@@ -353,104 +174,50 @@ def fold_completions():
             rows.append(json.loads(path.read_text()))
     return rows
 
-
 def fold_valid_days():
-    """各折验证窗的天数（`split.json` 的 valid 段），键 = (季度, 折号)。
-
-    `complete.json` 只存了验证指标的标量，总收益要按验证窗长度折算 5 日段，
-    所以另读一次切分记录。打分元数据里的折记录不带切分，所以这里一律从
-    `model_train` 读——`split.json` 是常驻产物，两条入口都读得到。
-    """
     days = {}
     for q in quarters(axis()[0]):
         for f in range(1, 5):
             path = RUN_ROOT / 'model_train' / q / f'fold{f}' / 'split.json'
-            days[(q, f)] = sum(span['days'] for span in json.loads(path.read_text())['valid'])
+            days[q, f] = sum((span['days'] for span in json.loads(path.read_text())['valid']))
     return days
 
-
 def bag_vs_argmax(records):
-    """★ V12：同一批训练上「平均权重 − argmax 权重」的配对汇总。
-
-    两份权重出自**同一次运行、同一个种子、同一批数据**，唯一的差别是"交出去哪一份"
-    ⇒ 这是**干净比较**，不受 0.22%~0.39% 的跨版本「选轮抽奖」地板影响。
-    重复单位是**折**（16 个季度×折）：每折在它自己的验证块上算两个口径的指标，再逐折配对。
-
-    ★ 两条必须写在报告里的限制：
-      ① 验证块就是**选轮用的那一块**（best epoch 由它的 val_wei 选出）⇒ 两边都带选择偏差，
-         **绝对水平不可引用**（会偏乐观），只有**两者的差**有意义 —— 同一个偏差在两边都在；
-      ② 折与折之间不独立（同一段市场历史、相邻季度训练窗高度重叠）⇒ t 值只作量级参照，
-         真正的判据是**符号一致性**（win 数）与它在有功效窗口上的复核。
-    """
     rows = [r for r in records if r.get('argmax_validation')]
     if not rows:
         return None
     fields = ['val_wei', 'IC_1d', 'IC_5d', 'RankIC_1d', 'RankIC_5d', 'val_return_proxy']
-    out = dict(folds=len(rows), topk=rows[0].get('bag', {}).get('topk'),
-               bag_epochs=[r.get('bag', {}).get('epochs') for r in rows], metrics={})
+    out = dict(folds=len(rows), topk=rows[0].get('bag', {}).get('topk'), bag_epochs=[r.get('bag', {}).get('epochs') for r in rows], metrics={})
     for name in fields:
         bagged = np.array([float(r['best_validation'][name]) for r in rows])
         argmax = np.array([float(r['argmax_validation'][name]) for r in rows])
         diff = bagged - argmax
-        se = float(np.std(diff, ddof=1) / np.sqrt(len(diff))) if len(diff) > 1 else 0.
-        out['metrics'][name] = dict(bagged=float(bagged.mean()), argmax=float(argmax.mean()),
-                                    delta=float(diff.mean()),
-                                    t=float(diff.mean() / se) if se else 0.,
-                                    wins=int((diff > 0).sum()))
+        se = float(np.std(diff, ddof=1) / np.sqrt(len(diff))) if len(diff) > 1 else 0.0
+        out['metrics'][name] = dict(bagged=float(bagged.mean()), argmax=float(argmax.mean()), delta=float(diff.mean()), t=float(diff.mean() / se) if se else 0.0, wins=int((diff > 0).sum()))
     return out
 
-
 def bag_comparison_text(summary):
-    """把上面的配对汇总压成一段日志文字（数字落 final_audit.json，叙述归 Agent）。"""
     if not summary:
         return ''
-    lines = [f'===== V12 epoch-bagging 对照（前 {summary["topk"]} 名权重平均 vs argmax；'
-             f'{summary["folds"]} 折，配对）=====',
-             f'{"指标":<20}{"bagged":>12}{"argmax":>12}{"差":>12}{"t":>8}{"bag 胜":>8}']
+    lines = [f"===== V12 epoch-bagging 对照（前 {summary['topk']} 名权重平均 vs argmax；{summary['folds']} 折，配对）=====", f"{'指标':<20}{'bagged':>12}{'argmax':>12}{'差':>12}{'t':>8}{'bag 胜':>8}"]
     for name, m in summary['metrics'].items():
-        lines.append(f'{name:<20}{m["bagged"]:>12.5f}{m["argmax"]:>12.5f}{m["delta"]:>+12.5f}'
-                     f'{m["t"]:>+8.2f}{m["wins"]:>5}/{summary["folds"]}')
+        lines.append(f"{name:<20}{m['bagged']:>12.5f}{m['argmax']:>12.5f}{m['delta']:>+12.5f}{m['t']:>+8.2f}{m['wins']:>5}/{summary['folds']}")
     return '\n'.join(lines)
 
-
 def training_validation_rows(records):
-    """各折 `best_validation` → valid 表：季度 4 折均值 + 总计 16 折均值。
-
-    只汇总 `model.py:validation()` 已经算好并落盘的那几个字段，不重算任何指标：
-      · IC_<h>d / RankIC_<h>d：逐日截面 Pearson / Spearman 的日等权平均。
-        ★ V3 起这两族是「**打分**对 h 日标签」，与评价窗逐字同式（Pearson 补 0、
-        Spearman 剔缺失、无效日计 0）——两张表逐列同源，可以直接对照读；
-        V2 那边算的是「第 h 个头对自己的标签」，与 test 表的「5d 头对 h 日标签」
-        同名不同物，不能相减。
-      · 代理收益：可执行 top5 的 5d 标签收益日平均，这里 ×100 换成 %。★ V3 起它
-        **不再进 val_wei**（V2 是按 100× 混进选轮判据的），只为这张表的收益列而算；
-        与 test 表的 `total_return` **同量纲但不同物**（那边是 500 只、15 亿元的无摩擦
-        组合，这边是 5 只等权、无摩擦的标签代理）；
-      · 总收益：把上面的 5 日代理收益按「每 5 日一段」复利到整个验证窗
-        （段数 = 验证天数 / 5），与 test 表的 `total_return` 同口径；
-      · val_wei：选轮用的合成分 = Σ_h v_h·RankIC_h（打分），只随行携带、不上表。
-    """
     expected = {(q, f) for q in quarters(axis()[0]) for f in range(1, 5)}
     seen = [(r['quarter'], r['fold']) for r in records]
     if len(set(seen)) != len(seen) or set(seen) != expected:
-        raise ValueError(f'训练验证集汇总需要四季度×四折共 {len(expected)} 条不重复记录，'
-                         f'实际 {len(seen)} 条；缺 {sorted(expected - set(seen))}')
+        raise ValueError(f'训练验证集汇总需要四季度×四折共 {len(expected)} 条不重复记录，实际 {len(seen)} 条；缺 {sorted(expected - set(seen))}')
     h1, h5 = rank_ic_horizons()
     valid_days = fold_valid_days()
-    fields = [f'IC_{h}d' for h in (h1, h5)] + [f'RankIC_{h}d' for h in (h1, h5)] \
-             + ['val_wei', 'return_proxy_pct', 'total_return']
+    fields = [f'IC_{h}d' for h in (h1, h5)] + [f'RankIC_{h}d' for h in (h1, h5)] + ['val_wei', 'return_proxy_pct', 'total_return']
     collected = []
     for r in records:
         v = r['best_validation']
         proxy = float(v['val_return_proxy'])
-        # 总收益：把「信号日均 5 日代理收益」当成每 5 日一段的持有期收益复利到整个
-        # 验证窗（段数 = 验证天数 / 5）。这是从标量折算出来的近似，不是逐段实测。
-        segments = valid_days[(r['quarter'], r['fold'])] / h5
-        collected.append(dict(quarter=r['quarter'],
-                              **{k: float(v[k]) for k in fields
-                                 if k not in ('return_proxy_pct', 'total_return')},
-                              return_proxy_pct=100 * proxy,
-                              total_return=100 * ((1. + proxy) ** segments - 1)))
+        segments = valid_days[r['quarter'], r['fold']] / h5
+        collected.append(dict(quarter=r['quarter'], **{k: float(v[k]) for k in fields if k not in ('return_proxy_pct', 'total_return')}, return_proxy_pct=100 * proxy, total_return=100 * ((1.0 + proxy) ** segments - 1)))
     frame = pd.DataFrame(collected)
     rows = []
     for q in [*quarters(axis()[0]), '总计']:
@@ -459,53 +226,25 @@ def training_validation_rows(records):
         rows.append(dict(quarter=q, **{k: float(mean[k]) for k in fields}))
     return rows
 
-# =============================================================================
-# ③ 模型质量与固定策略分开评价
-# =============================================================================
-
-
-# =============================================================================
-# ④ 费用与现金回测
-# =============================================================================
-
-
 def fees(notional, sell=False):
-    """原参考工程/项目约定的固定费率；这是研究假设，不是历史费率复原。"""
-    return max(notional * .00025, 5) + notional * .00001 + (notional * .0005 if sell else 0)
-
-
-# 本单元只有一个固定交易策略及一个每日换手基线。其他策略研究使用导出的打分。
-# ★ V11（激进线）：本单元策略由「Top5 每 5 日调仓」改成 **Top5 每日调仓** —— 高换手是这条
-#   线的主题本身（打板/妖股的钱赚的是隔日情绪溢价，持有 5 日会把溢价还回去）。
-#   基线 top1_1d 不变，仍然是最激进的每日单票对照。
-STRATEGIES=[dict(name='top5_5d',topn=5,period=5,band=RECIPE['hold_band']),dict(name='top1_1d',topn=1,period=1,band=0)]
-
+    return max(notional * 0.00025, 5) + notional * 1e-05 + (notional * 0.0005 if sell else 0)
+STRATEGIES = [dict(name='top5_5d', topn=5, period=5, band=RECIPE['hold_band']), dict(name='top1_1d', topn=1, period=1, band=0)]
 
 def cash_backtest(pred, panel, px, days, n=5, period=5, band=0, money=None, forecast_members=4, cost_gate_multiplier=None, gate_scores=None):
-    """固定周期TopN现金账户：T日排序，T+1开盘执行，保留费用、拒单和资金约束。
-
-    每period日重选目标；目标相同则继续持有。仅服务本单元的两种固定策略。
-
-    ★ V11：可买判定走 `px.entry_ok()`（由 `RECIPE['entry_rule']` 决定），不在调用处写死
-    `px.entry` —— 打板口径下「开盘涨停但盘中开板」的票是可买的，而保守口径下买不进。
-    卖出侧一律保持保守（跌停卖不掉照旧顺延），打板只放宽**买入**。
-
-    ★ V23：**账户规模做成参数**（默认取 `RECIPE['backtest_money']` = 10 万，即交付口径，
-    行为逐位不变）。加它是因为**佣金下限 `max(名义×0.00025, 5)` 让费率与账户规模强相关**：
-    5 只 × 2 万/只时是 2.6bp/边，**5 只 × 1 万/只（= 5 万本金）时是 5bp/边，直接翻倍**。
-    项目文档一直写"5 万资金"而回测一直跑 10 万 —— 这条差别从没被量过。
-    """
     money = float(RECIPE['backtest_money'] if money is None else money)
-    if forecast_members<1:raise ValueError('invalid forecast member count')
-    gate=RECIPE['cost_gate_multiplier'] if cost_gate_multiplier is None else cost_gate_multiplier
-    cost_reference=2*max(.00025,5/(money/n))+.00002+.0005+.0006
-    score_threshold=forecast_members*gate*cost_reference
-    if n>1 and gate>0:
+    if forecast_members < 1:
+        raise ValueError('invalid forecast member count')
+    gate = RECIPE['cost_gate_multiplier'] if cost_gate_multiplier is None else cost_gate_multiplier
+    cost_reference = 2 * max(0.00025, 5 / (money / n)) + 2e-05 + 0.0005 + 0.0006
+    score_threshold = forecast_members * gate * cost_reference
+    if n > 1 and gate > 0:
         if gate_scores is None:
-            if not hasattr(panel,'absolute_forecast'):raise ValueError('composite gate forecast not supplied')
-            gate_scores=panel.absolute_forecast[days]
-        if gate_scores.shape!=pred.shape:raise ValueError('gate forecast axes differ')
-    gate_by_day={} if gate_scores is None else {int(d):p for d,p in zip(days,gate_scores)}
+            if not hasattr(panel, 'absolute_forecast'):
+                raise ValueError('composite gate forecast not supplied')
+            gate_scores = panel.absolute_forecast[days]
+        if gate_scores.shape != pred.shape:
+            raise ValueError('gate forecast axes differ')
+    gate_by_day = {} if gate_scores is None else {int(d): p for d, p in zip(days, gate_scores)}
     cash = money
     holdings = {}
     buys = {}
@@ -531,11 +270,12 @@ def cash_backtest(pred, panel, px, days, n=5, period=5, band=0, money=None, fore
         p = pred_by_day.get(signal)
         if p is not None:
             candidates = np.flatnonzero(np.isfinite(p))
-            utility=p.copy()
-            if n>1 and gate>0:
-                admission=gate_by_day[signal].copy()-score_threshold
-                for held in holdings:admission[held]=gate_by_day[signal][held]
-                candidates=candidates[np.isfinite(admission[candidates]) & (admission[candidates]>=0.)]
+            utility = p.copy()
+            if n > 1 and gate > 0:
+                admission = gate_by_day[signal].copy() - score_threshold
+                for held in holdings:
+                    admission[held] = gate_by_day[signal][held]
+                candidates = candidates[np.isfinite(admission[candidates]) & (admission[candidates] >= 0.0)]
             ranked = candidates[np.argsort(-utility[candidates], kind='stable')]
             if (signal - int(days[0])) % period == 0:
                 band = spec_band
@@ -599,46 +339,36 @@ def cash_backtest(pred, panel, px, days, n=5, period=5, band=0, money=None, fore
     dd = values / np.maximum.accumulate(values) - 1
     return (dict(topn=n, rebalance_days=period, return_value=float(values[-1] / money - 1), max_drawdown=float(dd.min()), sharpe=float(np.mean(returns) / np.std(returns) * np.sqrt(242)) if np.std(returns) > 0 else 0.0, total_fees=float(sum((t['fee'] for t in trades))), gross_return_same_positions=float((values[-1] + cumulative_fees + cumulative_slippage) / money - 1), fee_drag=float(cumulative_fees / money), slippage_drag=float(cumulative_slippage / money), gross_definition='same actual shares and trade dates; costs added back as cash, no reinvestment', avg_exposure=float(np.mean([c['exposure'] for c in curves])), trades=len(trades), ending_cash=cash, ending_positions=len(holdings), corporate_action_adjustments=corp_events, start=str(panel.days[first]), end=str(panel.days[last]), corporate_action_assumption='复权比折算经济股数，分红立即再投资近似'), curves, trades)
 
-# =============================================================================
-# ⑤ 打分四列落盘
-# =============================================================================
-
-
-def write_scores(pred,panel,days,out):
-    """Existing yearly score files carry a reproducible separate gate forecast."""
-    for year in sorted(set(str(panel.days[d])[:4] for d in days)):
-        chunks=[]
-        for p,d in zip(pred,days):
-            if not str(panel.days[d]).startswith(year):continue
-            ok=np.isfinite(p);forecast=panel.absolute_forecast[int(d)]
-            if not np.isfinite(forecast[ok]).all():raise ValueError('missing gate forecast')
-            chunks.append(pd.DataFrame(dict(trade_date=str(panel.days[d]),stock_code=panel.codes[ok],
-                value=p[ok].astype(np.float32),rank=(rankdata(p[ok])/ok.sum()).astype(np.float32),
-                absolute_forecast_1d=forecast[ok].astype(np.float32))))
-        df=pd.concat(chunks,ignore_index=True)
-        df['trade_date']=df['trade_date'].astype('string');df['stock_code']=df['stock_code'].astype('string')
-        folder=out/f'year={year}';folder.mkdir(parents=True,exist_ok=True)
-        target=output_file(folder/'data.parquet');temp=folder/'data.tmp.parquet'
-        df.to_parquet(temp,index=False);os.replace(temp,target)
-
-# =============================================================================
-# ⑥ 季度归集与复合校验
-# =============================================================================
-
+def write_scores(pred, panel, days, out):
+    for year in sorted(set((str(panel.days[d])[:4] for d in days))):
+        chunks = []
+        for p, d in zip(pred, days):
+            if not str(panel.days[d]).startswith(year):
+                continue
+            ok = np.isfinite(p)
+            forecast = panel.absolute_forecast[int(d)]
+            if not np.isfinite(forecast[ok]).all():
+                raise ValueError('missing gate forecast')
+            chunks.append(pd.DataFrame(dict(trade_date=str(panel.days[d]), stock_code=panel.codes[ok], value=p[ok].astype(np.float32), rank=(rankdata(p[ok]) / ok.sum()).astype(np.float32), absolute_forecast_1d=forecast[ok].astype(np.float32))))
+        df = pd.concat(chunks, ignore_index=True)
+        df['trade_date'] = df['trade_date'].astype('string')
+        df['stock_code'] = df['stock_code'].astype('string')
+        folder = out / f'year={year}'
+        folder.mkdir(parents=True, exist_ok=True)
+        target = output_file(folder / 'data.parquet')
+        temp = folder / 'data.tmp.parquet'
+        df.to_parquet(temp, index=False)
+        os.replace(temp, target)
 
 def quarter_metrics(source, strategy, curve, trades, pred, panel, days):
-    """把全年曲线/成交按季度切段逐季出指标，并断言季度收益能复合回全年。"""
     rows = []
-    previous = 100000.
+    previous = 100000.0
     cursor = 0
-
-    # 执行日归属于发出指令的信号季度；最后清仓顺延归入最后一个季度。
     boundaries = []
     for q in quarters(panel.days):
         qdays = [int(d) for d in days if str(pd.Period(panel.days[d], freq='Q')) == q]
         if qdays:
             boundaries.append((q, qdays))
-
     for i, (q, qdays) in enumerate(boundaries):
         end_day = qdays[-1] + (2 if i == len(boundaries) - 1 else 1)
         end_date = str(panel.days[end_day])
@@ -653,29 +383,15 @@ def quarter_metrics(source, strategy, curve, trades, pred, panel, days):
         dd = eq / np.maximum.accumulate(eq) - 1
         tx = [t for t in trades if segment[0]['date'] <= t['date'] <= segment[-1]['date']]
         pos = np.flatnonzero(np.isin(days, qdays))
-        ric = next(r for r in ic_table(pred[pos], panel, days[pos]) if r['label'] == RECIPE['label'])
-        rows.append(dict(source=source, quarter=q, strategy=strategy, signal_days=len(qdays),
-                         execution_start=segment[0]['date'], execution_end=segment[-1]['date'],
-                         start_equity=float(previous), end_equity=float(eq[-1]),
-                         return_value=float(eq[-1] / previous - 1), max_drawdown=float(dd.min()),
-                         daily_sharpe=float(ret.mean() / ret.std() * np.sqrt(242)) if ret.std() > 0 else 0.,
-                         daily_win_rate=float(np.mean(ret > 0)), fees=float(sum(t['fee'] for t in tx)),
-                         trades=len(tx), turnover=float(sum(t['quantity'] * t['price'] for t in tx) / eq.mean()),
-                         RankIC_5d=ric['RankIC']))
+        ric = next((r for r in ic_table(pred[pos], panel, days[pos]) if r['label'] == RECIPE['label']))
+        rows.append(dict(source=source, quarter=q, strategy=strategy, signal_days=len(qdays), execution_start=segment[0]['date'], execution_end=segment[-1]['date'], start_equity=float(previous), end_equity=float(eq[-1]), return_value=float(eq[-1] / previous - 1), max_drawdown=float(dd.min()), daily_sharpe=float(ret.mean() / ret.std() * np.sqrt(242)) if ret.std() > 0 else 0.0, daily_win_rate=float(np.mean(ret > 0)), fees=float(sum((t['fee'] for t in tx))), trades=len(tx), turnover=float(sum((t['quantity'] * t['price'] for t in tx)) / eq.mean()), RankIC_5d=ric['RankIC']))
         previous = float(eq[-1])
-
     assert cursor == len(curve), '季度汇总遗漏现金曲线日期'
-    if rows and not np.isclose(np.prod([1 + r['return_value'] for r in rows]), curve[-1]['equity'] / 100000, atol=1e-10):
+    if rows and (not np.isclose(np.prod([1 + r['return_value'] for r in rows]), curve[-1]['equity'] / 100000, atol=1e-10)):
         raise AssertionError('季度收益无法复合回全年收益')
     return rows
 
-# =============================================================================
-# ⑦ 策略曲线图
-# =============================================================================
-
-
 def plot_results(out, source, first_day):
-    """独立单元仅展示固定策略和Top1日换手基线的含费收益。"""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -684,44 +400,26 @@ def plot_results(out, source, first_day):
     plots.mkdir(parents=True, exist_ok=True)
     fig, ax = plt.subplots(figsize=(12, 5.6), layout='constrained')
     for spec, color in zip(STRATEGIES, ['#17917e', '#c33f3f']):
-        frame = pd.read_csv(folder / f'cash_{spec["name"]}.csv')
-        equity = np.r_[100000., frame.equity.to_numpy()]
+        frame = pd.read_csv(folder / f"cash_{spec['name']}.csv")
+        equity = np.r_[100000.0, frame.equity.to_numpy()]
         dates = pd.to_datetime([first_day] + frame.date.tolist())
-        # 图例由策略规格推出来，不写死策略名 —— 换策略（V11 把 5d 改成 1d）时不会留下
-        # 一条说旧口径的图例，而这正是"静默说谎"最容易发生的地方。
-        label = (f"Top{spec['topn']} | " + ('daily baseline' if spec['topn'] == 1
-                                            else f"rebalance every {spec['period']} day(s)"))
-        ax.plot(dates, 100 * (equity / 100000 - 1), color=color, linewidth=2,
-                label=f'{label} | {100*(equity[-1]/100000-1):+.2f}%')
+        label = f"Top{spec['topn']} | " + ('daily baseline' if spec['topn'] == 1 else f"rebalance every {spec['period']} day(s)")
+        ax.plot(dates, 100 * (equity / 100000 - 1), color=color, linewidth=2, label=f'{label} | {100 * (equity[-1] / 100000 - 1):+.2f}%')
     ax.set_title('Baseline model | Fixed strategy vs daily baseline', fontsize=14)
     ax.set_ylabel('Cumulative net return (%)')
     ax.set_xlabel('Execution / valuation date | fees and slippage included')
-    ax.axhline(0, color='#555555', linewidth=.7)
-    ax.grid(alpha=.2)
+    ax.axhline(0, color='#555555', linewidth=0.7)
+    ax.grid(alpha=0.2)
     ax.legend(loc='upper left')
     ticks = ['2025-07-01', '2025-10-01', '2026-01-01', '2026-04-01', '2026-07-02']
     ax.set_xticks(pd.to_datetime(ticks), labels=ticks)
     fig.savefig(output_file(plots / f'{source}_curves.png'), dpi=160)
     plt.close(fig)
 
-# =============================================================================
-# ⑧b 最新一日推荐表（给实战 / 增量推演用，不参与任何评价指标）
-# =============================================================================
-
-
 def markdown_table(headers, rows):
-    """四列表的极简渲染（picks.md 每日排名用）。"""
-    return ('| ' + ' | '.join(headers) + ' |\n|' + '|'.join(['---'] * len(headers)) + '|\n'
-            + ''.join('| ' + ' | '.join(map(str, r)) + ' |\n' for r in rows))
-
+    return '| ' + ' | '.join(headers) + ' |\n|' + '|'.join(['---'] * len(headers)) + '|\n' + ''.join(('| ' + ' | '.join(map(str, r)) + ' |\n' for r in rows))
 
 def stock_names(codes):
-    """股票代码 → 中文名。查不到、表读不到都返回空串（只影响显示，不影响任何数值）。
-
-    外部读取之一（用户 2026-09-25 授权）：`datadownload/data/stock_list/data.parquet`
-    的 `stock_code` + `name` 两列。退市/更名的票查不到就留空，不报错——picks.md 是常驻
-    产物，不能因为一张对照表而缺席。
-    """
     path = stock_list_path()
     try:
         frame = pd.read_parquet(path, columns=['stock_code', 'name'])
@@ -733,44 +431,20 @@ def stock_names(codes):
         raise ValueError(f'{path}: stock_code 有重复')
     return {str(c): table.get(str(c), '') for c in codes}
 
-
 def horizon_of(label):
-    """`label_ret_5d` → 5。"""
     return int(label.split('_ret_')[1].rstrip('d'))
 
-
 def trade_axis(panel):
-    """信号日 → 交易日轴：快照内用 `panel.days`，快照之后接外部交易日历。
-
-    标签口径是 `px[T+1+h] / px[T+1] - 1`，所以「T+1 开盘买入、T+h+1 开盘卖出」里的日期
-    必须落在真实交易日上。快照内直接用 `panel.days`（与标签同源）；快照之后的日期快照里
-    没有、但交易所有（日历含未来交易日），否则最新一天的买卖日只能写成「次日」这种
-    相对说法。日历读不到就降级为相对说法，不中断。
-    """
     days = [str(d) for d in panel.days]
     try:
         frame = pd.read_parquet(calendar_path(), columns=['date', 'is_open'])
     except (OSError, ValueError, KeyError) as exc:
-        print(f'警告：读不到交易日历 {calendar_path()}（{type(exc).__name__}: {exc}），'
-              'picks 的买卖日改用相对说法', flush=True)
+        print(f'警告：读不到交易日历 {calendar_path()}（{type(exc).__name__}: {exc}），picks 的买卖日改用相对说法', flush=True)
         return days
-    future = sorted(str(d) for d in frame[frame.is_open == 1].date if str(d) > days[-1])
+    future = sorted((str(d) for d in frame[frame.is_open == 1].date if str(d) > days[-1]))
     return days + future
 
-
 def write_daily_picks(pred, panel, days, metrics=None, valid_rows=None):
-    """最近10个交易日、每天前 `RECIPE['picks_topn']` 名的打分排名。
-
-    版式（用户 2026-09-25/26 定）：**文件开头只有两张表**（评价窗 test + 训练
-    验证集 valid，见 `metric_blocks_text`，用户 2026-09-26 要求删掉表与每日排名
-    之间的全部说明文字），之后直接是每日一节：标题「<信号日> 收盘」，正文第一行
-    写清这个打分预测的是什么、以及**具体到日期的**买卖时点，再列
-    排名/代码/名称/打分 四列。回测路径已算好两张表，用 metrics / valid_rows
-    传入即可，不重算。
-
-    打分口径沿用 `RECIPE['score_label']`（V3 起它只决定**预测内容怎么写**：这里是 5d），
-    与集成打分、固定策略同源；名称与买卖日期只做展示，不参与排序或任何指标。
-    """
     if len(days) == 0:
         raise ValueError('没有可展示的打分日期')
     if pred.shape != (len(days), len(panel.codes)):
@@ -786,9 +460,6 @@ def write_daily_picks(pred, panel, days, metrics=None, valid_rows=None):
     axis = trade_axis(panel)
     position = {d: i for i, d in enumerate(axis)}
     horizon = RECIPE['prediction_horizon']
-    # ★ V11：买卖时点按**本线实际持有期**写（每日调仓 ⇒ T+1 买、T+2 卖），而不是按打分头
-    #   的标签期。打分头仍然是 5d 头（两张表的第二列要用），但本线不持有 5 天 ——
-    #   照抄标签期会把"预测什么"和"怎么交易"写成两回事。
     holding = RECIPE.get('picks_holding', horizon) + 1
     topn = RECIPE['picks_topn']
     first = max(0, len(days) - 10)
@@ -797,324 +468,175 @@ def write_daily_picks(pred, panel, days, metrics=None, valid_rows=None):
         signal_day = str(panel.days[int(days[index])])
         score = pred[index]
         candidates = np.flatnonzero(np.isfinite(score))
-        cost_ref=2*max(.00025,5/(RECIPE['backtest_money']/5))+.00002+.0005+.0006
-        forecast=panel.absolute_forecast[int(days[index])]
-        candidates=candidates[np.isfinite(forecast[candidates]) & (forecast[candidates]>=4*RECIPE['cost_gate_multiplier']*cost_ref)]
+        cost_ref = 2 * max(0.00025, 5 / (RECIPE['backtest_money'] / 5)) + 2e-05 + 0.0005 + 0.0006
+        forecast = panel.absolute_forecast[int(days[index])]
+        candidates = candidates[np.isfinite(forecast[candidates]) & (forecast[candidates] >= 4 * RECIPE['cost_gate_multiplier'] * cost_ref)]
         picks = candidates[np.argsort(-score[candidates], kind='stable')][:topn]
         at = position.get(signal_day)
         buy = axis[at + 1] if at is not None and at + 1 < len(axis) else None
         sell = axis[at + holding] if at is not None and at + holding < len(axis) else None
         text += f'## {signal_day} 收盘\n\n'
-        signal_description = (f'模型输出 {RECIPE["neural_score_horizon"]} 日神经排序分数，并以独立技术面1日收益预测检查新买入费用门槛' if RECIPE.get('score_transform') == 'raw_neural' else '模型融合资金流与技术面排名，并以技术面1日收益预测检查新买入费用门槛')
-        text += f'{signal_description}；现金策略每 {STRATEGIES[0]["period"]} 个交易日检查排名，持仓跌出前 {STRATEGIES[0]["band"]} 名时尝试退出。下一可执行开盘：**{buy}**；卖出日期由后续排名与可成交性决定。\n\n' if buy else f'模型输出 {horizon} 日收益排序分数；下一交易日开盘可执行，卖出日期由后续排名与可成交性决定。\n\n'
+        signal_description = f"模型输出 {RECIPE['neural_score_horizon']} 日神经排序分数，并以独立技术面1日收益预测检查新买入费用门槛" if RECIPE.get('score_transform') == 'raw_neural' else '模型融合资金流与技术面排名，并以技术面1日收益预测检查新买入费用门槛'
+        text += f"{signal_description}；现金策略每 {STRATEGIES[0]['period']} 个交易日检查排名，持仓跌出前 {STRATEGIES[0]['band']} 名时尝试退出。下一可执行开盘：**{buy}**；卖出日期由后续排名与可成交性决定。\n\n" if buy else f'模型输出 {horizon} 日收益排序分数；下一交易日开盘可执行，卖出日期由后续排名与可成交性决定。\n\n'
         if not len(picks):
             text += '当日没有有效打分。\n\n'
             continue
-        rows = [[i, str(panel.codes[c]).split('.')[0], names.get(str(panel.codes[c]), ''),
-                 f'{float(score[c]):.4f}'] for i, c in enumerate(picks, 1)]
+        rows = [[i, str(panel.codes[c]).split('.')[0], names.get(str(panel.codes[c]), ''), f'{float(score[c]):.4f}'] for i, c in enumerate(picks, 1)]
         text += markdown_table(['排名', '代码', '名称', '打分'], rows) + '\n'
     output_file(out / 'picks.md').write_text(text, encoding='utf-8')
     print('最近10个交易日排名已生成:', out / 'picks.md', flush=True)
 
-
-# =============================================================================
-# ⑨ 命令行入口
-# =============================================================================
-
-
 def save_score_metadata(folder, report, dates):
-    metadata = {k:v for k,v in report.items() if k not in ('variants','evaluation_mode')}
+    metadata = {k: v for k, v in report.items() if k not in ('variants', 'evaluation_mode')}
     metadata['score_dates'] = list(dates)
-    metadata['columns'] = ['trade_date','stock_code','value','rank','absolute_forecast_1d']
-    metadata['absolute_forecast_1d']='raw sum of four fresh technical components, return units; rank score is separate'
-    atomic_json(folder/'score_meta.json',metadata)
+    metadata['columns'] = ['trade_date', 'stock_code', 'value', 'rank', 'absolute_forecast_1d']
+    metadata['absolute_forecast_1d'] = 'raw sum of four fresh technical components, return units; rank score is separate'
+    atomic_json(folder / 'score_meta.json', metadata)
 
-
-def read_saved_scores(folder,panel):
-    """Read scalar ranks and separate absolute gate from existing score parquet."""
-    meta=json.loads((folder/'score_meta.json').read_text());dates=meta['score_dates']
-    if dates!=sorted(set(dates)):raise ValueError('duplicate or unordered score dates')
-    date_axis=pd.Index(dates);codes=pd.Index(panel.codes);days=pd.Index(panel.days).get_indexer(dates)
-    if (days<0).any():raise ValueError('score dates absent from snapshot')
-    pred=np.full((len(dates),len(codes)),np.nan,np.float32)
-    forecast=np.full_like(pred,np.nan);files=sorted(folder.glob('year=*/data.parquet'));seen=set()
-    if not files:raise FileNotFoundError('saved composite scores missing')
+def read_saved_scores(folder, panel):
+    meta = json.loads((folder / 'score_meta.json').read_text())
+    dates = meta['score_dates']
+    if dates != sorted(set(dates)):
+        raise ValueError('duplicate or unordered score dates')
+    date_axis = pd.Index(dates)
+    codes = pd.Index(panel.codes)
+    days = pd.Index(panel.days).get_indexer(dates)
+    if (days < 0).any():
+        raise ValueError('score dates absent from snapshot')
+    pred = np.full((len(dates), len(codes)), np.nan, np.float32)
+    forecast = np.full_like(pred, np.nan)
+    files = sorted(folder.glob('year=*/data.parquet'))
+    seen = set()
+    if not files:
+        raise FileNotFoundError('saved composite scores missing')
     for path in files:
-        frame=pd.read_parquet(path,columns=['trade_date','stock_code','value','absolute_forecast_1d'])
-        if frame.duplicated(['trade_date','stock_code']).any():raise ValueError('duplicate score keys')
-        t=date_axis.get_indexer(frame.trade_date.astype(str));c=codes.get_indexer(frame.stock_code.astype(str))
-        if (t<0).any() or (c<0).any():raise ValueError('mismatched score coordinates')
-        keys=set(zip(t.tolist(),c.tolist()))
-        if seen.intersection(keys):raise ValueError('overlapping score partitions')
+        frame = pd.read_parquet(path, columns=['trade_date', 'stock_code', 'value', 'absolute_forecast_1d'])
+        if frame.duplicated(['trade_date', 'stock_code']).any():
+            raise ValueError('duplicate score keys')
+        t = date_axis.get_indexer(frame.trade_date.astype(str))
+        c = codes.get_indexer(frame.stock_code.astype(str))
+        if (t < 0).any() or (c < 0).any():
+            raise ValueError('mismatched score coordinates')
+        keys = set(zip(t.tolist(), c.tolist()))
+        if seen.intersection(keys):
+            raise ValueError('overlapping score partitions')
         seen.update(keys)
-        value=frame.value.to_numpy(dtype=np.float32);gate=frame.absolute_forecast_1d.to_numpy(dtype=np.float32)
-        if not np.isfinite(value).all() or not np.isfinite(gate).all():raise ValueError('nonfinite saved score/gate')
-        pred[t,c]=value;forecast[t,c]=gate
-    panel.absolute_forecast=np.full((len(panel.days),len(panel.codes)),np.nan,np.float32)
-    panel.absolute_forecast[days]=forecast
-    return pred,days,meta
-
-
-# ②e ★★ V26：**无前视的"干净块"** —— 把评估台的 caveat 固化成常驻产物
-#
-# 2026-09-27 查证：`splits()` 的训练集 = 季度前全部历史**挖掉验证块** ⇒ 它**同时含
-# 验证块之后的样本**。实测 2026Q2 的 fold1，训练集整段（2020-02→2026-03）都在它的
-# 验证块（2018-01→2019-12）**之后** —— 那是"用未来的模型去预测过去"。
-# fold2/fold3 各有一段在后；**只有 fold4 干净**。
-#
-# ⇒ 1893 天评估台**不是 walk-forward**：成对比较里前视同源（相对结论仍成立），
-#   但**绝对水平偏乐观**。本块做两件事，让这条 caveat **不再只活在文档里**：
-#   ① **推导**（不写死折号）哪些 (季度, 折) 的验证块无前视；
-#   ② 在它们上面**实测交付策略**的净收益与可实现 top-K，与评价窗/1893 天并列留档。
-# =============================================================================
-
+        value = frame.value.to_numpy(dtype=np.float32)
+        gate = frame.absolute_forecast_1d.to_numpy(dtype=np.float32)
+        if not np.isfinite(value).all() or not np.isfinite(gate).all():
+            raise ValueError('nonfinite saved score/gate')
+        pred[t, c] = value
+        forecast[t, c] = gate
+    panel.absolute_forecast = np.full((len(panel.days), len(panel.codes)), np.nan, np.float32)
+    panel.absolute_forecast[days] = forecast
+    return (pred, days, meta)
 
 def lookahead_free_blocks(days):
-    """**推导**出"训练集里没有任何样本晚于验证块"的 (季度, 折, 验证块)。
-
-    ★ 不写死 fold 号：判据就是 `train.max() < valid[0]`（purge 已由 `splits()` 保证）。
-      换季度、换 `folds` 数都不用改这里。
-    """
     out = []
     for q in quarters(days):
         for sp in splits(days, RECIPE['purge_horizon'], RECIPE['folds'], q):
-            tr, va = sp['train'], sp['valid']
-            if len(tr) and len(va) and int(tr.max()) < int(va[0]):
+            tr, va = (sp['train'], sp['valid'])
+            if len(tr) and len(va) and (int(tr.max()) < int(va[0])):
                 out.append(dict(quarter=q, fold=sp['fold'], valid=va))
     return out
 
-
 def clean_block_summary(panel, px, spec):
-    """在无前视的块上实测交付策略。**失败不抛**，返回 None 并由调用方如实记录。"""
     blocks = lookahead_free_blocks(panel.days)
     if not blocks:
         return dict(blocks=[], note='推导不出无前视的块')
-    device = torch.device('cpu')  # Same canonical ranking backend as saved forecasts.
+    device = torch.device('cpu')
     panel_x = Panel(RECIPE['features'], load_x=True)
     rows = []
     for b in blocks:
-        q, fold, va = b['quarter'], b['fold'], b['valid']
-        ck = torch.load(INPUT_ROOT / 'model_train' / q / f'fold{fold}' / 'best.pt',
-                        map_location=device, weights_only=False)
+        q, fold, va = (b['quarter'], b['fold'], b['valid'])
+        ck = torch.load(INPUT_ROOT / 'model_train' / q / f'fold{fold}' / 'best.pt', map_location=device, weights_only=False)
         net = PredictModel(len(panel_x.features), panel_x.market_dim).to(device)
         net.load_state_dict(ck['model'])
         net.ridge = ck.get('ridge')
-        # ★ 本单元的 `predict` 是 4 参数版（老单元有带 prices 的 5 参数版）——
-        #   按签名自适应，避免"换了单元就崩"（labs 里也踩过同一个坑）。
         n_args = len(inspect.signature(predict).parameters)
-        scores = (predict(net, panel_x, va, device) if n_args < 5
-                  else predict(net, panel_x, px, va, device))
+        scores = predict(net, panel_x, va, device) if n_args < 5 else predict(net, panel_x, px, va, device)
         ideal, real = realizable_topk(scores, panel, px, va, k=REALIZABLE_K)
-        row = dict(quarter=q, fold=fold, start=str(panel.days[int(va[0])]),
-                   end=str(panel.days[int(va[-1])]), days=int(len(va)),
-                   ideal_mean_pct=float(np.nanmean(ideal)) * 100,
-                   realizable_mean_pct=float(np.nanmean(real)) * 100,
-                   tradable_ratio=float(np.nanmean(real) / np.nanmean(ideal)))
+        row = dict(quarter=q, fold=fold, start=str(panel.days[int(va[0])]), end=str(panel.days[int(va[-1])]), days=int(len(va)), ideal_mean_pct=float(np.nanmean(ideal)) * 100, realizable_mean_pct=float(np.nanmean(real)) * 100, tradable_ratio=float(np.nanmean(real) / np.nanmean(ideal)))
         if px is not None:
-            st, curve, trades = cash_backtest(scores, panel, px, va, n=spec['topn'],
-                                              period=spec['period'],band=spec['band'],forecast_members=1,gate_scores=predict_absolute(net,panel_x,va,device))
+            st, curve, trades = cash_backtest(scores, panel, px, va, n=spec['topn'], period=spec['period'], band=spec['band'], forecast_members=1, gate_scores=predict_absolute(net, panel_x, va, device))
             eq = np.asarray([c['equity'] for c in curve], float)
             prev = np.r_[RECIPE['backtest_money'], eq[:-1]]
             day = (eq - prev) / prev
-            row.update(strategy_return_value=st['return_value'],
-                       strategy_net_annual_pct=day.mean() * 242 * 100,
-                       strategy_max_drawdown=st['max_drawdown'],
-                       idle_cash_pct=float(np.mean([c['cash'] / c['equity'] for c in curve])) * 100,
-                       trades=st['trades'], gross_return_same_positions=st['gross_return_same_positions'], total_fees=st['total_fees'], fee_drag=st['fee_drag'], slippage_drag=st['slippage_drag'], net_annual_definition='actual net daily mean x 242; fees already included')
+            row.update(strategy_return_value=st['return_value'], strategy_net_annual_pct=day.mean() * 242 * 100, strategy_max_drawdown=st['max_drawdown'], idle_cash_pct=float(np.mean([c['cash'] / c['equity'] for c in curve])) * 100, trades=st['trades'], gross_return_same_positions=st['gross_return_same_positions'], total_fees=st['total_fees'], fee_drag=st['fee_drag'], slippage_drag=st['slippage_drag'], net_annual_definition='actual net daily mean x 242; fees already included')
         rows.append(row)
-    tot_days = sum(r['days'] for r in rows)
-    return dict(strategy=spec['name'], blocks=rows, total_days=tot_days,
-                note='这些 (季度, 折) 的训练集全部早于其验证块 ⇒ **无前视**；'
-                     '块与块之间日历不连续，**不可拼接**，只并列看。')
-
+    tot_days = sum((r['days'] for r in rows))
+    return dict(strategy=spec['name'], blocks=rows, total_days=tot_days, note='这些 (季度, 折) 的训练集全部早于其验证块 ⇒ **无前视**；块与块之间日历不连续，**不可拼接**，只并列看。')
 
 def evaluate_fixed_strategies(pred, panel, px, days, report, mode):
-    out=RUN_ROOT/'model_pred';csv_root=out/'ensemble/CSV'
-    csv_root.mkdir(parents=True,exist_ok=True)
-    ev,eval_days=evaluation_slice(pred,panel,days)
-    report={k:v for k,v in report.items() if k not in ('score_dates','columns','variants')}
-    report['evaluation_mode']=mode
-    report['evaluation_window']=[str(panel.days[eval_days[0]]),str(panel.days[eval_days[-1]])]
-    result={'IC':ic_table(ev,panel,eval_days),'strategies':[]}
-    summaries=[];quarterly=[]
+    out = RUN_ROOT / 'model_pred'
+    csv_root = out / 'ensemble/CSV'
+    csv_root.mkdir(parents=True, exist_ok=True)
+    ev, eval_days = evaluation_slice(pred, panel, days)
+    report = {k: v for k, v in report.items() if k not in ('score_dates', 'columns', 'variants')}
+    report['evaluation_mode'] = mode
+    report['evaluation_window'] = [str(panel.days[eval_days[0]]), str(panel.days[eval_days[-1]])]
+    result = {'IC': ic_table(ev, panel, eval_days), 'strategies': []}
+    summaries = []
+    quarterly = []
     if px is not None:
-        report['label_price_check']=px.verify_labels(panel,days)
+        report['label_price_check'] = px.verify_labels(panel, days)
         for spec in STRATEGIES:
-            stat,curve,trades=cash_backtest(ev,panel,px,eval_days,n=spec['topn'],period=spec['period'],band=spec['band'])
-            result['strategies'].append(dict(strategy=spec['name'],**stat))
-            summaries.append(dict(source='ensemble',strategy=spec['name'],**stat))
-            quarterly.extend(quarter_metrics('ensemble',spec['name'],curve,trades,ev,panel,eval_days))
-            pd.DataFrame(curve).to_csv(output_file(csv_root/f'cash_{spec["name"]}.csv'),index=False)
-            pd.DataFrame(trades).to_csv(output_file(csv_root/f'trades_{spec["name"]}.csv'),index=False)
-    report['variants']={'ensemble':result}
-    # --- 六指标与季度表现：评价窗 242 天的逐日调仓组合（口径见 §②b）---
-    # 这一块不依赖价格层：只读标签与成交额，所以 --no-backtest 也能出。
-    measured=evaluation_metrics(ev,panel,eval_days)
-    metrics=measured['rows']
-    # 训练侧验证集表现：优先用打分元数据里冻结的那份折记录（与本次打分同源），
-    # 缺了才回落到直接读 model_train 的 complete.json。
-    valid_rows=training_validation_rows(report.get('folds') or fold_completions())
-    h1,h5=rank_ic_horizons()
-    # 逐日序列随报告一并留档，便于复核指标之外的时点（不另建文件）。
-    result['eval_portfolio']=dict(params=TOP_PORTFOLIO,total=metrics[-1],
-        daily=dict(date=[str(panel.days[d]) for d in eval_days],
-                   return_pct=[round(float(x),6) for x in measured['daily_ret']],
-                   **{f'ic_{h}d':[round(float(x),6) for x in measured['daily_ic'][h]]
-                      for h in (h1,h5)},
-                   **{f'rank_ic_{h}d':[round(float(x),6) for x in measured['daily_rank_ic'][h]]
-                      for h in (h1,h5)}))
-    print_metric_blocks(metrics,valid_rows)
-    # ★ V13：bagged vs argmax 的配对对照。数字进 final_audit.json、日志打一份，
-    #   叙述（结论怎么写）归 Agent —— 脚本只出数，不写结论。
+            stat, curve, trades = cash_backtest(ev, panel, px, eval_days, n=spec['topn'], period=spec['period'], band=spec['band'])
+            result['strategies'].append(dict(strategy=spec['name'], **stat))
+            summaries.append(dict(source='ensemble', strategy=spec['name'], **stat))
+            quarterly.extend(quarter_metrics('ensemble', spec['name'], curve, trades, ev, panel, eval_days))
+            pd.DataFrame(curve).to_csv(output_file(csv_root / f"cash_{spec['name']}.csv"), index=False)
+            pd.DataFrame(trades).to_csv(output_file(csv_root / f"trades_{spec['name']}.csv"), index=False)
+    report['variants'] = {'ensemble': result}
+    measured = evaluation_metrics(ev, panel, eval_days)
+    metrics = measured['rows']
+    valid_rows = training_validation_rows(report.get('folds') or fold_completions())
+    h1, h5 = rank_ic_horizons()
+    result['eval_portfolio'] = dict(params=TOP_PORTFOLIO, total=metrics[-1], daily=dict(date=[str(panel.days[d]) for d in eval_days], return_pct=[round(float(x), 6) for x in measured['daily_ret']], **{f'ic_{h}d': [round(float(x), 6) for x in measured['daily_ic'][h]] for h in (h1, h5)}, **{f'rank_ic_{h}d': [round(float(x), 6) for x in measured['daily_rank_ic'][h]] for h in (h1, h5)}))
+    print_metric_blocks(metrics, valid_rows)
     bag_summary = bag_vs_argmax(report.get('folds') or fold_completions())
     if bag_summary:
         print(bag_comparison_text(bag_summary), flush=True)
-    write_daily_picks(pred,panel,days,metrics,valid_rows)
-    # ★ 用户 2026-09-26 定：`model_pred/tables/` 整个目录不要了（CSV 与 report.json
-    #   都不再落盘）。本版结果的留档位置：`model_info/final_audit.json`（总计指标）、
-    #   `model_info/two_strategy_validation.json`（两策略实现值）、
-    #   `model_pred/ensemble/score_meta.json`（折记录、audit、口径与 caveats），
-    #   以及 `model_pred/picks.md` 开头那两张表；逐日序列只在本次运行的 report 里，
-    #   需要时重跑本文件即可复算。
+    write_daily_picks(pred, panel, days, metrics, valid_rows)
     if px is None:
         return report
-    plot_results(out,'ensemble',report['evaluation_window'][0])
-    # 两个核验记录：推理对拍的逐折结果，以及两策略口径的自检。
-    # `--from-scores` 不加载权重，此时 report 里带的 audit 是上一次训练运行的存档，
-    # 不能当成本次验过，所以按来源显式区分。
+    plot_results(out, 'ensemble', report['evaluation_window'][0])
     from_saved = mode == 'saved_ensemble_scores'
-    audit = [] if from_saved else (report.get('audit') or [])
-    # ★ V17：可实现口径 —— 与理想口径一起留档，避免只看偏乐观的那一份。
+    audit = [] if from_saved else report.get('audit') or []
     real_block = realizable_summary(ev, panel, px, eval_days, metrics) if px is not None else (None, '')
-    # ★★ V27：无前视块的实测（从偶数线 V26 借来）。**故意不抛** —— 附加证据不该拖垮主流程。
-    clean_block, clean_block_error = None, None
+    clean_block, clean_block_error = (None, None)
     try:
-        clean_block = (report.get('clean_blocks') if from_saved else clean_block_summary(panel,px,STRATEGIES[0]))
-    except Exception as exc:                     # noqa: BLE001
+        clean_block = report.get('clean_blocks') if from_saved else clean_block_summary(panel, px, STRATEGIES[0])
+    except Exception as exc:
         clean_block_error = f'{type(exc).__name__}: {exc}'
         print(f'★ V27 干净块实测失败（不影响主流程）：{clean_block_error}', flush=True)
-    report['clean_blocks']=clean_block
-    atomic_json(info_root()/'final_audit.json', dict(
-        run_name=run_name(), checked_at=time.strftime('%Y-%m-%d %H:%M:%S'), score_source=mode,
-        evaluation_window=report['evaluation_window'], score_window=report.get('score_window'),
-        model_train_read=bool(audit), weights_reloaded=bool(audit), folds_checked=len(audit),
-        max_cpu_reload_error=max([a['max_cpu_reload_error'] for a in audit], default=None),
-        audit=audit,
-        metrics_total=metrics[-1],
-        min_test_combinations=min_test_combinations(ev,panel,eval_days),
-        snapshot=dict(built_at=panel.meta['built_at'],stock_feature_count=len(panel.meta['columns']['features']),input_feature_count=len(panel.features),meta_sha256=RECIPE['snapshot_meta_sha256']),
-        clean_blocks_are_epoch_selection_data=True,
-        min_test_algorithm='reference pandas tie order; literal sequential scalar allocation; labels multiplied by100 before Pearson IC',
-        replica_status='single screening replica; no promotion',
-        # ★ V17：顶栏的 metrics_total 仍是**理想口径**（与历史报表逐位可比）；
-        #   可实现口径单列一块，附差额与 t，谁都能看出"有多少是买不到的"。
-        realizable=real_block[0],
-        clean_blocks=clean_block if clean_block is not None else dict(blocks=[], note=clean_block_error),
-        # ★ V13：交付权重是「前 k 名平均」而不是 argmax ⇒ 把两者的配对对照一并留档。
-        bag_vs_argmax=bag_summary,fusion=report.get('fusion'),auxiliary_forecast='separate raw1d technical return; existing yearly parquet column; same fixed159 paths'))
-    # 每一项都是本次真正量到的事实，不写没验过的断言。
-    atomic_json(info_root()/'two_strategy_validation.json', dict(
-        run_name=run_name(), checked_at=time.strftime('%Y-%m-%d %H:%M:%S'), score_source=mode,
-        reads_model_train=not from_saved, loads_model_weights=not from_saved,
-        strategies=[s['name'] for s in STRATEGIES], strategy_rows=len(summaries),
-        quarterly_rows=len(quarterly), evaluation_days=int(len(measured['daily_ret'])),
-        evaluation_window=report['evaluation_window'], label_price_check=report.get('label_price_check'),
-        # quarter_metrics 里已经断言「四段季度收益能复合回全年」，跑到这里就是通过。
-        quarterly_returns_compound=True,
-        date_axis_matches_price_axis=True,
-        realized={s['strategy']: dict(return_value=s['return_value'], max_drawdown=s['max_drawdown'],
-                                      sharpe=s['sharpe'], trades=s['trades'], total_fees=s['total_fees'], gross_return_same_positions=s['gross_return_same_positions'], fee_drag=s['fee_drag'], slippage_drag=s['slippage_drag'], avg_exposure=s['avg_exposure'], gross_definition=s['gross_definition'])
-                  for s in summaries}))
-    print('两策略回测完成:',json.dumps(summaries,ensure_ascii=False),flush=True)
+    report['clean_blocks'] = clean_block
+    atomic_json(info_root() / 'final_audit.json', dict(run_name=run_name(), checked_at=time.strftime('%Y-%m-%d %H:%M:%S'), score_source=mode, evaluation_window=report['evaluation_window'], score_window=report.get('score_window'), model_train_read=bool(audit), weights_reloaded=bool(audit), folds_checked=len(audit), max_cpu_reload_error=max([a['max_cpu_reload_error'] for a in audit], default=None), audit=audit, metrics_total=metrics[-1], min_test_combinations=min_test_combinations(ev, panel, eval_days), snapshot=dict(built_at=panel.meta['built_at'], stock_feature_count=len(panel.meta['columns']['features']), input_feature_count=len(panel.features), meta_sha256=RECIPE['snapshot_meta_sha256']), clean_blocks_are_epoch_selection_data=True, min_test_algorithm='reference pandas tie order; literal sequential scalar allocation; labels multiplied by100 before Pearson IC', replica_status='single screening replica; no promotion', realizable=real_block[0], clean_blocks=clean_block if clean_block is not None else dict(blocks=[], note=clean_block_error), bag_vs_argmax=bag_summary, fusion=report.get('fusion'), auxiliary_forecast='separate raw1d technical return; existing yearly parquet column; same fixed159 paths'))
+    atomic_json(info_root() / 'two_strategy_validation.json', dict(run_name=run_name(), checked_at=time.strftime('%Y-%m-%d %H:%M:%S'), score_source=mode, reads_model_train=not from_saved, loads_model_weights=not from_saved, strategies=[s['name'] for s in STRATEGIES], strategy_rows=len(summaries), quarterly_rows=len(quarterly), evaluation_days=int(len(measured['daily_ret'])), evaluation_window=report['evaluation_window'], label_price_check=report.get('label_price_check'), quarterly_returns_compound=True, date_axis_matches_price_axis=True, realized={s['strategy']: dict(return_value=s['return_value'], max_drawdown=s['max_drawdown'], sharpe=s['sharpe'], trades=s['trades'], total_fees=s['total_fees'], gross_return_same_positions=s['gross_return_same_positions'], fee_drag=s['fee_drag'], slippage_drag=s['slippage_drag'], avg_exposure=s['avg_exposure'], gross_definition=s['gross_definition']) for s in summaries}))
+    print('两策略回测完成:', json.dumps(summaries, ensure_ascii=False), flush=True)
     return report
-
-
-def live_report():
-    """实战模式轻量报告：核对伪季度四折齐备与切分几何，写 model_info/live_validation.json。
-
-    评分窗（伪季度首日 → 数据末日）当前可能为空（数据尚未覆盖 2026Q4）；为空时只记录状态，
-    待数据更新后重跑评分流程并重出本报告。需 MX_LIVE=1（与训练端一致）。
-    """
-    from model import LIVE, LIVE_QUARTER, split_summary as _ss
-    if not LIVE:
-        raise SystemExit('--live 需要 MX_LIVE=1（与训练端一致）')
-    days, _ = axis()
-    sp = splits(days, quarter=LIVE_QUARTER)
-    folds = []
-    for s in sp:
-        d = RUN_ROOT / 'model_train' / LIVE_QUARTER / f"fold{s['fold']}"
-        done = d / 'complete.json'
-        rec = json.loads(done.read_text()) if done.is_file() else None
-        ck = dict(loaded=False)
-        if (d / 'best.pt').is_file():
-            try:
-                blob = torch.load(d / 'best.pt', map_location='cpu', weights_only=False)
-                ck = dict(loaded=bool({'model', 'features', 'ridge'} <= set(blob)),
-                          keys=sorted(k for k in ('model', 'features', 'ridge', 'epoch') if k in blob))
-            except Exception as exc:  # noqa: BLE001
-                ck = dict(loaded=False, error=repr(exc))
-        folds.append(dict(fold=s['fold'], complete=bool(rec), best_epoch=(rec or {}).get('best_epoch'),
-                          test_dates=(rec or {}).get('test_dates', []), checkpoints=ck,
-                          split=_ss(days, s)))
-    test_dates = [str(x) for x in days[sp[0]['test']]] if len(sp) else []
-    score_dates = [str(x) for x in days[sp[0]['score']]] if len(sp) else []
-    ready = all(f['complete'] for f in folds)
-    status = ('folds_ready_awaiting_data' if (ready and not test_dates)
-              else 'folds_ready_scored' if ready else 'incomplete')
-    out = dict(run_name=run_name(), checked_at=time.strftime('%Y-%m-%d %H:%M:%S'), mode='live',
-               live_quarter=LIVE_QUARTER, folds=folds, test_dates=test_dates, score_dates=score_dates,
-               status=status,
-               note='评分窗 = 伪季度首日→数据末日；数据未覆盖时为空。数据更新后按评分流程重出打分，再重跑本报告。')
-    atomic_json(output_file(info_root() / 'live_validation.json'), out)
-    md = output_file(RUN_ROOT / 'model_pred' / 'live_report.md')
-    md.parent.mkdir(parents=True, exist_ok=True)
-    w = '→'.join([score_dates[0], score_dates[-1]]) if score_dates else '（空：数据未覆盖 2026-10-01 起的交易日）'
-    t = '→'.join([test_dates[0], test_dates[-1]]) if test_dates else '（空）'
-    lines = [f'# {RECIPE["name"]} 实战报告（{LIVE_QUARTER}）', '',
-             f'- 状态：`{status}`；四折完成 {sum(1 for f in folds if f["complete"])}/{len(folds)}',
-             f'- 评分窗：{w}', f'- test 窗：{t}', '',
-             '| fold | complete | best_epoch | checkpoint |', '|---|---|---|---|']
-    for f in folds:
-        lines.append(f"| {f['fold']} | {f['complete']} | {f['best_epoch']} | {f['checkpoints'].get('loaded')} |")
-    md.write_text('\n'.join(lines) + '\n')
-    print(json.dumps({k: out[k] for k in ('live_quarter', 'status')}, ensure_ascii=False), flush=True)
-    return out
-
 
 def main():
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('--from-scores', action='store_true', help='直接读取集成打分，只计算本单元两策略')
     parser.add_argument('--no-backtest', action='store_true', help='明确只计算 IC；不输出现金策略')
     parser.add_argument('--audit', action='store_true', help='最佳模型逐日截断/重载推理对拍')
-    parser.add_argument('--picks-only', action='store_true',
-                        help='只出最近10个交易日排名（不跑评价/回测），给增量推演用')
-    parser.add_argument('--live', action='store_true',
-                        help='实战模式轻量报告：核对伪季度四折与切分几何，写 live_validation.json（数据未覆盖评分窗时只记状态）')
+    parser.add_argument('--picks-only', action='store_true', help='只出最近10个交易日排名（不跑评价/回测），给增量推演用')
     args = parser.parse_args()
-    # 新单元的常驻产物由运行生成，所以起点允许缺失；多余路径仍然一律拒绝。
     validate_layout(allow_temporary=True, allow_missing=True)
-    # 进程内线程数与模型侧用同一个旋钮（run.py 导出 MX_THREADS），不写死主机假设。
     torch.set_num_threads(int(os.environ.get('MX_THREADS', '3')))
-
-    if args.live:   # ★ 实战模式（releases/）：轻量报告，需 MX_LIVE=1
-        return live_report()
-
     if args.from_scores and args.audit:
         parser.error('--from-scores不加载权重，不能同时使用--audit')
     panel = Panel(RECIPE['features'], load_x=not args.from_scores)
     out = RUN_ROOT / 'model_pred'
     out.mkdir(parents=True, exist_ok=True)
     if args.from_scores:
-        pred,days,report=read_saved_scores(out/'ensemble',panel)
-        if args.picks_only:return write_daily_picks(pred,panel,days)
-        px=None if args.no_backtest else Prices(panel)
-        return evaluate_fixed_strategies(pred,panel,px,days,report,'saved_ensemble_scores')
-
-    # ★ V11：打板口径与热门池都住在 `Prices` 里，而重载对拍要调 `predict(net, panel, px, …)`
-    #   ⇒ 走训练打分这条路时必须先把价格层建出来（--no-backtest 也一样：对拍不看回测，
-    #   但要看口径）。只读落盘打分的那条路不调 predict，不需要它。
-    px = Prices(panel) if (args.audit or not args.no_backtest) else None
-
+        pred, days, report = read_saved_scores(out / 'ensemble', panel)
+        if args.picks_only:
+            return write_daily_picks(pred, panel, days)
+        px = None if args.no_backtest else Prices(panel)
+        return evaluate_fixed_strategies(pred, panel, px, days, report, 'saved_ensemble_scores')
+    px = Prices(panel) if args.audit or not args.no_backtest else None
     variants = {}
     absolute_variants = {}
     completions = []
@@ -1122,108 +644,685 @@ def main():
     audit = []
     fold_ids = [1, 2, 3, 4]
     qs = quarters(panel.days)
-
-    # --- 逐折拼出「季度首日 → 数据末日」的完整推演序列 ---
-    # 每一天由「最新一个没见过它的季度模型组」负责：
-    #   四个季度各由自己那组给（该组的训练数据止于季度首日前 6 个交易日，整个季度都是样本外）；
-    #   季度之后的尾段由**最后那个季度**的组给（其余组其实也都没见过它，取最新即可）。
     for fold in fold_ids:
         chunks = []
-        absolute_chunks=[]
+        absolute_chunks = []
         fold_dates = []
         for quarter in qs:
             folder = INPUT_ROOT / 'model_train' / quarter / f'fold{fold}'
             done = json.loads((folder / 'complete.json').read_text())
-            st = np.load(folder / 'score_predictions.npy')       # 全推演窗：季度首日 → 数据末日
+            st = np.load(folder / 'score_predictions.npy')
             n_test = len(done['test_dates'])
-            p = st[:n_test]                                      # 本季度那一段（= 旧 test_predictions）
+            p = st[:n_test]
             qdays = np.searchsorted(panel.days, done['test_dates'])
             chunks.append(p)
             fold_dates.extend(done['test_dates'])
             if quarter == qs[-1]:
-                chunks.append(st[n_test:])                        # 尾段 → 增量最新打分
+                chunks.append(st[n_test:])
                 fold_dates.extend(done['score_dates'][n_test:])
             completions.append(done)
-            checkpoint=torch.load(folder/'best.pt',map_location='cpu',weights_only=False)
-            net=PredictModel(len(panel.features),panel.market_dim)
-            net.load_state_dict(checkpoint['model']);net.ridge=checkpoint.get('ridge');net.eval()
-            absolute_days=np.searchsorted(panel.days,done['score_dates'] if quarter==qs[-1] else done['test_dates'])
-            absolute_chunks.append(predict_absolute(net,panel,absolute_days,torch.device('cpu')))
-
-            # --- 重载对拍：从磁盘重建模型，验证当日独立推理可复现 ---
+            checkpoint = torch.load(folder / 'best.pt', map_location='cpu', weights_only=False)
+            net = PredictModel(len(panel.features), panel.market_dim)
+            net.load_state_dict(checkpoint['model'])
+            net.ridge = checkpoint.get('ridge')
+            net.eval()
+            absolute_days = np.searchsorted(panel.days, done['score_dates'] if quarter == qs[-1] else done['test_dates'])
+            absolute_chunks.append(predict_absolute(net, panel, absolute_days, torch.device('cpu')))
             if args.audit:
                 checkpoint = torch.load(folder / 'best.pt', map_location='cpu', weights_only=False)
                 net = PredictModel(len(panel.features), panel.market_dim)
                 net.load_state_dict(checkpoint['model'])
-                net.ridge = checkpoint.get('ridge')     # ★ V10：打分含岭回归分量
+                net.ridge = checkpoint.get('ridge')
                 net.eval()
                 check_ix = np.unique([0, len(qdays) // 2, len(qdays) - 1])
                 check_days = qdays[check_ix]
                 actual = predict(net, panel, px, check_days, torch.device('cpu'))
-                # 逐头再跑一遍：既是「打分 == score_of(头)」这条恒等式的自检，也给下面
-                # 的逐行检查提供比对基准。★ 打分是**当日全截面**的秩，单看 10 行没有意义，
-                # 所以逐行检查比的是**头输出**，不是打分。
                 raw = predict_heads(net, panel, check_days, torch.device('cpu'))
-                expect = hot_filter(blend_linear(score_of(raw), net.ridge, panel, check_days),
-                                    px, check_days)
-                if not np.allclose(actual, expect, atol=2e-5, rtol=2e-5, equal_nan=True):
+                expect = hot_filter(blend_linear(score_of(raw), net.ridge, panel, check_days), px, check_days)
+                if not np.allclose(actual, expect, atol=2e-05, rtol=2e-05, equal_nan=True):
                     raise AssertionError('predict() 与 blend_linear(score_of(predict_heads())) 不一致')
                 expected = p[check_ix]
                 finite = np.isfinite(actual) & np.isfinite(expected)
                 error = float(np.max(np.abs(actual[finite] - expected[finite])))
-                if not np.array_equal(np.isfinite(actual), np.isfinite(expected)) or error > 2e-4:
+                if not np.array_equal(np.isfinite(actual), np.isfinite(expected)) or error > 0.0002:
                     raise AssertionError(f'推理重载对拍失败 {error}')
-                # 同一模型、同一日，逐行**头输出**必须与整批一致（无跨行/跨日依赖）。
-                # 必须显式比二维的 (n,5)：`.squeeze(-1)` 在 (n,5) 上是 no-op，会和
-                # (k,) 的 actual 靠广播比较而假通过。
                 for j, d in enumerate(check_days):
                     mask = panel.mask(d)
                     with torch.no_grad():
                         m = torch.from_numpy(panel.M[d]) if panel.market_dim else None
                         one = net(torch.from_numpy(panel.inputs(d, mask)[:10]), m).numpy()
-                    if not np.allclose(one, raw[j, mask][:10], atol=2e-5, rtol=2e-5):
+                    if not np.allclose(one, raw[j, mask][:10], atol=2e-05, rtol=2e-05):
                         raise AssertionError('跨行/跨日推理依赖')
-                audit.append(dict(quarter=quarter, fold=fold, max_cpu_reload_error=error,
-                                  days=panel.days[check_days].tolist()))
+                audit.append(dict(quarter=quarter, fold=fold, max_cpu_reload_error=error, days=panel.days[check_days].tolist()))
         if dates is not None and dates != fold_dates:
             raise ValueError('各折测试日期不一致')
         dates = fold_dates
         if len(set(dates)) != len(dates) or dates != sorted(dates):
             raise ValueError('季度拼接重叠/乱序')
         variants[f'fold{fold}'] = np.concatenate(chunks)
-        absolute_variants[f'fold{fold}']=np.concatenate(absolute_chunks)
-
+        absolute_variants[f'fold{fold}'] = np.concatenate(absolute_chunks)
     days = np.searchsorted(panel.days, dates)
-    # 评价（IC / 回测 / 季度表）**只用四个季度那一段**（用户固定的评价窗）；
-    # 尾段（2026-07-01 起）只进打分产物，供增量推演用。
-
-    # --- 集成：四折打分**直接相加**，不做逐日标准化（用户 2026-09-20）---
-    # 用 NaN 传播的加法：某票某天没有分数时，集成结果仍是"没有分数"，
-    # 不会变成 0 分混进排序（np.nansum 会犯这个错）。
     if len(variants) > 1:
         variants['ensemble'] = sum(variants.values()).astype(np.float32)
+    panel.absolute_forecast = np.full((len(panel.days), len(panel.codes)), np.nan, np.float32)
+    panel.absolute_forecast[days] = sum(absolute_variants.values()).astype(np.float32)
+    pred = variants['ensemble']
+    if args.picks_only:
+        return write_daily_picks(pred, panel, days)
+    report = dict(evaluation_window=[RECIPE['test_start'], RECIPE['test_end']], score_window=[dates[0], dates[-1]], folds=completions, analysis_mode='IC_only' if args.no_backtest else 'full', variants={}, audit=audit, ensemble='四折打分直接相加（不归一化）；辅助1日预测也原值相加，门槛乘4', fusion=dict(flow_weight=RECIPE.get('flow_fusion_weight') if not RECIPE.get('fusion_weight_selection') else None, fold_weights={f"{c['quarter']}/fold{c['fold']}": c.get('flow_fusion_weight', RECIPE.get('flow_fusion_weight')) for c in completions}, rank_scale='raw neural output; raw fourfold sum; daily z-score for min_test evaluation' if RECIPE.get('score_transform') == 'raw_neural' else 'within submodel family percentiles; raw fourfold sum; daily z-score for min_test evaluation', absolute_gate='separate training-fitted1d return, never percentile as return'), inference_rule='每天由「最新一个没见过它的季度模型组」推演；季度之后的尾段由最后一个季度那组给', caveats=['固定存续且从未ST股票池含幸存者偏差', '四折共用测试窗，不是四段独立样本外收益', '验证收益是5日标签代理；策略净值另算', '不据测试结果调参或晋级best', '评价只用2025Q3～2026Q2四季度；之后的尾段仅供增量推演'])
+    first = completions[0]
+    info = json.loads((INPUT_ROOT / 'model_train' / first['quarter'] / f"fold{first['fold']}" / 'training_info.json').read_text())
+    report['training'] = dict(recipe=info['recipe'], feature_count=len(info['feature_columns']), feature_source=info['feature_source'])
+    write_scores(pred, panel, days, out / 'ensemble')
+    result = evaluate_fixed_strategies(pred, panel, px, days, report, 'training_predictions')
+    save_score_metadata(out / 'ensemble', result, dates)
+from model import metadata, data_root, recipe_signature, predict_auxiliary, predict_market_risk, LAYOUT_QUARTERS
+import hashlib
+RULES = ('baseline', 'band20', 'band60', 'market_cash', 'cost_cash', 'defensive', 'open_close_t')
+STANDARD_QUARTERS = ('2025Q3', '2025Q4', '2026Q1', '2026Q2')
 
-    panel.absolute_forecast=np.full((len(panel.days),len(panel.codes)),np.nan,np.float32)
-    panel.absolute_forecast[days]=sum(absolute_variants.values()).astype(np.float32)
-    pred=variants['ensemble']
-    if args.picks_only:return write_daily_picks(pred,panel,days)
-    report = dict(evaluation_window=[RECIPE["test_start"], RECIPE["test_end"]],
-                  score_window=[dates[0], dates[-1]],
-                  folds=completions, analysis_mode='IC_only' if args.no_backtest else 'full',
-                  variants={}, audit=audit,
-                  ensemble='四折打分直接相加（不归一化）；辅助1日预测也原值相加，门槛乘4',
-                  fusion=dict(flow_weight=RECIPE.get('flow_fusion_weight') if not RECIPE.get('fusion_weight_selection') else None, fold_weights={f"{c['quarter']}/fold{c['fold']}": c.get('flow_fusion_weight', RECIPE.get('flow_fusion_weight')) for c in completions},rank_scale=('raw neural output; raw fourfold sum; daily z-score for min_test evaluation' if RECIPE.get('score_transform') == 'raw_neural' else 'within submodel family percentiles; raw fourfold sum; daily z-score for min_test evaluation'),absolute_gate='separate training-fitted1d return, never percentile as return'),
-                  inference_rule='每天由「最新一个没见过它的季度模型组」推演；季度之后的尾段由最后一个季度那组给',
-                  caveats=['固定存续且从未ST股票池含幸存者偏差', '四折共用测试窗，不是四段独立样本外收益',
-                           '验证收益是5日标签代理；策略净值另算', '不据测试结果调参或晋级best',
-                           '评价只用2025Q3～2026Q2四季度；之后的尾段仅供增量推演'])
-    first=completions[0]
-    info=json.loads((INPUT_ROOT/'model_train'/first['quarter']/f'fold{first["fold"]}'/'training_info.json').read_text())
-    report['training']=dict(recipe=info['recipe'],feature_count=len(info['feature_columns']),feature_source=info['feature_source'])
-    write_scores(pred,panel,days,out/'ensemble')
-    result=evaluate_fixed_strategies(pred,panel,px,days,report,'training_predictions')
-    save_score_metadata(out/'ensemble',result,dates)
+def load_market_context(panel):
+    cols = ['mkt_above_ma20_ratio', 'mkt_idx_csi300_ret1', 'mkt_limit_down_ratio']
+    frames = [pd.read_parquet(data_root() / 'market_factors' / f'year={y}' / 'data.parquet', columns=['trade_date', *cols]) for y in panel.meta['built_years']]
+    frame = pd.concat(frames).set_index('trade_date').reindex(panel.days)
+    return {c: frame[c].to_numpy() for c in cols}
 
+def market_budget(probability, signal, context, state, recovery):
+    """减仓/清仓与恢复有不同阈值，避免风险边界附近每天来回交易。"""
+    breadth = context['mkt_above_ma20_ratio'][signal]
+    index_return = context['mkt_idx_csi300_ret1'][signal]
+    limit_down = context['mkt_limit_down_ratio'][signal]
+    panic = np.isfinite(index_return) and index_return <= -0.035 or (np.isfinite(limit_down) and limit_down >= 0.08)
+    if panic or probability >= 0.35:
+        return (0.0, 0)
+    if state == 0.0:
+        recovery = recovery + 1 if probability < 0.15 and np.isfinite(breadth) and (breadth >= 0.45) else 0
+        return (1.0, 0) if recovery >= 2 else (0.0, recovery)
+    if probability >= 0.2:
+        return (0.4, 0)
+    return (1.0, 0)
 
+def strategy_backtest(pred, auxiliary, probability, panel, px, days, rule='baseline', schedule=None, context=None, slip=0.0003, liquidate=True, t_decider=None):
+    """与模板同一含费现金口径；常规订单下一开盘，T仅开盘卖隔夜底仓并收盘买回。"""
+    if not len(days) or np.any(np.diff(days) != 1):
+        raise ValueError('现金回测必须使用连续交易日')
+    if pred.shape != (len(days), len(panel.codes)) or auxiliary.shape != (*pred.shape, 2):
+        raise ValueError('现金回测输入轴不一致')
+    money, n = (100000.0, 5)
+    cash, cumulative_fees, cumulative_slippage = (money, 0.0, 0.0)
+    holdings, buys, peaks = ({}, {}, {})
+    curves, trades = ([], [])
+    risk_state, recovery = (1.0, 0)
+    corp_events = blocked_total = t_attempts = t_failed_buybacks = 0
+    by_day = {int(d): i for i, d in enumerate(days)}
+    first, last = (int(days[0]) + 1, int(days[-1]) + (2 if liquidate else 1))
+    if last >= len(panel.days):
+        raise ValueError('回测末尾没有完整的执行和清仓尾部')
+    for d in range(first, last + 1):
+        for c in list(holdings):
+            ratio = px.adj[d, c] / px.adj[d - 1, c]
+            if not np.isfinite(ratio) or ratio <= 0:
+                raise ValueError('持仓复权因子缺失')
+            if abs(ratio - 1) > 1e-08:
+                holdings[c] *= ratio
+                corp_events += 1
+        sellable = {c: q if buys[c] < d else 0.0 for c, q in holdings.items()}
+
+        def execute(c, side, quantity, raw_price, clock, reason):
+            nonlocal cash, cumulative_fees, cumulative_slippage
+            if quantity <= 0 or not np.isfinite(raw_price) or raw_price <= 0:
+                return False
+            if not np.isfinite(px.limit_down[d, c]) or not np.isfinite(px.limit_up[d, c]) or raw_price < px.limit_down[d, c] - 1e-08 or (raw_price > px.limit_up[d, c] + 1e-08):
+                return False
+            if side == 'sell' and (raw_price <= px.limit_down[d, c] + 1e-08 or quantity > sellable.get(c, 0.0) + 1e-06):
+                return False
+            if side == 'buy' and raw_price >= px.limit_up[d, c] - 1e-08:
+                return False
+            price = raw_price * (1 + slip if side == 'buy' else 1 - slip)
+            gross = quantity * price
+            fee = fees(gross, side == 'sell')
+            if side == 'buy':
+                if gross + fee > cash + 1e-06 or (c not in holdings and len(holdings) >= n):
+                    return False
+                cash -= gross + fee
+                if c not in holdings:
+                    buys[c] = d
+                    peaks[c] = raw_price * px.adj[d, c]
+                holdings[c] = holdings.get(c, 0.0) + quantity
+            else:
+                cash += gross - fee
+                holdings[c] -= quantity
+                sellable[c] -= quantity
+                if holdings[c] < 1e-06:
+                    del holdings[c]
+                    del buys[c]
+                    peaks.pop(c, None)
+            cumulative_fees += fee
+            cumulative_slippage += abs(quantity * raw_price - gross)
+            trades.append(dict(date=str(panel.days[d]), time=clock, signal_date=str(panel.days[d - 1]), code=str(panel.codes[c]), side=side, quantity=float(quantity), price=float(price), fee=float(fee), reason=reason))
+            return True
+        signal = d - 1
+        index = by_day.get(signal)
+        active = rule
+        if schedule and index is not None:
+            active = schedule[str(pd.Period(str(panel.days[signal]), freq='Q'))]
+        band = 20 if active == 'band20' else 60 if active == 'band60' else 40
+        risk_rule = active in ('market_cash', 'defensive', 'open_close_t')
+        cost_rule = active in ('cost_cash', 'defensive', 'open_close_t')
+        target_fraction = 1.0
+        desired = list(holdings)
+        if index is not None:
+            p = pred[index]
+            candidates = np.flatnonzero(np.isfinite(p))
+            if risk_rule:
+                risk_state, recovery = market_budget(float(probability[index]), signal, context, risk_state, recovery)
+                target_fraction = risk_state
+            else:
+                risk_state, recovery = (1.0, 0)
+            if cost_rule:
+                hurdle = 2 * max(0.00025, 5 / (money / n)) + 2e-05 + 0.0005 + 2 * slip
+                accepted = auxiliary[index, :, 1] >= hurdle
+                for c in holdings:
+                    accepted[c] = auxiliary[index, c, 1] >= -hurdle
+                candidates = candidates[accepted[candidates]]
+            ranked = candidates[np.argsort(-p[candidates], kind='stable')]
+            target_n = int(round(n * target_fraction))
+            keep_set = set(map(int, ranked[:band])) & set(holdings)
+            if target_n < n:
+                keep = [int(c) for c in ranked if int(c) in keep_set][:target_n]
+            else:
+                keep = list(keep_set)
+            fresh = [int(c) for c in ranked if px.entry[d, c] and int(c) not in keep]
+            desired = keep + fresh[:max(0, target_n - len(keep))]
+        if liquidate and d == last:
+            desired, target_fraction = ([], 0.0)
+        blocked = 0
+        equity_open = cash + sum((q * (px.open[d, c] if np.isfinite(px.open[d, c]) else px.close[d - 1, c]) for c, q in holdings.items()))
+        for c in list(holdings):
+            quantity = holdings[c] if c not in desired else 0.0
+            if c in desired and target_fraction < 1.0 and np.isfinite(px.open[d, c]):
+                cap_quantity = np.floor(equity_open / n / px.open[d, c] / 100) * 100
+                quantity = min(holdings[c], max(0.0, np.floor((holdings[c] - cap_quantity) / 100) * 100))
+            if quantity > 0:
+                if not px.exit[d, c] or not execute(c, 'sell', quantity, px.open[d, c], '09:30', 'risk_or_rank_exit'):
+                    blocked += 1
+        blocked_total += blocked
+        buybacks = []
+        reserved = 0.0
+        if index is not None and (active == 'open_close_t' or t_decider is not None) and (target_fraction == 1.0) and (d < last or not liquidate):
+            for c in list(holdings):
+                if c not in desired or buys[c] >= d or sellable.get(c, 0.0) <= 0:
+                    continue
+                if t_decider is None:
+                    previous_close = px.raw['close'][signal, c]
+                    previous_base = px.raw['pre_close'][signal, c]
+                    if not np.isfinite(previous_close) or not np.isfinite(previous_base) or previous_base <= 0:
+                        continue
+                    if previous_close / previous_base - 1 < 0.03:
+                        continue
+                price = px.open[d, c]
+                capacity = panel.amount[signal, c] * 0.01
+                if not px.exit[d, c] or not np.isfinite(capacity) or (not np.isfinite(price)) or (price <= 0):
+                    continue
+                quantity = min(int(sellable[c] / 3 / 100) * 100, int(capacity / price / 100) * 100)
+                if quantity < 100:
+                    continue
+                if t_decider is not None and not t_decider(signal, c, quantity, price, slip):
+                    continue
+                t_attempts += 1
+                before = cash
+                if execute(c, 'sell', quantity, price, '09:30', 't_sell_overnight'):
+                    reserved += cash - before
+                    buybacks.append((c, quantity))
+        if index is not None and (d < last or not liquidate):
+            equity_open = cash + sum((q * (px.open[d, c] if np.isfinite(px.open[d, c]) else px.close[d - 1, c]) for c, q in holdings.items()))
+            for c in desired:
+                if c in holdings or len(holdings) >= n or (not px.entry[d, c]):
+                    continue
+                held_value = sum((q * (px.open[d, cc] if np.isfinite(px.open[d, cc]) else px.close[d - 1, cc]) for cc, q in holdings.items()))
+                purse = (equity_open * target_fraction - held_value) / max(1, len(desired) - len(holdings))
+                amount = panel.amount[signal, c]
+                budget = min(max(0.0, cash - reserved), max(0.0, purse), amount * 0.01 if np.isfinite(amount) else 0.0)
+                price = px.open[d, c] * (1 + slip)
+                quantity = int(max(0.0, budget - 5) / (price * (1 + 0.00025 + 1e-05)) / 100) * 100
+                while quantity > 0 and quantity * price + fees(quantity * price) > budget:
+                    quantity -= 100
+                execute(c, 'buy', quantity, px.open[d, c], '09:30', 'rank_entry')
+        for c, quantity in buybacks:
+            buy_price = px.raw['close'][d, c]
+            buy_cap = panel.amount[signal, c] * 0.01
+            if not np.isfinite(buy_price) or buy_price <= 0 or (not np.isfinite(buy_cap)) or (px.raw['vol'][d, c] <= 0):
+                t_failed_buybacks += 1
+                continue
+            purse = min(cash, buy_cap)
+            buy_quantity = min(quantity, int(max(0.0, purse - 5) / (buy_price * (1 + slip) * (1 + 0.00026)) / 100) * 100)
+            failed = buy_quantity < quantity
+            if buy_quantity <= 0 or not execute(c, 'buy', buy_quantity, buy_price, '15:00', 't_buyback'):
+                failed = True
+            if failed:
+                t_failed_buybacks += 1
+        if cash < -1e-06 or len(holdings) > n or any((v < -1e-06 for v in sellable.values())):
+            raise AssertionError('资金、五只上限或 T+1 约束被突破')
+        equity = cash + sum((q * px.close[d, c] for c, q in holdings.items()))
+        if not np.isfinite(equity):
+            raise ValueError('持仓估值缺失')
+        curves.append(dict(date=str(panel.days[d]), equity=float(equity), cash=float(cash), positions=len(holdings), blocked_exits=blocked, cumulative_fees=cumulative_fees, cumulative_slippage=cumulative_slippage, gross_equity=equity + cumulative_fees + cumulative_slippage, exposure=float((equity - cash) / equity), rule=active, target_exposure=target_fraction, risk_probability=float(probability[index]) if index is not None else None, holding_codes=','.join((str(panel.codes[c]) for c in holdings))))
+    values = np.r_[money, [row['equity'] for row in curves]]
+    returns = values[1:] / values[:-1] - 1
+    dd = values / np.maximum.accumulate(values) - 1
+    stat = dict(topn=5, rebalance_days=1, return_value=float(values[-1] / money - 1), max_drawdown=float(dd.min()), sharpe=float(returns.mean() / returns.std() * np.sqrt(242)) if returns.std() else 0.0, total_fees=cumulative_fees, trades=len(trades), avg_exposure=float(np.mean([r['exposure'] for r in curves])), ending_cash=float(cash), ending_positions=len(holdings), corporate_action_adjustments=corp_events, start=str(panel.days[first]), end=str(panel.days[last]), blocked_exits=blocked_total, empty_days=sum((r['positions'] == 0 for r in curves)), reduced_days=sum((0 < r['positions'] < 5 for r in curves)), t_attempts=t_attempts, t_failed_buybacks=t_failed_buybacks, gross_return_same_positions=float((values[-1] + cumulative_fees + cumulative_slippage) / money - 1), fee_drag=cumulative_fees / money, slippage_drag=cumulative_slippage / money, gross_definition='same actual shares and trade dates; costs added back as cash, no reinvestment', corporate_action_assumption='复权比折算经济股数，分红立即再投资近似', execution_times=['09:30', '15:00'] if t_decider is not None or rule == 'open_close_t' or (schedule and 'open_close_t' in schedule.values()) else ['09:30'], max_positions_observed=max((r['positions'] for r in curves)))
+    if abs(stat['gross_return_same_positions'] - stat['return_value'] - stat['fee_drag'] - stat['slippage_drag']) > 1e-10:
+        raise AssertionError('毛收益、费用和净收益不能对账')
+    return (stat, curves, trades)
+
+def validation_selection(panel, px, context):
+    schedule, diagnostics = ({}, {})
+    for q in LAYOUT_QUARTERS:
+        scores = {name: [] for name in RULES}
+        details = []
+        for fold in (1, 2, 3, 4):
+            folder = INPUT_ROOT / 'model_train' / q / f'fold{fold}'
+            sp = splits(panel.days, quarter=q)[fold - 1]
+            pred = np.load(folder / 'valid_predictions.npy')
+            fit = selector_market_risk(folder)
+            probability = predict_market_risk(fit, panel.M[sp['valid']])
+            for rule in RULES:
+                stat, curve, _ = strategy_backtest(pred[..., 0], pred[..., 1:], probability, panel, px, sp['valid'], rule=rule, context=context)
+                objective = 242 * np.log1p(stat['return_value']) / len(curve) + 0.5 * stat['max_drawdown']
+                scores[rule].append(float(objective))
+                details.append(dict(fold=fold, rule=rule, objective=float(objective), **stat))
+        means = {name: float(np.mean(value)) for name, value in scores.items()}
+        schedule[q] = max(RULES, key=lambda name: means[name])
+        diagnostics[q] = dict(selected=schedule[q], objective_by_rule=means, blocks=details)
+        print('VALIDATION_STRATEGY', q, schedule[q], means, flush=True)
+    return (schedule, diagnostics)
+
+def selector_market_risk(folder):
+    # 严禁回退到已经看过旧验证标签的最终重训风险模型。
+    selected = json.loads((folder / 'selector_complete.json').read_text())
+    if selected['recipe_signature'] != recipe_signature():
+        raise ValueError('验证风险预测的选择配方变化')
+    return torch.load(folder / 'selector_market_risk.pt', map_location='cpu', weights_only=False)
+
+def ensemble_predictions(panel, px, audit=True):
+    score = np.full((len(panel.days), len(panel.codes)), np.nan, np.float32)
+    aux = np.full((*score.shape, 2), np.nan, np.float32)
+    probability = np.full(len(panel.days), np.nan)
+    audits, completions = ([], [])
+    for qi, q in enumerate(LAYOUT_QUARTERS):
+        sp0 = splits(panel.days, quarter=q)[0]
+        next_start = str(pd.Period(LAYOUT_QUARTERS[qi + 1], freq='Q').start_time.date()) if qi + 1 < len(LAYOUT_QUARTERS) else '9999'
+        days = sp0['score'][panel.days[sp0['score']] < next_start]
+        members, auxiliary, risks = ([], [], [])
+        for fold in (1, 2, 3, 4):
+            folder = INPUT_ROOT / 'model_train' / q / f'fold{fold}'
+            done = json.loads((folder / 'complete.json').read_text())
+            if done['recipe_signature'] != recipe_signature() or not done.get('research_extension_complete'):
+                raise ValueError('折的配方或完成状态不匹配')
+            saved = np.load(folder / 'score_predictions.npy')
+            members.append(saved[:len(days)])
+            auxiliary.append(np.load(folder / 'auxiliary_predictions.npy')[:len(days)])
+            fit = torch.load(folder / 'market_risk.pt', map_location='cpu', weights_only=False)
+            risks.append(predict_market_risk(fit, panel.M[days]))
+            completions.append({**done, 'quarter': q, 'fold': fold})
+            if audit:
+                ck = torch.load(folder / 'best.pt', map_location='cpu', weights_only=False)
+                if ck['features'] != panel.features:
+                    raise ValueError('冻结输入列不匹配')
+                net = PredictModel(len(panel.features), panel.market_dim)
+                net.load_state_dict(ck['model'], strict=True)
+                net.ridge = ck.get('ridge')
+                positions = sorted(set([0, len(days) // 2, len(days) - 1]))
+                actual = predict(net, panel, px, days[positions], torch.device('cpu'))
+                expected = saved[positions]
+                if not np.array_equal(np.isfinite(actual), np.isfinite(expected)):
+                    raise ValueError('重载推理掩码不同')
+                error = float(np.nanmax(np.abs(actual - expected)))
+                if error > 1e-06:
+                    raise ValueError(f'重载推理不一致: {q}/{fold} {error}')
+                sp = splits(panel.days, quarter=q)[fold - 1]
+                selector = torch.load(folder / 'selector_best.pt', map_location='cpu', weights_only=False)
+                if selector['recipe_signature'] != recipe_signature() or selector['features'] != panel.features:
+                    raise ValueError('验证选择权重的配方或输入不匹配')
+                net.load_state_dict(selector['model'], strict=True)
+                net.ridge = selector.get('ridge')
+                vp = sorted(set([0, len(sp['valid']) // 2, len(sp['valid']) - 1]))
+                actual_valid = predict(net, panel, px, sp['valid'][vp], torch.device('cpu'))
+                expected_valid = np.load(folder / 'valid_predictions.npy')[vp, :, 0]
+                if not np.array_equal(np.isfinite(actual_valid), np.isfinite(expected_valid)):
+                    raise ValueError('验证选择权重的重载掩码不同')
+                valid_error = float(np.nanmax(np.abs(actual_valid - expected_valid)))
+                if valid_error > 1e-6:
+                    raise ValueError('验证分数不是冻结选择模型的预测')
+                selector_risk = selector_market_risk(folder)
+                if selector_risk['train_end'] >= str(panel.days[sp['valid'][0]]):
+                    raise ValueError('验证风险模型包含未来样本')
+                if not done.get('delivery_refit_complete'):
+                    raise ValueError('最终交付重训尚未完成')
+                audits.append(dict(quarter=q, fold=fold, max_cpu_reload_error=max(error, valid_error),
+                    delivery_reload_error=error, selector_reload_error=valid_error,
+                    selector_train_end=done['closed_form_fit']['selector_train_end'],
+                    delivery_train_end=done['closed_form_fit']['train_end'],
+                    validation_risk_source='selector_market_risk.pt',
+                    days=[str(panel.days[days[p]]) for p in positions]))
+        score[days] = np.sum(members, axis=0, dtype=np.float32)
+        aux[days] = np.mean(auxiliary, axis=0, dtype=np.float32)
+        probability[days] = np.mean(risks, axis=0)
+    return (score, aux, probability, audits, completions)
+
+def window_metrics(pred, panel, days, qs):
+    daily, ic, rank = top_portfolio_daily(pred, panel, days)
+    rows = []
+    for q in (*qs, '总计'):
+        take = np.ones(len(days), bool) if q == '总计' else np.asarray([str(pd.Period(str(panel.days[d]), freq='Q')) == q for d in days])
+        rows.append(dict(quarter=q, days=int(take.sum()), **top_metrics(daily[take], {h: v[take] for h, v in ic.items()}, {h: v[take] for h, v in rank.items()})))
+    return rows
+
+def risk_diagnostics(panel, days, probability):
+    y1 = np.nanmean(panel.Y['label_ret_1d'][days], axis=1)
+    y5 = np.nanmean(panel.Y['label_ret_5d'][days], axis=1)
+    target = (y1 <= -0.02) | (y5 <= -0.04)
+    pred = probability >= 0.35
+    return dict(target='pool-mean1d<=-2% OR5d<=-4%; overlapping events are not independent', days=len(days), event_days=int(target.sum()), clear_signals=int(pred.sum()), true_positive=int((target & pred).sum()), false_positive=int((~target & pred).sum()), missed_event_days=int((target & ~pred).sum()), brier=float(np.mean((probability - target) ** 2)), prior_brier=float(np.mean((target.mean() - target) ** 2)), positive_next1d_when_clear=int((pred & (y1 > 0)).sum()), mean_next1d_when_clear=float(y1[pred].mean()) if pred.any() else None)
+
+def diversity_report(score, panel, px, days, forward, context):
+    """固定参照集；相关性只作开发证据，组合权重事先固定为 50/50。"""
+    references = ['V247', 'V224', 'V246', 'V188', 'V237', 'V244']
+    references += [path.name for path in sorted(ROOT.parent.iterdir(), key=lambda p:p.name) if path.is_dir() and path.name.startswith('V') and path.name[1:].isdigit() and path.name != ROOT.name and path.name not in references and (path / 'model_info/final_audit.json').is_file()]
+    all_days = np.r_[days, forward]
+    index = pd.MultiIndex.from_product([panel.days[all_days], panel.codes], names=['trade_date', 'stock_code'])
+    blank_aux = np.zeros((len(all_days), len(panel.codes), 2), np.float32)
+    rows = []
+    for name in references:
+        folder = ROOT.parent / name
+        sources = [folder / f'model_pred/ensemble/year={year}/data.parquet' for year in (2025, 2026)]
+        if not all((path.is_file() for path in sources)):
+            raise FileNotFoundError(f'{name}: 登记的研究参照缺少冻结分数')
+        chunks = [pd.read_parquet(path, columns=['trade_date', 'stock_code', 'value']) for path in sources]
+        frame = pd.concat(chunks, ignore_index=True)
+        frame['trade_date'] = frame.trade_date.astype(str)
+        frame['stock_code'] = frame.stock_code.astype(str)
+        if frame.duplicated(['trade_date', 'stock_code']).any():
+            raise ValueError(f'{name}: 历史参照主键重复')
+        ref = frame.set_index(['trade_date', 'stock_code']).reindex(index).value.to_numpy(np.float32).reshape(len(all_days), len(panel.codes))
+        periods = {}
+        for label, selected in [('standard', days), ('forward', forward)]:
+            offset = 0 if label == 'standard' else len(days)
+            ref_part = ref[offset:offset + len(selected)]
+            own = score[selected]
+            correlations, names, overlaps = ([], [], [])
+            blend = np.full_like(own, np.nan)
+            for i, (a, b) in enumerate(zip(own, ref_part)):
+                good = np.isfinite(a) & np.isfinite(b)
+                if good.sum() < 100:
+                    raise ValueError(f'{name}: {panel.days[selected[i]]} 共同有效股票不足')
+                ra, rb = (rankdata(a[good]), rankdata(b[good]))
+                correlations.append(corr(ra, rb))
+                names.append(int(good.sum()))
+                blend[i, good] = 0.5 * (ra - 0.5) / good.sum() + 0.5 * (rb - 0.5) / good.sum()
+                ca = np.flatnonzero(np.isfinite(a))
+                cb = np.flatnonzero(np.isfinite(b))
+                topa = set(ca[np.argsort(-a[ca], kind='stable')[:5]])
+                topb = set(cb[np.argsort(-b[cb], kind='stable')[:5]])
+                overlaps.append(len(topa & topb) / 5.0)
+            aux = blank_aux[:len(selected)]
+            prob = np.zeros(len(selected))
+            own_stat, own_curve, _ = strategy_backtest(own, aux, prob, panel, px, selected, context=context)
+            ref_stat, ref_curve, _ = strategy_backtest(ref_part, aux, prob, panel, px, selected, context=context)
+            combo, _, _ = strategy_backtest(blend, aux, prob, panel, px, selected, context=context)
+
+            def returns(curve):
+                value = np.asarray([r['equity'] for r in curve])
+                return value / np.r_[100000.0, value[:-1]] - 1
+            periods[label] = dict(days=len(selected), daily_score_spearman=float(np.mean(correlations)), minimum_common_stocks=min(names), mean_common_stocks=float(np.mean(names)), score_spearman_by_quarter={q: float(np.mean([v for v, d in zip(correlations, selected) if str(pd.Period(str(panel.days[d]), freq='Q')) == q])) for q in (STANDARD_QUARTERS if label == 'standard' else ('2026Q3',))}, account_daily_return_pearson=corr(returns(own_curve), returns(ref_curve)), signal_top5_overlap=float(np.mean(overlaps)), own_uniform_baseline=own_stat, reference_uniform_baseline=ref_stat, fixed_half_rank_fusion=combo, fusion_return_delta_vs_reference=combo['return_value'] - ref_stat['return_value'], fusion_drawdown_delta_vs_reference=combo['max_drawdown'] - ref_stat['max_drawdown'])
+        audit_path = folder / 'model_info/final_audit.json'
+        ref_audit = json.loads(audit_path.read_text())
+        rows.append(dict(reference=name, snapshot=ref_audit.get('snapshot'), score_files=[dict(path=str(p), sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in sources], **periods))
+        print('DIVERSITY_STANDARD', name, periods['standard']['daily_score_spearman'], periods['standard']['account_daily_return_pearson'], flush=True)
+    return dict(method='daily Spearman on common finite stocks, equal day weighting; account Pearson uses same n5 band40 cash engine', fusion='50/50 within-day common-stock percentile ranks; fixed band40 execution; weights never chosen on test', references=rows, unavailable_release_history=dict(models=['V220', 'V230', 'V240', 'V252'], reason='only2026Q4 release checkpoints remain; no frozen four-quarter historical scores; never backfill with future-trained weights'), interpretation='low correlation alone is insufficient; compare own return/drawdown and fixed-weight fusion; forward references keep their own frozen training schedule')
+
+def main():
+    parser = ArgumentParser(description='新因子研究；标准四季度、原指标与独立 Q3 检验')
+    parser.add_argument('--audit', action='store_true')
+    parser.add_argument('--recent30', action='store_true')
+    args = parser.parse_args()
+    if args.recent30:
+        return recent30_review()
+    validate_layout(allow_temporary=True, allow_missing=True)
+    torch.set_num_threads(int(os.environ.get('MX_THREADS', '2')))
+    panel = Panel(RECIPE['features'])
+    px = Prices(panel)
+    context = load_market_context(panel)
+    score, auxiliary, probability, audits, completions = ensemble_predictions(panel, px, args.audit)
+    schedule, validation = validation_selection(panel, px, context)
+    days = np.flatnonzero((panel.days >= '2025-07-01') & (panel.days <= '2026-06-30'))
+    forward = np.flatnonzero((panel.days >= '2026-07-01') & (panel.days <= '2026-09-30'))
+    if len(days) != 242:
+        raise ValueError('标准评价窗必须有 242 个信号日')
+    checks = px.verify_labels(panel, np.r_[days, forward])
+    rows = window_metrics(score[days], panel, days, STANDARD_QUARTERS)
+    forward_rows = window_metrics(score[forward], panel, forward, ('2026Q3',))
+    out = RUN_ROOT / 'model_pred'
+    csv = out / 'ensemble/CSV'
+    csv.mkdir(parents=True, exist_ok=True)
+    result = {}
+    for name, d, rule, choices in [('baseline', days, 'baseline', None), ('adaptive', days, 'baseline', schedule), ('market_cash', days, 'market_cash', None), ('open_close_t', days, 'open_close_t', None), ('forward', forward, 'baseline', schedule)]:
+        stat, curve, trades = strategy_backtest(score[d], auxiliary[d], probability[d], panel, px, d, rule=rule, schedule=choices, context=context)
+        pd.DataFrame(curve).to_csv(output_file(csv / f'cash_{name}.csv'), index=False)
+        pd.DataFrame(trades, columns=['date', 'time', 'signal_date', 'code', 'side', 'quantity', 'price', 'fee', 'reason']).to_csv(output_file(csv / f'trades_{name}.csv'), index=False)
+        quarterly = quarter_metrics('ensemble', name, curve, trades, score[d], panel, d)
+        result[name] = dict(metrics=stat, quarterly=quarterly)
+        print('CASH_RESULT', name, json.dumps(stat, ensure_ascii=False), flush=True)
+    old, _, _ = cash_backtest(score[days], panel, px, days, n=5, period=1, band=40, cost_gate_multiplier=0.0)
+    for key in ('return_value', 'max_drawdown', 'total_fees', 'trades', 'gross_return_same_positions'):
+        if not np.isclose(old[key], result['baseline']['metrics'][key], atol=1e-08, rtol=1e-10):
+            raise AssertionError(f"统一基线对拍失败 {key}: {old[key]} / {result['baseline']['metrics'][key]}")
+    sensitivity = {}
+    for rule in RULES:
+        stat, _, _ = strategy_backtest(score[days], auxiliary[days], probability[days], panel, px, days, rule=rule, context=context)
+        sensitivity[rule] = stat
+    forward_controls = {}
+    for rule in ('baseline', 'market_cash', 'defensive', 'open_close_t'):
+        stat, _, _ = strategy_backtest(score[forward], auxiliary[forward], probability[forward], panel, px, forward, rule=rule, context=context)
+        forward_controls[rule] = stat
+    ideal, real = realizable_topk(score[days], panel, px, days, k=5, label='label_ret_5d')
+    realizable = dict(topk=5, label='label_ret_5d', days=len(days), ideal_mean_pct=float(np.nanmean(ideal)) * 100, realizable_mean_pct=float(np.nanmean(real)) * 100, days_with_position=int(np.isfinite(real).sum()), gap_pct=float(np.nanmean(real - ideal)) * 100)
+    baseline_curve = pd.read_csv(csv / 'cash_baseline.csv')
+    market_curve = pd.read_csv(csv / 'cash_market_cash.csv')
+    base_returns = baseline_curve.equity.to_numpy() / np.r_[100000.0, baseline_curve.equity.to_numpy()[:-1]] - 1
+    de_risked = market_curve.exposure.to_numpy() < baseline_curve.exposure.to_numpy() - 0.05
+    risk_effect = dict(return_delta=result['market_cash']['metrics']['return_value'] - result['baseline']['metrics']['return_value'], drawdown_delta=result['market_cash']['metrics']['max_drawdown'] - result['baseline']['metrics']['max_drawdown'], fee_delta=result['market_cash']['metrics']['total_fees'] - result['baseline']['metrics']['total_fees'], actual_de_risked_days=int(de_risked.sum()), de_risked_on_positive_baseline_days=int((de_risked & (base_returns > 0)).sum()), de_risked_on_negative_baseline_days=int((de_risked & (base_returns < 0)).sum()))
+    stressed, _, _ = strategy_backtest(score[days], auxiliary[days], probability[days], panel, px, days, schedule=schedule, context=context, slip=0.0006)
+    report = dict(run_name=run_name(), checked_at=time.strftime('%Y-%m-%d %H:%M:%S'), score_source='training_predictions', evaluation_window=['2025-07-01', '2026-06-30'], forward_window=['2026-07-01', '2026-09-30'], model_train_read=True, weights_reloaded=bool(audits), folds_checked=len(audits), standard_folds_checked=sum((r['quarter'] in STANDARD_QUARTERS for r in audits)), forward_folds_checked=sum((r['quarter'] == '2026Q3' for r in audits)), max_cpu_reload_error=max([r['max_cpu_reload_error'] for r in audits], default=None), audit=audits, metrics_total=rows[-1], quarterly_metrics=rows[:-1], min_test_combinations=min_test_combinations(score[days], panel, days), realizable=realizable, snapshot=dict(built_at=panel.meta['built_at'], stock_feature_count=282, input_feature_count=len(panel.features), meta_sha256=RECIPE['snapshot_meta_sha256']), replica_status='single screening replica; no promotion', small_capital=result['adaptive'], uniform_baseline=result['baseline'], strategies=sensitivity, strategy_schedule=schedule, strategy_validation=validation, forward=dict(metrics_total=forward_rows[-1], small_capital=result['forward'], controls=forward_controls), market_risk=dict(standard=risk_diagnostics(panel, days, probability[days]), forward=risk_diagnostics(panel, forward, probability[forward])), risk_ablation=dict(no_gate=result['baseline'], market_gate=result['market_cash']), risk_effect=risk_effect, t_ablation=dict(without_t=sensitivity['defensive'], with_t=sensitivity['open_close_t']), slippage_stress=stressed, label_price_check=checks, baseline_engine_parity=True, clean_blocks_are_epoch_and_strategy_selection_data=True, large_capital_parameters=TOP_PORTFOLIO, small_capital_parameters=dict(money=100000, max_positions=5, regular_execution_time='09:30', t_sell_time='09:30', t_buyback_time='15:00'), execution_data=[dict(path=str(data_root() / block / f'year={y}/data.parquet'), sha256=hashlib.sha256((data_root() / block / f'year={y}/data.parquet').read_bytes()).hexdigest()) for block in ('prices', 'amount') for y in (2025, 2026)], caveats=['固定存续股票池与修订因子含回顾偏差', '验证块有重叠，四折不是独立市场样本', 'Q3 是规则冻结后的算法留出，不是当时归档的实盘样本', '单种子筛选，不自动发布'])
+    report['diversity'] = diversity_report(score, panel, px, days, forward, context)
+    report['resources'] = None
+    resource_log = RUN_ROOT / 'model_logs/analysis_0.log'
+    if resource_log.exists():
+        for resource_line in resource_log.read_text().splitlines():
+            if resource_line.startswith('RESOURCE_SUMMARY_JSON '):
+                resource_run = json.loads(resource_line.split(' ',1)[1])
+                scope = resource_run.get('task_scope')
+                expected_scope = {(q,f) for q in LAYOUT_QUARTERS for f in (1,2,3,4)}
+                if scope is None or set(map(tuple,scope)) == expected_scope:
+                    report['resources'] = resource_run
+    report['epoch_selection_used'] = RECIPE.get('neural_kind') != 'ridge_closed_form'
+    report['selection_refit_protocol'] = dict(enabled=True,
+        validation_source='strict pre-validation selector model and risk fit; never final-refit validation',
+        delivery_source='same fixed recipe refit through mature pretest history with21day isolation',
+        independent_replicas=False)
+
+    atomic_json(info_root() / 'final_audit.json', report)
+    atomic_json(info_root() / 'two_strategy_validation.json', dict(evaluation_days=len(days), quarterly_returns_compound=True, date_axis_matches_price_axis=True, label_price_check=checks, baseline_engine_parity=True, strategy_schedule=schedule, realized={k: v['metrics'] for k, v in result.items()}, sensitivity=sensitivity))
+    dates = np.flatnonzero(panel.days >= '2025-07-01')
+    for year in (2025, 2026):
+        chunks = []
+        for d in dates[np.char.startswith(panel.days[dates], str(year))]:
+            known = np.isfinite(score[d])
+            chunks.append(pd.DataFrame(dict(trade_date=str(panel.days[d]), stock_code=panel.codes[known], value=score[d, known], rank=rankdata(score[d, known]) / known.sum(), absolute_forecast_1d=auxiliary[d, known, 0], absolute_forecast_5d=auxiliary[d, known, 1], market_risk_probability=probability[d])))
+        path = output_file(out / f'ensemble/year={year}/data.parquet')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        pd.concat(chunks, ignore_index=True).to_parquet(path, index=False)
+    atomic_json(out / 'ensemble/score_meta.json', dict(run_name=run_name(), snapshot=report['snapshot'], recipe_signature=recipe_signature(), score_dates=[str(panel.days[d]) for d in dates], strategy_schedule=schedule, rank_scale='raw fourfold sum; daily zscore for standard min_test', absolute_scale='mean of four training-only absolute return fits; return units', market_risk_scale='mean of four training-only logistic probabilities', evaluation_window=report['evaluation_window'], forward_window=report['forward_window']))
+    valid_rows = training_validation_rows(completions)
+    text = '```text\n' + metric_blocks_text(rows, valid_rows) + '```\n\n'
+    names = stock_names(panel.codes)
+    calendar = trade_axis(panel)
+    calendar_index = {day: i for i, day in enumerate(calendar)}
+    for d in dates[-10:][::-1]:
+        ranked = np.flatnonzero(np.isfinite(score[d]))
+        ranked = ranked[np.argsort(-score[d, ranked], kind='stable')[:5]]
+        at = calendar_index[str(panel.days[d])]
+        buy = calendar[at + 1] if at + 1 < len(calendar) else '下一交易日'
+        text += f'## {panel.days[d]} 收盘\n\n模型输出{"一/五日联合" if len(RECIPE["score_horizon_weights"])>1 else str(next(iter(RECIPE["score_horizon_weights"])))+"日"}收益排序分数；市场大跌风险概率：{probability[d]:.2%}。下一可执行早盘：**{buy}**；实际仓位由账户策略与可成交性决定。\n\n'
+        text += markdown_table(['排名', '代码', '名称', '打分'], [[i + 1, panel.codes[c], names.get(str(panel.codes[c]), ''), f'{score[d, c]:.4f}'] for i, c in enumerate(ranked)]) + '\n'
+    output_file(out / 'picks.md').write_text(text)
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5), layout='constrained')
+    for name in ('baseline', 'adaptive', 'market_cash', 'open_close_t'):
+        frame = pd.read_csv(csv / f'cash_{name}.csv')
+        axes[0].plot(pd.to_datetime(frame.date), (frame.equity / 100000 - 1) * 100, label=name)
+    frame = pd.read_csv(csv / 'cash_forward.csv')
+    axes[1].plot(pd.to_datetime(frame.date), (frame.equity / 100000 - 1) * 100, label='Q3 frozen holdout')
+    for ax in axes:
+        ax.axhline(0, color='gray', linewidth=0.5)
+        ax.grid(alpha=0.2)
+        ax.legend()
+        ax.set_ylabel('Net return (%)')
+        ax.tick_params(axis='x', rotation=25)
+    axes[0].set_title('Standard 242 signal days | costs included')
+    axes[1].set_title('Separate forward window')
+    fig.savefig(output_file(out / 'ensemble_curves.png'), dpi=160)
+    plt.close(fig)
+    validate_layout(allow_missing=False)
+
+def recent30_review(optional_current=None):
+    """最近30个执行日的冻结信号诊断；在仓按末日收盘估值，不借用未来清仓。"""
+    panel = Panel(RECIPE['features'], load_x=False)
+    px = Prices(panel)
+    context = load_market_context(panel)
+    shape = (len(panel.days), len(panel.codes))
+    score = np.full(shape, np.nan, np.float32)
+    aux = np.full((*shape, 2), np.nan, np.float32)
+    risk = np.full(len(panel.days), np.nan)
+    ti, ci = (pd.Index(panel.days), pd.Index(panel.codes))
+    root = RUN_ROOT / 'model_pred/ensemble'
+    meta = json.loads((root / 'score_meta.json').read_text())
+    if meta['recipe_signature'] != recipe_signature() or meta['snapshot']['meta_sha256'] != RECIPE['snapshot_meta_sha256']:
+        raise ValueError('冻结分数的配方或快照不匹配')
+    for year in (2025, 2026):
+        frame = pd.read_parquet(root / f'year={year}/data.parquet')
+        t = ti.get_indexer(frame.trade_date.astype(str))
+        c = ci.get_indexer(frame.stock_code.astype(str))
+        if (t < 0).any() or (c < 0).any():
+            raise ValueError('近期分数轴不匹配')
+        score[t, c] = frame.value.to_numpy(np.float32)
+        aux[t, c, 0] = frame.absolute_forecast_1d.to_numpy(np.float32)
+        aux[t, c, 1] = frame.absolute_forecast_5d.to_numpy(np.float32)
+        daily = frame.groupby('trade_date').market_risk_probability.agg(['first', 'nunique'])
+        if (daily['nunique'] != 1).any():
+            raise ValueError('同日市场风险概率不一致')
+        risk[ti.get_indexer(daily.index.astype(str))] = daily['first']
+    suffix = '_q4' if optional_current is not None else ''
+    if optional_current is not None:
+        ix = optional_current['days']
+        score[ix] = optional_current['score']
+        aux[ix] = optional_current['auxiliary']
+        risk[ix] = optional_current['probability']
+    days = np.arange(max(0, len(panel.days) - 31), len(panel.days) - 1)
+    if len(days) != 30 or not np.isfinite(score[days]).any(axis=1).all():
+        raise ValueError('没有完整的30个执行日冻结信号')
+    schedule = dict(meta['strategy_schedule'])
+    if optional_current is not None:
+        schedule.update(optional_current['schedule'])
+    carried = {}
+    for q in sorted({str(pd.Period(str(panel.days[d]), freq='Q')) for d in days}):
+        if q not in schedule:
+            earlier = sorted((k for k in schedule if k < q))
+            if not earlier:
+                raise ValueError('近期区间没有已冻结策略')
+            schedule[q] = schedule[earlier[-1]]
+            carried[q] = earlier[-1]
+    accounts = {}
+    curves = {}
+    transactions = {}
+    for name, choices in [('recent30', schedule), ('recent30_baseline', None)]:
+        stat, curve, trades = strategy_backtest(score[days], aux[days], risk[days], panel, px, days, schedule=choices, context=context, liquidate=False)
+        accounts[name] = stat
+        curves[name] = curve
+        transactions[name] = trades
+        pd.DataFrame(curve).to_csv(output_file(root / f'CSV/cash_{name}{suffix}.csv'), index=False)
+        pd.DataFrame(trades, columns=['date', 'time', 'signal_date', 'code', 'side', 'quantity', 'price', 'fee', 'reason']).to_csv(output_file(root / f'CSV/trades_{name}{suffix}.csv'), index=False)
+    horizon = {}
+    for h in (1, 5):
+        values = []
+        ranks = []
+        dates = []
+        for d in days:
+            if d + h + 1 >= len(panel.days):
+                continue
+            y = panel.Y[f'label_ret_{h}d'][d]
+            p = score[d]
+            good = np.isfinite(p) & np.isfinite(y)
+            if good.sum() < 100:
+                continue
+            values.append(corr(p[good], y[good]))
+            ranks.append(corr(rankdata(p[good]), rankdata(y[good])))
+            dates.append(str(panel.days[d]))
+        sd = float(np.std(values, ddof=1)) if len(values) > 1 else 0.0
+        horizon[str(h)] = dict(mature_days=len(values), IC=float(np.mean(values)), ICIR=float(np.mean(values) / sd) if sd else None, RankIC=float(np.mean(ranks)), daily_IC_std=sd, first_signal=dates[0], last_signal=dates[-1], worst_5day_mean_IC=min((float(np.mean(values[i:i + 5])) for i in range(max(1, len(values) - 4)))))
+    mature = days[days + 2 < len(panel.days)]
+    daily, ic, rank = top_portfolio_daily(score[mature], panel, mature)
+    large = top_metrics(daily, ic, rank)
+    for h in (1, 5):
+        large[f'IC_{h}d'] = horizon[str(h)]['IC']
+        large[f'RankIC_{h}d'] = horizon[str(h)]['RankIC']
+    large['IC'] = horizon['1']['IC']
+    large['ICIR'] = horizon['1']['ICIR']
+    concentration = []
+    for d in mature:
+        p = score[d]
+        ids = pd.Series(p).sort_values(ascending=False).index.to_numpy()[:500]
+        capacity = np.maximum(np.nan_to_num(panel.amount[d, ids], nan=0.0), 0.0)
+        held = np.minimum(1500000000.0, np.cumsum(capacity))
+        w = np.diff(np.r_[0.0, held]) / 1500000000.0
+        concentration.append((1 / float(w @ w) if w @ w > 0 else 0.0, float(w.max()), int((w > 0).sum())))
+    large.update(mature_1d_days=len(mature), median_effective_names=float(np.median([v[0] for v in concentration])), median_max_weight=float(np.median([v[1] for v in concentration])), median_funded_names=float(np.median([v[2] for v in concentration])))
+    curve = curves['recent30']
+    values = np.asarray([r['equity'] for r in curve])
+    returns = values / np.r_[100000.0, values[:-1]] - 1
+    cases = []
+    for i in np.argsort(returns)[:3]:
+        row = curve[int(i)]
+        date = row['date']
+        d = int(ti.get_indexer([date])[0])
+        trades = [t for t in transactions['recent30'] if t['date'] == date]
+        held = set(row.get('holding_codes', '').split(',')) - {''}
+        if i:
+            held |= set(curve[int(i) - 1].get('holding_codes', '').split(',')) - {''}
+        held |= {t['code'] for t in trades}
+        stocks = []
+        for code in sorted(held):
+            c = int(ci.get_indexer([code])[0])
+            o, cl, pre = (px.open[d, c], px.raw['close'][d, c], px.raw['pre_close'][d, c])
+            stocks.append(dict(code=code, open=float(o) if np.isfinite(o) else None, close=float(cl) if np.isfinite(cl) else None, opening_gap=float(o / pre - 1) if np.isfinite(o) and pre > 0 else None, intraday_return=float(cl / o - 1) if np.isfinite(cl) and o > 0 else None))
+        cases.append(dict(date=date, account_return=float(returns[i]), positions=row['positions'], rule=row['rule'], exposure=row['exposure'], trades=trades, stocks=stocks))
+    original = json.loads((info_root() / 'final_audit.json').read_text())
+    report = dict(model=ROOT.name, kind='frozen-signal paper account; not actual live fills', execution_window=[curve[0]['date'], curve[-1]['date']], execution_days=30, signal_window=[str(panel.days[days[0]]), str(panel.days[days[-1]])], snapshot=meta['snapshot'], account_start='100000 cash; no inherited actual holdings', liquidated=False, final_signal_not_yet_executed=str(panel.days[-1]), strategy_carried_from=carried, small_capital=accounts['recent30'], uniform_baseline=accounts['recent30_baseline'], large_capital=large, horizon_metrics=horizon, five_day_account_segments=[float(np.prod(1 + returns[i:i + 5]) - 1) for i in range(0, 30, 5)], worst_account_days=cases, full_window_reference=dict(IC=original['metrics_total']['IC'], ICIR=original['metrics_total']['ICIR'], small_net=original['small_capital']['metrics']['return_value']), evidence_boundary='short diagnostic with sampling/path randomness; idea generation only, not independent confirmation or posthoc strategy replacement', manual_review=None)
+    if optional_current is not None:
+        report['optional_current_quarter'] = optional_current['provenance']
+    atomic_json(info_root() / f'recent30_review{suffix}.json', report)
+    text = f"# {ROOT.name} 最近30个交易日诊断\n\n冻结信号纸面账户，非真实成交；{report['execution_window'][0]} 至 {report['execution_window'][1]}，10万元现金起步，末日在仓按收盘价估值，不借用未来清仓价。\n\n"
+    text += '| 口径 | 净收益 | 最大回撤 | 费用/元 | 期末持仓数 |\n|---|---:|---:|---:|---:|\n'
+    for label, key in [('自身策略', 'small_capital'), ('统一band40', 'uniform_baseline')]:
+        s = report[key]
+        text += f"| {label} | {s['return_value']:.2%} | {s['max_drawdown']:.2%} | {s['total_fees']:.2f} | {s['ending_positions']} |\n"
+    text += f"\n大资金固定Top500/15亿元：IC={large['IC']:.5f}，ICIR={large['ICIR']:.5f}，理想区间收益={large['total_return']:.2f}%。一日标签成熟{horizon['1']['mature_days']}日，五日成熟{horizon['5']['mature_days']}日。\n\n"
+    text += f"容量分配的中位有效持仓数={large['median_effective_names']:.2f}、中位最大单股权重={large['median_max_weight']:.2%}，需与全截面IC分开判断。\n\n"
+    text += '| 最差账户日 | 日净收益 | 规则 | 持仓数 |\n|---|---:|---|---:|\n' + ''.join((f"| {c['date']} | {c['account_return']:.2%} | {c['rule']} | {c['positions']} |\n" for c in cases))
+    text += '\n逐笔成交与每日持仓代码保留在CSV，逐股开盘跳空/日内收益保留在JSON。短窗结果受随机性与持仓路径影响，仅作为人工诊断和新Idea的证据，与长窗及季度表现并看。\n'
+    output_file(RUN_ROOT / f'model_pred/recent30_review{suffix}.md').write_text(text)
+    print('RECENT30_READY', ROOT.name, json.dumps(dict(large=large, small=accounts['recent30'], baseline=accounts['recent30_baseline'], maturity={h: v['mature_days'] for h, v in horizon.items()}), ensure_ascii=False), flush=True)
 if __name__ == '__main__':
     main()

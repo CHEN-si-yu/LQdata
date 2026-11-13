@@ -24,6 +24,8 @@ from types import MethodType
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from . import store
@@ -33,6 +35,7 @@ from .engine import Engine, minus_days
 from .manifest import Manifest, _atomic_json
 from .progress import ProductionProgress, announce
 from .resources import memory_limits, safe_jobs
+from .registration import build_spec
 from .spec import REGISTRY
 
 log = logging.getLogger(__name__)
@@ -44,17 +47,14 @@ def registered_specs(cfg):
     path = cfg.input_contract_path("production_registry", "conf/production.json")
     if path.exists():
         library = json.loads(path.read_text(encoding="utf-8"))
-        from research.catalog import build_spec
         for item in library.get("objects", []):
             if item.get("status") != "production" or item["name"] in REGISTRY:
                 continue
-            identity = item.get("candidate_id")
-            if not identity or not re.fullmatch(r"[A-Za-z0-9_]+", identity):
+            definition = item.get("definition")
+            if not definition:
                 raise ValueError(f"缺少注册实现：{item['name']}")
-            definition_path = cfg.contract_root / "artifacts/research/catalog/candidates" / (identity + ".json")
-            definition = json.loads(definition_path.read_text(encoding="utf-8"))["definition"]
             reference = definition["implementation"]
-            if not re.fullmatch(r"research\.[A-Za-z0-9_.]+:[A-Za-z_][A-Za-z0-9_]*", reference):
+            if not re.fullmatch(r"factors\.registered\.[A-Za-z0-9_]+:[A-Za-z_][A-Za-z0-9_]*", reference):
                 raise ValueError(f"非法因子实现：{reference}")
             module_name, builder_name = reference.split(":")
             with warnings.catch_warnings():
@@ -135,12 +135,37 @@ def remove_coverage(man, lo, hi):
     man.coverage = spans
 
 
+def _partition_date_counts(date_array):
+    """Count parsed dates, grouping raw Arrow strings before pandas conversion."""
+    if pa.types.is_string(date_array.type) or pa.types.is_large_string(date_array.type):
+        try:
+            values = pc.value_counts(date_array)
+            raw = values.field("values").to_pylist()
+            raw_counts = values.field("counts").to_numpy(zero_copy_only=False)
+            parsed = series_to_int(pd.Series(raw))
+            dates, inverse = np.unique(parsed, return_inverse=True)
+            counts = np.zeros(len(dates), dtype=np.int64)
+            # Raw strings can collide after series_to_int's lenient 10-char parse.
+            # Keep counts exact; weighted bincount would accumulate float64.
+            np.add.at(counts, inverse, raw_counts)
+            return dates, counts
+        except Exception:
+            # Retain the old conversion path if Arrow aggregation is unsupported
+            # for an unusual string array or fails on a malformed physical value.
+            pass
+    return np.unique(series_to_int(date_array.to_pandas()), return_counts=True)
+
+
 def plan_factor(engine, spec, man, end, start=None, rebuild=False, refresh=False):
     floor = spec.align_start_int(engine.cfg) if spec.align_fill is not None else spec.start_int(engine.cfg)
     lo = max(floor, start or floor)
     target = engine.cal.between(lo, end)
     if not target.size:
         return target, {}
+    # Forced dates are already known. Old footers cannot change this plan;
+    # inspecting them only adds remote file reads before every rebuild/refresh.
+    if rebuild or refresh:
+        return target, {int(y): target[target // 10000 == y] for y in np.unique(target // 10000)}
     root = engine.output_root(spec)
     if not (root / spec.name).is_dir():
         return target, {int(y): target[target // 10000 == y] for y in np.unique(target // 10000)}
@@ -159,8 +184,7 @@ def plan_factor(engine, spec, man, end, start=None, rebuild=False, refresh=False
             meta = man.partitions.get(str(year))
             # A recorded complete partition needs only its footer, never a full value scan.
             if not meta or pf.metadata.num_rows != int(meta.get("rows", -1)):
-                dates, counts = np.unique(series_to_int(pf.read(columns=["trade_date"]).to_pandas()["trade_date"]),
-                                          return_counts=True)
+                dates, counts = _partition_date_counts(pf.read(columns=["trade_date"])["trade_date"])
                 valid = dates[counts == (1 if spec.is_market else len(engine.codes))]
                 required |= mask & ~np.isin(target, valid)
                 if (not meta and not (rebuild or refresh)
@@ -238,15 +262,20 @@ class ProductionEngine(Engine):
     def output_root(self, spec):
         return self._output_roots[bool(spec.is_market)]
 
+    def release_task_cache(self):
+        """Drop reloadable task data, retaining calendar, universe and watermarks."""
+        self.up.clear_cache()
+        self._prices = self._deriv = None
+        self._deriv_window = None
+        self._uni_cache.clear()
+        for key in ("_intraday", "_chips", "_open5", "_closing30", "_chipwall"):
+            setattr(self, key, None)
+        self.up._market_morning = None
+        self._factor_io = None
+
     def prepare_task(self, spec, year):
         if self._task_year != year or self._task_count % 16 == 0:
-            self.up.clear_cache()
-            self._prices = self._deriv = None
-            self._deriv_window = None
-            self._uni_cache.clear()
-            for key in ("_intraday", "_chips", "_open5", "_closing30", "_chipwall"):
-                setattr(self, key, None)
-            self.up._market_morning = None
+            self.release_task_cache()
             gc.collect()
         self._task_year = year
         self._task_count += 1
@@ -321,7 +350,7 @@ def _worker_init(lock_fd):
         pass
 
 
-def _compute(task):
+def _compute(task, enforce_limits=True):
     name, year, days = task
     engine = _WORKER_ENGINE
     try:
@@ -332,9 +361,27 @@ def _compute(task):
         # The checkpoint describes the whole physical partition, including rows after --end.
         if result.get("rows", 0) == 0 or not result.get("min_date"):
             raise RuntimeError("任务未产出有效日期轴")
+        _release_under_pressure(engine, enforce_limits)
         return result
     except Exception:
-        return {"factor": name, "year": year, "error": traceback.format_exc()}
+        error = traceback.format_exc()
+        # A worker can dequeue another task before the coordinator receives this
+        # result. Drop partially initialized task state inside the worker first.
+        # This is unconditional failure cleanup, not the pressure-gated success hook.
+        try:
+            engine.release_task_cache()
+        except Exception as exc:
+            log.warning("失败任务后缓存回收失败: %s", exc)
+        try:
+            gc.collect()
+        except Exception as exc:
+            log.warning("失败任务后GC失败: %s", exc)
+        try:
+            import pyarrow as pa
+            pa.default_memory_pool().release_unused()
+        except Exception as exc:
+            log.warning("失败任务后Arrow空闲内存回收失败: %s", exc)
+        return {"factor": name, "year": year, "error": error}
 
 
 class MemoryAdmission:
@@ -375,6 +422,32 @@ class MemoryAdmission:
         return projected < self.limits["anon"] and (used < self.limits["charged"] or active == 0)
 
 
+def _release_under_pressure(engine, enforce_limits):
+    """After a successful atomic write, release idle data at existing auto limits."""
+    if not enforce_limits:
+        return
+    try:
+        admission = MemoryAdmission(engine.cfg.raw.get("resources", {}))
+        charged, anon = admission.read()
+        if charged < admission.limits["charged"] and anon < admission.limits["anon"]:
+            return
+        engine.release_task_cache()
+        gc.collect()
+        try:
+            import pyarrow as pa
+            pa.default_memory_pool().release_unused()
+        except Exception as exc:
+            log.warning("任务成功后Arrow空闲内存回收失败: %s", exc)
+        after_charged, after_anon = admission.read()
+        log.info("worker %s 任务成功后释放缓存: charged %.2f→%.2f GiB, anon %.2f→%.2f GiB",
+                 os.getpid(), charged/2**30, after_charged/2**30,
+                 anon/2**30, after_anon/2**30)
+    except Exception as exc:
+        # The partition is already valid on disk; optional cleanup cannot turn
+        # it into a failed task or prevent the coordinator's normal checkpoint.
+        log.warning("任务成功后缓存回收失败: %s", exc)
+
+
 def commit_task(engine, spec, man, days, result, end):
     year = int(result["year"])
     man.mark_partition(year, result["partition_rows"], result["nonnull"],
@@ -405,39 +478,121 @@ def dependency_starts(engine, specs, start, end):
     return starts
 
 
+def _make_worker_pool(workers, lock_fd):
+    from concurrent.futures import ProcessPoolExecutor
+    return ProcessPoolExecutor(max_workers=workers, mp_context=mp.get_context("fork"),
+                               initializer=_worker_init, initargs=(lock_fd,))
+
+
 def _execute(engine, specs, manifests, plans, end, jobs, progress, lock_fd=None, *, enforce_limits=True):
-    from concurrent.futures import ProcessPoolExecutor, wait, FIRST_COMPLETED
+    from concurrent.futures import wait, FIRST_COMPLETED
     from concurrent.futures.process import BrokenProcessPool
     global _WORKER_ENGINE
     _WORKER_ENGINE = engine
     by_name = {s.name: s for s in specs}
+    r16_names = {s.name for s in specs if s.group == "r16_ml_price_volume"}
     remaining = {(n, y): ds for n, plan in plans.items() for y, ds in plan.items()}
     pending_counts = {n: len(p) for n, p in plans.items()}
     failures, active, blocked = {}, {}, set()
     memory = MemoryAdmission(engine.cfg.raw.get("resources", {}), enabled=enforce_limits)
-    pool = ProcessPoolExecutor(max_workers=jobs, mp_context=mp.get_context("fork"),
-                               initializer=_worker_init, initargs=(lock_fd,))
+    pool = None
+    pool_mode = None
+    phase = "normal"
+    recycle_requested = False
     futures = {}
+
+    def shutdown_pool():
+        nonlocal pool, pool_mode
+        if pool is not None:
+            pool.shutdown(wait=True)
+            pool = None
+            pool_mode = None
+
+    def has_ready_r16():
+        for (name, _year) in remaining:
+            if name not in r16_names:
+                continue
+            deps = [d for d in by_name[name].deps if d in by_name]
+            if any(d in failures or d in blocked for d in deps):
+                continue
+            if not any(pending_counts[d] > 0 for d in deps):
+                return True
+        return False
+
     try:
         while remaining or active:
-            for (name, year), days in sorted(list(remaining.items()),
-                                             key=lambda item: (item[0][1], -by_name[item[0][0]].warmup_days)):
-                deps = [d for d in by_name[name].deps if d in by_name]
-                if any(d in failures or d in blocked for d in deps):
-                    blocked.add(name)
-                    if progress.states[name] != "blocked":
-                        progress.block(name)
+            # Remove tasks whose dependencies have failed, preserving the existing
+            # per-factor blocked and pending-count semantics before phase selection.
+            removed_blocked = True
+            while removed_blocked:
+                removed_blocked = False
+                for (name, year), _days in sorted(list(remaining.items()),
+                                                   key=lambda item: (item[0][1], -by_name[item[0][0]].warmup_days)):
+                    deps = [d for d in by_name[name].deps if d in by_name]
+                    if any(d in failures or d in blocked for d in deps):
+                        blocked.add(name)
+                        if progress.states[name] != "blocked":
+                            progress.block(name)
+                        remaining.pop((name, year))
+                        pending_counts[name] -= 1
+                        removed_blocked = True
+
+            # An error result can leave a live worker with partially initialized
+            # libraries. Drain already submitted work, then replace the whole pool
+            # before dispatching anything else in this mode.
+            if recycle_requested and not active:
+                shutdown_pool()
+                recycle_requested = False
+                log.info("task失败后已回收worker池；后续任务将在新进程中继续")
+                continue
+
+            r16_ready = has_ready_r16()
+            pause_dispatch = bool(recycle_requested)
+            if not pause_dispatch and phase == "normal" and r16_ready:
+                if not active:
+                    shutdown_pool()
+                    phase = "r16"
+                    log.info("依赖已完成：切换到R16干净单进程阶段")
+                    continue
+                pause_dispatch = True
+            elif not pause_dispatch and phase == "r16" and not r16_ready:
+                if not active:
+                    shutdown_pool()
+                    phase = "normal"
+                    log.info("R16阶段完成：切回常规并行阶段")
+                    continue
+                pause_dispatch = True
+
+            if not pause_dispatch:
+                dispatch_limit = 1 if phase == "r16" else jobs
+                ordered = sorted(list(remaining.items()),
+                                 key=lambda item: (item[0][1], -by_name[item[0][0]].warmup_days))
+                for (name, year), days in ordered:
+                    if phase == "r16" and name not in r16_names:
+                        continue
+                    deps = [d for d in by_name[name].deps if d in by_name]
+                    if any(d in failures or d in blocked for d in deps):
+                        continue  # handled by the blocker pass above
+                    if any(pending_counts[d] > 0 for d in deps):
+                        continue
+                    if len(active) >= dispatch_limit:
+                        break
+                    if not memory.allows(len(active)):
+                        continue
+                    mode = "r16" if phase == "r16" else "normal"
+                    if pool is None:
+                        workers = 1 if mode == "r16" else jobs
+                        pool = _make_worker_pool(workers, lock_fd)
+                        pool_mode = mode
+                        log.info("创建%s worker池（max_workers=%d）",
+                                 "R16干净阶段" if mode == "r16" else "常规阶段", workers)
+                    elif pool_mode != mode:
+                        raise RuntimeError(f"worker池阶段不匹配：{pool_mode} != {mode}")
                     remaining.pop((name, year))
-                    pending_counts[name] -= 1
-                    continue
-                if len(active) >= jobs or not memory.allows(len(active)):
-                    continue
-                if any(pending_counts[d] > 0 for d in deps):
-                    continue
-                remaining.pop((name, year))
-                active[(name, year)] = days
-                progress.start(name, year)
-                futures[pool.submit(_compute, (name, year, days))] = (name, year)
+                    active[(name, year)] = days
+                    progress.start(name, year)
+                    futures[pool.submit(_compute, (name, year, days), enforce_limits)] = (name, year)
+
             if not active:
                 if remaining:
                     if not memory.allows(0):
@@ -461,24 +616,26 @@ def _execute(engine, specs, manifests, plans, end, jobs, progress, lock_fd=None,
                 if result.get("error"):
                     failures[name] = result["error"]
                     log.error("%s/%s\n%s", name, year, result["error"])
+                    recycle_requested = True
                 else:
                     old_rows = int(manifests[name].partitions.get(str(year), {}).get("rows", 0))
                     result["added_rows"] = max(0, result["partition_rows"] - old_rows)
                     commit_task(engine, by_name[name], manifests[name], days, result, end)
                 progress.finish(name, year, len(days), result.get("error", "").splitlines()[-1] if result.get("error") else None,
                                 rows=result.get("rows", 0), added=result.get("added_rows", 0))
-        pool.shutdown(wait=True)
+        shutdown_pool()
     except BaseException:
-        processes = list((pool._processes or {}).values())
-        for process in processes:
-            if process.is_alive():
-                process.terminate()
-        pool.shutdown(wait=False, cancel_futures=True)
-        for process in processes:
-            process.join(timeout=3)
-            if process.is_alive():
-                process.kill()
+        if pool is not None:
+            processes = list((pool._processes or {}).values())
+            for process in processes:
+                if process.is_alive():
+                    process.terminate()
+            pool.shutdown(wait=False, cancel_futures=True)
+            for process in processes:
                 process.join(timeout=3)
+                if process.is_alive():
+                    process.kill()
+                    process.join(timeout=3)
         raise
     finally:
         _WORKER_ENGINE = None
@@ -548,7 +705,7 @@ def run(args, cfg):
                 # Persist recovered coverage only on a real run.
                 man.save()
         resource_mode = "手动指定，豁免项目资源限制" if args.jobs > 0 else "自动选择，启用资源保护"
-        announce(f"③ 并行生成：{jobs} 个计算进程 · {resource_mode} · 输出 {cfg.factors_dir}")
+        announce(f"③ 并行生成：上限 {jobs} 个计算进程 · {resource_mode} · 输出 {cfg.factors_dir}")
         progress = ProductionProgress(specs, targets, plans, args.progress, manifests=manifests)
         old_term = signal.getsignal(signal.SIGTERM)
         def terminate(signum, frame):

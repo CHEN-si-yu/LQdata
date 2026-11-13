@@ -129,7 +129,7 @@ class Config:
           （主板 ∩ 至今存续 ∩ 从未ST ∩ 上市日≤2018-01-01）。
           动机是**历史值稳定**：动态池下一只新股上市就会让全库所有历史截面的
           行数 +1、rank / cs_zscore 平移 → 单日 MD5 台账全红。
-          名单由 `scripts/build_frozen_universe.py` 生成，口径与代价写在文件头。
+          名单沿用既有冻结合同，口径与代价写在文件头。
 
         ⚠️ **配置了却读不到文件 → 直接抛错，绝不静默回退**到动态池：
           静默回退会让"池子变了"这件事只体现在因子值里，没有任何提示。
@@ -146,8 +146,8 @@ class Config:
         if not q.exists():
             raise FileNotFoundError(
                 f"universe.frozen_list 指向的冻结名单不存在：{q}\n"
-                f"  要么生成它（python scripts/build_frozen_universe.py），"
-                f"要么把 conf/config.yaml 里的 frozen_list 置空以回到动态主板池。")
+                f"  请恢复已确认的冻结名单输入合同，"
+                f"不要静默更换股票轴。")
         return q
 
     # ---- rank ----

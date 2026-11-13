@@ -1,0 +1,311 @@
+{
+  "model": "V254",
+  "kind": "frozen-signal paper account; not actual live fills",
+  "execution_window": [
+    "2026-09-04",
+    "2026-10-23"
+  ],
+  "execution_days": 30,
+  "signal_window": [
+    "2026-09-03",
+    "2026-10-22"
+  ],
+  "snapshot": {
+    "built_at": "2026-10-24 20:55:35",
+    "stock_feature_count": 282,
+    "input_feature_count": 282,
+    "meta_sha256": "d4c3dea169ea9c4305aeb04226c39bc473853e284eeb2d4ec5cdc18ceaa0c8e0"
+  },
+  "account_start": "100000 cash; no inherited actual holdings",
+  "liquidated": false,
+  "final_signal_not_yet_executed": "2026-10-23",
+  "strategy_carried_from": {
+    "2026Q4": "2026Q3"
+  },
+  "small_capital": {
+    "topn": 5,
+    "rebalance_days": 1,
+    "return_value": -0.19439514816412962,
+    "max_drawdown": -0.22997628806585124,
+    "sharpe": -4.953972880875347,
+    "total_fees": 262.776316413,
+    "trades": 29,
+    "avg_exposure": 0.9968206020347626,
+    "ending_cash": 202.48518358704314,
+    "ending_positions": 5,
+    "corporate_action_adjustments": 0,
+    "start": "2026-09-04",
+    "end": "2026-10-23",
+    "blocked_exits": 0,
+    "empty_days": 0,
+    "reduced_days": 0,
+    "t_attempts": 0,
+    "t_failed_buybacks": 0,
+    "gross_return_same_positions": -0.19013000000000002,
+    "fee_drag": 0.0026277631641300004,
+    "slippage_drag": 0.0016373849999997037,
+    "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment",
+    "corporate_action_assumption": "复权比折算经济股数，分红立即再投资近似",
+    "execution_times": [
+      "09:30"
+    ],
+    "max_positions_observed": 5
+  },
+  "uniform_baseline": {
+    "topn": 5,
+    "rebalance_days": 1,
+    "return_value": -0.19080490356936974,
+    "max_drawdown": -0.2340539071654919,
+    "sharpe": -4.899492602018689,
+    "total_fees": 433.43105693700005,
+    "trades": 47,
+    "avg_exposure": 0.9964099981338398,
+    "ending_cash": 531.5096430630274,
+    "ending_positions": 5,
+    "corporate_action_adjustments": 0,
+    "start": "2026-09-04",
+    "end": "2026-10-23",
+    "blocked_exits": 0,
+    "empty_days": 0,
+    "reduced_days": 0,
+    "t_attempts": 0,
+    "t_failed_buybacks": 0,
+    "gross_return_same_positions": -0.18391000000000002,
+    "fee_drag": 0.004334310569370001,
+    "slippage_drag": 0.002560592999999717,
+    "gross_definition": "same actual shares and trade dates; costs added back as cash, no reinvestment",
+    "corporate_action_assumption": "复权比折算经济股数，分红立即再投资近似",
+    "execution_times": [
+      "09:30"
+    ],
+    "max_positions_observed": 5
+  },
+  "large_capital": {
+    "IC": 0.08271213809296019,
+    "ICIR": 0.8546026935244613,
+    "top_return": -1.4625948724925004,
+    "top_return_stability": -0.3952978557997294,
+    "total_return": -36.0839310693022,
+    "IC_1d": 0.08271213809296019,
+    "IC_5d": 0.13946633369441708,
+    "RankIC_1d": 0.07644996887783027,
+    "RankIC_5d": 0.09286232722957041,
+    "mature_1d_days": 29,
+    "median_effective_names": 4.355670236976566,
+    "median_max_weight": 0.3926971653333333,
+    "median_funded_names": 6.0
+  },
+  "horizon_metrics": {
+    "1": {
+      "mature_days": 29,
+      "IC": 0.08271213809296019,
+      "ICIR": 0.8546026935244613,
+      "RankIC": 0.07644996887783027,
+      "daily_IC_std": 0.09678431710979941,
+      "first_signal": "2026-09-03",
+      "last_signal": "2026-10-21",
+      "worst_5day_mean_IC": 0.04513283231987272
+    },
+    "5": {
+      "mature_days": 25,
+      "IC": 0.13946633369441708,
+      "ICIR": 1.3401043414784188,
+      "RankIC": 0.09286232722957041,
+      "daily_IC_std": 0.10407124981070964,
+      "first_signal": "2026-09-03",
+      "last_signal": "2026-10-15",
+      "worst_5day_mean_IC": 0.0728522944799006
+    }
+  },
+  "five_day_account_segments": [
+    -0.03818323567246973,
+    -0.05029655797313204,
+    -0.028233693790167047,
+    0.005145530826819789,
+    -0.05898182698724275,
+    -0.04048244428131398
+  ],
+  "worst_account_days": [
+    {
+      "date": "2026-09-09",
+      "account_return": -0.04592902982680458,
+      "positions": 5,
+      "rule": "band60",
+      "exposure": 0.9965740353685102,
+      "trades": [
+        {
+          "date": "2026-09-09",
+          "time": "09:30",
+          "signal_date": "2026-09-08",
+          "code": "002843.SZ",
+          "side": "sell",
+          "quantity": 1100.0,
+          "price": 16.265119,
+          "fee": 14.124731759,
+          "reason": "risk_or_rank_exit"
+        },
+        {
+          "date": "2026-09-09",
+          "time": "09:30",
+          "signal_date": "2026-09-08",
+          "code": "002084.SZ",
+          "side": "buy",
+          "quantity": 2600.0,
+          "price": 6.80204,
+          "fee": 5.17685304,
+          "reason": "rank_entry"
+        }
+      ],
+      "stocks": [
+        {
+          "code": "000545.SZ",
+          "open": 2.34,
+          "close": 2.28,
+          "opening_gap": -0.004255319148936287,
+          "intraday_return": -0.02564102564102566
+        },
+        {
+          "code": "002084.SZ",
+          "open": 6.8,
+          "close": 6.12,
+          "opening_gap": 0.0,
+          "intraday_return": -0.09999999999999998
+        },
+        {
+          "code": "002285.SZ",
+          "open": 2.6,
+          "close": 2.45,
+          "opening_gap": 0.0,
+          "intraday_return": -0.05769230769230771
+        },
+        {
+          "code": "002291.SZ",
+          "open": 5.85,
+          "close": 5.72,
+          "opening_gap": -0.005102040816326592,
+          "intraday_return": -0.022222222222222254
+        },
+        {
+          "code": "002369.SZ",
+          "open": 6.16,
+          "close": 6.04,
+          "opening_gap": -0.0016207455429497752,
+          "intraday_return": -0.019480519480519543
+        },
+        {
+          "code": "002843.SZ",
+          "open": 16.27,
+          "close": 16.18,
+          "opening_gap": 0.0012307692307691465,
+          "intraday_return": -0.005531653349723387
+        }
+      ]
+    },
+    {
+      "date": "2026-09-23",
+      "account_return": -0.043972664356973334,
+      "positions": 5,
+      "rule": "band60",
+      "exposure": 0.9940173540380516,
+      "trades": [],
+      "stocks": [
+        {
+          "code": "000545.SZ",
+          "open": 2.22,
+          "close": 2.17,
+          "opening_gap": -0.004484304932735328,
+          "intraday_return": -0.022522522522522626
+        },
+        {
+          "code": "002163.SZ",
+          "open": 7.88,
+          "close": 7.6,
+          "opening_gap": -0.005050505050505083,
+          "intraday_return": -0.035532994923857864
+        },
+        {
+          "code": "002291.SZ",
+          "open": 5.7,
+          "close": 5.49,
+          "opening_gap": -0.0017513134851138146,
+          "intraday_return": -0.0368421052631579
+        },
+        {
+          "code": "002682.SZ",
+          "open": 5.03,
+          "close": 4.84,
+          "opening_gap": -0.005928853754940566,
+          "intraday_return": -0.03777335984095431
+        },
+        {
+          "code": "600192.SH",
+          "open": 7.69,
+          "close": 7.14,
+          "opening_gap": 0.0,
+          "intraday_return": -0.0715214564369312
+        }
+      ]
+    },
+    {
+      "date": "2026-10-15",
+      "account_return": -0.036284170790695014,
+      "positions": 5,
+      "rule": "band60",
+      "exposure": 0.994796608326861,
+      "trades": [],
+      "stocks": [
+        {
+          "code": "000545.SZ",
+          "open": 2.11,
+          "close": 2.05,
+          "opening_gap": -0.009389671361502372,
+          "intraday_return": -0.028436018957346043
+        },
+        {
+          "code": "002163.SZ",
+          "open": 7.0,
+          "close": 6.94,
+          "opening_gap": -0.029126213592232997,
+          "intraday_return": -0.008571428571428563
+        },
+        {
+          "code": "002682.SZ",
+          "open": 4.68,
+          "close": 4.63,
+          "opening_gap": -0.02092050209205032,
+          "intraday_return": -0.010683760683760646
+        },
+        {
+          "code": "002723.SZ",
+          "open": 7.02,
+          "close": 6.9,
+          "opening_gap": -0.03438789546079779,
+          "intraday_return": -0.017094017094017033
+        },
+        {
+          "code": "603616.SH",
+          "open": 5.21,
+          "close": 5.27,
+          "opening_gap": -0.03518518518518521,
+          "intraday_return": 0.011516314779270509
+        }
+      ]
+    }
+  ],
+  "full_window_reference": {
+    "IC": 0.025848992758045176,
+    "ICIR": 0.20335995709186577,
+    "small_net": 0.19238517933801913
+  },
+  "evidence_boundary": "short diagnostic with sampling/path randomness; idea generation only, not independent confirmation or posthoc strategy replacement",
+  "manual_review": {
+    "conclusion": "近期极端头部失效明显，验证选出的band60持续满仓，宏观相对排序强并未转化为绝对收益。",
+    "evidence": [
+      "近期小账户-19.44%、回撤-23.00%；大资金29个成熟一日信号收益-36.08%，整体IC仍约0.08271。",
+      "容量组合中位有效持仓4.36只，最大单股权重39.27%，当前Top500容量口径实际高度集中。",
+      "最近窗口Top5日均标签收益约-0.8321%，21～100名约-0.1492%、全池约-0.3102%，并非简单全市场下跌可解释全部头部弱势。",
+      "9月9日开盘买入002084.SZ后当日下跌10%，开盘操作约束下不能依靠盘中止损挽救；需要在事前信号和风险目标中处理。"
+    ],
+    "idea": "用固定正则的低容量线性估计器检验尾部过拟合假设；后续可参考hqth因子聚类/聚合减少冗余，但必须仅用训练区间拟合，不能依据本30日回放调门槛。"
+  }
+}

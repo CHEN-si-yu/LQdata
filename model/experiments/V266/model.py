@@ -1,41 +1,9 @@
-'V69: fresh flow/technical two-component rank fusion; seed6253.'
-
-# =============================================================================
-# ① 环境前置 —— 必须排在 import torch 之前
-#
-# BLAS / OpenMP 的线程数只在库首次加载时读取一次，import torch 之后再设就无效，
-# 所以这段必须放在文件最前面。线程数是**内存纪律**而不是性能偏好：并发跑 16 折时
-# 每个进程的开销要乘上并发数，必须与容器内存上限一起算。
-# ★ 上限**换机器就会变，一律现读**（`run.py:free_memory_gib()` 读 cgroup v2 的
-#   `memory.max` 或 v1 的 `memory/memory.limit_in_bytes`）；`free` 看到的是宿主机总量，
-#   **不可信**，不要把任何具体数字写死在这里。
-#   参考量级（2026-09-26 那台 50 核 / 180 GiB / 2×RTX 4080 实测）：每折稳态约 9.9 GiB、
-#   峰值约 11.6 GiB，8 折并发 79 GiB；**瓶颈是 GPU 不是内存**（4 折/卡即 98% 利用率）。
-#
-# 479 列下的内存构成（V1 注释里"306 特征 + 20 线程 = 38 GiB/折"那条已过期、且特征数与
-# 当时的模型都不同，别再引用）：
-#   · 主项是常驻的 `Panel.X` = 2120 × 2115 × 479 × 4B ≈ **8.00 GiB**，**与线程数无关**；
-#   · 线程相关的是 BLAS/OMP 的每线程工作区，量级远小于主项；
-#   · 另外每年读盘有一次约 2.7 GB 的瞬时拷贝（`nan_to_num` 等），逐年释放。
-# 每折实测峰值见 `complete.json.peak_rss_gib`。
-#
-# ★ 两个默认值在这里统一成一个来源：原先 BLAS 侧回退 `'6'`、而 `RECIPE['threads']`
-#   回退 `'2'`，于是**直接跑 `model.py`** 会得到"BLAS 6 线程 + torch 2 线程"的混合口径，
-#   与 `run.py` 跑出来的不一致。现在都取 `DEFAULT_THREADS`。
-# =============================================================================
+# 新快照研究版本；继承现有训练、权重和输入合同。
 import os
-
-#: 线程数默认值：`MX_THREADS` 覆盖（`run.py --threads` 会设它）。
 DEFAULT_THREADS = '2'
-
-# 启用确定性算法时 cuBLAS 必须用固定大小的工作区，不设这个变量 torch 会直接报错。
 os.environ.setdefault('CUBLAS_WORKSPACE_CONFIG', ':4096:8')
 for _key in ['OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS']:
     os.environ[_key] = os.environ.get('MX_THREADS', DEFAULT_THREADS)
-
-# =============================================================================
-# ② 常规导入与项目根目录
-# =============================================================================
 import copy
 import json
 import random
@@ -47,124 +15,47 @@ import re
 import hashlib
 from argparse import ArgumentParser
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import torch
 from scipy.stats import rankdata
 from torch import nn
-
 ROOT = Path(__file__).resolve().parent
-
-# =============================================================================
-# ②b 单元路径与固定布局（2026-09-26 从 run.py 迁来：run.py 只剩训练调度）
-#
-# 独立单元的路径合同、固定文件清单与「只许写清单内路径」的硬闸都在这里；
-# `model.py` 与 `analysis.py` 共用，`run.py`（调度器）不依赖它们。
-# =============================================================================
-
 UNIT_ROOT = ROOT
 PROJECT_ROOT = UNIT_ROOT.parents[1]
 UNIT = UNIT_ROOT.name
-
-#: 本单元的特征块。V28 使用**当前全因子快照**：479 列全用（`docs/baseline.md` 明文要求）。
-#: `model.py` 的 RECIPE 之后有一道硬闸，特征块不是它就直接报错。
 DEFAULT_FEATURE_BLOCK = 'factors'
-
-
-# 独立单元固定布局。开发规则：项目 docs/architecture.md。
-# ★ 2026-09-26：`train.sh` 并进 run.py（本文件即可执行），源码固定为三个 Python 文件；
-#   并发调度器与它写的 `model_logs/resource_summary.json`/`resource_usage.csv`、
-#   `model_info/finished.json`/`pipeline.log` 一并去掉，清单同步收缩。
-#   同日用户定：日志目录由 `logs/` 改名 `model_logs/`（与 `model_info/`、`model_pred/`、
-#   `model_train/` 一个命名系列）。
 SOURCE_FILES = ('run.py', 'model.py', 'analysis.py')
 LAYOUT_QUARTERS = ('2025Q3', '2025Q4', '2026Q1', '2026Q2')
 LAYOUT_FOLDS = (1, 2, 3, 4)
 LAYOUT_YEARS = (2025, 2026)
 LAYOUT_LOGS = 'model_logs'
-FOLD_FILES = ('best.pt', 'last.pt', 'complete.json', 'history.json',
-              'score_predictions.npy', 'test_predictions.npy', 'split.json', 'training_info.json')
-
-
-# =============================================================================
-# ★★ 实战模式（releases/ 专用；2026-10-06 自旧 releases 线移植）
-#
-#   开关 = 环境变量 `MX_LIVE=1`。**未设时本文件行为与 `experiments/<V>/model.py` 逐字一致**
-#   —— 全部新增代码都在 `LIVE` 为真的分支里。
-#
-#   实战模型 = 伪季度 `2026Q4` 的**四折集成**（四折打分相加 = 交付分）。
-#   伪季度起点 2026-10-01；`splits()` 的 cutoff = 季首 − purge − 1 ≈ **2026-08-31**（季首前 21 个交易日，实测 --split）
-#   （训练用上 2026Q3 数据，保留无前视）；test/score 窗 = 2026-10-01 → 数据末日。
-#   当前数据终于 2026-09-30 ⇒ 两窗为空：折先训好，数据更新后按评分流程重出打分。
-# =============================================================================
-LIVE = bool(os.environ.get('MX_LIVE'))
-LIVE_QUARTER = '2026Q4'
-LAYOUT_LIVE_FOLDS = (1, 2, 3, 4)
-
-LIVE_FILES = set(SOURCE_FILES) | {
-    f'model_train/{LIVE_QUARTER}/fold{f}/{name}'
-    for f in LAYOUT_LIVE_FOLDS for name in FOLD_FILES
-} | {
-    *(f'{LAYOUT_LOGS}/{LIVE_QUARTER}_{f}.log' for f in LAYOUT_LIVE_FOLDS),
-    'model_info/live_validation.json',
-    'model_pred/live_report.md',
-}
-
-
-def experiment_files():
-    """实验模式的固定清单（= 移植前 fixed_files 的逐字副本）。"""
-    files = set(SOURCE_FILES)
-    files.update(f'model_train/{q}/fold{f}/{name}'
-                 for q in LAYOUT_QUARTERS for f in LAYOUT_FOLDS for name in FOLD_FILES)
-    files.update(f'{LAYOUT_LOGS}/{q}_{f}.log' for q in LAYOUT_QUARTERS for f in LAYOUT_FOLDS)
-    files.update(f'{LAYOUT_LOGS}/analysis_0.log' for _ in (0,))
-    # ★ 2026-09-26：`launch.json` / `preflight.json` 从清单里去掉了 —— 它们是旧调度器
-    #   （`run.py` 带 check_inputs 的那版）写的，现在 run.py 只调度、不写记录，
-    #   留着会变成"清单里有、没人写"的死条目。
-    files.update('model_info/' + name for name in ('final_audit.json', 'two_strategy_validation.json'))
-    files.update(('model_pred/ensemble_curves.png', 'model_pred/picks.md', 'model_pred/ensemble/score_meta.json'))
-    files.update(f'model_pred/ensemble/year={y}/data.parquet' for y in LAYOUT_YEARS)
-    # ★ V11：本单元策略由「Top5 每 5 日调仓」改成「Top5 **每日**调仓」，所以这一档
-    #   文件名跟着换成 top5_5d；基线 top1_1d 不动。清单仍是 159 个文件（只换名不增删）。
-    files.update(f'model_pred/ensemble/CSV/{kind}_{strategy}.csv'
-                 for kind in ('cash', 'trades') for strategy in ('top5_5d', 'top1_1d'))
-    return files
-
+FOLD_FILES = ('best.pt', 'last.pt', 'complete.json', 'history.json', 'score_predictions.npy', 'test_predictions.npy', 'split.json', 'training_info.json')
 
 def fixed_files():
-    """当前运行模式下的固定常驻文件；不新增清单文件。"""
-    return LIVE_FILES if LIVE else experiment_files()
-
-
-def known_files():
-    """**两种模式的产物并集**（validate_layout 判"多余"用它；仍是枚举并集，清单外照拒）。"""
-    return LIVE_FILES | experiment_files()
-
-
-# 编辑器与解释器的自动产物：不是单元文件，不参与结构核对，也不代表结构扩张。
+    files = set(SOURCE_FILES)
+    files.update((f'model_train/{q}/fold{f}/{name}' for q in LAYOUT_QUARTERS for f in LAYOUT_FOLDS for name in FOLD_FILES))
+    files.update((f'{LAYOUT_LOGS}/{q}_{f}.log' for q in LAYOUT_QUARTERS for f in LAYOUT_FOLDS))
+    files.update((f'{LAYOUT_LOGS}/analysis_0.log' for _ in (0,)))
+    files.update(('model_info/' + name for name in ('final_audit.json', 'two_strategy_validation.json')))
+    files.update(('model_pred/ensemble_curves.png', 'model_pred/picks.md', 'model_pred/ensemble/score_meta.json'))
+    files.update((f'model_pred/ensemble/year={y}/data.parquet' for y in LAYOUT_YEARS))
+    files.update((f'model_pred/ensemble/CSV/{kind}_{strategy}.csv' for kind in ('cash', 'trades') for strategy in ('top5_5d', 'top1_1d')))
+    return files
 TOOL_DIRS = ('.ipynb_checkpoints', '__pycache__')
 
-
 def unit_paths():
-    """扫描单元内的文件与目录（已剔除工具自动产物）。"""
-    files, dirs = set(), set()
+    files, dirs = (set(), set())
     for p in UNIT_ROOT.rglob('*'):
         rel = p.relative_to(UNIT_ROOT)
-        if any(part in TOOL_DIRS for part in rel.parts):
+        if any((part in TOOL_DIRS for part in rel.parts)):
             continue
         (files if p.is_file() else dirs).add(rel.as_posix())
-    return files, dirs
-
+    return (files, dirs)
 
 def validate_layout(*, allow_temporary=False, allow_missing=False):
-    """只核对文件名和目录位置；开发与运行均须保持当前结构。
-
-    新单元按规则只初始化3个脚本文件，158个常驻产物由运行原位生成，所以起点允许缺失
-    （`allow_missing`）；但**任何多余路径永远拒绝**，缺失清单交由调用方比对起终点。
-    """
-    expected = known_files()   # ★ LIVE 移植：两种模式产物并集
+    expected = fixed_files()
     actual, actual_dirs = unit_paths()
     if allow_temporary:
         temporary = set()
@@ -178,19 +69,13 @@ def validate_layout(*, allow_temporary=False, allow_missing=False):
                 temporary.add(path.with_name('data.tmp.parquet').as_posix())
         actual -= temporary
     allowed_dirs = {parent.as_posix() for name in expected for parent in Path(name).parents if str(parent) != '.'}
-    extra = sorted((actual - expected) | (actual_dirs - allowed_dirs))
-    missing = sorted(expected - actual)
-    if extra or (missing and not allow_missing):
+    extra = sorted(actual - expected | actual_dirs - allowed_dirs)
+    missing = sorted((expected - actual) - globals().get('OPTIONAL_FILES',set()))
+    if extra or (missing and (not allow_missing)):
         raise ValueError(f'独立单元文件树必须保持固定；额外路径={extra}；缺失文件={missing}；规则见docs/architecture.md')
-    return dict(files=len(actual), directories=len(actual_dirs), source_files=list(SOURCE_FILES),
-                missing=missing)
-
+    return dict(files=len(actual), directories=len(actual_dirs), source_files=list(SOURCE_FILES), missing=missing)
 
 def output_file(path):
-    """常驻产物只能写在固定清单内的路径上；清单之外一律拒绝。
-
-    不要求文件已存在——新单元第一次运行就是靠这里把产物建出来的。
-    """
     path = Path(path).resolve()
     if not path.is_relative_to(UNIT_ROOT) or path.relative_to(UNIT_ROOT).as_posix() not in fixed_files():
         raise ValueError(f'禁止增加或移动独立单元文件: {path}')
@@ -198,12 +83,10 @@ def output_file(path):
         raise ValueError(f'源码文件只能由开发者修改，不能当产物覆写: {path}')
     return path
 
-
 def checked_name(value):
-    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*', value):
+    if not re.fullmatch('[A-Za-z0-9][A-Za-z0-9_.-]*', value):
         raise ValueError(f'非法运行名称: {value}')
     return value
-
 
 def run_name():
     name = os.environ.get('MODEL_RUN_NAME')
@@ -219,21 +102,13 @@ def run_name():
         raise ValueError('请选择新的运行名称')
     return name
 
-
 def run_root():
-    """固定工作单元；运行名称只标记报告，不再创建额外目录层。"""
     return UNIT_ROOT
-
 
 def info_root():
     return UNIT_ROOT / 'model_info'
 
-
 def data_root():
-    """trainingdata 根目录（含 `meta.json`）；传 `factors` / `fac_sample` 子目录也接受。
-
-    ★ V2 的特征块默认 `factors`（全部 479 列）。V1 是 `fac_sample`（20 列样例）。
-    """
     root = Path(os.environ.get('MX_DATA', PROJECT_ROOT / 'trainingdata' / 'factors')).expanduser().resolve()
     if root.name in ('fac_sample', 'factors') and (root.parent / 'meta.json').is_file():
         root = root.parent
@@ -241,246 +116,69 @@ def data_root():
         raise FileNotFoundError(f'{root}/meta.json 不存在；传入trainingdata根目录或其 factors 子目录')
     return root
 
-
 def feature_block():
-    """特征块名。`factors` = 全部 479 列，`fac_sample` = 20 列抽样副本。
-
-    ★★ 2026-09-25 修掉一个**静默陷阱**：原实现的回退字面量 `'fac_sample'` 本身就在允许
-      名单里，于是 `Path(...).name` 永远落在 `explicit` 分支、`else` 分支**永远走不到**
-      —— 设 `MODEL_FEATURE_BLOCK=factors` 完全不生效（在 V1 上实跑验证过：仍是 20 列）。
-      后果是"以为设了环境变量、其实用 20 列跑满 16 折"且产物自洽、不报任何错。
-      改法：回退值改成 V2 自己的默认块 `DEFAULT_FEATURE_BLOCK`，**并且在本函数末尾加了硬闸**：
-      解析出来的块不是 `DEFAULT_FEATURE_BLOCK` 就直接报错。闸放在**这里**而不是只放
-      `model.py` —— 因为 `run.py check` / `split` / `doctor` 根本不 import `model.py`，
-      只放那边的话这几条入口照样会拿 20 列跑完（实测：闸放 model.py 时
-      `run.py check --data .../fac_sample` 一路通过、不报错）。
-      `model.py` 里也有一道同名闸，覆盖"直接跑 model.py"的路径。
-    """
     explicit = Path(os.environ.get('MX_DATA', DEFAULT_FEATURE_BLOCK)).name
-    block = explicit if explicit in ('fac_sample', 'factors') else os.environ.get(
-        'MODEL_FEATURE_BLOCK', DEFAULT_FEATURE_BLOCK)
+    block = explicit if explicit in ('fac_sample', 'factors') else os.environ.get('MODEL_FEATURE_BLOCK', DEFAULT_FEATURE_BLOCK)
     if block not in ('fac_sample', 'factors'):
         raise ValueError('特征块仅支持 fac_sample 或 factors')
     if block != DEFAULT_FEATURE_BLOCK:
-        raise ValueError(
-            f'{UNIT} 是**全因子正式训练单元**，特征块必须是 {DEFAULT_FEATURE_BLOCK}（当前 ={block}）。\n'
-            f'  · MX_DATA={os.environ.get("MX_DATA", "(未设)")}'
-            f'  MODEL_FEATURE_BLOCK={os.environ.get("MODEL_FEATURE_BLOCK", "(未设)")}\n'
-            f'  · 想跑 20 列的样例：用 experiments/V1，不要在 {UNIT} 里降级。\n'
-            f'  · 确实要改本单元的特征块：先改 run.py 的 DEFAULT_FEATURE_BLOCK，'
-            f'并同步 docs/iterations.md 的配置摘要（属科研决定，不是运行参数）。')
+        raise ValueError(f"{UNIT} 是**全因子正式训练单元**，特征块必须是 {DEFAULT_FEATURE_BLOCK}（当前 ={block}）。\n  · MX_DATA={os.environ.get('MX_DATA', '(未设)')}  MODEL_FEATURE_BLOCK={os.environ.get('MODEL_FEATURE_BLOCK', '(未设)')}\n  · 想跑 20 列的样例：用 experiments/V1，不要在 {UNIT} 里降级。\n  · 确实要改本单元的特征块：先改 run.py 的 DEFAULT_FEATURE_BLOCK，并同步 docs/iterations.md 的配置摘要（属科研决定，不是运行参数）。")
     return block
 
-
 def price_root():
-    """回测价格的地址 = 快照块 `trainingdata/prices`（只读）。
-
-    ★ 用户 2026-09-26 定：价格由上游 `preparingdata.py` **复制进快照**，本单元只读
-      `trainingdata/`、不再自己连模块①（`datadownload/`）。这一块与 `factors` 同一条
-      日期轴，日常增量一起刷新 —— 反转的是 2026-09-25"价格不属于训练数据层"那条边界，
-      理由写在 `preparingdata.py` 的模块头部。
-
-    与 `stock_list_path()`/`calendar_path()` 不同，它**不是外部读取**了：路径从
-    `data_root()` 推出来（于是 `MX_DATA` 换快照时它跟着换），`MX_PRICES` 覆盖已去掉。
-    这份数据**参与数值计算**：可交易性判定（停牌/涨跌停/复权）与含费净值都靠它。
-    读到的值由 `Prices.verify_labels()` 与 `target` 的标签逐格对拍兜底 —— 口径不一致
-    会直接报错，不会静默跑完。
-    """
     return data_root() / 'prices'
 
-
 def stock_list_path():
-    """股票中文名对照表的固定地址（用户 2026-09-25 授权，只读）。
-
-    与`calendar_path()`一样只用于 picks.md 的显示，不参与任何数值计算。
-    从 PROJECT_ROOT 推出来而不是写死绝对路径，共享盘换挂载点时不用改代码。
-    """
-    return Path(os.environ.get(
-        'MX_STOCK_LIST', PROJECT_ROOT.parent / 'datadownload' / 'data' / 'stock_list' / 'data.parquet'))
-
+    return Path(os.environ.get('MX_STOCK_LIST', PROJECT_ROOT.parent / 'datadownload' / 'data' / 'stock_list' / 'data.parquet'))
 
 def calendar_path():
-    """交易日历的固定地址（用户 2026-09-25 授权，只读）。
-
-    用途只有一个：picks.md 里把「T+1 买入 / T+6 卖出」写成**具体日期**。快照内的日期
-    取 `panel.days`（与标签口径完全一致），快照之后的日期只能来自这份日历——它含未来
-    交易日（实测到 2026-10-25），所以最新一天的买卖日也写得出来。
-    """
-    return Path(os.environ.get(
-        'MX_CALENDAR', PROJECT_ROOT.parent / 'datadownload' / 'data' / 'basic_calendar' / 'data.parquet'))
-
+    return Path(os.environ.get('MX_CALENDAR', PROJECT_ROOT.parent / 'datadownload' / 'data' / 'basic_calendar' / 'data.parquet'))
 
 def feature_columns(meta):
-    """Pinned surviving parent-family columns for rebuilt 2026-10-05 snapshot."""
     columns = list(RECIPE['feature_names'])
     if not set(columns).issubset(meta['columns']['features']):
         raise ValueError('pinned rebuilt feature view changed; create another unit')
     return columns
 
-
 def market_columns(meta):
-    """市场门控的输入列：61 个市场因子的 `_z252`（过去252个交易日含当日的 z-score）。
-
-    只取 `_z252` 而不取原值：原值列量纲不可比（指数点位、比率、金额混在一起），
-    z-score 已是尺度无关口径，与股票因子块同一套约定。预热期（2018 全年等）为 NaN，
-    载入时按「无信息」填 0，门控退化为恒等。
-    """
     block = meta['market_factors']
     columns = [c for c in block['columns'] if c.endswith(f"_z{block['z_window']}")]
     if len(columns) != block['n_factors']:
-        raise ValueError(f'市场因子 z 窗口列数 {len(columns)} 与 n_factors {block["n_factors"]} 不一致')
+        raise ValueError(f"市场因子 z 窗口列数 {len(columns)} 与 n_factors {block['n_factors']} 不一致")
     return columns
-
 
 def analysis_input_root():
     requested = os.environ.get('MODEL_INPUT_RUN')
     if requested and requested != run_name():
         raise ValueError('本单元使用固定目录，不再支持另一个 --input-run；直接读取 model_train')
     return UNIT_ROOT
-
-
-#: 固定工作单元的两个常用常量；必须排在上面两个函数定义之后。
 RUN_ROOT = run_root()
 INPUT_ROOT = analysis_input_root()
-
-# =============================================================================
-# ③ 配方（RECIPE）
-#
-# 一轮训练的超参与口径集中配置，并记录在每折训练信息中。
-RECIPE=dict(
-    name='V69',
-    architecture='disjoint105-flow eight-session GRU and44-technical fixed-basis absolute1/5d ridge with61 causal market inputs; fresh internal percentile rank fusion plus separate cost gate',
-    label='label_ret_5d',
-    label_horizons=[3, 5, 10],
-    score_blend='flow_technical_percentile',
-    score_label='label_ret_5d',
-    label_weights={3: 0.2, 5: 0.5, 10: 0.3},
-    valid_ic_weights={3: 0.2, 5: 0.5, 10: 0.3},
-    valid_ic_scale=1.0,
-    market_gate=True,
-    market_block='market_factors',
-    market_clip=10.0,
-    picks_topn=5,
-    backtest_money=float(os.environ.get('MX_MONEY', '100000')),
-    picks_holding=5,
-    valid_criterion='rankic',
-    loss_rank_decay=float(os.environ.get('MX_DECAY', '0.5')),
-    train_pool_frac=1.0,
-    hot_pool=dict(frac=1.0, amount_window=20, amp_window=5, limit_window=20, min_names=20),
-    entry_rule='open',
-    hold_band=40,
-    budget_rule=os.environ.get('MX_BUDGET', 'divide'),
-    bag_topk=5,
-    bag_recalibrate=False,
-    features='all',
-    feature_block=feature_block(),
-    folds=4,
-    seed=6253,
-    batch_days=4,
-    optimizer='adamw',
-    lr=0.001,
-    weight_decay=0.02,
-    dropout=tuple((float(x) for x in os.environ.get('MX_DROP', '0.2,0.1').split(','))),
-    hidden=tuple((int(x) for x in os.environ.get('MX_HIDDEN', '256,128,32').split(','))),
-    max_epochs=30,
-    early_stop_patience=6,
-    lr_patience=3,
-    lr_factor=0.5,
-    lr_cooldown=2,
-    min_lr=5e-06,
-    min_feature_coverage=0.2,
-    linear_weight=0.0,
-    device='auto',
-    threads=int(os.environ.get('MX_THREADS', DEFAULT_THREADS)),
-    valid_topn=5,
-    valid_metric='weighted raw-label RankIC of delivered internal50/50 fusion; absolute branch fitted training-only and held constant through neural epoch selection',
-    preprocessing='daily_zscore_win1_99_fixed_missing_0',
-    test_start='2025-07-01',
-    test_end='2026-06-30',
-    purge_horizon=max([1, 3, 5, 10, 20]),
-    training_window='2018起扩展窗，每季度初更新；季度边界purge max(h)+1=21交易日',
-    sequence_days=8,
-    family='flow_technical_fresh_fusion',
-    training_target='flow3/5/10d daily standardized returns via WPCC; technical raw1/5d symmetrically clipped returns via date-equal normal equations',
-    weights_origin='scripts only copied; both components newly fitted in this unit; no parent checkpoint read',
-    research_protocol='new149-feature two-component unit; four seeds3253/4253/5253/6253,4quarters x4folds,purge21. Fifty/fifty andTop5 weeklyband40 gate1 frozen from clean validation/framework. Both components fitted anew; no test-based weight/seed/phase selection; no automatic releases promotion',
-    strategy_candidates={'topn': [5, 10, 20], 'period': [1, 5], 'band': [40], 'flow_weight': [0.0, 0.25, 0.5, 0.75, 1.0], 'cost_gate_multiplier': [0.0, 1.0], 'phase': 'all phases; primary Top5 weekly phase0'},
-    snapshot_cutoff='2026-09-29',
-    prediction_horizon=5,
-    parent_sources=['V50', 'V62'],
-    feature_names=["s26_liq_up_fragility_v1_b43c747ff9090bc2", "s26_structure_side_hhi_v1_bb77e106a875308a", "bw_beta_60", "bw_beta_asym_20", "bw_beta_change_20", "bw_breadthvol_response_20", "bw_capture_asym_20", "bw_intraday_beta_20", "bw_overnight_lag_beta_20", "bw_session_follow_20", "bw_strength_sensitivity_20", "bw_tail_comove_60", "bw_weak_breadth_ret_20", "rsrs_beta_18", "mfi_14", "trix_12_20", "trix_signal_gap", "volume_price_divergence_score", "volume_tilt_20", "volume_dry_up", "volume_ratio", "vol_clustering_20", "vol_of_rv", "zero_return_fraction_20", "vwap_daily_deviation", "turnover_anomaly_20", "turnover_f_delta_5", "turnover_std_20", "amount_mom_accel", "amount_ratio_20", "amihud_asymmetry_20", "mf_net_amount_intensity", "mf_net_vol_surprise_20", "mf_open_close_divergence_10d", "mf_vol_amount_divergence", "mf_order_size_entropy_chg_5d", "mf_flow_price_absorption_20", "order_size_concentration", "small_order_crowding", "super_large_order_intensity", "short_balance_ratio_change_20d", "short_interest_volatility_20d", "short_sell_volume_ratio", "short_squeeze_risk", "total_leverage_ratio", "open5_amt_log", "open5_amt_share_pct20", "open5_capacity_floor_ratio_20", "open5_capacity_p20_log", "idt_lo_pos", "idt_overnight_gap", "idt_overnight_minus_intraday", "idt_rv_daily", "idt_rv_term_structure_slope", "idt_vol_stability", "idt_intraday_max_drawdown", "id2_dd_ru_asym", "id2_hi_lo_pos_gap", "id2_intraday_max_runup", "id2_ret_concentration", "id2_vol_amt_hhi_gap", "id2_vol_peak_pos", "id2_vol_peak_std_20", "id2_session_range_overlap", "id2_session_sign_agreement_20", "id2_rv_parkinson_gap", "momentum_20", "momentum_60", "momentum_120", "reversal_2d", "short_term_reversal_5", "trend_strength_60", "ret_efficiency_20", "ret_autocorr_1d_20", "ret_skew_20", "ret_kurt_20", "max_drawdown_60", "drawdown_duration_120", "ulcer_index_20", "sortino_ratio_60", "tail_risk_pct_60", "var_95_20", "vol_120", "downside_vol_ratio_20", "panic_selling_ratio_60", "beta_60", "idio_vol_60", "log_mv", "price_to_52w_high", "time_since_52w_high", "new_high_frequency_60", "bollinger_width_20", "atr_14_ratio", "adx_14", "rsi_14", "kdj_k_minus_d", "macd_daily_hist_5d", "roc_12", "dpo_20", "aroon_up_25", "aroon_down_25", "liquidity_shock_20", "amihud_daily_5", "gain_loss_asymmetry_60", "overnight_std_5d", "overnight_gap_vol_20", "free_share_ratio", "holder_number_chg", "interest_coverage", "rel_mom_ind_20d"],
-    flow_feature_names=["s26_liq_up_fragility_v1_b43c747ff9090bc2", "s26_structure_side_hhi_v1_bb77e106a875308a", "bw_beta_60", "bw_beta_asym_20", "bw_beta_change_20", "bw_breadthvol_response_20", "bw_capture_asym_20", "bw_intraday_beta_20", "bw_overnight_lag_beta_20", "bw_session_follow_20", "bw_strength_sensitivity_20", "bw_tail_comove_60", "bw_weak_breadth_ret_20", "rsrs_beta_18", "mfi_14", "trix_12_20", "trix_signal_gap", "volume_price_divergence_score", "volume_tilt_20", "volume_dry_up", "volume_ratio", "vol_clustering_20", "vol_of_rv", "zero_return_fraction_20", "vwap_daily_deviation", "turnover_anomaly_20", "turnover_f_delta_5", "turnover_std_20", "amount_mom_accel", "amount_ratio_20", "amihud_asymmetry_20", "mf_net_amount_intensity", "mf_net_vol_surprise_20", "mf_open_close_divergence_10d", "mf_vol_amount_divergence", "mf_order_size_entropy_chg_5d", "mf_flow_price_absorption_20", "order_size_concentration", "small_order_crowding", "super_large_order_intensity", "short_balance_ratio_change_20d", "short_interest_volatility_20d", "short_sell_volume_ratio", "short_squeeze_risk", "total_leverage_ratio", "open5_amt_log", "open5_amt_share_pct20", "open5_capacity_floor_ratio_20", "open5_capacity_p20_log", "idt_lo_pos", "idt_overnight_gap", "idt_overnight_minus_intraday", "idt_rv_daily", "idt_rv_term_structure_slope", "idt_vol_stability", "idt_intraday_max_drawdown", "id2_dd_ru_asym", "id2_hi_lo_pos_gap", "id2_intraday_max_runup", "id2_ret_concentration", "id2_vol_amt_hhi_gap", "id2_vol_peak_pos", "id2_vol_peak_std_20", "id2_session_range_overlap", "id2_session_sign_agreement_20", "id2_rv_parkinson_gap"],
-    technical_feature_names=["momentum_20", "momentum_60", "momentum_120", "reversal_2d", "short_term_reversal_5", "trend_strength_60", "ret_efficiency_20", "ret_autocorr_1d_20", "ret_skew_20", "ret_kurt_20", "max_drawdown_60", "drawdown_duration_120", "ulcer_index_20", "sortino_ratio_60", "tail_risk_pct_60", "var_95_20", "vol_120", "downside_vol_ratio_20", "panic_selling_ratio_60", "beta_60", "idio_vol_60", "log_mv", "price_to_52w_high", "time_since_52w_high", "new_high_frequency_60", "bollinger_width_20", "atr_14_ratio", "adx_14", "rsi_14", "kdj_k_minus_d", "macd_daily_hist_5d", "roc_12", "dpo_20", "aroon_up_25", "aroon_down_25", "liquidity_shock_20", "amihud_daily_5", "gain_loss_asymmetry_60", "overnight_std_5d", "overnight_gap_vol_20", "free_share_ratio", "holder_number_chg", "interest_coverage", "rel_mom_ind_20d"],
-    flow_indices=[6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 42, 43, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 70, 71, 72, 73, 74, 75, 76, 77, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 123, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148],
-    technical_indices=[0, 1, 2, 3, 4, 5, 7, 8, 37, 38, 39, 41, 44, 45, 46, 47, 69, 78, 79, 80, 81, 92, 93, 117, 118, 119, 120, 121, 122, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138],
-    output_horizons=[3,5,10,1],
-    flow_fusion_weight=.5,
-    absolute_sample_caps=[256,384,512,640,768],
-    absolute_stock_ridge=.05,
-    absolute_market_ridge=.25,
-    absolute_intercept_ridge=1e-8,
-    absolute_target_clip={1:.12,5:.30},
-    absolute_loss_scale={1:.03,5:.08},
-    absolute_label_weights={1:.75,5:.25},
-    absolute_stage_bag='all five, no stage selection',
-    cost_gate_multiplier=1.,
-    ensemble_sum_members=4,
-    final_prediction_backend='CPU canonical rank outputs; CUDA train/validation raw heads numerically checked',
-)
-
-# =============================================================================
-# ③b 硬闸：V4 是**全因子正式版**，特征块不是 `factors` 就直接停
-#
-# 为什么要有这道闸：`run.py` 的特征块默认值、`MODEL_FEATURE_BLOCK` 环境变量与
-# `MX_DATA` 三者有互相遮蔽的历史（见 `run.py:feature_block()` 的 ★★ 注释），
-# 配错时会**静默**用 20 列跑满 16 折并把产物写成 V4 的结果 —— 产物自洽、不报错。
-# 这道闸让"V28 = 479 列全因子"由代码保证，不靠操作纪律。
-# =============================================================================
+RECIPE = {'name': 'V266', 'architecture': 'same128/64 LayerNorm SiLU network; unbounded lower-expectile1d raw-return head instead of correlation score', 'label': 'label_ret_1d', 'label_horizons': [1], 'score_blend': 'flow_technical_percentile', 'score_label': 'label_ret_1d', 'label_weights': {1: 1.0}, 'valid_ic_weights': {1: 1.0}, 'valid_ic_scale': 1.0, 'market_gate': True, 'market_block': 'market_factors', 'market_clip': 10.0, 'picks_topn': 5, 'backtest_money': 100000.0, 'picks_holding': 5, 'valid_criterion': 'macro_stable', 'loss_rank_decay': 0.5, 'train_pool_frac': 1.0, 'hot_pool': {'frac': 1.0, 'amount_window': 20, 'amp_window': 5, 'limit_window': 20, 'min_names': 20}, 'entry_rule': 'open', 'hold_band': 40, 'budget_rule': 'divide', 'bag_topk': 1, 'bag_recalibrate': False, 'features': 'all', 'feature_block': 'factors', 'folds': 4, 'seed': 35262, 'batch_days': 16, 'optimizer': 'adamw', 'lr': 0.001, 'weight_decay': 0.0001, 'dropout': (0.2, 0.1), 'hidden': (256, 128, 32), 'max_epochs': 12, 'early_stop_patience': 4, 'lr_patience': 2, 'lr_factor': 0.5, 'lr_cooldown': 2, 'min_lr': 5e-06, 'min_feature_coverage': 0.2, 'linear_weight': 0.0, 'device': 'auto', 'threads': 2, 'valid_topn': 500, 'valid_metric': '0.7IC1+0.3IC5-0.2stdIC1+0.2worst21dIC1+2capacityMean-0.1capacityVol; no Top5 cash selection', 'preprocessing': 'daily_zscore_win1_99_fixed_missing_0', 'test_start': '2025-07-01', 'test_end': '2026-06-30', 'purge_horizon': 20, 'training_window': 'selection train before valid; delivery expanding history through testfirst-minus21; valid scores never from delivered refit', 'sequence_days': 1, 'family': 'raw_return_downside_expectile', 'training_target': 'date-equal raw1d lower-expectile squared loss, tau0.2, overforecasting weight0.8 versus underforecasting0.2; no parent dependence penalty', 'weights_origin': 'fresh relative network; same-partition V260 absolute/risk auxiliary only; relative teacher unused', 'research_protocol': '20261024 frozen screening; 4 standard quarters x 4 strictly forward validation folds; separate frozen 2026Q3; no test-driven strategy/threshold choice; no release promotion', 'snapshot_cutoff': '2026-10-23', 'prediction_horizon': 1, 'parent_sources': ['V263', 'V260'], 'feature_names': ['afx_cf_im_net_cashflow_oper_act', 'afx_fi_fcfe', 'afx_fi_fcff', 'afx_fi_ocf_to_interestdebt', 'afx_fi_ocf_to_opincome', 'afx_fi_ocf_to_profit', 'afx_fi_ocfps', 'afx_fi_q_gr_qoq', 'afx_fi_q_gsprofit_margin', 'afx_fi_q_netprofit_qoq', 'afx_fi_q_ocf_to_or', 'afx_is_basic_eps', 'afx_is_ebitda', 'amihud_daily_5', 'amount_mom_accel', 'amount_ratio_20', 'annual_credit_impairment_adjustment_assets_v1', 'annual_report_lag_median3_v1', 'asset_growth_qoq', 'atr_14_ratio', 'beta_60', 'bp', 'bs_other_receiv_to_assets', 'bw_strength_sensitivity_20', 'ca_range_excess_5_v1', 'ca_tail_pressure_5_v1', 'calendar_gap_idio_variance_slope_60', 'cash_conversion_cycle', 'cash_sales_ratio', 'cf_purchase_cash_intensity', 'cfcr', 'cfp_ttm', 'close30_ret', 'corwin_schultz_overnight_adjusted_hl_proxy_20', 'cp_momentum_lowvol_20', 'cp_value_momentum_div', 'disposal_proceeds_intensity_yoy_v1', 'dividend_yield_3y_avg', 'dp_ttm', 'dpo_20', 'dragon_tiger_institution_net_pressure_20_v1', 'ebitda_to_market', 'efx_annual_earnings_yield', 'efx_volume_ratio', 'ep_ttm', 'etp5', 'extreme_move_event', 'holder_number_chg', 'id2_close_vs_pm_vwap', 'id2_close_vs_pm_vwap_20', 'id2_hi_lo_pos_gap', 'id2_parkinson_vol', 'id2_ret_concentration', 'idio_vol_60', 'idt_overnight_minus_intraday', 'idt_rv_daily', 'idt_rv_term_structure_slope', 'idt_vol_stability', 'ind_bps_yoy', 'ind_dt_netprofit_yoy', 'ind_int_to_talcap', 'interest_coverage', 'intraday_vol_ratio_5d', 'inventory_turnover', 'lf_margin_dip_demand_corr_60', 'limit_broken_ratio_20', 'limit_days_since_up_20', 'limit_down_event_5', 'log_mv', 'luna_minute_return_volume_corr_5d_v1', 'luna_minute_return_volume_lead_lag_5d_v1', 'luna_minute_unexpected_clock_volume_return_5d_v1', 'luna_roll_bounce_proxy_20d_v1', 'luna_turnover_weighted_intraday_return_path_20d_v1', 'margin_repay_deceleration', 'margin_repay_shock', 'mf_amount_weighted_direction', 'mf_big_order_net_ac1_20', 'mf_net_inflow_5d', 'mf_net_vol_surprise_20', 'mf_small_order_avg_price_dev', 'momentum_120', 'momentum_20', 'momentum_250', 'momentum_60', 'ocf_to_profit', 'ocf_to_revenue', 'open5_capacity_floor_ratio_20', 'overnight_ma_20d', 'overnight_ma_5d', 'overnight_ma_60d', 'overnight_std_5d', 'pe_own_history_percentile_252_20', 'price_delay_r2_60', 'price_distance_from_52w_low', 'price_to_52w_high', 'qf_cash_margin_floor_4q', 'qf_cash_margin_yoy_change', 'qf_core_roe_floor_4q', 'qf_core_roe_vol_4q', 'qf_core_roe_yoy_change', 'qf_roa_yoy_change', 'qf_sales_growth_accel', 'qf_sales_growth_vol_4q', 'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7', 'r10gc_bias_turn_126_252_v1_a9656f4fececd030', 'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581', 'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742', 'r10gc_high_low_21_v1_ca60e882d8b5c22f', 'r10gc_high_low_252_v1_facb1d1f647f48ca', 'r10gc_high_low_63_v1_34a74707a9f916a3', 'r10gc_income_tax_yoy_v1_c051c303608f0a17', 'r10gc_ret_std_21_v1_51f3cc1a8b65d126', 'r10gc_ret_std_252_v1_db7166018e1a0511', 'r10gc_ret_std_63_v1_19b9e9fa082c7cec', 'r10gc_turn_lvl_21_v1_2bab2360d6cb7099', 'r10gc_turn_lvl_252_v1_2dd70c23d17694f4', 'r10gc_turn_lvl_63_v1_7d51db9d4ff08793', 'r10gc_turn_std_126_v1_e96f93f78ed0e472', 'r10gc_turn_std_252_v1_9a4d3d577535e360', 'r10gc_turn_std_42_v1_21349ae0e32c1db7', 'r10gc_yoy_net_asset_v1_2a57af1e5c40492f', 'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac', 'r10gc_yoy_ocf_v1_066e6046572baf9c', 'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca', 'r11gc_amount_ma_20_v1_1858415feaa5dbe6', 'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732', 'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134', 'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa', 'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1', 'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f', 'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe', 'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1', 'r11gc_bias_turn_126_504_v1_e3ccc91522792d65', 'r11gc_bias_turn_21_504_v1_111533df505215cb', 'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260', 'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad', 'r11gc_bias_turn_63_504_v1_387613367cbd4dd9', 'r11gc_high_low_126_v1_2666509099db4a47', 'r11gc_high_low_42_v1_36fd67d17bea68ac', 'r11gc_ret_std_42_v1_23474362384bc399', 'r11gc_turn_lvl_10_v1_c377944b650ec037', 'r11gc_turn_lvl_126_v1_ef48ac322c8d0929', 'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4', 'r11gc_turn_lvl_42_v1_24d04a044ce607a0', 'r11gc_turn_lvl_5_v1_332d53f4bb907a79', 'r11gc_turn_std_63_v1_5ef776ad40ef77f6', 'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3', 'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1', 'r12gc_asset_turnover_v1_40d616e07fd4a097', 'r12gc_cash_ratio_v1_7ef2829865ad2cc2', 'r12gc_de_v1_d4cd33b978d63b0a', 'r12gc_eps_q_v1_8f3703e8eb218668', 'r12gc_eps_ttm_v1_2d84c57b9ea5f85d', 'r12gc_eps_y_v1_6f0a67c91531a732', 'r12gc_equity_turnover_v1_4cba36560ca472e5', 'r12gc_fcf_to_market_v1_49c0b5d214b35db0', 'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2', 'r12gc_float_size_v1_8b275acb0cb20dec', 'r12gc_gpm_q_v1_842e57e4d0d033e5', 'r12gc_gpm_ttm_v1_7e99428574d400ea', 'r12gc_gpm_y_v1_102eddddb8fac4c4', 'r12gc_log_price_v1_0a22efbc7b6bb1f7', 'r12gc_market_value_leverage_v1_9f3705df7636e0cc', 'r12gc_ncf_to_market_v1_71cf1e0deddc7070', 'r12gc_npm_q_v1_a1e5e8bb0a48de33', 'r12gc_npm_ttm_v1_4e4381d67f1d7391', 'r12gc_npm_y_v1_f78b237b3b7c1b18', 'r12gc_opm_ttm_v1_2827ff5d605bdeeb', 'r12gc_opm_y_v1_6e2f1f9aaf3c6106', 'r12gc_opt_tpro_v1_d832d118e2414259', 'r12gc_quick_ratio_v1_ea13af873ce572fc', 'r12gc_receivable_turnover_v1_458e2aaecafa62b9', 'r12gc_return_42_v1_0032bf23a28de8f7', 'r12gc_roa_q_v1_4b4ae2280384ebde', 'r12gc_roa_y_v1_6e585294932485e4', 'r12gc_roe_y_v1_bca9de9f86ce36dd', 'r12gc_sales_to_market_v1_ff344107e3f2c925', 'r13f_gpm_dispersion_v1_d45cc0c6c766d353', 'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485', 'r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43', 'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e', 'r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6', 'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4', 'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254', 'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41', 'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576', 'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a', 'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab', 'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2', 'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd', 'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504', 'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9', 'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981', 'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449', 'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd', 'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70', 'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711', 'r13p_fip_return_discreteness_v1_94875f42e1e5efcf', 'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4', 'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970', 'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769', 'r14f28_tax_cash_refund_share_v1_3904a84026422c3e', 'r14f29_intangible_amort_share_v1_476979a530c60728', 'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708', 'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8', 'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976', 'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f', 'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e', 'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283', 'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5', 'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f', 'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8', 'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f', 'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79', 'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c', 'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb', 'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501', 'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394', 'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf', 'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4', 'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3', 'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08', 'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4', 'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b', 'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177', 'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8', 'r15p14_monthly_component_range_memory_v1_6fe135138d05893d', 'r15t3_overnight_variance_share_v1_09b9ae4f22c98618', 'r15t3_spillover_v1_432027233601b658', 'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43', 'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e', 'r17cg_chip_gini_38d02c6cc01fbd71', 'r17cg_p90_gap_chg20_c91115e3f691152c', 'r17cg_peak_vs_top3_d62c93f9f9b52f89', 'r17cg_skew_chg20_4c9f6345c8034e61', 'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb', 'r3b_intraday_rv_skewness_v2_44ef55d83a759fba', 'r4a_forecast_landing_gap_v3_972c0653571ab5d8', 'r4a_sue_accel_v1_4b443eb2d4fda83c', 'r4a_sue_seasonal_q_v1_f1def0b01eb0b979', 'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb', 'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8', 'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9', 'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5', 'r4e_idio_max_20_v1_d0d201efd7755e86', 'r4j_same_month_consistency_v1_be7f8ede9c4b5afe', 'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1', 'r4t_preann_turnover_shock_v1_3a95800106c754f2', 'r4t_preann_vol_expansion_v1_bebf97b2c5260706', 'r7a_tax_expense_seasonal_change_v2_371da87d5055df86', 'r7e_context_salience20_v1_f4efb8789772d003', 'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035', 'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe', 'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728', 'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f', 'raw_price_tick_clustering_20', 'ret_skew_20', 'revenue_cagr_3y', 'reversal_2d', 'roa_ttm', 'roc_12', 'roe_ttm', 'rsi_14', 'rsrs_beta_18', 'rv_term_structure', 's26_liq_up_fragility_v1_b43c747ff9090bc2', 's26_structure_side_hhi_v1_bb77e106a875308a', 'short_term_reversal_5', 'sp_ttm', 'td_setup_count', 'three_black_crows', 'toplist_multi_reason_breadth_20_v1', 'turnover_anomaly_20', 'turnover_f_delta_5', 'turnover_std_20', 'vol_120', 'vol_clustering_20', 'vol_of_rv', 'vol_ratio_ma5_ma20', 'volume_ratio', 'yoy_revenue'], 'flow_feature_names': ['afx_cf_im_net_cashflow_oper_act', 'afx_fi_fcfe', 'afx_fi_fcff', 'afx_fi_ocf_to_interestdebt', 'afx_fi_ocf_to_opincome', 'afx_fi_ocf_to_profit', 'afx_fi_ocfps', 'afx_fi_q_gr_qoq', 'afx_fi_q_gsprofit_margin', 'afx_fi_q_netprofit_qoq', 'afx_fi_q_ocf_to_or', 'afx_is_basic_eps', 'afx_is_ebitda', 'amihud_daily_5', 'amount_mom_accel', 'amount_ratio_20', 'annual_credit_impairment_adjustment_assets_v1', 'annual_report_lag_median3_v1', 'asset_growth_qoq', 'atr_14_ratio', 'beta_60', 'bp', 'bs_other_receiv_to_assets', 'bw_strength_sensitivity_20', 'ca_range_excess_5_v1', 'ca_tail_pressure_5_v1', 'calendar_gap_idio_variance_slope_60', 'cash_conversion_cycle', 'cash_sales_ratio', 'cf_purchase_cash_intensity', 'cfcr', 'cfp_ttm', 'close30_ret', 'corwin_schultz_overnight_adjusted_hl_proxy_20', 'cp_momentum_lowvol_20', 'cp_value_momentum_div', 'disposal_proceeds_intensity_yoy_v1', 'dividend_yield_3y_avg', 'dp_ttm', 'dpo_20', 'dragon_tiger_institution_net_pressure_20_v1', 'ebitda_to_market', 'efx_annual_earnings_yield', 'efx_volume_ratio', 'ep_ttm', 'etp5', 'extreme_move_event', 'holder_number_chg', 'id2_close_vs_pm_vwap', 'id2_close_vs_pm_vwap_20', 'id2_hi_lo_pos_gap', 'id2_parkinson_vol', 'id2_ret_concentration', 'idio_vol_60', 'idt_overnight_minus_intraday', 'idt_rv_daily', 'idt_rv_term_structure_slope', 'idt_vol_stability', 'ind_bps_yoy', 'ind_dt_netprofit_yoy', 'ind_int_to_talcap', 'interest_coverage', 'intraday_vol_ratio_5d', 'inventory_turnover', 'lf_margin_dip_demand_corr_60', 'limit_broken_ratio_20', 'limit_days_since_up_20', 'limit_down_event_5', 'log_mv', 'luna_minute_return_volume_corr_5d_v1', 'luna_minute_return_volume_lead_lag_5d_v1', 'luna_minute_unexpected_clock_volume_return_5d_v1', 'luna_roll_bounce_proxy_20d_v1', 'luna_turnover_weighted_intraday_return_path_20d_v1', 'margin_repay_deceleration', 'margin_repay_shock', 'mf_amount_weighted_direction', 'mf_big_order_net_ac1_20', 'mf_net_inflow_5d', 'mf_net_vol_surprise_20', 'mf_small_order_avg_price_dev', 'momentum_120', 'momentum_20', 'momentum_250', 'momentum_60', 'ocf_to_profit', 'ocf_to_revenue', 'open5_capacity_floor_ratio_20', 'overnight_ma_20d', 'overnight_ma_5d', 'overnight_ma_60d', 'overnight_std_5d', 'pe_own_history_percentile_252_20', 'price_delay_r2_60', 'price_distance_from_52w_low', 'price_to_52w_high', 'qf_cash_margin_floor_4q', 'qf_cash_margin_yoy_change', 'qf_core_roe_floor_4q', 'qf_core_roe_vol_4q', 'qf_core_roe_yoy_change', 'qf_roa_yoy_change', 'qf_sales_growth_accel', 'qf_sales_growth_vol_4q', 'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7', 'r10gc_bias_turn_126_252_v1_a9656f4fececd030', 'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581', 'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742', 'r10gc_high_low_21_v1_ca60e882d8b5c22f', 'r10gc_high_low_252_v1_facb1d1f647f48ca', 'r10gc_high_low_63_v1_34a74707a9f916a3', 'r10gc_income_tax_yoy_v1_c051c303608f0a17', 'r10gc_ret_std_21_v1_51f3cc1a8b65d126', 'r10gc_ret_std_252_v1_db7166018e1a0511', 'r10gc_ret_std_63_v1_19b9e9fa082c7cec', 'r10gc_turn_lvl_21_v1_2bab2360d6cb7099', 'r10gc_turn_lvl_252_v1_2dd70c23d17694f4', 'r10gc_turn_lvl_63_v1_7d51db9d4ff08793', 'r10gc_turn_std_126_v1_e96f93f78ed0e472', 'r10gc_turn_std_252_v1_9a4d3d577535e360', 'r10gc_turn_std_42_v1_21349ae0e32c1db7', 'r10gc_yoy_net_asset_v1_2a57af1e5c40492f', 'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac', 'r10gc_yoy_ocf_v1_066e6046572baf9c', 'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca', 'r11gc_amount_ma_20_v1_1858415feaa5dbe6', 'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732', 'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134', 'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa', 'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1', 'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f', 'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe', 'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1', 'r11gc_bias_turn_126_504_v1_e3ccc91522792d65', 'r11gc_bias_turn_21_504_v1_111533df505215cb', 'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260', 'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad', 'r11gc_bias_turn_63_504_v1_387613367cbd4dd9', 'r11gc_high_low_126_v1_2666509099db4a47', 'r11gc_high_low_42_v1_36fd67d17bea68ac', 'r11gc_ret_std_42_v1_23474362384bc399', 'r11gc_turn_lvl_10_v1_c377944b650ec037', 'r11gc_turn_lvl_126_v1_ef48ac322c8d0929', 'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4', 'r11gc_turn_lvl_42_v1_24d04a044ce607a0', 'r11gc_turn_lvl_5_v1_332d53f4bb907a79', 'r11gc_turn_std_63_v1_5ef776ad40ef77f6', 'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3', 'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1', 'r12gc_asset_turnover_v1_40d616e07fd4a097', 'r12gc_cash_ratio_v1_7ef2829865ad2cc2', 'r12gc_de_v1_d4cd33b978d63b0a', 'r12gc_eps_q_v1_8f3703e8eb218668', 'r12gc_eps_ttm_v1_2d84c57b9ea5f85d', 'r12gc_eps_y_v1_6f0a67c91531a732', 'r12gc_equity_turnover_v1_4cba36560ca472e5', 'r12gc_fcf_to_market_v1_49c0b5d214b35db0', 'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2', 'r12gc_float_size_v1_8b275acb0cb20dec', 'r12gc_gpm_q_v1_842e57e4d0d033e5', 'r12gc_gpm_ttm_v1_7e99428574d400ea', 'r12gc_gpm_y_v1_102eddddb8fac4c4', 'r12gc_log_price_v1_0a22efbc7b6bb1f7', 'r12gc_market_value_leverage_v1_9f3705df7636e0cc', 'r12gc_ncf_to_market_v1_71cf1e0deddc7070', 'r12gc_npm_q_v1_a1e5e8bb0a48de33', 'r12gc_npm_ttm_v1_4e4381d67f1d7391', 'r12gc_npm_y_v1_f78b237b3b7c1b18', 'r12gc_opm_ttm_v1_2827ff5d605bdeeb', 'r12gc_opm_y_v1_6e2f1f9aaf3c6106', 'r12gc_opt_tpro_v1_d832d118e2414259', 'r12gc_quick_ratio_v1_ea13af873ce572fc', 'r12gc_receivable_turnover_v1_458e2aaecafa62b9', 'r12gc_return_42_v1_0032bf23a28de8f7', 'r12gc_roa_q_v1_4b4ae2280384ebde', 'r12gc_roa_y_v1_6e585294932485e4', 'r12gc_roe_y_v1_bca9de9f86ce36dd', 'r12gc_sales_to_market_v1_ff344107e3f2c925', 'r13f_gpm_dispersion_v1_d45cc0c6c766d353', 'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485', 'r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43', 'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e', 'r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6', 'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4', 'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254', 'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41', 'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576', 'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a', 'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab', 'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2', 'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd', 'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504', 'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9', 'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981', 'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449', 'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd', 'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70', 'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711', 'r13p_fip_return_discreteness_v1_94875f42e1e5efcf', 'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4', 'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970', 'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769', 'r14f28_tax_cash_refund_share_v1_3904a84026422c3e', 'r14f29_intangible_amort_share_v1_476979a530c60728', 'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708', 'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8', 'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976', 'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f', 'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e', 'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283', 'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5', 'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f', 'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8', 'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f', 'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79', 'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c', 'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb', 'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501', 'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394', 'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf', 'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4', 'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3', 'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08', 'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4', 'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b', 'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177', 'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8', 'r15p14_monthly_component_range_memory_v1_6fe135138d05893d', 'r15t3_overnight_variance_share_v1_09b9ae4f22c98618', 'r15t3_spillover_v1_432027233601b658', 'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43', 'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e', 'r17cg_chip_gini_38d02c6cc01fbd71', 'r17cg_p90_gap_chg20_c91115e3f691152c', 'r17cg_peak_vs_top3_d62c93f9f9b52f89', 'r17cg_skew_chg20_4c9f6345c8034e61', 'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb', 'r3b_intraday_rv_skewness_v2_44ef55d83a759fba', 'r4a_forecast_landing_gap_v3_972c0653571ab5d8', 'r4a_sue_accel_v1_4b443eb2d4fda83c', 'r4a_sue_seasonal_q_v1_f1def0b01eb0b979', 'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb', 'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8', 'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9', 'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5', 'r4e_idio_max_20_v1_d0d201efd7755e86', 'r4j_same_month_consistency_v1_be7f8ede9c4b5afe', 'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1', 'r4t_preann_turnover_shock_v1_3a95800106c754f2', 'r4t_preann_vol_expansion_v1_bebf97b2c5260706', 'r7a_tax_expense_seasonal_change_v2_371da87d5055df86', 'r7e_context_salience20_v1_f4efb8789772d003', 'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035', 'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe', 'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728', 'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f', 'raw_price_tick_clustering_20', 'ret_skew_20', 'revenue_cagr_3y', 'reversal_2d', 'roa_ttm', 'roc_12', 'roe_ttm', 'rsi_14', 'rsrs_beta_18', 'rv_term_structure', 's26_liq_up_fragility_v1_b43c747ff9090bc2', 's26_structure_side_hhi_v1_bb77e106a875308a', 'short_term_reversal_5', 'sp_ttm', 'td_setup_count', 'three_black_crows', 'toplist_multi_reason_breadth_20_v1', 'turnover_anomaly_20', 'turnover_f_delta_5', 'turnover_std_20', 'vol_120', 'vol_clustering_20', 'vol_of_rv', 'vol_ratio_ma5_ma20', 'volume_ratio', 'yoy_revenue'], 'technical_feature_names': ['momentum_20', 'momentum_60', 'momentum_120', 'reversal_2d', 'short_term_reversal_5', 'ret_skew_20', 'vol_120', 'beta_60', 'idio_vol_60', 'log_mv', 'price_to_52w_high', 'atr_14_ratio', 'rsi_14', 'roc_12', 'dpo_20', 'amihud_daily_5', 'overnight_std_5d', 'holder_number_chg', 'interest_coverage'], 'flow_indices': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281], 'technical_indices': [82, 84, 81, 259, 268, 257, 276, 20, 53, 68, 95, 19, 263, 261, 39, 13, 91, 47, 61], 'output_horizons': [1, 1], 'flow_fusion_weight': 1.0, 'absolute_sample_caps': [512], 'absolute_stock_ridge': 0.05, 'absolute_market_ridge': 0.25, 'absolute_intercept_ridge': 1e-08, 'absolute_target_clip': {1: 0.12, 5: 0.3}, 'absolute_loss_scale': {1: 0.03, 5: 0.08}, 'absolute_label_weights': {1: 0.75, 5: 0.25}, 'absolute_stage_bag': 'one fixed training-only ridge fit', 'cost_gate_multiplier': 1.0, 'ensemble_sum_members': 4, 'final_prediction_backend': 'CPU canonical rank outputs; CUDA train/validation raw heads numerically checked', 'retrain_parent': 'V247', 'snapshot_meta_sha256': 'd4c3dea169ea9c4305aeb04226c39bc473853e284eeb2d4ec5cdc18ceaa0c8e0', 'fund_feature_names': ['afx_cf_im_net_cashflow_oper_act', 'afx_fi_fcfe', 'afx_fi_fcff', 'afx_fi_ocf_to_interestdebt', 'afx_fi_ocf_to_opincome', 'afx_fi_ocf_to_profit', 'afx_fi_ocfps', 'afx_fi_q_gr_qoq', 'afx_fi_q_gsprofit_margin', 'afx_fi_q_netprofit_qoq', 'afx_fi_q_ocf_to_or', 'afx_is_basic_eps', 'afx_is_ebitda', 'amihud_daily_5', 'amount_mom_accel', 'amount_ratio_20', 'annual_credit_impairment_adjustment_assets_v1', 'annual_report_lag_median3_v1', 'asset_growth_qoq', 'atr_14_ratio', 'beta_60', 'bp', 'bs_other_receiv_to_assets', 'bw_strength_sensitivity_20', 'ca_range_excess_5_v1', 'ca_tail_pressure_5_v1', 'calendar_gap_idio_variance_slope_60', 'cash_conversion_cycle', 'cash_sales_ratio', 'cf_purchase_cash_intensity', 'cfcr', 'cfp_ttm', 'close30_ret', 'corwin_schultz_overnight_adjusted_hl_proxy_20', 'cp_momentum_lowvol_20', 'cp_value_momentum_div', 'disposal_proceeds_intensity_yoy_v1', 'dividend_yield_3y_avg', 'dp_ttm', 'dpo_20', 'dragon_tiger_institution_net_pressure_20_v1', 'ebitda_to_market', 'efx_annual_earnings_yield', 'efx_volume_ratio', 'ep_ttm', 'etp5', 'extreme_move_event', 'holder_number_chg', 'id2_close_vs_pm_vwap', 'id2_close_vs_pm_vwap_20', 'id2_hi_lo_pos_gap', 'id2_parkinson_vol', 'id2_ret_concentration', 'idio_vol_60', 'idt_overnight_minus_intraday', 'idt_rv_daily', 'idt_rv_term_structure_slope', 'idt_vol_stability', 'ind_bps_yoy', 'ind_dt_netprofit_yoy', 'ind_int_to_talcap', 'interest_coverage', 'intraday_vol_ratio_5d', 'inventory_turnover', 'lf_margin_dip_demand_corr_60', 'limit_broken_ratio_20', 'limit_days_since_up_20', 'limit_down_event_5', 'log_mv', 'luna_minute_return_volume_corr_5d_v1', 'luna_minute_return_volume_lead_lag_5d_v1', 'luna_minute_unexpected_clock_volume_return_5d_v1', 'luna_roll_bounce_proxy_20d_v1', 'luna_turnover_weighted_intraday_return_path_20d_v1', 'margin_repay_deceleration', 'margin_repay_shock', 'mf_amount_weighted_direction', 'mf_big_order_net_ac1_20', 'mf_net_inflow_5d', 'mf_net_vol_surprise_20', 'mf_small_order_avg_price_dev', 'momentum_120', 'momentum_20', 'momentum_250', 'momentum_60', 'ocf_to_profit', 'ocf_to_revenue', 'open5_capacity_floor_ratio_20', 'overnight_ma_20d', 'overnight_ma_5d', 'overnight_ma_60d', 'overnight_std_5d', 'pe_own_history_percentile_252_20', 'price_delay_r2_60', 'price_distance_from_52w_low', 'price_to_52w_high', 'qf_cash_margin_floor_4q', 'qf_cash_margin_yoy_change', 'qf_core_roe_floor_4q', 'qf_core_roe_vol_4q', 'qf_core_roe_yoy_change', 'qf_roa_yoy_change', 'qf_sales_growth_accel', 'qf_sales_growth_vol_4q', 'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7', 'r10gc_bias_turn_126_252_v1_a9656f4fececd030', 'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581', 'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742', 'r10gc_high_low_21_v1_ca60e882d8b5c22f', 'r10gc_high_low_252_v1_facb1d1f647f48ca', 'r10gc_high_low_63_v1_34a74707a9f916a3', 'r10gc_income_tax_yoy_v1_c051c303608f0a17', 'r10gc_ret_std_21_v1_51f3cc1a8b65d126', 'r10gc_ret_std_252_v1_db7166018e1a0511', 'r10gc_ret_std_63_v1_19b9e9fa082c7cec', 'r10gc_turn_lvl_21_v1_2bab2360d6cb7099', 'r10gc_turn_lvl_252_v1_2dd70c23d17694f4', 'r10gc_turn_lvl_63_v1_7d51db9d4ff08793', 'r10gc_turn_std_126_v1_e96f93f78ed0e472', 'r10gc_turn_std_252_v1_9a4d3d577535e360', 'r10gc_turn_std_42_v1_21349ae0e32c1db7', 'r10gc_yoy_net_asset_v1_2a57af1e5c40492f', 'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac', 'r10gc_yoy_ocf_v1_066e6046572baf9c', 'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca', 'r11gc_amount_ma_20_v1_1858415feaa5dbe6', 'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732', 'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134', 'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa', 'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1', 'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f', 'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe', 'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1', 'r11gc_bias_turn_126_504_v1_e3ccc91522792d65', 'r11gc_bias_turn_21_504_v1_111533df505215cb', 'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260', 'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad', 'r11gc_bias_turn_63_504_v1_387613367cbd4dd9', 'r11gc_high_low_126_v1_2666509099db4a47', 'r11gc_high_low_42_v1_36fd67d17bea68ac', 'r11gc_ret_std_42_v1_23474362384bc399', 'r11gc_turn_lvl_10_v1_c377944b650ec037', 'r11gc_turn_lvl_126_v1_ef48ac322c8d0929', 'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4', 'r11gc_turn_lvl_42_v1_24d04a044ce607a0', 'r11gc_turn_lvl_5_v1_332d53f4bb907a79', 'r11gc_turn_std_63_v1_5ef776ad40ef77f6', 'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3', 'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1', 'r12gc_asset_turnover_v1_40d616e07fd4a097', 'r12gc_cash_ratio_v1_7ef2829865ad2cc2', 'r12gc_de_v1_d4cd33b978d63b0a', 'r12gc_eps_q_v1_8f3703e8eb218668', 'r12gc_eps_ttm_v1_2d84c57b9ea5f85d', 'r12gc_eps_y_v1_6f0a67c91531a732', 'r12gc_equity_turnover_v1_4cba36560ca472e5', 'r12gc_fcf_to_market_v1_49c0b5d214b35db0', 'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2', 'r12gc_float_size_v1_8b275acb0cb20dec', 'r12gc_gpm_q_v1_842e57e4d0d033e5', 'r12gc_gpm_ttm_v1_7e99428574d400ea', 'r12gc_gpm_y_v1_102eddddb8fac4c4', 'r12gc_log_price_v1_0a22efbc7b6bb1f7', 'r12gc_market_value_leverage_v1_9f3705df7636e0cc', 'r12gc_ncf_to_market_v1_71cf1e0deddc7070', 'r12gc_npm_q_v1_a1e5e8bb0a48de33', 'r12gc_npm_ttm_v1_4e4381d67f1d7391', 'r12gc_npm_y_v1_f78b237b3b7c1b18', 'r12gc_opm_ttm_v1_2827ff5d605bdeeb', 'r12gc_opm_y_v1_6e2f1f9aaf3c6106', 'r12gc_opt_tpro_v1_d832d118e2414259', 'r12gc_quick_ratio_v1_ea13af873ce572fc', 'r12gc_receivable_turnover_v1_458e2aaecafa62b9', 'r12gc_return_42_v1_0032bf23a28de8f7', 'r12gc_roa_q_v1_4b4ae2280384ebde', 'r12gc_roa_y_v1_6e585294932485e4', 'r12gc_roe_y_v1_bca9de9f86ce36dd', 'r12gc_sales_to_market_v1_ff344107e3f2c925', 'r13f_gpm_dispersion_v1_d45cc0c6c766d353', 'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485', 'r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43', 'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e', 'r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6', 'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4', 'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254', 'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41', 'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576', 'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a', 'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab', 'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2', 'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd', 'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504', 'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9', 'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981', 'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449', 'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd', 'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70', 'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711', 'r13p_fip_return_discreteness_v1_94875f42e1e5efcf', 'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4', 'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970', 'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769', 'r14f28_tax_cash_refund_share_v1_3904a84026422c3e', 'r14f29_intangible_amort_share_v1_476979a530c60728', 'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708', 'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8', 'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976', 'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f', 'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e', 'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283', 'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5', 'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f', 'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8', 'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f', 'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79', 'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c', 'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb', 'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501', 'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394', 'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf', 'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4', 'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3', 'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08', 'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4', 'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b', 'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177', 'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8', 'r15p14_monthly_component_range_memory_v1_6fe135138d05893d', 'r15t3_overnight_variance_share_v1_09b9ae4f22c98618', 'r15t3_spillover_v1_432027233601b658', 'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43', 'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e', 'r17cg_chip_gini_38d02c6cc01fbd71', 'r17cg_p90_gap_chg20_c91115e3f691152c', 'r17cg_peak_vs_top3_d62c93f9f9b52f89', 'r17cg_skew_chg20_4c9f6345c8034e61', 'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb', 'r3b_intraday_rv_skewness_v2_44ef55d83a759fba', 'r4a_forecast_landing_gap_v3_972c0653571ab5d8', 'r4a_sue_accel_v1_4b443eb2d4fda83c', 'r4a_sue_seasonal_q_v1_f1def0b01eb0b979', 'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb', 'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8', 'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9', 'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5', 'r4e_idio_max_20_v1_d0d201efd7755e86', 'r4j_same_month_consistency_v1_be7f8ede9c4b5afe', 'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1', 'r4t_preann_turnover_shock_v1_3a95800106c754f2', 'r4t_preann_vol_expansion_v1_bebf97b2c5260706', 'r7a_tax_expense_seasonal_change_v2_371da87d5055df86', 'r7e_context_salience20_v1_f4efb8789772d003', 'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035', 'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe', 'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728', 'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f', 'raw_price_tick_clustering_20', 'ret_skew_20', 'revenue_cagr_3y', 'reversal_2d', 'roa_ttm', 'roc_12', 'roe_ttm', 'rsi_14', 'rsrs_beta_18', 'rv_term_structure', 's26_liq_up_fragility_v1_b43c747ff9090bc2', 's26_structure_side_hhi_v1_bb77e106a875308a', 'short_term_reversal_5', 'sp_ttm', 'td_setup_count', 'three_black_crows', 'toplist_multi_reason_breadth_20_v1', 'turnover_anomaly_20', 'turnover_f_delta_5', 'turnover_std_20', 'vol_120', 'vol_clustering_20', 'vol_of_rv', 'vol_ratio_ma5_ma20', 'volume_ratio', 'yoy_revenue'], 'fund_indices': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281], 'script_parent': 'V247', 'input_migration': {'snapshot_built_at': '2026-10-24 20:55:35', 'snapshot_stock_feature_count': 282, 'snapshot_market_factor_count': 47, 'parent_unit': 'V247', 'added_features': ['annual_credit_impairment_adjustment_assets_v1', 'annual_report_lag_median3_v1', 'ca_range_excess_5_v1', 'ca_tail_pressure_5_v1', 'calendar_gap_idio_variance_slope_60', 'corwin_schultz_overnight_adjusted_hl_proxy_20', 'disposal_proceeds_intensity_yoy_v1', 'dragon_tiger_institution_net_pressure_20_v1', 'lf_margin_dip_demand_corr_60', 'luna_minute_return_volume_corr_5d_v1', 'luna_minute_return_volume_lead_lag_5d_v1', 'luna_minute_unexpected_clock_volume_return_5d_v1', 'luna_roll_bounce_proxy_20d_v1', 'luna_turnover_weighted_intraday_return_path_20d_v1', 'pe_own_history_percentile_252_20', 'price_delay_r2_60', 'r13f_gpm_dispersion_v1_d45cc0c6c766d353', 'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485', 'r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43', 'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e', 'r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6', 'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4', 'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254', 'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41', 'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576', 'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a', 'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab', 'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2', 'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd', 'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504', 'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9', 'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981', 'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449', 'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd', 'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70', 'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711', 'r13p_fip_return_discreteness_v1_94875f42e1e5efcf', 'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4', 'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970', 'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769', 'r14f28_tax_cash_refund_share_v1_3904a84026422c3e', 'r14f29_intangible_amort_share_v1_476979a530c60728', 'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708', 'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8', 'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976', 'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f', 'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e', 'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283', 'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5', 'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f', 'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8', 'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f', 'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79', 'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c', 'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb', 'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501', 'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394', 'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf', 'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4', 'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3', 'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08', 'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4', 'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b', 'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177', 'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8', 'r15p14_monthly_component_range_memory_v1_6fe135138d05893d', 'r15t3_overnight_variance_share_v1_09b9ae4f22c98618', 'r15t3_spillover_v1_432027233601b658', 'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43', 'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e', 'r17cg_chip_gini_38d02c6cc01fbd71', 'r17cg_p90_gap_chg20_c91115e3f691152c', 'r17cg_peak_vs_top3_d62c93f9f9b52f89', 'r17cg_skew_chg20_4c9f6345c8034e61', 'raw_price_tick_clustering_20', 'toplist_multi_reason_breadth_20_v1'], 'removed_features': [], 'active_stock_features': 282}, 'target_anchor': {'topn': 500, 'money': 1500000000.0, 'ic_weight': 0.7}, 'neural_kind': 'expectile_mlp', 'neural_score_horizon': 1, 'score_transform': 'raw_neural', 'personal_validation': {'money': 100000, 'n': 5, 'period': 1, 'band': 40, 'ic_weight': 0.7, 'drawdown_weight': 0.1, 'absolute_gate': False}, 'train_window': 0, 'neural_market_input': True, 'mlp_layernorm': True, 'huber_aux_weight': 0.1, 'score_horizon_weights': {1: 1.0}, 'legacy_feature_indices': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23, 27, 28, 29, 30, 31, 32, 34, 35, 37, 38, 39, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 65, 66, 67, 68, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 273, 274, 275, 276, 277, 278, 279, 280, 281], 'new_feature_indices': [16, 17, 24, 25, 26, 33, 36, 40, 64, 69, 70, 71, 72, 73, 92, 93, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 256, 272], 'macro_selection': 'same strict macro criterion and same-selected-epoch mature refit asV263; no Top5 selection', 'ridge_penalty': 0.1, 'ridge_block_days': 32, 'research_idea': 'positive broad IC hides poor high-beta/high-volatility funded head; directly penalize overforecasting raw returns through lower-expectile utility rather than rank IC or posthoc cash gates', 'selection_refit_protocol': True, 'residual_training_window': 756, 'residual_hidden': [128, 64], 'residual_activation': 'SiLU', 'residual_output_bound': 0.5, 'residual_dropout': 0.1, 'loss_parent_max_correlation': 0.7, 'loss_parent_penalty_weight': 1.0, 'expectile_tau': 0.2, 'raw_return_scale': 0.02, 'raw_target_clip': 0.2, 'relative_output': 'linear raw-return expectile divided by0.02, not mean return or percentile'}
 if feature_block() != 'factors':
-    raise ValueError(
-        f'V4 是全因子正式训练单元，特征块必须是 factors（当前 ={feature_block()}）。\n'
-        f'  · 若想跑 20 列的样例：用 experiments/V1，不要在 V4 里降级。\n'
-        f'  · 若确实要改本单元的特征块：先改 run.py 的 DEFAULT_FEATURE_BLOCK 与本闸，'
-        f'并同步更新 docs/iterations.md 的配置摘要（这属于科研决定，不是运行参数）。')
-
-# =============================================================================
-# ④ 网络与损失（来自用户 MLP.py 参考脚本）
-# =============================================================================
-
+    raise ValueError(f'V4 是全因子正式训练单元，特征块必须是 factors（当前 ={feature_block()}）。\n  · 若想跑 20 列的样例：用 experiments/V1，不要在 V4 里降级。\n  · 若确实要改本单元的特征块：先改 run.py 的 DEFAULT_FEATURE_BLOCK 与本闸，并同步更新 docs/iterations.md 的配置摘要（这属于科研决定，不是运行参数）。')
 
 def head_of(label):
     return RECIPE['output_horizons'].index(int(label.split('_ret_')[1].rstrip('d')))
 
-
 class MarketGate(nn.Module):
-    """市场门控：由当日市场状态生成**逐通道**乘性门，调制股票分支的隐藏表示。
-
-    门取 `1 + tanh(·)` ∈ (0,2)，两个头都零初始化 ⇒ 起点 gate 恒等于 1，也就是
-    「训练开始那一刻与无门控模型逐位等价」，门控只学相对中性的偏移。换成 sigmoid
-    门则在初始状态就砍掉一半信号，是另一种（更弱的）模型，不是同一个起点。
-
-    ★ 门必须逐通道（宽度 = 被乘隐层的宽度）。若简化成每天一个标量，`wpcc` 对同日
-    截面的正仿射变换精确不变 ⇒ 梯度恒为 0、市场输入永远不起作用，且**不会报错**。
-    """
 
     def __init__(self, market_dim, widths):
         super().__init__()
         self.encoder = nn.Sequential(nn.Linear(market_dim, 64), nn.GELU())
-        self.heads = nn.ModuleList(nn.Linear(64, width) for width in widths)
+        self.heads = nn.ModuleList((nn.Linear(64, width) for width in widths))
 
     def zero_heads(self):
-        """把门控头清零：gate 恒等于 1。必须在通用权重初始化之后调用。"""
         for head in self.heads:
             nn.init.zeros_(head.weight)
             nn.init.zeros_(head.bias)
 
     def forward(self, market):
         z = self.encoder(market.float())
-        return [1. + torch.tanh(head(z)) for head in self.heads]
-
+        return [1.0 + torch.tanh(head(z)) for head in self.heads]
 
 class PredictModel(nn.Module):
-    """Fresh flow GRU plus a separately fitted absolute technical branch."""
+
     def __init__(self, input_dim, market_dim, horizons=None):
         super().__init__()
         self.horizons = list(horizons or RECIPE['output_horizons'])
@@ -489,123 +187,124 @@ class PredictModel(nn.Module):
         self.technical_indices = RECIPE['technical_indices']
         if input_dim != len(RECIPE['feature_names']) or self.horizons != RECIPE['output_horizons']:
             raise ValueError('frozen composite feature/output contract changed')
-        self.encoder = nn.Sequential(nn.Linear(len(self.flow_indices),24),nn.LayerNorm(24),nn.GELU())
-        self.recurrent = nn.GRU(24,32,batch_first=True)
-        # ★ wave2：第二条腿（基本面）——同样的 encoder+GRU 结构、独立参数
+        self.encoder = nn.Sequential(nn.Linear(len(self.flow_indices), 24), nn.LayerNorm(24), nn.GELU())
+        self.recurrent = nn.GRU(24, 32, batch_first=True)
         self.fund_indices = RECIPE['fund_indices']
-        self.encoder_fund = nn.Sequential(nn.Linear(len(self.fund_indices),24),nn.LayerNorm(24),nn.GELU())
-        self.recurrent_fund = nn.GRU(24,32,batch_first=True)
-        self.output_layer = nn.Sequential(nn.LayerNorm(64),nn.Linear(64,len(RECIPE['label_horizons'])))
-        self.absolute_basis_dim = 3*len(self.technical_indices)+market_dim+1
-        self.register_buffer('absolute_coef',torch.zeros(2,self.absolute_basis_dim))
+        self.encoder_fund = nn.Sequential(nn.Linear(len(self.fund_indices), 24), nn.LayerNorm(24), nn.GELU())
+        self.recurrent_fund = nn.GRU(24, 32, batch_first=True)
+        self.output_layer = nn.Sequential(nn.LayerNorm(64), nn.Linear(64, len(RECIPE['label_horizons'])))
+        self.absolute_basis_dim = 3 * len(self.technical_indices) + market_dim + 1
+        self.register_buffer('absolute_coef', torch.zeros(2, self.absolute_basis_dim))
 
     def absolute_basis_numpy(self, current, market=None):
-        x=np.clip(np.asarray(current,np.float64)[:,self.technical_indices],-5.,5.)
-        parts=[x,np.tanh(x),x*x/(1+x*x)]
+        x = np.clip(np.asarray(current, np.float64)[:, self.technical_indices], -5.0, 5.0)
+        parts = [x, np.tanh(x), x * x / (1 + x * x)]
         if self.market_dim:
-            if market is None:raise ValueError('absolute branch requires current causal market inputs')
-            parts.append(np.broadcast_to(np.asarray(market,np.float64),(len(x),self.market_dim)))
-        parts.append(np.ones((len(x),1),np.float64))
-        return np.concatenate(parts,axis=1)
+            if market is None:
+                raise ValueError('absolute branch requires current causal market inputs')
+            parts.append(np.broadcast_to(np.asarray(market, np.float64), (len(x), self.market_dim)))
+        parts.append(np.ones((len(x), 1), np.float64))
+        return np.concatenate(parts, axis=1)
 
     def absolute_forward(self, current, market=None):
-        x=current[:,self.technical_indices].float().clamp(-5.,5.)
-        parts=[x,torch.tanh(x),x*x/(1+x*x)]
+        x = current[:, self.technical_indices].float().clamp(-5.0, 5.0)
+        parts = [x, torch.tanh(x), x * x / (1 + x * x)]
         if self.market_dim:
-            if market is None:raise ValueError('absolute branch requires current causal market inputs')
-            parts.append(market.float().expand(len(x),-1))
-        parts.append(torch.ones((len(x),1),dtype=x.dtype,device=x.device))
-        return torch.cat(parts,dim=1)@self.absolute_coef.T
+            if market is None:
+                raise ValueError('absolute branch requires current causal market inputs')
+            parts.append(market.float().expand(len(x), -1))
+        parts.append(torch.ones((len(x), 1), dtype=x.dtype, device=x.device))
+        return torch.cat(parts, dim=1) @ self.absolute_coef.T
 
     def forward(self, tsdata, market=None):
-        if tsdata.ndim!=3 or tsdata.shape[1]!=RECIPE['sequence_days']:
+        if tsdata.ndim != 3 or tsdata.shape[1] != RECIPE['sequence_days']:
             raise ValueError('expected causal eight-session stock input')
-        flow=tsdata[:,:,self.flow_indices].float().clamp(-5.,5.)
-        hidden,_=self.recurrent(self.encoder(flow))
-        # ★ wave2：第二条腿在**同一次前向**里出隐态，与第一条腿拼接后才出排序头
-        fund=tsdata[:,:,self.fund_indices].float().clamp(-5.,5.)
-        hidden_fund,_=self.recurrent_fund(self.encoder_fund(fund))
-        both=torch.cat([hidden[:,-1],hidden_fund[:,-1]],dim=1)
-        rank_heads=self.output_layer(both)
-        absolute=self.absolute_forward(tsdata[:,-1],market)
-        return torch.cat([rank_heads,absolute[:,:1]],dim=1)
+        flow = tsdata[:, :, self.flow_indices].float().clamp(-5.0, 5.0)
+        hidden, _ = self.recurrent(self.encoder(flow))
+        fund = tsdata[:, :, self.fund_indices].float().clamp(-5.0, 5.0)
+        hidden_fund, _ = self.recurrent_fund(self.encoder_fund(fund))
+        both = torch.cat([hidden[:, -1], hidden_fund[:, -1]], dim=1)
+        rank_heads = self.output_layer(both)
+        absolute = self.absolute_forward(tsdata[:, -1], market)
+        return torch.cat([rank_heads, absolute[:, :1]], dim=1)
 
-
-def fit_absolute_component(model,panel,train_days,seed):
-    """All five predeclared nested sampling fits; date equal, training labels only."""
-    caps=RECIPE['absolute_sample_caps'];dim=model.absolute_basis_dim
-    xx=np.zeros((len(caps),dim,dim),np.float64)
-    xy=np.zeros((len(caps),dim,2),np.float64)
-    yy=np.zeros((len(caps),2),np.float64)
-    dates=np.zeros(len(caps),np.int64);samples=np.zeros(len(caps),np.int64)
+def fit_absolute_component(model, panel, train_days, seed):
+    caps = RECIPE['absolute_sample_caps']
+    dim = model.absolute_basis_dim
+    xx = np.zeros((len(caps), dim, dim), np.float64)
+    xy = np.zeros((len(caps), dim, 2), np.float64)
+    yy = np.zeros((len(caps), 2), np.float64)
+    dates = np.zeros(len(caps), np.int64)
+    samples = np.zeros(len(caps), np.int64)
     for day in train_days:
-        d=int(day);known=panel.technical_mask(d)
-        for h in [1,5]:known&=np.isfinite(panel.Y[f'label_ret_{h}d'][d])
-        candidates=np.flatnonzero(known)
-        if len(candidates)<3:continue
-        rng=np.random.default_rng(np.random.SeedSequence([int(seed),d]))
-        selected=candidates[rng.permutation(len(candidates))[:caps[-1]]]
-        phi=model.absolute_basis_numpy(panel.X[d,selected],panel.M[d] if model.market_dim else None)
-        y=np.column_stack([np.clip(panel.Y[f'label_ret_{h}d'][d,selected],
-            -RECIPE['absolute_target_clip'][h],RECIPE['absolute_target_clip'][h]) for h in [1,5]])
-        gram=np.zeros((dim,dim));cross=np.zeros((dim,2));sq=np.zeros(2);previous=0
-        for stage,cap in enumerate(caps):
-            n=min(cap,len(selected));xblock=phi[previous:n];yblock=y[previous:n]
-            gram+=xblock.T@xblock;cross+=xblock.T@yblock;sq+=(yblock*yblock).sum(axis=0)
-            xx[stage]+=gram/n;xy[stage]+=cross/n;yy[stage]+=sq/n
-            dates[stage]+=1;samples[stage]+=n;previous=n
-    if np.any(dates==0):raise ValueError('absolute branch has no valid training dates')
-    penalty=np.full(dim,RECIPE['absolute_stock_ridge'],np.float64)
-    penalty[3*len(model.technical_indices):-1]=RECIPE['absolute_market_ridge']
-    penalty[-1]=RECIPE['absolute_intercept_ridge']
-    stages=[]
-    for i,cap in enumerate(caps):
-        gram=xx[i]/dates[i];cross=xy[i]/dates[i];normal=gram+np.diag(penalty)
-        coef=np.linalg.solve(normal,cross)
-        residual=float(np.linalg.norm(normal@coef-cross)/(np.linalg.norm(cross)+1e-20))
-        if not np.isfinite(coef).all() or residual>1e-8:
+        d = int(day)
+        known = panel.technical_mask(d)
+        for h in [1, 5]:
+            known &= np.isfinite(panel.Y[f'label_ret_{h}d'][d])
+        candidates = np.flatnonzero(known)
+        if len(candidates) < 3:
+            continue
+        rng = np.random.default_rng(np.random.SeedSequence([int(seed), d]))
+        selected = candidates[rng.permutation(len(candidates))[:caps[-1]]]
+        phi = model.absolute_basis_numpy(panel.X[d, selected], panel.M[d] if model.market_dim else None)
+        y = np.column_stack([np.clip(panel.Y[f'label_ret_{h}d'][d, selected], -RECIPE['absolute_target_clip'][h], RECIPE['absolute_target_clip'][h]) for h in [1, 5]])
+        gram = np.zeros((dim, dim))
+        cross = np.zeros((dim, 2))
+        sq = np.zeros(2)
+        previous = 0
+        for stage, cap in enumerate(caps):
+            n = min(cap, len(selected))
+            xblock = phi[previous:n]
+            yblock = y[previous:n]
+            gram += xblock.T @ xblock
+            cross += xblock.T @ yblock
+            sq += (yblock * yblock).sum(axis=0)
+            xx[stage] += gram / n
+            xy[stage] += cross / n
+            yy[stage] += sq / n
+            dates[stage] += 1
+            samples[stage] += n
+            previous = n
+    if np.any(dates == 0):
+        raise ValueError('absolute branch has no valid training dates')
+    penalty = np.full(dim, RECIPE['absolute_stock_ridge'], np.float64)
+    penalty[3 * len(model.technical_indices):-1] = RECIPE['absolute_market_ridge']
+    penalty[-1] = RECIPE['absolute_intercept_ridge']
+    stages = []
+    for i, cap in enumerate(caps):
+        gram = xx[i] / dates[i]
+        cross = xy[i] / dates[i]
+        normal = gram + np.diag(penalty)
+        coef = np.linalg.solve(normal, cross)
+        residual = float(np.linalg.norm(normal @ coef - cross) / (np.linalg.norm(cross) + 1e-20))
+        if not np.isfinite(coef).all() or residual > 1e-08:
             raise FloatingPointError('absolute normal equation failure')
-        mse=np.maximum(np.einsum('dh,de,eh->h',coef,gram,coef)-2*(coef*cross).sum(axis=0)+yy[i]/dates[i],0.)
-        normalized_loss=sum(RECIPE['absolute_label_weights'][h]*mse[j]/RECIPE['absolute_loss_scale'][h]**2 for j,h in enumerate([1,5]))
-        normalized_loss/=sum(RECIPE['absolute_label_weights'].values())
-        stages.append(dict(coef=coef.T.astype(np.float32),fit_dates=int(dates[i]),sample_rows=int(samples[i]),
-            stock_sample_cap=int(cap),normal_equation_relative_residual=residual,train_loss=float(normalized_loss)))
-    averaged=np.mean(np.stack([x['coef'] for x in stages]),axis=0,dtype=np.float32)
-    with torch.no_grad():model.absolute_coef.copy_(torch.from_numpy(averaged).to(model.absolute_coef.device))
-    return dict(seed=int(seed),horizons=[1,5],sample_caps=list(caps),stages=stages,
-        bag_rule='all five training fits equally; no validation/test stage choice',
-        origin='fresh fits from this unit training partition; no other checkpoint read')
-
+        mse = np.maximum(np.einsum('dh,de,eh->h', coef, gram, coef) - 2 * (coef * cross).sum(axis=0) + yy[i] / dates[i], 0.0)
+        normalized_loss = sum((RECIPE['absolute_label_weights'][h] * mse[j] / RECIPE['absolute_loss_scale'][h] ** 2 for j, h in enumerate([1, 5])))
+        normalized_loss /= sum(RECIPE['absolute_label_weights'].values())
+        stages.append(dict(coef=coef.T.astype(np.float32), fit_dates=int(dates[i]), sample_rows=int(samples[i]), stock_sample_cap=int(cap), normal_equation_relative_residual=residual, train_loss=float(normalized_loss)))
+    averaged = np.mean(np.stack([x['coef'] for x in stages]), axis=0, dtype=np.float32)
+    with torch.no_grad():
+        model.absolute_coef.copy_(torch.from_numpy(averaged).to(model.absolute_coef.device))
+    return dict(seed=int(seed), horizons=[1, 5], sample_caps=list(caps), stages=stages, bag_rule='all fixed training fits equally; no validation/test stage choice', origin='fresh fits from this unit training partition; no other checkpoint read')
 
 def recipe_signature():
-    return hashlib.sha256(json.dumps(RECIPE,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
-
+    return hashlib.sha256(json.dumps(RECIPE, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 @torch.no_grad()
-def predict_absolute(model,panel,days,device):
-    """Auxiliary1d forecast; same weights and joint coverage, no future-label reads."""
+def predict_absolute(model, panel, days, device):
     model.eval()
-    out=np.full((len(days),len(panel.codes)),np.nan,np.float32)
-    for i,day in enumerate(days):
-        d=int(day);known=panel.mask(d)
+    out = np.full((len(days), len(panel.codes)), np.nan, np.float32)
+    for i, day in enumerate(days):
+        d = int(day)
+        known = panel.mask(d)
         if known.any():
-            x=torch.from_numpy(panel.X[d,known]).to(device)
-            market=torch.from_numpy(panel.M[d]).to(device) if panel.market_dim else None
-            out[i,known]=model.absolute_forward(x,market)[:,0].cpu().numpy()
+            x = torch.from_numpy(panel.X[d, known]).to(device)
+            market = torch.from_numpy(panel.M[d]).to(device) if panel.market_dim else None
+            out[i, known] = model.absolute_forward(x, market)[:, 0].cpu().numpy()
     return out
 
-
 def wpcc(preds, y):
-    """按预测名次加权的 Pearson 相关（WPCC），保留参考脚本公式。
-
-    权重依预测名次衰减（`RECIPE['loss_rank_decay'] ** (名次/(n-1))`）；方差围绕普通均值
-    而不是加权均值——不能偷偷换成另一种加权 Pearson，只增加了常数截面的数值保护。
-    每次输入必须是单个交易日的完整有效截面。
-
-    ★ V19：衰减底数从写死的 0.5 改成旋钮。0.5 时顶部权重 1、底部 0.5 —— **几乎是均权**；
-    而本项目测出「模型的钱在最顶端」，交付又只看前 5 名 ⇒ 更陡的加权是对这个观测的
-    直接推论。**改成旋钮而不是改常数**，是为了能按协议做多种子判决（改损失必须 ≥3 种子）。
-    """
     p = preds.reshape(-1)
     y = y.reshape(-1)
     n = p.numel()
@@ -613,31 +312,20 @@ def wpcc(preds, y):
         return p.sum() * 0
     order = torch.argsort(p, descending=True, stable=True)
     w = torch.empty_like(p)
-    w[order] = torch.pow(RECIPE['loss_rank_decay'],
-                         torch.arange(n, device=p.device, dtype=p.dtype) / (n - 1))
+    w[order] = torch.pow(RECIPE['loss_rank_decay'], torch.arange(n, device=p.device, dtype=p.dtype) / (n - 1))
     w_sum = w.sum()
     cov = (p * y * w).sum() / w_sum - (p * w).sum() * (y * w).sum() / w_sum.square()
     vp = ((p - p.mean()).square() * w).sum() / w_sum
     vy = ((y - y.mean()).square() * w).sum() / w_sum
     return -cov / (vp * vy).clamp_min(1e-16).sqrt()
 
-# =============================================================================
-# =============================================================================
-
-
 def metadata():
     return json.loads((data_root() / 'meta.json').read_text())
 
-
 def training_info(recipe):
-    """记录训练参数和实际输入列，供报告读取。"""
-    return dict(recipe=recipe, feature_source=str(data_root()/recipe['feature_block']),
-                feature_columns=feature_columns(metadata()),
-                market_columns=market_columns(metadata()) if recipe['market_gate'] else [])
-
+    return dict(recipe=recipe, feature_source=str(data_root() / recipe['feature_block']), feature_columns=feature_columns(metadata()), market_columns=market_columns(metadata()) if recipe['market_gate'] else [])
 
 def frame(root, kind, year, columns):
-    """读一个数据块的某一年，统一主键类型并断言无重复。"""
     p = root / kind / f'year={year}' / 'data.parquet'
     df = pq.ParquetFile(p).read(columns=['trade_date', 'stock_code'] + list(columns)).to_pandas()
     df['trade_date'] = df['trade_date'].astype(str).str[:10]
@@ -645,27 +333,9 @@ def frame(root, kind, year, columns):
     if df.duplicated(['trade_date', 'stock_code']).any():
         raise ValueError(f'{p}: 重复主键')
     return df.set_index(['trade_date', 'stock_code']).sort_index()
-
-
-#: 价格块的 8 列，与上游 `preparingdata.py:PRICE_COLUMNS` 逐字一致（前 7 列来自模块①
-#: 的 `stock_daily`、`adj_factor` 来自 `stock_adj_factor`，由快照块 `prices/` 落好）。
 PRICE_COLUMNS = ('open', 'high', 'low', 'close', 'pre_close', 'pct_chg', 'vol', 'adj_factor')
 
-
 def price_frame(root, year, index):
-    """读快照的价格块 `prices/year=YYYY/data.parquet`，按 `index`（当年的 (trade_date, stock_code) 乘积）对齐。
-
-    ★ 2026-09-26 起价格由上游 `preparingdata.py` 从模块① 复制进快照（见该脚本的 `prices` 块），
-      本单元只读 `trainingdata/`、不再直连 `datadownload/`。块里的列就是本文件
-      `PRICE_COLUMNS` 那 8 列，逐字来自原始表（float64，未复权、未填充）。
-
-    两条校验，对不上就直接报错、不静默错位：
-      ① 快照里那一年的**交易日集合**必须与面板当年完全一致（块与 factors 同轴，这是快照契约）；
-      ② 主键不得重复。
-    缺格（停牌 / 池内票当年没有日线）是 NaN —— 消费端正是靠这个 NaN 判"买不进"。
-    再往下的数值对拍由 `Prices.verify_labels()` 兜底：它用价格重算 5 个 horizon 的收益
-    与 `target` 逐格比，口径不一致会直接 raise。
-    """
     p = Path(root) / f'year={year}' / 'data.parquet'
     part = pq.ParquetFile(p).read(columns=['trade_date', 'stock_code', *PRICE_COLUMNS]).to_pandas()
     part['trade_date'] = part['trade_date'].astype(str).str[:10]
@@ -676,14 +346,10 @@ def price_frame(root, year, index):
     want = set(index.get_level_values(0))
     days_seen = set(part.index.get_level_values(0))
     if days_seen != want:
-        raise ValueError(
-            f'{year} 价格块日线轴与 factors 不一致（缺 {sorted(want - days_seen)[:3]} / '
-            f'多 {sorted(days_seen - want)[:3]}）—— 回测会错位；跑 preparingdata.py --prices-only 重建')
+        raise ValueError(f'{year} 价格块日线轴与 factors 不一致（缺 {sorted(want - days_seen)[:3]} / 多 {sorted(days_seen - want)[:3]}）—— 回测会错位；跑 preparingdata.py --prices-only 重建')
     return part.reindex(index)
 
-
 def market_frame(root, year, columns):
-    """读市场块的某一年：主键只有 trade_date，每日恰好一行。"""
     p = root / RECIPE['market_block'] / f'year={year}' / 'data.parquet'
     df = pq.ParquetFile(p).read(columns=['trade_date'] + list(columns)).to_pandas()
     df['trade_date'] = df['trade_date'].astype(str).str[:10]
@@ -691,27 +357,21 @@ def market_frame(root, year, columns):
         raise ValueError(f'{p}: 市场块 trade_date 重复')
     return df.set_index('trade_date').sort_index()
 
-
 def atomic_json(path, value):
-    """先写 .tmp 再 os.replace，保证读到的永远是完整 JSON。"""
     path = output_file(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_suffix(path.suffix + '.tmp')
     temp.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False), encoding='utf-8')
     os.replace(temp, path)
 
-
 def save_torch(path, value):
-    """同上，torch 检查点的原子写。"""
     path = output_file(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix('.tmp')
     torch.save(value, tmp)
     os.replace(tmp, path)
 
-
 def save_npy(path, value):
-    """同上，npy 打分的原子写。"""
     path = output_file(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix('.tmp')
@@ -719,40 +379,19 @@ def save_npy(path, value):
         np.save(f, value)
     os.replace(tmp, path)
 
-# =============================================================================
-# ⑥ 交易日轴与季度切分
-# =============================================================================
-
-
 def axis():
-    """交易日轴与股票轴：年份从 meta 的 built_years 来，顺序与 factors 块一致。"""
     root = data_root()
     meta = metadata()
     days = []
     for y in sorted(meta['built_years']):
         d = pq.ParquetFile(root / feature_block() / f'year={y}' / 'data.parquet').read(columns=['trade_date'])
         days.extend(sorted(set(d.column(0).to_pylist())))
-    return np.asarray(days), np.asarray(meta['axis']['codes'])
-
+    return (np.asarray(days), np.asarray(meta['axis']['codes']))
 
 def quarters(days):
-    """评价窗口固定为 2025-07-01 ~ 2026-06-30（用户指定，V16 及以后版本都遵守）。
-
-    入参 days 只为保持调用签名一致，不影响返回值——不能自行扩展或缩成部分季度。
-    """
-    if LIVE:
-        return [LIVE_QUARTER]
     return ['2025Q3', '2025Q4', '2026Q1', '2026Q2']
 
-
 def splits(days, purge_horizon=RECIPE['purge_horizon'], folds=4, quarter=None):
-    """一个季度的四折切分：训练/验证块在季度前 purge_horizon+1 日隔离，测试窗严格样本外。
-
-    `purge_horizon` 必须取**最长**标签期（V2 是 20d）：标签 T 使用 T+1+h 开盘，按 6 日
-    隔离时训练集里 20d 目标的窗口会伸进验证窗（验证指标偏乐观）。取 20 时实际隔离
-    21 个交易日，训练目标不再窥视验证窗。
-    """
-    # 标签 T 使用 T+1+purge_horizon 开盘；严格早于验证/测试的边界，不共享端点。
     quarter = quarter or quarters(days)[0]
     q = pd.Period(quarter, freq='Q')
     start = str(q.start_time.date())
@@ -761,52 +400,29 @@ def splits(days, purge_horizon=RECIPE['purge_horizon'], folds=4, quarter=None):
     first = int(np.searchsorted(days, start))
     cutoff = first - purge_horizon - 1
     eligible = ix[:cutoff]
-    # 测试窗与 RECIPE 的 test_start / test_end 保持一致。
-    if LIVE:
-        # ★ 实战模式：伪季度不在固定评价窗里，test 取**本季度自己的区间**（数据未到则可能为空）
-        test = ix[(days >= start) & (days <= end)]
-    else:
-        test = ix[(days >= max(start, '2025-07-01')) & (days <= min(end, '2026-06-30'))]
-    # 推演窗：从本季度第一个交易日一直到**数据末日**（不只是这个季度）。
-    # 一次推演同时支撑两件事：① 评价窗内那一段（= test，是推演窗的前缀）
-    # ② 之后的增量最新打分 —— 该日由"最新一个没见过它的季度模型组"负责，见 analysis.py。
+    test = ix[(days >= max(start, '2025-07-01')) & (days <= min(end, '2026-06-30'))]
     score = ix[first:]
     out = []
     for k, block in enumerate(np.array_split(eligible, folds), 1):
-        a, b = int(block[0]), int(block[-1]) + 1
-        # 验证块两端各留 h+1 日的 purge/embargo，训练集再把验证块整段挖掉。
+        a, b = (int(block[0]), int(block[-1]) + 1)
         valid = block[block + purge_horizon + 1 < b]
         train = eligible[(eligible + purge_horizon + 1 < a) | (eligible >= b + purge_horizon + 1)]
-        if not len(train) or not len(valid) or (not LIVE and (not len(test) or not len(score))):
-            # ★ 实战模式下 test/score 允许为空（数据未覆盖伪季度；评分待数据更新）
+        if not len(train) or not len(valid) or (not len(test)) or (not len(score)):
             raise ValueError('训练/验证/测试/推演窗为空')
         assert max(train.max(), valid.max()) + purge_horizon + 1 < first
         assert not np.intersect1d(train, valid).size
-        if len(test):
-            assert test[0] == score[0] and test[-1] == score[len(test) - 1]   # test 必须是 score 的前缀
+        assert test[0] == score[0] and test[-1] == score[len(test) - 1]
         out.append(dict(quarter=quarter, fold=k, train=train, valid=valid, test=test, score=score))
     return out
 
-
 def split_summary(days, split):
-    """把切分的索引数组压成可读的连续日期区间，供落盘与打印。"""
+
     def spans(ix):
         runs = np.split(ix, np.flatnonzero(np.diff(ix) > 1) + 1)
         return [{'start': str(days[r[0]]), 'end': str(days[r[-1]]), 'days': len(r)} for r in runs if len(r)]
-    return {'quarter': split['quarter'], 'fold': split['fold'],
-            **{k: spans(split[k]) for k in ['train', 'valid', 'test', 'score']}}
-
-# =============================================================================
-# ⑦ 面板：特征 / 标签 / 成交额
-# =============================================================================
-
+    return {'quarter': split['quarter'], 'fold': split['fold'], **{k: spans(split[k]) for k in ['train', 'valid', 'test', 'score']}}
 
 class Panel:
-    """全历史面板，按 (交易日 × 股票) 的二维网格存放；市场块按 (交易日) 一行。
-
-    load_x=False 时只读标签与成交额（评价阶段用），省掉最大的一块内存；市场块只有
-    T×61 个数（实测 0.5 MB），无论 load_x 与否都读，供门控使用。
-    """
 
     def __init__(self, features='all', load_x=True):
         self.root = data_root()
@@ -814,28 +430,24 @@ class Panel:
         self.days, self.codes = axis()
         if str(self.days[-1]) != RECIPE['snapshot_cutoff']:
             raise ValueError('snapshot changed: create a new independent version')
-        self.features = (feature_columns(self.meta) if features in ('all', RECIPE['features'])
-                         else self.meta['feature_sets'][features])
+        self.features = feature_columns(self.meta) if features in ('all', RECIPE['features']) else self.meta['feature_sets'][features]
         if not set(self.features).issubset(feature_columns(self.meta)):
             raise ValueError('请求的特征不在选定数据块中')
         self.labels = self.meta['columns']['labels']
         self.market_features = market_columns(self.meta) if RECIPE['market_gate'] else []
         self.market_dim = len(self.market_features)
-
-        T, C = len(self.days), len(self.codes)
+        T, C = (len(self.days), len(self.codes))
         self.X = np.empty((T, C, len(self.features)), np.float32) if load_x else None
         self.coverage = np.empty((T, C), np.float32) if load_x else None
-        self.flow_coverage=np.empty((T,C),np.float32) if load_x else None
-        self.fund_coverage=np.empty((T,C),np.float32) if load_x else None
-        self.technical_coverage=np.empty((T,C),np.float32) if load_x else None
+        self.flow_coverage = np.empty((T, C), np.float32) if load_x else None
+        self.fund_coverage = np.empty((T, C), np.float32) if load_x else None
+        self.technical_coverage = np.empty((T, C), np.float32) if load_x else None
         self.Y = {name: np.full((T, C), np.nan, np.float32) for name in self.labels}
         self.amount = np.full((T, C), np.nan, np.float64)
-        self.M = np.zeros((T, self.market_dim), np.float32)      # 门控输入：逐日市场状态
-
-        # 逐年读取并写进预分配好的网格；每年都断言轴一致，避免静默错位。
+        self.M = np.zeros((T, self.market_dim), np.float32)
         t_load = time.time()
         years = list(self.meta['built_years'])
-        filled = 0                       # 被逐年循环真正填过的交易日数（下面要断言 = T）
+        filled = 0
         for yi, y in enumerate(years, 1):
             rows = np.flatnonzero(np.char.startswith(self.days, str(y)))
             filled += len(rows)
@@ -846,19 +458,10 @@ class Panel:
                     raise ValueError(f'{y} {feature_block()} 轴不一致')
                 x = df.to_numpy(np.float32).reshape(len(rows), C, -1)
                 self.coverage[rows] = np.isfinite(x).mean(axis=2)
-                self.flow_coverage[rows]=np.isfinite(x[:,:,RECIPE['flow_indices']]).mean(axis=2)
-                self.fund_coverage[rows]=np.isfinite(x[:,:,RECIPE['fund_indices']]).mean(axis=2)
-                self.technical_coverage[rows]=np.isfinite(x[:,:,RECIPE['technical_indices']]).mean(axis=2)
-                # 快照口径 meta['semantics']='zscore_win1_99_v1'：当日截面缩尾(1%/99%) →
-                # 减均值除标准差 → 截断±10 → 按 direction 取负。已经是中心 0、尺度一致的
-                # 当日截面量，**缺失的中性填充是 0**，不再做仿射变换（旧的 (x-.5)*2 是
-                # [0,1] rank 口径的消费方式，会在新快照上静默把输入放大一倍）。
-                x = np.nan_to_num(x, nan=0.)
-                # ★ 无穷值检查放在**逐年**做（对 nan_to_num 之后的结果，与原先整块检查同义），
-                #   不再在整块 X 上做：479 列下 `np.isfinite(self.X).all()` 会临时分配一份
-                #   (T,C,F) 的 bool = 2.14 GB，而逐年只 245 MB 且随迭代释放。
-                #   注意必须查**填充之后**的数组：`np.isfinite` 对 NaN 也是 False，
-                #   而缺失值本来就是 NaN（快照口径就是"缺失填 0"）—— 查之前会全军覆没。
+                self.flow_coverage[rows] = np.isfinite(x[:, :, RECIPE['flow_indices']]).mean(axis=2)
+                self.fund_coverage[rows] = np.isfinite(x[:, :, RECIPE['fund_indices']]).mean(axis=2)
+                self.technical_coverage[rows] = np.isfinite(x[:, :, RECIPE['technical_indices']]).mean(axis=2)
+                x = np.nan_to_num(x, nan=0.0)
                 if not np.isfinite(x).all():
                     raise ValueError(f'{y} 年特征含无穷值')
                 self.X[rows] = x
@@ -867,27 +470,17 @@ class Panel:
                 mkt = market_frame(self.root, y, self.market_features)
                 if not mkt.index.equals(pd.Index(self.days[rows])):
                     raise ValueError(f'{y} 市场块日期轴与 {feature_block()} 不一致')
-                # 预热期（2018 全年等）的 z252 是 NaN：填 0 在 z 语义下就是「无信息」，
-                # 门控自然退化为恒等；截断口径与股票因子块一致。
-                self.M[rows] = np.clip(np.nan_to_num(mkt.to_numpy(np.float32), nan=0.),
-                                       -RECIPE['market_clip'], RECIPE['market_clip'])
+                self.M[rows] = np.clip(np.nan_to_num(mkt.to_numpy(np.float32), nan=0.0), -RECIPE['market_clip'], RECIPE['market_clip'])
             df = frame(self.root, 'target', y, self.labels).reindex(index)
             for name in self.labels:
                 self.Y[name][rows] = df[name].to_numpy(np.float32).reshape(len(rows), C)
             self.amount[rows] = frame(self.root, 'amount', y, ['amount']).reindex(index)['amount'].to_numpy().reshape(len(rows), C)
-            print(f'已读取 {y} 年，{len(rows)} 个交易日'
-                  f'（{yi}/{len(years)}，已用 {time.time() - t_load:.0f}s，'
-                  f'预计还需 {(time.time() - t_load) / yi * (len(years) - yi):.0f}s）', flush=True)
-
+            print(f'已读取 {y} 年，{len(rows)} 个交易日（{yi}/{len(years)}，已用 {time.time() - t_load:.0f}s，预计还需 {(time.time() - t_load) / yi * (len(years) - yi):.0f}s）', flush=True)
         if load_x and filled != T:
-            # 逐年循环必须恰好覆盖整条日期轴；漏了就会留下 `np.empty` 的未初始化内存，
-            # 而"特征含无穷值"那道检查已经挪进循环里、不会再兜住它。
             raise ValueError(f'特征面板只填了 {filled}/{T} 个交易日 —— 年份分区没覆盖整条日期轴')
         if not np.isfinite(self.M).all():
             raise ValueError('市场块含无穷值')
-        # 读盘是整条流水线里最长的静默段（约 1 分钟），逐行给进度与 ETA。
-        print(f'面板读取完成：{len(self.meta["built_years"])} 年，市场列 {self.market_dim}，'
-              f'已用 {time.time() - t_load:.0f}s', flush=True)
+        print(f"面板读取完成：{len(self.meta['built_years'])} 年，市场列 {self.market_dim}，已用 {time.time() - t_load:.0f}s", flush=True)
 
     def inputs(self, day, mask):
         width = RECIPE['sequence_days']
@@ -895,138 +488,77 @@ class Panel:
             raise ValueError('insufficient causal history')
         return np.ascontiguousarray(self.X[day - width + 1:day + 1, mask].transpose(1, 0, 2))
 
-    def technical_mask(self,day):
-        if self.technical_coverage is None:raise ValueError('feature coverage not loaded')
-        return self.technical_coverage[int(day)]>=RECIPE['min_feature_coverage']
+    def technical_mask(self, day):
+        if self.technical_coverage is None:
+            raise ValueError('feature coverage not loaded')
+        return self.technical_coverage[int(day)] >= RECIPE['min_feature_coverage']
 
-    def mask(self,day,label=None):
-        width=RECIPE['sequence_days'];day=int(day)
-        if day<width-1:return np.zeros(len(self.codes),dtype=bool)
-        if self.flow_coverage is None:raise ValueError('feature coverage not loaded')
-        out=(self.flow_coverage[day-width+1:day+1]>=RECIPE['min_feature_coverage']).all(axis=0)
-        out&=(self.fund_coverage[day-width+1:day+1]>=RECIPE['min_feature_coverage']).all(axis=0)
-        out&=self.technical_mask(day)
-        if label is not None:out&=np.isfinite(self.Y[label][day])
+    def mask(self, day, label=None):
+        width = RECIPE['sequence_days']
+        day = int(day)
+        if day < width - 1:
+            return np.zeros(len(self.codes), dtype=bool)
+        if self.flow_coverage is None:
+            raise ValueError('feature coverage not loaded')
+        out = (self.flow_coverage[day - width + 1:day + 1] >= RECIPE['min_feature_coverage']).all(axis=0)
+        out &= (self.fund_coverage[day - width + 1:day + 1] >= RECIPE['min_feature_coverage']).all(axis=0)
+        out &= self.technical_mask(day)
+        if label is not None:
+            out &= np.isfinite(self.Y[label][day])
         return out
 
-# =============================================================================
-# ⑧ 价格与可交易性
-# =============================================================================
-
-
 class Prices:
-    """原始价 + 停牌/限价的可交易性判定 + ★V11 的热门池。
-
-    只前向填充状态量（复权因子、收盘价）；停牌无开盘价仍不可交易，不前填成交量。
-    """
 
     def __init__(self, panel):
         names = list(PRICE_COLUMNS)
-        T, C = len(panel.days), len(panel.codes)
+        T, C = (len(panel.days), len(panel.codes))
         self.raw = {n: np.full((T, C), np.nan, np.float64) for n in names}
-
-        # 逐年读快照的价格块（`trainingdata/prices`，见 price_frame）；日期轴必须与 factors 一致。
         for year in panel.meta['built_years']:
             ix = np.flatnonzero(np.char.startswith(panel.days, str(year)))
             index = pd.MultiIndex.from_product([panel.days[ix], panel.codes], names=['trade_date', 'stock_code'])
             df = price_frame(price_root(), year, index)
             for n in names:
                 self.raw[n][ix] = df[n].to_numpy().reshape(len(ix), C)
-
         self.adj = pd.DataFrame(self.raw['adj_factor']).ffill().to_numpy()
         self.close = pd.DataFrame(self.raw['close']).ffill().to_numpy()
         self.open = self.raw['open']
-
-        # 冻结池均为非ST主板；按分四舍五入。开盘触及限价即保守拒单，
-        # 不读取当天 high/low 决定开盘订单，避免用未来全天行情挑选成交。
         pre = self.raw['pre_close']
-        upper = np.floor(pre * 1.10 * 100 + .5) / 100
-        lower = np.floor(pre * .90 * 100 + .5) / 100
+        upper = np.floor(pre * 1.1 * 100 + 0.5) / 100
+        lower = np.floor(pre * 0.9 * 100 + 0.5) / 100
         self.limit_up = upper
         self.limit_down = lower
-        traded = (np.isfinite(self.open) & (self.open > 0) & np.isfinite(pre) & (pre > 0)
-                  & np.isfinite(self.adj) & (self.adj > 0) & (self.raw['vol'] > 0))
-        self.entry = traded & (self.open < upper - 1e-8)
-        self.exit = traded & (self.open > lower + 1e-8)
-
-        # ★★ V11 打板口径：**整日最低价低于涨停价** ⇒ 板被打开过 ⇒ 挂在涨停价的买单能成交。
-        #    `low` 只用来判「能不能成交」，不参与选股（票是信号日就选定的），所以不是
-        #    "用未来全天行情挑票"。一字板（整日封死，low ≥ 涨停价）拿不到货，仍然拒单 ——
-        #    这是打板最核心的一档风险，放过它回测会系统性偏乐观。
-        #    成交价就是开盘价：挂涨停价买入时，开盘低于涨停按开盘价成交；开盘即涨停而
-        #    盘中开板则按涨停价成交 —— 而开盘价此时恰好等于涨停价。⇒ 两种情形都取开盘价。
-        self.board_entry = traded & (self.raw['low'] < upper - 1e-8)
-
-        # next_entry[d] = 第 d 日开盘能不能买进「T-1 日选出的票」。
+        traded = np.isfinite(self.open) & (self.open > 0) & np.isfinite(pre) & (pre > 0) & np.isfinite(self.adj) & (self.adj > 0) & (self.raw['vol'] > 0)
+        self.entry = traded & (self.open < upper - 1e-08)
+        self.exit = traded & (self.open > lower + 1e-08)
+        self.board_entry = traded & (self.raw['low'] < upper - 1e-08)
         self.next_entry = np.zeros_like(self.entry)
         self.next_entry[:-1] = self.entry[1:]
         self.next_board_entry = np.zeros_like(self.board_entry)
         self.next_board_entry[:-1] = self.board_entry[1:]
-
-        # 收盘卖的可执行性：判据与开盘卖同法，但用当日**收盘价**判跌停 —— 收盘单就在那个
-        # 时点成交，不含任何超过当日收盘的信息（不是"用当天行情挑成交"）。停牌/无量同样拒单。
         raw_close = self.raw['close']
-        self.exit_close = (np.isfinite(raw_close) & (raw_close > 0) & np.isfinite(pre) & (pre > 0)
-                           & np.isfinite(self.adj) & (self.adj > 0) & (self.raw['vol'] > 0)
-                           & (raw_close > lower + 1e-8))
-
+        self.exit_close = np.isfinite(raw_close) & (raw_close > 0) & np.isfinite(pre) & (pre > 0) & np.isfinite(self.adj) & (self.adj > 0) & (self.raw['vol'] > 0) & (raw_close > lower + 1e-08)
         self._hot_pool(panel)
 
-    # -------------------------------------------------------------------------
-    # ★ V11：热门池（人气股 / 妖股）
-    # -------------------------------------------------------------------------
     def _hot_pool(self, panel):
-        """当日截面「热门度」排名前 `hot_pool['frac']` 的票 —— 只会用到快照自己的块。
-
-        三项各做**当日截面**百分位名次再等权平均（名次在当日截面上取 ⇒ PIT 安全）：
-
-        | 项 | 算法 | 为什么是「热门」 |
-        | --- | --- | --- |
-        | 金额异动 | `amount[d] ÷ mean(amount[d-w:d])` | 钱突然涌进来 = **人气**。用**前 w 日**均额做分母（不含当日），当日巨量才不会被自己稀释 |
-        | 妖气 | 近 `amp_window` 日 `(high−low)/pre_close` 的均值 | 振幅大 = **妖股** |
-        | 板性 | 近 `limit_window` 日「收盘触涨停」的天数 | **涨停生态 / 打板候选** |
-
-        ★ 为什么不用 `factors` 块里的涨停/换手因子：那一块已经按 `columns.direction`
-        做过符号翻转（`raw = 存储值 × direction`，479 列里 121 列是 −1），拿它组「越大越热门」
-        的合成量要把 121 个符号全对一遍 —— **错了不会报错**，只会静默把一个反向的池子交出去。
-        价格块没有这层歧义：涨没涨停、振幅多大，都是直接算出来的。
-
-        `frac >= 1` 时池子退化为全截面（`hot` 全 True），用来做同权重的干净对照。
-        """
         spec = RECIPE['hot_pool']
-        frac, aw, lw = spec['frac'], spec['amount_window'], spec['limit_window']
-        T, C = len(panel.days), len(panel.codes)
-        # ★ 记下"这份掩码是按哪个 frac 算的"：`hot` 只在构造时算一次，之后改 RECIPE 里的
-        #   frac **不会**让它重算 —— 有对照台就是靠改 frac 来做 A/B 的，静默沿用旧掩码
-        #   会让整个扫描得到一排一模一样的数字（实测踩过）。`hot_filter()` 靠这个字段把它
-        #   变成一声响的错误，而不是一个安静的假结果。
+        frac, aw, lw = (spec['frac'], spec['amount_window'], spec['limit_window'])
+        T, C = (len(panel.days), len(panel.codes))
         self.hot_frac = frac
-        self.hot = np.ones((T, C), bool)                 # 默认全池（frac=1 或算不出来时）
+        self.hot = np.ones((T, C), bool)
         self.hot_score = np.full((T, C), np.nan, np.float32)
-        if frac >= 1.:
+        if frac >= 1.0:
             return
-
         amount = panel.amount
-        # 分母不含当日（`.shift(1)`）；前 aw 日的均额用 min_periods 放宽到 5 日，
-        # 让 2018 年初的预热期短一点，但不足 5 日的仍然算不出来（留 NaN）。
         base = pd.DataFrame(amount).rolling(aw, min_periods=5).mean().shift(1).to_numpy()
         with np.errstate(invalid='ignore', divide='ignore'):
             activity = np.where((base > 0) & np.isfinite(amount), amount / base, np.nan)
-
         pre = self.raw['pre_close']
         with np.errstate(invalid='ignore', divide='ignore'):
-            amp = np.where((pre > 0) & np.isfinite(self.raw['high']) & np.isfinite(self.raw['low']),
-                           (self.raw['high'] - self.raw['low']) / pre, np.nan)
+            amp = np.where((pre > 0) & np.isfinite(self.raw['high']) & np.isfinite(self.raw['low']), (self.raw['high'] - self.raw['low']) / pre, np.nan)
         amplitude = pd.DataFrame(amp).rolling(spec['amp_window'], min_periods=2).mean().to_numpy()
-
-        # 「收盘触板」只在真的有成交（vol>0、价格齐全）的日子算，停牌日不能算成板。
-        # 涨停价就是上面按分四舍五入算好的 `self.limit_up`，不另算一遍。
         raw_close = self.raw['close']
-        touch = (np.isfinite(raw_close) & (raw_close > 0) & (pre > 0) & (self.raw['vol'] > 0)
-                 & (raw_close >= self.limit_up - 1e-8))
+        touch = np.isfinite(raw_close) & (raw_close > 0) & (pre > 0) & (self.raw['vol'] > 0) & (raw_close >= self.limit_up - 1e-08)
         boards = pd.DataFrame(touch.astype(np.float64)).rolling(lw, min_periods=1).sum().to_numpy()
-
-        # 池子算不出来的日子（预热期）。**不静默**：跑完打印，且这些日子按"不设池"处理。
         bare = []
         for d in range(T):
             ranked = []
@@ -1035,32 +567,22 @@ class Prices:
                 if ok.sum() < spec['min_names']:
                     continue
                 r = np.full(C, np.nan)
-                r[ok] = (rankdata(values[ok]) - 1) / (ok.sum() - 1)   # 当日截面百分位 ∈ [0,1]
+                r[ok] = (rankdata(values[ok]) - 1) / (ok.sum() - 1)
                 ranked.append(r)
-            # ★ 至少要**两项**可用。只靠一项的池子在预热期真的出现过：2018-01-02 只有
-            #   「板性」能算（前 20 日均额与近 5 日振幅都还没有窗口），而它是 0/1 两值、
-            #   `rankdata` 把并列排成同一个名次 ⇒ 合成分成了常数 ⇒ `>= 分位数` 对**全体**
-            #   成立，池子静默退化成"全池 2115 只"。要求两项就把这条堵死了。
             if len(ranked) < 2:
                 bare.append(d)
                 continue
             score = np.nanmean(np.stack(ranked), axis=0)
             self.hot_score[d] = score.astype(np.float32)
             ok = np.isfinite(score)
-            # ★ 第二道保险：合成分没有区分度（并列成一坨）时同样不设池 —— 分位数阈值
-            #   在常数向量上会把所有票一次放进来，这是上面那条的通用形式。
             if ok.sum() < spec['min_names'] or float(np.ptp(score[ok])) < 1e-12:
                 bare.append(d)
                 continue
-            self.hot[d] = ok & (score >= np.quantile(score[ok], 1. - frac))
-
+            self.hot[d] = ok & (score >= np.quantile(score[ok], 1.0 - frac))
         if bare:
-            print(f'热门池：{len(bare)} 天算不出来（预热期，按"不设池"处理，池内=全截面）：'
-                  f'{[str(panel.days[d]) for d in bare[:5]]}'
-                  f'{" …" if len(bare) > 5 else ""}', flush=True)
+            print(f"""热门池：{len(bare)} 天算不出来（预热期，按"不设池"处理，池内=全截面）：{[str(panel.days[d]) for d in bare[:5]]}{(' …' if len(bare) > 5 else '')}""", flush=True)
 
     def entry_ok(self):
-        """执行日的「能不能买进」判定 —— 由 `RECIPE['entry_rule']` 决定，不在调用处写死。"""
         rule = RECIPE['entry_rule']
         if rule == 'open':
             return self.entry
@@ -1069,7 +591,6 @@ class Prices:
         raise ValueError(f"未知 entry_rule={rule!r}；见 RECIPE['entry_rule']")
 
     def next_entry_ok(self):
-        """信号日口径的「T+1 能不能买进」—— `validation()` 的收益代理用它，与回测同源。"""
         rule = RECIPE['entry_rule']
         if rule == 'open':
             return self.next_entry
@@ -1078,7 +599,6 @@ class Prices:
         raise ValueError(f"未知 entry_rule={rule!r}；见 RECIPE['entry_rule']")
 
     def verify_labels(self, panel, days):
-        """价格轴/复权口径对拍：若标签与价格不是同一口径，回测不能继续。"""
         px = pd.DataFrame(self.open).ffill().to_numpy() * self.adj
         errors = []
         for h in [1, 3, 5, 10, 20]:
@@ -1088,34 +608,25 @@ class Prices:
             target = panel.Y[f'label_ret_{h}d'][ix]
             good = np.isfinite(calc) & np.isfinite(target)
             diff = np.abs(calc[good] - target[good])
-            errors.append({'horizon': h, 'checked': int(good.sum()),
-                           'max_abs_error': float(diff.max()) if len(diff) else None})
-            if not len(diff) or np.mean(diff > 1e-5) > .001:
+            errors.append({'horizon': h, 'checked': int(good.sum()), 'max_abs_error': float(diff.max()) if len(diff) else None})
+            if not len(diff) or np.mean(diff > 1e-05) > 0.001:
                 raise ValueError(f'价格与 {h}d 标签口径不一致: {errors[-1]}')
         return errors
 
-# =============================================================================
-# ⑨ 预测、验证与单折训练
-# =============================================================================
-
-
 def corr(a, b):
     if len(a) < 3 or np.std(a) < 1e-12 or np.std(b) < 1e-12:
-        return 0.
+        return 0.0
     return float(np.corrcoef(a, b)[0, 1])
-
 
 def device_for(request):
     if request == 'auto':
         return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if request == 'cuda' and not torch.cuda.is_available():
+    if request == 'cuda' and (not torch.cuda.is_available()):
         raise RuntimeError('指定 CUDA 但不可用')
     return torch.device(request)
 
-
 @torch.no_grad()
 def predict_heads(model, panel, days, device):
-    """逐日对当日有效截面推**全部**输出头；返回 (天数, 股票数, 头数)，无效位置留 NaN。"""
     model.eval()
     out = np.full((len(days), len(panel.codes), len(model.horizons)), np.nan, np.float32)
     for i, d in enumerate(days):
@@ -1126,31 +637,21 @@ def predict_heads(model, panel, days, device):
             out[i, mask] = model(x, m).cpu().numpy()
     return out
 
-
 def score_of(heads):
-    """Internal cross-family rank fusion; later fourfold ensemble still raw-sums."""
-    if RECIPE['score_blend']!='flow_technical_percentile' or heads.shape[-1]!=4:
+    if RECIPE['score_blend'] != 'flow_technical_percentile' or heads.shape[-1] != 4:
         raise ValueError('unexpected composite head schema')
-    out=np.full(heads.shape[:2],np.nan,np.float32)
-    weight=RECIPE['flow_fusion_weight']
-    for i,row in enumerate(heads):
-        known=np.isfinite(row).all(axis=1);n=known.sum()
-        if n>1:
-            flow=(rankdata(row[known,1])-.5)/n
-            technical=(rankdata(row[known,3])-.5)/n
-            out[i,known]=weight*flow+(1-weight)*technical
+    out = np.full(heads.shape[:2], np.nan, np.float32)
+    weight = RECIPE['flow_fusion_weight']
+    for i, row in enumerate(heads):
+        known = np.isfinite(row).all(axis=1)
+        n = known.sum()
+        if n > 1:
+            flow = (rankdata(row[known, 1]) - 0.5) / n
+            technical = (rankdata(row[known, 3]) - 0.5) / n
+            out[i, known] = weight * flow + (1 - weight) * technical
     return out
 
-
-def fit_ridge(panel, train_days, lam=1e3, pool=None):
-    """在训练窗上闭式拟合岭回归（逐日截面已 z-score 的特征 → 当日标准化的 5 日标签）。
-
-    返回 `(n_features + 1,)` 的权重（末位是截距）。逐日累积 Gram 矩阵，不整块驻留 X。
-
-    ★ 为什么要在神经网络之外再挂一个线性分量：两者**信息互补**——1893 天样本外上，
-    线性分量在全截面 RankIC 上全面更好（四块 +0.004~0.008），而网络在极值桶（top5）上更好。
-    掺 20% 后 RankIC / Pearson IC / top5 **三个同时变好**（见 `blend_linear`）。
-    """
+def fit_ridge(panel, train_days, lam=1000.0, pool=None):
     if not RECIPE['linear_weight']:
         return None
     D = len(panel.features)
@@ -1158,14 +659,14 @@ def fit_ridge(panel, train_days, lam=1e3, pool=None):
     b = np.zeros(D + 1)
     for d in train_days:
         m = panel.mask(d, 'label_ret_5d')
-        if pool is not None:                    # ★ V17：岭回归分量与网络用同一套样本
+        if pool is not None:
             m = m & pool[d]
         if m.sum() < 50:
             continue
         X = panel.X[d, m].astype(np.float64)
         y = panel.Y['label_ret_5d'][d, m].astype(np.float64)
         sd = y.std()
-        if sd < 1e-8:
+        if sd < 1e-08:
             continue
         y = (y - y.mean()) / sd
         A = np.c_[X, np.ones(len(X))]
@@ -1174,14 +675,7 @@ def fit_ridge(panel, train_days, lam=1e3, pool=None):
     G[np.arange(D), np.arange(D)] += lam
     return np.linalg.solve(G, b)
 
-
 def blend_linear(score, w, panel, days):
-    """★ V9：把岭回归分量**仿射映射**到打分的均值/标准差后按 `linear_weight` 凸组合。
-
-    ★ 必须仿射、不能秩混合：秩混合会把打分变成秩尺度、把 Pearson IC 从 0.0863 压到
-    0.0708（V3 那次在秩上聚合的同一個坑）；仿射保持量纲，实测三指标同时改善。
-    `w=None`（未拟合）或权重为 0 时原样返回，便于回退。
-    """
     lw = RECIPE['linear_weight']
     if not lw or w is None:
         return score
@@ -1196,25 +690,16 @@ def blend_linear(score, w, panel, days):
         if sd < 1e-12:
             continue
         r = (r - r.mean()) * (s[known].std() / sd) + s[known].mean()
-        out[i, known] = (1. - lw) * s[known] + lw * r
+        out[i, known] = (1.0 - lw) * s[known] + lw * r
     return out
 
-
 def average_state_dicts(states):
-    """★ V12：把若干份 `state_dict` 逐键取均值（权重与 BN 的 running 统计一起平均）。
-
-    ★ 合法性前提：这些状态来自**同一条训练轨迹上的不同 epoch**（同一次运行、同一个种子、
-    同一批数据）。它们落在同一个吸引盆里，逐键平均才近似"盆心"。
-    **跨种子平均不成立**（不同盆），不要拿这个函数去做多种子集成。
-
-    ★ 非浮点键（`num_batches_tracked` 这类计数）不参与平均，原样取第一份 —— 对它们求均值
-    既没有意义，`.mean()` 在整型上还会直接报错。
-    """
     averaged = {}
     for key, first in states[0].items():
-        if key=='absolute_coef':
-            if not all(torch.equal(first,s[key]) for s in states):raise ValueError('static absolute fit changed across epochs')
-            averaged[key]=first.clone()
+        if key == 'absolute_coef':
+            if not all((torch.equal(first, s[key]) for s in states)):
+                raise ValueError('static absolute fit changed across epochs')
+            averaged[key] = first.clone()
             continue
         if not first.is_floating_point():
             averaged[key] = first.clone()
@@ -1222,17 +707,7 @@ def average_state_dicts(states):
         averaged[key] = torch.stack([state[key].float() for state in states]).mean(dim=0).to(first.dtype)
     return averaged
 
-
 def recalibrate_bn(model, panel, train_days, device):
-    """★ V12：按**平均后的权重**把 BatchNorm 的 running 统计重估一遍（SWA 的标准收尾）。
-
-    为什么必须做：每份权重的 `running_mean/var` 是按"它自己"的权重统计出来的，对平均后的
-    权重并不成立。沿用会让推理时的归一化按错误的尺度走 —— 而且**不会报错**，只会静默地
-    把打分弄偏（本项目最忌讳的那种失败）。
-
-    做法是一次**纯前向**：`train()` 模式让 BN 自己累计统计（`momentum=None` ⇒ 累计平均，
-    正好等于整窗统计量），同时把 Dropout 关掉 —— Dropout 不是状态量，开着只会把统计量弄脏。
-    """
     model.train()
     for module in model.modules():
         if isinstance(module, nn.Dropout):
@@ -1240,7 +715,7 @@ def recalibrate_bn(model, panel, train_days, device):
     for module in model.modules():
         if isinstance(module, nn.BatchNorm1d):
             module.reset_running_stats()
-            module.momentum = None          # 累计平均：这一步跑完正好是整窗的统计量
+            module.momentum = None
     with torch.no_grad():
         for d in train_days:
             mask = panel.mask(d)
@@ -1251,61 +726,21 @@ def recalibrate_bn(model, panel, train_days, device):
             model(x, m)
     model.eval()
 
-
 def hot_filter(score, prices, days):
-    """★ V11：把打分限制在当日的热门池内 —— 池外一律置 NaN。
-
-    为什么置 NaN 而不是排到最后：下游（`score_of` 的秩、`top_portfolio_daily` 的 `known`、
-    `cash_backtest` 的 `isfinite`、`write_scores` 的落盘）**一致地把 NaN 当成"这只票今天
-    没有分数"**，于是池外的票自然既不进 IC、也不进组合、也不进 picks.md。换成"打个低分"
-    就会在一堆真分数里插进假分数，把 RankIC 和 top5 一起带偏。
-
-    ★ 这里**不做**逐日重排：池内的相对顺序就是原打分的相对顺序（单调变换不改变池内名次），
-    池内 RankIC 与池外无关。
-    """
     frac = RECIPE['hot_pool']['frac']
     if frac != prices.hot_frac:
-        raise ValueError(
-            f'热门池掩码是按 frac={prices.hot_frac} 算的，当前 RECIPE 写的是 {frac} —— '
-            f'掩码不会自动重算，直接跑会静默沿用旧掩码。\n'
-            f'  · 要换 frac：重建 Prices（`Prices(panel)` 会在构造时按新 frac 重算掩码）。\n'
-            f'  · 要做 A/B：改完 frac 必须重建，否则两边拿到的是同一份掩码。')
-    if frac >= 1.:
+        raise ValueError(f'热门池掩码是按 frac={prices.hot_frac} 算的，当前 RECIPE 写的是 {frac} —— 掩码不会自动重算，直接跑会静默沿用旧掩码。\n  · 要换 frac：重建 Prices（`Prices(panel)` 会在构造时按新 frac 重算掩码）。\n  · 要做 A/B：改完 frac 必须重建，否则两边拿到的是同一份掩码。')
+    if frac >= 1.0:
         return score
     out = score.copy()
     for i, d in enumerate(days):
         out[i][~prices.hot[d]] = np.nan
     return out
 
-
 def predict(model, panel, prices, days, device):
-    """打分：`predict_heads` 的全部头 → `score_of` → `blend_linear` → 热门池，二维。
-
-    下游（集成相加、落盘 npy、write_scores、picks、两策略）全部假设打分是二维，
-    这里**不能**返回三维。
-
-    ★ 池子放在 `blend_linear` **之后**：线性分量的仿射映射是在"当前有效的票"上重新定标
-    的（均值/标准差），先筛池再定标会让线性分量按池内的尺度落位 —— 这与"打分只在池内
-    排序"这个语义一致。反过来（先定标再筛池）会让池内打分的尺度取决于池外的分布。
-    """
-    return hot_filter(blend_linear(score_of(predict_heads(model, panel, days, device)),
-                                   getattr(model, 'ridge', None), panel, days), prices, days)
-
+    return hot_filter(blend_linear(score_of(predict_heads(model, panel, days, device)), getattr(model, 'ridge', None), panel, days), prices, days)
 
 def validation(model, panel, prices, days, device):
-    """验证窗上的 val_wei = Σ_h v_h · RankIC_h（**打分**对 h 日标签的逐日截面秩相关）。
-
-    ★ V3 换掉了 V2 的判据（`100 × 可执行 top5 的 5d 标签代理收益 + 1.0 × 加权 Pearson IC`）：
-    那个收益项占判据约 87%，是全流程最吵的量，且实测五个头在评价窗上全部是"最后一轮"
-    的秩相关优于它选出的 best 轮。下游策略消费**排序**，判据就用排序口径。
-
-    关键：这里算的是**打分**（`score_of()`，与测试窗同一个函数、同一套逐日截面公式），
-    不再是"第 h 个头对自己标签"。V2 的两张表因此同名不同物（valid 的 IC_1d 是 1d 头，
-    test 的 IC_1d 是 5d 头），V3 的 valid 表与 test 表**逐列同源**。
-
-    缺失处理也照抄测试窗（`analysis.py:top_portfolio_daily`）：RankIC 只用成对有效值，
-    Pearson 按缺失补 0。只用于选 epoch / 早停，测试窗不参与任何选择。
-    """
     heads = predict_heads(model, panel, days, device)
     score = hot_filter(blend_linear(score_of(heads), getattr(model, 'ridge', None), panel, days), prices, days)
     ic, rank = ({}, {})
@@ -1323,7 +758,8 @@ def validation(model, panel, prices, days, device):
         rank[label] = float(np.mean(sp)) if sp else 0.0
     ic_term = sum((RECIPE['valid_ic_weights'][h] * rank[f'label_ret_{h}d'] for h in RECIPE['label_horizons']))
     criterion = RECIPE['valid_criterion']
-    if criterion not in ('rankic', 'tradable_topn', 'tradable_topn_net', 'capacity_wei', 'pearson1d'):
+    cash_info = {}
+    if criterion not in ('rankic', 'tradable_topn', 'tradable_topn_net', 'capacity_wei', 'pearson1d', 'personal_cash', 'macro_stable'):
         raise ValueError(f"未知 valid_criterion={criterion!r}；见 RECIPE['valid_criterion']")
     next_entry = prices.next_entry_ok()
     preds = score
@@ -1349,46 +785,39 @@ def validation(model, panel, prices, days, device):
         for p, d in zip(score, days):
             ids = np.flatnonzero(np.isfinite(p))
             ids = ids[np.argsort(-p[ids], kind='stable')[:anchor['topn']]]
-            cap = np.maximum(np.nan_to_num(panel.amount[d, ids], nan=0.), 0.)
+            cap = np.maximum(np.nan_to_num(panel.amount[d, ids], nan=0.0), 0.0)
             held = np.minimum(anchor['money'], np.cumsum(cap))
-            w = np.diff(np.r_[0., held]) / anchor['money']
-            y = np.nan_to_num(panel.Y['label_ret_1d'][d, ids], nan=0.)
+            w = np.diff(np.r_[0.0, held]) / anchor['money']
+            y = np.nan_to_num(panel.Y['label_ret_1d'][d, ids], nan=0.0)
             cap_returns.append(float(w @ y))
-        primary = 100. * np.mean(cap_returns) + anchor['ic_weight'] * ic['label_ret_1d']
-    return dict(val_wei=primary, val_criterion=criterion, val_return_proxy=ret, val_ic_weighted=ic_term, val_unknown_label_picks=unknown_picks, Pearson_IC=ic[label5], RankIC=rank[label5], **{f'IC_{h}d': ic[f'label_ret_{h}d'] for h in (1, 3, 5, 10, 20)}, **{f'RankIC_{h}d': rank[f'label_ret_{h}d'] for h in (1, 3, 5, 10, 20)})
-
+        primary = 100.0 * np.mean(cap_returns) + anchor['ic_weight'] * ic['label_ret_1d']
+    if criterion == 'personal_cash':
+        spec = RECIPE['personal_validation']
+        stat, curve, trades = personal_validation_cash(score, panel, prices, days, n=spec['n'], period=spec['period'], band=spec['band'], money=spec['money'], cost_gate_multiplier=0.0)
+        growth = 100.0 * np.log1p(stat['return_value']) / len(curve)
+        primary = growth + spec['ic_weight'] * ic['label_ret_1d'] + 100.0 * spec['drawdown_weight'] * stat['max_drawdown']
+        cash_info = {'validation_cash': stat, 'validation_cash_params': spec, 'validation_cash_daily_log_pct': growth, 'validation_cash_role': 'epoch selection only; n5 diversified execution; labels and prices within valid plus reserved exit embargo'}
+    return dict(**cash_info, val_wei=primary, val_criterion=criterion, val_return_proxy=ret, val_ic_weighted=ic_term, val_unknown_label_picks=unknown_picks, Pearson_IC=ic[label5], RankIC=rank[label5], **{f'IC_{h}d': ic[f'label_ret_{h}d'] for h in (1, 3, 5, 10, 20)}, **{f'RankIC_{h}d': rank[f'label_ret_{h}d'] for h in (1, 3, 5, 10, 20)})
 
 def train_fold(fold, device='auto', panel=None, prices=None, quarter=None, absolute_only=False):
-    """训练一个「季度 × 折」模型，打分落盘；可断点续跑。
-
-    顺序：已完成则跳过 → （必要时从 last.pt 恢复）逐轮训练，每轮用验证集
-    算 val_wei 并据此选最佳权重 / 调学习率 / 早停 → 用最佳权重对测试窗打分落盘。
-    """
     recipe = copy.deepcopy(RECIPE)
     recipe['device'] = device
     quarter = quarter or quarters(axis()[0])[0]
     recipe['quarter'] = quarter
     info = training_info(recipe)
-    signature=recipe_signature()
-
+    signature = recipe_signature()
     out = RUN_ROOT / 'model_train' / quarter / f'fold{fold}'
     output_file(out / 'complete.json')
     out.mkdir(parents=True, exist_ok=True)
     done = out / 'complete.json'
-    # --- 已完成且所需产物存在时直接复用 ---
-    # 判据："`complete.json` 在、且三个产物文件齐"。
-    #   代价（唯一要记住的一条运维事实）：**改了配置想重训，得自己删掉对应折目录**
-    #   （`rm -rf model_train/<季度>/fold<折>`），否则会被当成"已完成"跳过、静默沿用旧配置的产物。
-    #   配置本身仍有留痕：`training_info.json` 与 `complete.json` 里都记了整份 recipe。
     if done.exists():
         old = json.loads(done.read_text())
-        if old.get('recipe_signature')!=signature:raise ValueError('completed recipe fingerprint changed; never reuse stale folds')
-        if not all((out / name).is_file() for name in ('best.pt', 'test_predictions.npy', 'score_predictions.npy')):
+        if old.get('recipe_signature') != signature:
+            raise ValueError('completed recipe fingerprint changed; never reuse stale folds')
+        if not all(((out / name).is_file() for name in ('best.pt', 'test_predictions.npy', 'score_predictions.npy'))):
             raise RuntimeError('完成记录存在但产物缺失')
         print(f'fold{fold} 已完成，跳过', flush=True)
         return old
-
-    # --- 复现性：线程数、设备、种子、确定性算法 ---
     torch.set_num_threads(recipe['threads'])
     dev = device_for(device)
     seed = recipe['seed'] + fold - 1
@@ -1397,49 +826,33 @@ def train_fold(fold, device='auto', panel=None, prices=None, quarter=None, absol
     torch.manual_seed(seed)
     if dev.type == 'cuda':
         torch.cuda.manual_seed_all(seed)
-    torch.use_deterministic_algorithms(True)     # 依赖 ① 的 CUBLAS_WORKSPACE_CONFIG
-
-    # --- 数据与切分 ---
+    torch.use_deterministic_algorithms(True)
     panel = panel or Panel(recipe['features'])
     prices = prices or Prices(panel)
     split = splits(panel.days, recipe['purge_horizon'], recipe['folds'], quarter)[fold - 1]
     atomic_json(out / 'training_info.json', info)
     atomic_json(out / 'split.json', split_summary(panel.days, split))
-
-    # --- 模型、优化器、学习率调度 ---
     model = PredictModel(len(panel.features), panel.market_dim).to(dev)
-    if (out/'last.pt').exists():
-        prepared=torch.load(out/'last.pt',map_location='cpu',weights_only=False)
-        if prepared.get('recipe_signature')!=signature:raise ValueError('resume recipe fingerprint changed')
-        absolute_fit_info=prepared['absolute_fit']
+    if (out / 'last.pt').exists():
+        prepared = torch.load(out / 'last.pt', map_location='cpu', weights_only=False)
+        if prepared.get('recipe_signature') != signature:
+            raise ValueError('resume recipe fingerprint changed')
+        absolute_fit_info = prepared['absolute_fit']
     else:
-        absolute_fit_info=fit_absolute_component(model,panel,split['train'],seed)
-    absolute_fit_summary={k:v for k,v in absolute_fit_info.items() if k!='stages'}
-    absolute_fit_summary['stages']=[{k:v for k,v in s.items() if k!='coef'} for s in absolute_fit_info['stages']]
-    print('ABSOLUTE_COMPONENT_READY',len(absolute_fit_info['stages']),'fresh training fits',flush=True)
-    # ★★ V9：岭回归分量在**选轮之前**拟合（它是训练窗上的闭式解，与网络无关），
-    #   挂到 model 上 ⇒ `validation()` 每轮用的就是交付打分（网络 ⊕ 线性），
-    #   选轮判据与实际交易的对象一致。
-    model.ridge = fit_ridge(panel, split['train'], pool=prices.hot if recipe['train_pool_frac'] < 1. else None)
-    print("fold%d linear component %s (training %d days)" % (fold, "disabled by recipe" if model.ridge is None else "fitted", len(split["train"])), flush=True)
-    # ★ 优化器与调度器都从 RECIPE 取（原先这里是字面量，RECIPE 里的
-    #   `optimizer` / `lr_patience` / `lr_factor` / `lr_cooldown` / `min_lr` **从未被读**，
-    #   于是"改了 RECIPE 不生效"、而记录里显示的又是 RECIPE 那份值 —— 口径与记录不一致）。
+        absolute_fit_info = fit_absolute_component(model, panel, split['train'], seed)
+    absolute_fit_summary = {k: v for k, v in absolute_fit_info.items() if k != 'stages'}
+    absolute_fit_summary['stages'] = [{k: v for k, v in s.items() if k != 'coef'} for s in absolute_fit_info['stages']]
+    print('ABSOLUTE_COMPONENT_READY', len(absolute_fit_info['stages']), 'fresh training fits', flush=True)
+    model.ridge = fit_ridge(panel, split['train'], pool=prices.hot if recipe['train_pool_frac'] < 1.0 else None)
+    print('fold%d linear component %s (training %d days)' % (fold, 'disabled by recipe' if model.ridge is None else 'fitted', len(split['train'])), flush=True)
     if recipe['optimizer'] != 'adamw':
         raise ValueError(f"暂只实现 adamw，收到 {recipe['optimizer']!r}")
     opt = torch.optim.AdamW(model.parameters(), lr=recipe['lr'], weight_decay=recipe['weight_decay'])
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        opt, mode='max', factor=recipe['lr_factor'], patience=recipe['lr_patience'],
-        cooldown=recipe['lr_cooldown'], min_lr=recipe['min_lr'])
-
-    # --- 断点恢复：模型 / 优化器 / 调度器 / 随机数状态整套回放 ---
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='max', factor=recipe['lr_factor'], patience=recipe['lr_patience'], cooldown=recipe['lr_cooldown'], min_lr=recipe['min_lr'])
     start = 0
     best = -float('inf')
     stale = 0
     history = []
-    # ★ V13：val_wei 前 `bag_topk` 名的 (分数, 轮号, 权重快照)。权重放 CPU，模型只有 ~17 万参数
-    #   ⇒ 五份不到 4 MB。随 `last.pt` 一起落盘，断点续跑时能接着攒（否则续跑会把前半程的
-    #   前 k 名丢掉、bagging 退化成"后半程的 top-k"，而且不报错）。
     bank = []
     last = out / 'last.pt'
     if last.exists():
@@ -1455,28 +868,20 @@ def train_fold(fold, device='auto', panel=None, prices=None, quarter=None, absol
         best = ck['best']
         stale = ck['stale']
         history = ck['history']
-        bank = ck.get('bank', [])       # ★ V13：旧的 last.pt 没有这个键，缺了就当空（不影响续跑）
+        bank = ck.get('bank', [])
         np.random.set_state(ck['numpy_rng'])
         random.setstate(ck['python_rng'])
         torch.set_rng_state(ck['torch_rng'])
         if dev.type == 'cuda':
             torch.cuda.set_rng_state_all(ck['cuda_rng'])
         print(f'fold{fold} 恢复 epoch {start}', flush=True)
-    print(f'fold{fold} 设备 {dev}，训练 {len(split["train"])} / 验证 {len(split["valid"])} / 测试 {len(split["test"])} 天', flush=True)
-
+    print(f"fold{fold} 设备 {dev}，训练 {len(split['train'])} / 验证 {len(split['valid'])} / 测试 {len(split['test'])} 天", flush=True)
     if absolute_only:
         if not last.exists():
-            save_torch(last,dict(recipe_signature=signature,absolute_fit=absolute_fit_info,
-                model=model.state_dict(),optimizer=opt.state_dict(),scheduler=scheduler.state_dict(),
-                epoch=-1,best=-float('inf'),stale=0,history=[],bank=[],
-                numpy_rng=np.random.get_state(),python_rng=random.getstate(),torch_rng=torch.get_rng_state(),
-                cuda_rng=torch.cuda.get_rng_state_all() if dev.type=='cuda' else []))
-            atomic_json(out/'history.json',[])
-        print('ABSOLUTE_PREPARED_ONLY',quarter,fold,'neural updates',start,flush=True)
-        return dict(quarter=quarter,fold=fold,absolute_prepared=True,neural_epochs=start,
-            recipe_signature=signature,absolute_fit=absolute_fit_summary)
-
-    # --- 逐轮训练 ---
+            save_torch(last, dict(recipe_signature=signature, absolute_fit=absolute_fit_info, model=model.state_dict(), optimizer=opt.state_dict(), scheduler=scheduler.state_dict(), epoch=-1, best=-float('inf'), stale=0, history=[], bank=[], numpy_rng=np.random.get_state(), python_rng=random.getstate(), torch_rng=torch.get_rng_state(), cuda_rng=torch.cuda.get_rng_state_all() if dev.type == 'cuda' else []))
+            atomic_json(out / 'history.json', [])
+        print('ABSOLUTE_PREPARED_ONLY', quarter, fold, 'neural updates', start, flush=True)
+        return dict(quarter=quarter, fold=fold, absolute_prepared=True, neural_epochs=start, recipe_signature=signature, absolute_fit=absolute_fit_summary)
     t0 = time.time()
     for epoch in range(start, recipe['max_epochs']):
         if stale >= recipe['early_stop_patience']:
@@ -1485,47 +890,48 @@ def train_fold(fold, device='auto', panel=None, prices=None, quarter=None, absol
         order = np.random.permutation(split['train'])
         losses = []
         t = time.time()
-
-        # 一个 batch = batch_days 个完整日截面；损失逐日算完再平均。
         for pos in range(0, len(order), recipe['batch_days']):
             opt.zero_grad(set_to_none=True)
             batch = []
+            batch_days=order[pos:pos+recipe['batch_days']]
+            inputs=[];markets=[];sizes=[];effective=[]
+            for bd in batch_days:
+                bm=panel.mask(bd)
+                if bm.sum()<3:continue
+                inputs.append(panel.inputs(bd,bm))
+                markets.append(np.broadcast_to(panel.M[bd],(int(bm.sum()),panel.market_dim)))
+                sizes.append(int(bm.sum()));effective.append(int(bd))
+            if not effective:continue
+            all_pred=model(torch.from_numpy(np.concatenate(inputs)).to(dev),torch.from_numpy(np.concatenate(markets)).to(dev))
+            pred_by_day=dict(zip(effective,torch.split(all_pred,sizes)))
             for d in order[pos:pos + recipe['batch_days']]:
-                # 掩码只看覆盖率：各 horizon 的标签缺失率不同（20d 在数据尾部缺得更多），
-                # 标签的取舍放到每个头各自的子集里做。
                 mask = panel.mask(d)
-                # ★ V17：池内训练 —— 样本掩码再与当日热门池取交。
-                if recipe['train_pool_frac'] < 1.:
+                if recipe['train_pool_frac'] < 1.0:
                     mask = mask & prices.hot[d]
-                if mask.sum() < 3:      # BatchNorm 训练态要求每通道多于 1 个样本，先挡住
+                if mask.sum() < 3:
                     continue
-                # 先确认当日至少有一个头有效，再前向 —— 否则这次前向白做，且归一化分母为 0。
                 targets = {}
                 for h in recipe['label_horizons']:
                     y = panel.Y[f'label_ret_{h}d'][d, mask]
                     ok = np.isfinite(y)
-                    if ok.sum() < 3 or np.std(y[ok]) < 1e-8:
+                    if ok.sum() < 3 or np.std(y[ok]) < 1e-08:
                         continue
                     targets[h] = (ok, y[ok])
                 if not targets:
                     continue
-                x = torch.from_numpy(panel.inputs(d, mask)).to(dev)
-                m = torch.from_numpy(panel.M[d]).to(dev) if panel.market_dim else None
-                pred = model(x, m)
-                terms, weights = [], []
+                pred = pred_by_day[int(d)]
+                terms, weights = ([], [])
                 for h, (ok, y) in targets.items():
-                    j = recipe['label_horizons'].index(h)      # 列序的唯一出处，不靠 dict 顺序
+                    j = recipe['label_horizons'].index(h)
                     yt = torch.from_numpy(y).to(dev)
-                    # 仅当天标准化标签；常数截面跳过，缺失标签从不填零。
                     yt = (yt - yt.mean()) / yt.std()
                     rows = torch.from_numpy(np.flatnonzero(ok)).to(dev)
                     prediction = pred[rows, j]
                     if recipe.get('liquidity_loss_weight'):
-                        # Causal same-day amount only; no future tradability inputs.
                         amount = torch.from_numpy(panel.amount[d, mask][ok].astype(np.float32)).to(dev)
-                        importance = torch.log1p(torch.nan_to_num(amount).clamp_min(0.))
-                        importance = importance / importance.mean().clamp_min(1e-8)
-                        importance = importance.clamp(.25, 2.)
+                        importance = torch.log1p(torch.nan_to_num(amount).clamp_min(0.0))
+                        importance = importance / importance.mean().clamp_min(1e-08)
+                        importance = importance.clamp(0.25, 2.0)
                         prediction = prediction * importance.sqrt()
                         yt = yt * importance.sqrt()
                     terms.append(recipe['label_weights'][h] * wpcc(prediction, yt))
@@ -1537,11 +943,9 @@ def train_fold(fold, device='auto', panel=None, prices=None, quarter=None, absol
             if not torch.isfinite(loss):
                 raise FloatingPointError('WPCC 非有限')
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 10.)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 10.0)
             opt.step()
             losses.append(float(loss.detach()))
-
-        # --- 每轮收尾：验证选轮 → 调学习率 → 落盘 best / last / history ---
         metrics = validation(model, panel, prices, split['valid'], dev)
         score = metrics['val_wei']
         scheduler.step(score)
@@ -1549,105 +953,43 @@ def train_fold(fold, device='auto', panel=None, prices=None, quarter=None, absol
         if improved:
             best = score
             stale = 0
-            save_torch(out / 'best.pt', dict(recipe_signature=signature,absolute_fit=absolute_fit_info,model=model.state_dict(), input_dim=len(panel.features),
-                                            market_dim=panel.market_dim, horizons=list(model.horizons),
-                                            features=panel.features, epoch=epoch, metrics=metrics,
-                                            ridge=getattr(model, 'ridge', None)))
+            save_torch(out / 'best.pt', dict(recipe_signature=signature, absolute_fit=absolute_fit_info, model=model.state_dict(), input_dim=len(panel.features), market_dim=panel.market_dim, horizons=list(model.horizons), features=panel.features, epoch=epoch, metrics=metrics, ridge=getattr(model, 'ridge', None)))
         else:
             stale += 1
-        # ★ V13：无论这一轮有没有刷新 best 都要进候选池 —— bagging 取的是**前 k 名**，
-        #   不是"每一段的最好"，漏掉并列的第二、三名会让平均只在单点上做，失去降噪的意义。
         if recipe['bag_topk']:
-            bank.append((score, epoch,
-                         {k: v.detach().to('cpu', copy=True) for k, v in model.state_dict().items()}))
+            bank.append((score, epoch, {k: v.detach().to('cpu', copy=True) for k, v in model.state_dict().items()}))
             bank.sort(key=lambda item: -item[0])
             del bank[recipe['bag_topk']:]
-        record = dict(epoch=epoch, train_loss=float(np.mean(losses)), lr=opt.param_groups[0]['lr'],
-                      seconds=round(time.time() - t, 2), **metrics)
+        record = dict(epoch=epoch, train_loss=float(np.mean(losses)), lr=opt.param_groups[0]['lr'], seconds=round(time.time() - t, 2), **metrics)
         history.append(record)
         atomic_json(out / 'history.json', history)
-        save_torch(last, dict(recipe_signature=signature,absolute_fit=absolute_fit_info,model=model.state_dict(), optimizer=opt.state_dict(), scheduler=scheduler.state_dict(),
-                              epoch=epoch, best=best, stale=stale, history=history, bank=bank,
-                              numpy_rng=np.random.get_state(), python_rng=random.getstate(),
-                              torch_rng=torch.get_rng_state(),
-                              cuda_rng=torch.cuda.get_rng_state_all() if dev.type == 'cuda' else []))
-        # 进度与 ETA：按本进程已完成轮次的平均耗时估算；早停会提前结束，所以是上界。
+        save_torch(last, dict(recipe_signature=signature, absolute_fit=absolute_fit_info, model=model.state_dict(), optimizer=opt.state_dict(), scheduler=scheduler.state_dict(), epoch=epoch, best=best, stale=stale, history=history, bank=bank, numpy_rng=np.random.get_state(), python_rng=random.getstate(), torch_rng=torch.get_rng_state(), cuda_rng=torch.cuda.get_rng_state_all() if dev.type == 'cuda' else []))
         elapsed = time.time() - t0
         done_n = epoch - start + 1
         eta = elapsed / done_n * (recipe['max_epochs'] - done_n)
-        print(f'fold{fold} epoch {epoch+1}/{recipe["max_epochs"]}: loss={record["train_loss"]:.5f} '
-              f'val_wei={score:.5f} (ret={metrics["val_return_proxy"]:.5f} '
-              f'ICw={metrics["val_ic_weighted"]:.5f}) '
-              f'IC in recipe horizon order=' + '/'.join(f'{metrics[f"IC_{h}d"]:.4f}' for h in recipe['label_horizons'])
-              + f' lr={record["lr"]:.6g} {record["seconds"]:.1f}s best={improved} | '
-              f'{done_n}/{recipe["max_epochs"]} 轮，已用 {elapsed / 60:.1f}m，'
-              f'ETA≤{eta / 60:.1f}m（早停提前）', flush=True)
-
-    # --- ★ V13 收尾：交付权重 = val_wei 前 k 名的平均（epoch-bagging），不再是 argmax ---
+        print(f"fold{fold} epoch {epoch + 1}/{recipe['max_epochs']}: loss={record['train_loss']:.5f} val_wei={score:.5f} (ret={metrics['val_return_proxy']:.5f} ICw={metrics['val_ic_weighted']:.5f}) IC in recipe horizon order=" + '/'.join((f"{metrics[f'IC_{h}d']:.4f}" for h in recipe['label_horizons'])) + f" lr={record['lr']:.6g} {record['seconds']:.1f}s best={improved} | {done_n}/{recipe['max_epochs']} 轮，已用 {elapsed / 60:.1f}m，ETA≤{eta / 60:.1f}m（早停提前）", flush=True)
     ck = torch.load(out / 'best.pt', map_location=dev, weights_only=False)
-    argmax_epoch, argmax_metrics = ck['epoch'], ck['metrics']
+    argmax_epoch, argmax_metrics = (ck['epoch'], ck['metrics'])
     if recipe['bag_topk'] and len(bank) > 1:
         model.load_state_dict(average_state_dicts([state for _, _, state in bank]))
         if recipe['bag_recalibrate']:
             recalibrate_bn(model, panel, split['train'], dev)
-        # 平均后的权重必须**重新过一遍选轮判据**：交付的是它，valid 表的收益列也取自它。
         bagged_metrics = validation(model, panel, prices, split['valid'], dev)
-        save_torch(out / 'best.pt', dict(recipe_signature=signature,absolute_fit=absolute_fit_info,model=model.state_dict(), input_dim=len(panel.features),
-                                        market_dim=panel.market_dim, horizons=list(model.horizons),
-                                        features=panel.features, epoch=argmax_epoch,
-                                        metrics=bagged_metrics, ridge=ck.get('ridge'),
-                                        # argmax 那一份原样留着 —— 「bagged − argmax」的配对
-                                        # 比较要在同一批训练上做，丢了就只剩跨版本抽奖噪声。
-                                        model_argmax=ck['model'], metrics_argmax=argmax_metrics))
+        save_torch(out / 'best.pt', dict(recipe_signature=signature, absolute_fit=absolute_fit_info, model=model.state_dict(), input_dim=len(panel.features), market_dim=panel.market_dim, horizons=list(model.horizons), features=panel.features, epoch=argmax_epoch, metrics=bagged_metrics, ridge=ck.get('ridge'), model_argmax=ck['model'], metrics_argmax=argmax_metrics))
     else:
-        # bag_topk=0 或只有一轮进池：退回 argmax，与 V11 口径逐位相同。
         model.load_state_dict(ck['model'])
         bagged_metrics = argmax_metrics
     model.eval()
-
-    model=model.to('cpu')
-    if LIVE and not len(split['score']):
-        # ★ 实战模式且数据未覆盖伪季度：评分窗为空，落空打分（数据更新后 rescore 重出）
-        pred = np.zeros((0, len(panel.codes)), np.float32)
-    else:
-        pred = predict(model,panel,prices,split['score'],torch.device('cpu'))
+    model = model.to('cpu')
+    pred = predict(model, panel, prices, split['score'], torch.device('cpu'))
     save_npy(out / 'score_predictions.npy', pred)
-    # 评价用的季度切片 = 推演窗的前缀（同一份结果切片，不额外前向）
     save_npy(out / 'test_predictions.npy', pred[:len(split['test'])])
-    result = dict(recipe_signature=signature,absolute_fit=absolute_fit_summary,quarter=quarter, fold=fold, best_epoch=argmax_epoch + 1, epochs=len(history),
-                  test_dates=panel.days[split['test']].tolist(),
-                  score_dates=panel.days[split['score']].tolist(),
-                  best_validation=bagged_metrics,           # valid 表读它 ⇒ 报的是交付口径
-                  argmax_validation=argmax_metrics,         # 同批训练的对照，配对比较用
-                  bag=dict(topk=recipe['bag_topk'], used=len(bank),
-                           epochs=[int(e) + 1 for _, e, _ in bank],
-                           scores=[float(s) for s, _, _ in bank]),
-                  peak_rss_gib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 ** 2,
-                  seconds=round(time.time() - t0, 2), device=str(dev))
+    result = dict(recipe_signature=signature, absolute_fit=absolute_fit_summary, quarter=quarter, fold=fold, best_epoch=argmax_epoch + 1, epochs=len(history), test_dates=panel.days[split['test']].tolist(), score_dates=panel.days[split['score']].tolist(), best_validation=bagged_metrics, argmax_validation=argmax_metrics, bag=dict(topk=recipe['bag_topk'], used=len(bank), epochs=[int(e) + 1 for _, e, _ in bank], scores=[float(s) for s, _, _ in bank]), peak_rss_gib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 ** 2, seconds=round(time.time() - t0, 2), device=str(dev))
     atomic_json(done, result)
-    print(f'fold{fold} EXIT:0（bag {len(bank)}/{recipe["bag_topk"]} 份，'
-          f'轮号 {result["bag"]["epochs"]}；valid val_wei argmax {argmax_metrics["val_wei"]:.5f} '
-          f'→ bagged {bagged_metrics["val_wei"]:.5f}）', flush=True)
+    print(f"fold{fold} EXIT:0（bag {len(bank)}/{recipe['bag_topk']} 份，轮号 {result['bag']['epochs']}；valid val_wei argmax {argmax_metrics['val_wei']:.5f} → bagged {bagged_metrics['val_wei']:.5f}）", flush=True)
     return result
 
-# =============================================================================
-# ⑩ 命令行入口
-#
-# 分季度×折的调度在 run.py（`./run.py train`）；这里只做单折/自检/看切分。
-# =============================================================================
-
-
 def rescore(quarter_list, fold_list, device='auto', panel=None, prices=None):
-    """只重推演、不重训：用已完成的 best.pt 按当前口径重算打分并落盘。
-
-    口径改动（推演窗、切分）之后不必重训就能刷新产物 —— 模型本身没变。
-    只按当前口径重推演：口径变了而权重没重训时不会报错，需要自己删折重训。
-
-    ★ **`best_validation` 也一并按当前口径重算**（V3 补）：valid 表的来源就是它，
-    而它里面装的是**打分**的指标。改 `RECIPE['score_blend']` 之后只刷新打分、不刷新它，
-    valid 表就会继续印旧口径的数字，与新打分对不上——`analysis.py` 不会发现，
-    产物自洽、不报错。重算一次验证窗约 1 分钟/折。
-    """
     dev = device_for(device)
     torch.set_num_threads(RECIPE['threads'])
     panel = panel or Panel(RECIPE['features'])
@@ -1666,7 +1008,7 @@ def rescore(quarter_list, fold_list, device='auto', panel=None, prices=None):
             ck = torch.load(out / 'best.pt', map_location=dev, weights_only=False)
             model = PredictModel(len(panel.features), panel.market_dim).to(dev)
             model.load_state_dict(ck['model'])
-            model.ridge = ck.get('ridge')          # ★ V9：打分含线性分量，必须一并恢复
+            model.ridge = ck.get('ridge')
             pred = predict(model, panel, prices, split['score'], dev)
             save_npy(out / 'score_predictions.npy', pred)
             save_npy(out / 'test_predictions.npy', pred[:len(split['test'])])
@@ -1675,10 +1017,7 @@ def rescore(quarter_list, fold_list, device='auto', panel=None, prices=None):
             done['test_dates'] = panel.days[split['test']].tolist()
             done['best_validation'] = validation(model, panel, prices, split['valid'], dev)
             atomic_json(done_path, done)
-            print(f'{quarter} fold{fold} 重推演完成：推演窗 {pred.shape[0]} 天'
-                  f'（其中评价 {len(split["test"])} 天），best_validation 已按当前口径重算',
-                  flush=True)
-
+            print(f"{quarter} fold{fold} 重推演完成：推演窗 {pred.shape[0]} 天（其中评价 {len(split['test'])} 天），best_validation 已按当前口径重算", flush=True)
 
 def main():
     parser = ArgumentParser(description='V2：全因子 + 市场门控 + 多目标（1/3/5/10/20d）四折模型，单折训练（断点续跑）')
@@ -1688,1475 +1027,1067 @@ def main():
     parser.add_argument('--split', action='store_true', help='只打印各季度切分，不训练')
     parser.add_argument('--rescore', action='store_true', help='只重推演、不重训：用已有 best.pt 按当前口径刷新打分')
     parser.add_argument('--doctor', action='store_true', help='环境与数据自检')
-    parser.add_argument('--prepare-absolute-only',action='store_true',help='仅准备本单元新拟合技术分支，不形成完成折')
+    parser.add_argument('--prepare-absolute-only', action='store_true', help='仅准备本单元新拟合技术分支，不形成完成折')
     args = parser.parse_args()
-    # 新单元的常驻产物由运行生成，所以起点允许缺失；多余路径仍然一律拒绝。
     validate_layout(allow_temporary=True, allow_missing=True)
-
-    # --- 自检：只打印本单元自己的运行环境，不探测宿主（独立单元约束）---
     if args.doctor:
         print('Python:', sys.executable, 'PyTorch:', torch.__version__)
         print('Data:', data_root())
-        print('CUDA:', torch.cuda.is_available(),
-              torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')
+        print('CUDA:', torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')
         print('Device:', device_for(RECIPE['device']))
         return
-
     days, _ = axis()
     qs = [args.quarter] if args.quarter else quarters(days)
-    if any(q not in quarters(days) for q in qs):
+    if any((q not in quarters(days) for q in qs)):
         raise ValueError('季度不在评价窗口内')
-
-    # --- 看切分：不读特征面板 ---
     if args.split:
         for q in qs:
             for s in splits(days, quarter=q):
                 print(json.dumps(split_summary(days, s), ensure_ascii=False))
         return
-
-    # --- 只重推演：不训练，用已有 best.pt 按当前口径刷新打分与切分记录 ---
     if args.rescore:
         panel = Panel(RECIPE['features'])
         return rescore(qs, [args.fold] if args.fold else [1, 2, 3, 4], args.device, panel)
-
-    # --- 训练：读一次面板，按季度 × 折依次训练 ---
     panel = Panel(RECIPE['features'])
     prices = Prices(panel)
     check_days = np.concatenate([splits(panel.days, quarter=q)[0]['test'] for q in qs])
-    if len(check_days):   # ★ 实战模式下评分窗可能为空，跳过价格对拍
-        prices.verify_labels(panel, check_days)
+    prices.verify_labels(panel, check_days)
     for q in qs:
-        for fold in ([args.fold] if args.fold else range(1, 5)):
-            train_fold(fold,args.device,panel,prices,q,absolute_only=args.prepare_absolute_only)
-
-
-
-RECIPE = {'name': 'V230', 'architecture': 'mlp; raw_neural; training-only technical ridge for auxiliary cost forecast', 'label': 'label_ret_5d', 'label_horizons': [1, 3, 5], 'score_blend': 'flow_technical_percentile', 'score_label': 'label_ret_5d', 'label_weights': {1: 1.0, 3: 0.0, 5: 0.0}, 'valid_ic_weights': {1: 1.0, 3: 0.0, 5: 0.0}, 'valid_ic_scale': 1.0, 'market_gate': True, 'market_block': 'market_factors', 'market_clip': 10.0, 'picks_topn': 5, 'backtest_money': 100000.0, 'picks_holding': 5, 'valid_criterion': 'capacity_wei', 'loss_rank_decay': 0.5, 'train_pool_frac': 1.0, 'hot_pool': {'frac': 1.0, 'amount_window': 20, 'amp_window': 5, 'limit_window': 20, 'min_names': 20}, 'entry_rule': 'open', 'hold_band': 40, 'budget_rule': 'divide', 'bag_topk': 5, 'bag_recalibrate': True, 'features': 'all', 'feature_block': 'factors', 'folds': 4, 'seed': 35253, 'batch_days': 4, 'optimizer': 'adamw', 'lr': 0.001, 'weight_decay': 0.02, 'dropout': (0.2, 0.1), 'hidden': (256, 128, 32), 'max_epochs': 30, 'early_stop_patience': 6, 'lr_patience': 3, 'lr_factor': 0.5, 'lr_cooldown': 2, 'min_lr': 5e-06, 'min_feature_coverage': 0.2, 'linear_weight': 0.0, 'device': 'auto', 'threads': 1, 'valid_topn': 5, 'valid_metric': 'weighted raw-label RankIC of delivered internal50/50 fusion; absolute branch fitted training-only and held constant through neural epoch selection', 'preprocessing': 'daily_zscore_win1_99_fixed_missing_0', 'test_start': '2025-07-01', 'test_end': '2026-06-30', 'purge_horizon': 20, 'training_window': '2018起扩展窗，每季度初更新；季度边界purge max(h)+1=21交易日', 'sequence_days': 1, 'family': 'mlp_all_capacity_5_1e+07', 'training_target': 'one-day daily WPCC; standardized label; all current stock factors; capacity anchor plus 0.7 Pearson IC selection', 'weights_origin': 'V202 scripts only; all weights freshly fitted; old products untouched', 'research_protocol': '20261006 single-replica screening; standard four quarters; no seed selection; capacity anchors evaluated on validation only; held-out quarterly test used for diagnostics, not claimed independent final confirmation', 'snapshot_cutoff': '2026-09-30', 'prediction_horizon': 5, 'parent_sources': ['V202'], 'feature_names': ['afx_cf_im_net_cashflow_oper_act', 'afx_fi_fcfe', 'afx_fi_fcff', 'afx_fi_ocf_to_interestdebt', 'afx_fi_ocf_to_opincome', 'afx_fi_ocf_to_profit', 'afx_fi_ocfps', 'afx_fi_q_gr_qoq', 'afx_fi_q_gsprofit_margin', 'afx_fi_q_netprofit_qoq', 'afx_fi_q_ocf_to_or', 'afx_is_basic_eps', 'afx_is_ebitda', 'amihud_daily_5', 'amount_mom_accel', 'amount_ratio_20', 'asset_growth_qoq', 'atr_14_ratio', 'beta_60', 'bp', 'bs_other_receiv_to_assets', 'bw_strength_sensitivity_20', 'cash_conversion_cycle', 'cash_sales_ratio', 'cf_purchase_cash_intensity', 'cfcr', 'cfp_ttm', 'close30_ret', 'cp_momentum_lowvol_20', 'cp_value_momentum_div', 'dividend_yield_3y_avg', 'dp_ttm', 'dpo_20', 'ebitda_to_market', 'efx_annual_earnings_yield', 'efx_volume_ratio', 'ep_ttm', 'etp5', 'extreme_move_event', 'holder_number_chg', 'id2_close_vs_pm_vwap', 'id2_close_vs_pm_vwap_20', 'id2_hi_lo_pos_gap', 'id2_parkinson_vol', 'id2_ret_concentration', 'idio_vol_60', 'idt_overnight_minus_intraday', 'idt_rv_daily', 'idt_rv_term_structure_slope', 'idt_vol_stability', 'ind_bps_yoy', 'ind_dt_netprofit_yoy', 'ind_int_to_talcap', 'interest_coverage', 'intraday_vol_ratio_5d', 'inventory_turnover', 'limit_broken_ratio_20', 'limit_days_since_up_20', 'limit_down_event_5', 'log_mv', 'margin_repay_deceleration', 'margin_repay_shock', 'mf_amount_weighted_direction', 'mf_big_order_net_ac1_20', 'mf_net_inflow_5d', 'mf_net_vol_surprise_20', 'mf_small_order_avg_price_dev', 'momentum_120', 'momentum_20', 'momentum_250', 'momentum_60', 'ocf_to_profit', 'ocf_to_revenue', 'open5_capacity_floor_ratio_20', 'overnight_ma_20d', 'overnight_ma_5d', 'overnight_ma_60d', 'overnight_std_5d', 'price_distance_from_52w_low', 'price_to_52w_high', 'qf_cash_margin_floor_4q', 'qf_cash_margin_yoy_change', 'qf_core_roe_floor_4q', 'qf_core_roe_vol_4q', 'qf_core_roe_yoy_change', 'qf_roa_yoy_change', 'qf_sales_growth_accel', 'qf_sales_growth_vol_4q', 'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7', 'r10gc_bias_turn_126_252_v1_a9656f4fececd030', 'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581', 'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742', 'r10gc_high_low_21_v1_ca60e882d8b5c22f', 'r10gc_high_low_252_v1_facb1d1f647f48ca', 'r10gc_high_low_63_v1_34a74707a9f916a3', 'r10gc_income_tax_yoy_v1_c051c303608f0a17', 'r10gc_ret_std_21_v1_51f3cc1a8b65d126', 'r10gc_ret_std_252_v1_db7166018e1a0511', 'r10gc_ret_std_63_v1_19b9e9fa082c7cec', 'r10gc_turn_lvl_21_v1_2bab2360d6cb7099', 'r10gc_turn_lvl_252_v1_2dd70c23d17694f4', 'r10gc_turn_lvl_63_v1_7d51db9d4ff08793', 'r10gc_turn_std_126_v1_e96f93f78ed0e472', 'r10gc_turn_std_252_v1_9a4d3d577535e360', 'r10gc_turn_std_42_v1_21349ae0e32c1db7', 'r10gc_yoy_net_asset_v1_2a57af1e5c40492f', 'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac', 'r10gc_yoy_ocf_v1_066e6046572baf9c', 'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca', 'r11gc_amount_ma_20_v1_1858415feaa5dbe6', 'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732', 'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134', 'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa', 'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1', 'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f', 'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe', 'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1', 'r11gc_bias_turn_126_504_v1_e3ccc91522792d65', 'r11gc_bias_turn_21_504_v1_111533df505215cb', 'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260', 'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad', 'r11gc_bias_turn_63_504_v1_387613367cbd4dd9', 'r11gc_high_low_126_v1_2666509099db4a47', 'r11gc_high_low_42_v1_36fd67d17bea68ac', 'r11gc_ret_std_42_v1_23474362384bc399', 'r11gc_turn_lvl_10_v1_c377944b650ec037', 'r11gc_turn_lvl_126_v1_ef48ac322c8d0929', 'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4', 'r11gc_turn_lvl_42_v1_24d04a044ce607a0', 'r11gc_turn_lvl_5_v1_332d53f4bb907a79', 'r11gc_turn_std_63_v1_5ef776ad40ef77f6', 'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3', 'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1', 'r12gc_asset_turnover_v1_40d616e07fd4a097', 'r12gc_cash_ratio_v1_7ef2829865ad2cc2', 'r12gc_de_v1_d4cd33b978d63b0a', 'r12gc_eps_q_v1_8f3703e8eb218668', 'r12gc_eps_ttm_v1_2d84c57b9ea5f85d', 'r12gc_eps_y_v1_6f0a67c91531a732', 'r12gc_equity_turnover_v1_4cba36560ca472e5', 'r12gc_fcf_to_market_v1_49c0b5d214b35db0', 'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2', 'r12gc_float_size_v1_8b275acb0cb20dec', 'r12gc_gpm_q_v1_842e57e4d0d033e5', 'r12gc_gpm_ttm_v1_7e99428574d400ea', 'r12gc_gpm_y_v1_102eddddb8fac4c4', 'r12gc_log_price_v1_0a22efbc7b6bb1f7', 'r12gc_market_value_leverage_v1_9f3705df7636e0cc', 'r12gc_ncf_to_market_v1_71cf1e0deddc7070', 'r12gc_npm_q_v1_a1e5e8bb0a48de33', 'r12gc_npm_ttm_v1_4e4381d67f1d7391', 'r12gc_npm_y_v1_f78b237b3b7c1b18', 'r12gc_opm_ttm_v1_2827ff5d605bdeeb', 'r12gc_opm_y_v1_6e2f1f9aaf3c6106', 'r12gc_opt_tpro_v1_d832d118e2414259', 'r12gc_quick_ratio_v1_ea13af873ce572fc', 'r12gc_receivable_turnover_v1_458e2aaecafa62b9', 'r12gc_return_42_v1_0032bf23a28de8f7', 'r12gc_roa_q_v1_4b4ae2280384ebde', 'r12gc_roa_y_v1_6e585294932485e4', 'r12gc_roe_y_v1_bca9de9f86ce36dd', 'r12gc_sales_to_market_v1_ff344107e3f2c925', 'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb', 'r3b_intraday_rv_skewness_v2_44ef55d83a759fba', 'r4a_forecast_landing_gap_v3_972c0653571ab5d8', 'r4a_sue_accel_v1_4b443eb2d4fda83c', 'r4a_sue_seasonal_q_v1_f1def0b01eb0b979', 'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb', 'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8', 'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9', 'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5', 'r4e_idio_max_20_v1_d0d201efd7755e86', 'r4j_same_month_consistency_v1_be7f8ede9c4b5afe', 'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1', 'r4t_preann_turnover_shock_v1_3a95800106c754f2', 'r4t_preann_vol_expansion_v1_bebf97b2c5260706', 'r7a_tax_expense_seasonal_change_v2_371da87d5055df86', 'r7e_context_salience20_v1_f4efb8789772d003', 'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035', 'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe', 'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728', 'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f', 'ret_skew_20', 'revenue_cagr_3y', 'reversal_2d', 'roa_ttm', 'roc_12', 'roe_ttm', 'rsi_14', 'rsrs_beta_18', 'rv_term_structure', 's26_liq_up_fragility_v1_b43c747ff9090bc2', 's26_structure_side_hhi_v1_bb77e106a875308a', 'short_term_reversal_5', 'sp_ttm', 'td_setup_count', 'three_black_crows', 'turnover_anomaly_20', 'turnover_f_delta_5', 'turnover_std_20', 'vol_120', 'vol_clustering_20', 'vol_of_rv', 'vol_ratio_ma5_ma20', 'volume_ratio', 'yoy_revenue'], 'flow_feature_names': ['afx_cf_im_net_cashflow_oper_act', 'afx_fi_fcfe', 'afx_fi_fcff', 'afx_fi_ocf_to_interestdebt', 'afx_fi_ocf_to_opincome', 'afx_fi_ocf_to_profit', 'afx_fi_ocfps', 'afx_fi_q_gr_qoq', 'afx_fi_q_gsprofit_margin', 'afx_fi_q_netprofit_qoq', 'afx_fi_q_ocf_to_or', 'afx_is_basic_eps', 'afx_is_ebitda', 'amihud_daily_5', 'amount_mom_accel', 'amount_ratio_20', 'asset_growth_qoq', 'atr_14_ratio', 'beta_60', 'bp', 'bs_other_receiv_to_assets', 'bw_strength_sensitivity_20', 'cash_conversion_cycle', 'cash_sales_ratio', 'cf_purchase_cash_intensity', 'cfcr', 'cfp_ttm', 'close30_ret', 'cp_momentum_lowvol_20', 'cp_value_momentum_div', 'dividend_yield_3y_avg', 'dp_ttm', 'dpo_20', 'ebitda_to_market', 'efx_annual_earnings_yield', 'efx_volume_ratio', 'ep_ttm', 'etp5', 'extreme_move_event', 'holder_number_chg', 'id2_close_vs_pm_vwap', 'id2_close_vs_pm_vwap_20', 'id2_hi_lo_pos_gap', 'id2_parkinson_vol', 'id2_ret_concentration', 'idio_vol_60', 'idt_overnight_minus_intraday', 'idt_rv_daily', 'idt_rv_term_structure_slope', 'idt_vol_stability', 'ind_bps_yoy', 'ind_dt_netprofit_yoy', 'ind_int_to_talcap', 'interest_coverage', 'intraday_vol_ratio_5d', 'inventory_turnover', 'limit_broken_ratio_20', 'limit_days_since_up_20', 'limit_down_event_5', 'log_mv', 'margin_repay_deceleration', 'margin_repay_shock', 'mf_amount_weighted_direction', 'mf_big_order_net_ac1_20', 'mf_net_inflow_5d', 'mf_net_vol_surprise_20', 'mf_small_order_avg_price_dev', 'momentum_120', 'momentum_20', 'momentum_250', 'momentum_60', 'ocf_to_profit', 'ocf_to_revenue', 'open5_capacity_floor_ratio_20', 'overnight_ma_20d', 'overnight_ma_5d', 'overnight_ma_60d', 'overnight_std_5d', 'price_distance_from_52w_low', 'price_to_52w_high', 'qf_cash_margin_floor_4q', 'qf_cash_margin_yoy_change', 'qf_core_roe_floor_4q', 'qf_core_roe_vol_4q', 'qf_core_roe_yoy_change', 'qf_roa_yoy_change', 'qf_sales_growth_accel', 'qf_sales_growth_vol_4q', 'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7', 'r10gc_bias_turn_126_252_v1_a9656f4fececd030', 'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581', 'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742', 'r10gc_high_low_21_v1_ca60e882d8b5c22f', 'r10gc_high_low_252_v1_facb1d1f647f48ca', 'r10gc_high_low_63_v1_34a74707a9f916a3', 'r10gc_income_tax_yoy_v1_c051c303608f0a17', 'r10gc_ret_std_21_v1_51f3cc1a8b65d126', 'r10gc_ret_std_252_v1_db7166018e1a0511', 'r10gc_ret_std_63_v1_19b9e9fa082c7cec', 'r10gc_turn_lvl_21_v1_2bab2360d6cb7099', 'r10gc_turn_lvl_252_v1_2dd70c23d17694f4', 'r10gc_turn_lvl_63_v1_7d51db9d4ff08793', 'r10gc_turn_std_126_v1_e96f93f78ed0e472', 'r10gc_turn_std_252_v1_9a4d3d577535e360', 'r10gc_turn_std_42_v1_21349ae0e32c1db7', 'r10gc_yoy_net_asset_v1_2a57af1e5c40492f', 'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac', 'r10gc_yoy_ocf_v1_066e6046572baf9c', 'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca', 'r11gc_amount_ma_20_v1_1858415feaa5dbe6', 'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732', 'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134', 'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa', 'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1', 'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f', 'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe', 'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1', 'r11gc_bias_turn_126_504_v1_e3ccc91522792d65', 'r11gc_bias_turn_21_504_v1_111533df505215cb', 'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260', 'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad', 'r11gc_bias_turn_63_504_v1_387613367cbd4dd9', 'r11gc_high_low_126_v1_2666509099db4a47', 'r11gc_high_low_42_v1_36fd67d17bea68ac', 'r11gc_ret_std_42_v1_23474362384bc399', 'r11gc_turn_lvl_10_v1_c377944b650ec037', 'r11gc_turn_lvl_126_v1_ef48ac322c8d0929', 'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4', 'r11gc_turn_lvl_42_v1_24d04a044ce607a0', 'r11gc_turn_lvl_5_v1_332d53f4bb907a79', 'r11gc_turn_std_63_v1_5ef776ad40ef77f6', 'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3', 'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1', 'r12gc_asset_turnover_v1_40d616e07fd4a097', 'r12gc_cash_ratio_v1_7ef2829865ad2cc2', 'r12gc_de_v1_d4cd33b978d63b0a', 'r12gc_eps_q_v1_8f3703e8eb218668', 'r12gc_eps_ttm_v1_2d84c57b9ea5f85d', 'r12gc_eps_y_v1_6f0a67c91531a732', 'r12gc_equity_turnover_v1_4cba36560ca472e5', 'r12gc_fcf_to_market_v1_49c0b5d214b35db0', 'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2', 'r12gc_float_size_v1_8b275acb0cb20dec', 'r12gc_gpm_q_v1_842e57e4d0d033e5', 'r12gc_gpm_ttm_v1_7e99428574d400ea', 'r12gc_gpm_y_v1_102eddddb8fac4c4', 'r12gc_log_price_v1_0a22efbc7b6bb1f7', 'r12gc_market_value_leverage_v1_9f3705df7636e0cc', 'r12gc_ncf_to_market_v1_71cf1e0deddc7070', 'r12gc_npm_q_v1_a1e5e8bb0a48de33', 'r12gc_npm_ttm_v1_4e4381d67f1d7391', 'r12gc_npm_y_v1_f78b237b3b7c1b18', 'r12gc_opm_ttm_v1_2827ff5d605bdeeb', 'r12gc_opm_y_v1_6e2f1f9aaf3c6106', 'r12gc_opt_tpro_v1_d832d118e2414259', 'r12gc_quick_ratio_v1_ea13af873ce572fc', 'r12gc_receivable_turnover_v1_458e2aaecafa62b9', 'r12gc_return_42_v1_0032bf23a28de8f7', 'r12gc_roa_q_v1_4b4ae2280384ebde', 'r12gc_roa_y_v1_6e585294932485e4', 'r12gc_roe_y_v1_bca9de9f86ce36dd', 'r12gc_sales_to_market_v1_ff344107e3f2c925', 'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb', 'r3b_intraday_rv_skewness_v2_44ef55d83a759fba', 'r4a_forecast_landing_gap_v3_972c0653571ab5d8', 'r4a_sue_accel_v1_4b443eb2d4fda83c', 'r4a_sue_seasonal_q_v1_f1def0b01eb0b979', 'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb', 'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8', 'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9', 'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5', 'r4e_idio_max_20_v1_d0d201efd7755e86', 'r4j_same_month_consistency_v1_be7f8ede9c4b5afe', 'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1', 'r4t_preann_turnover_shock_v1_3a95800106c754f2', 'r4t_preann_vol_expansion_v1_bebf97b2c5260706', 'r7a_tax_expense_seasonal_change_v2_371da87d5055df86', 'r7e_context_salience20_v1_f4efb8789772d003', 'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035', 'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe', 'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728', 'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f', 'ret_skew_20', 'revenue_cagr_3y', 'reversal_2d', 'roa_ttm', 'roc_12', 'roe_ttm', 'rsi_14', 'rsrs_beta_18', 'rv_term_structure', 's26_liq_up_fragility_v1_b43c747ff9090bc2', 's26_structure_side_hhi_v1_bb77e106a875308a', 'short_term_reversal_5', 'sp_ttm', 'td_setup_count', 'three_black_crows', 'turnover_anomaly_20', 'turnover_f_delta_5', 'turnover_std_20', 'vol_120', 'vol_clustering_20', 'vol_of_rv', 'vol_ratio_ma5_ma20', 'volume_ratio', 'yoy_revenue'], 'technical_feature_names': ['momentum_20', 'momentum_60', 'momentum_120', 'reversal_2d', 'short_term_reversal_5', 'ret_skew_20', 'vol_120', 'beta_60', 'idio_vol_60', 'log_mv', 'price_to_52w_high', 'atr_14_ratio', 'rsi_14', 'roc_12', 'dpo_20', 'amihud_daily_5', 'overnight_std_5d', 'holder_number_chg', 'interest_coverage'], 'flow_indices': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205], 'technical_indices': [68, 70, 67, 184, 193, 182, 200, 18, 45, 59, 79, 17, 188, 186, 32, 13, 77, 39, 53], 'output_horizons': [1, 3, 5, 1], 'flow_fusion_weight': 1.0, 'absolute_sample_caps': [256, 384, 512, 640, 768], 'absolute_stock_ridge': 0.05, 'absolute_market_ridge': 0.25, 'absolute_intercept_ridge': 1e-08, 'absolute_target_clip': {1: 0.12, 5: 0.3}, 'absolute_loss_scale': {1: 0.03, 5: 0.08}, 'absolute_label_weights': {1: 0.75, 5: 0.25}, 'absolute_stage_bag': 'all five, no stage selection', 'cost_gate_multiplier': 1.0, 'ensemble_sum_members': 4, 'final_prediction_backend': 'CPU canonical rank outputs; CUDA train/validation raw heads numerically checked', 'retrain_parent': 'V202', 'snapshot_meta_sha256': '22999342026b872ec1bba8bcc6f4cf9615655ae408dc4c57090297a2419b4f93', 'fund_feature_names': ['afx_cf_im_net_cashflow_oper_act', 'afx_fi_fcfe', 'afx_fi_fcff', 'afx_fi_ocf_to_interestdebt', 'afx_fi_ocf_to_opincome', 'afx_fi_ocf_to_profit', 'afx_fi_ocfps', 'afx_fi_q_gr_qoq', 'afx_fi_q_gsprofit_margin', 'afx_fi_q_netprofit_qoq', 'afx_fi_q_ocf_to_or', 'afx_is_basic_eps', 'afx_is_ebitda', 'amihud_daily_5', 'amount_mom_accel', 'amount_ratio_20', 'asset_growth_qoq', 'atr_14_ratio', 'beta_60', 'bp', 'bs_other_receiv_to_assets', 'bw_strength_sensitivity_20', 'cash_conversion_cycle', 'cash_sales_ratio', 'cf_purchase_cash_intensity', 'cfcr', 'cfp_ttm', 'close30_ret', 'cp_momentum_lowvol_20', 'cp_value_momentum_div', 'dividend_yield_3y_avg', 'dp_ttm', 'dpo_20', 'ebitda_to_market', 'efx_annual_earnings_yield', 'efx_volume_ratio', 'ep_ttm', 'etp5', 'extreme_move_event', 'holder_number_chg', 'id2_close_vs_pm_vwap', 'id2_close_vs_pm_vwap_20', 'id2_hi_lo_pos_gap', 'id2_parkinson_vol', 'id2_ret_concentration', 'idio_vol_60', 'idt_overnight_minus_intraday', 'idt_rv_daily', 'idt_rv_term_structure_slope', 'idt_vol_stability', 'ind_bps_yoy', 'ind_dt_netprofit_yoy', 'ind_int_to_talcap', 'interest_coverage', 'intraday_vol_ratio_5d', 'inventory_turnover', 'limit_broken_ratio_20', 'limit_days_since_up_20', 'limit_down_event_5', 'log_mv', 'margin_repay_deceleration', 'margin_repay_shock', 'mf_amount_weighted_direction', 'mf_big_order_net_ac1_20', 'mf_net_inflow_5d', 'mf_net_vol_surprise_20', 'mf_small_order_avg_price_dev', 'momentum_120', 'momentum_20', 'momentum_250', 'momentum_60', 'ocf_to_profit', 'ocf_to_revenue', 'open5_capacity_floor_ratio_20', 'overnight_ma_20d', 'overnight_ma_5d', 'overnight_ma_60d', 'overnight_std_5d', 'price_distance_from_52w_low', 'price_to_52w_high', 'qf_cash_margin_floor_4q', 'qf_cash_margin_yoy_change', 'qf_core_roe_floor_4q', 'qf_core_roe_vol_4q', 'qf_core_roe_yoy_change', 'qf_roa_yoy_change', 'qf_sales_growth_accel', 'qf_sales_growth_vol_4q', 'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7', 'r10gc_bias_turn_126_252_v1_a9656f4fececd030', 'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581', 'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742', 'r10gc_high_low_21_v1_ca60e882d8b5c22f', 'r10gc_high_low_252_v1_facb1d1f647f48ca', 'r10gc_high_low_63_v1_34a74707a9f916a3', 'r10gc_income_tax_yoy_v1_c051c303608f0a17', 'r10gc_ret_std_21_v1_51f3cc1a8b65d126', 'r10gc_ret_std_252_v1_db7166018e1a0511', 'r10gc_ret_std_63_v1_19b9e9fa082c7cec', 'r10gc_turn_lvl_21_v1_2bab2360d6cb7099', 'r10gc_turn_lvl_252_v1_2dd70c23d17694f4', 'r10gc_turn_lvl_63_v1_7d51db9d4ff08793', 'r10gc_turn_std_126_v1_e96f93f78ed0e472', 'r10gc_turn_std_252_v1_9a4d3d577535e360', 'r10gc_turn_std_42_v1_21349ae0e32c1db7', 'r10gc_yoy_net_asset_v1_2a57af1e5c40492f', 'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac', 'r10gc_yoy_ocf_v1_066e6046572baf9c', 'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca', 'r11gc_amount_ma_20_v1_1858415feaa5dbe6', 'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732', 'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134', 'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa', 'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1', 'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f', 'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe', 'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1', 'r11gc_bias_turn_126_504_v1_e3ccc91522792d65', 'r11gc_bias_turn_21_504_v1_111533df505215cb', 'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260', 'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad', 'r11gc_bias_turn_63_504_v1_387613367cbd4dd9', 'r11gc_high_low_126_v1_2666509099db4a47', 'r11gc_high_low_42_v1_36fd67d17bea68ac', 'r11gc_ret_std_42_v1_23474362384bc399', 'r11gc_turn_lvl_10_v1_c377944b650ec037', 'r11gc_turn_lvl_126_v1_ef48ac322c8d0929', 'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4', 'r11gc_turn_lvl_42_v1_24d04a044ce607a0', 'r11gc_turn_lvl_5_v1_332d53f4bb907a79', 'r11gc_turn_std_63_v1_5ef776ad40ef77f6', 'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3', 'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1', 'r12gc_asset_turnover_v1_40d616e07fd4a097', 'r12gc_cash_ratio_v1_7ef2829865ad2cc2', 'r12gc_de_v1_d4cd33b978d63b0a', 'r12gc_eps_q_v1_8f3703e8eb218668', 'r12gc_eps_ttm_v1_2d84c57b9ea5f85d', 'r12gc_eps_y_v1_6f0a67c91531a732', 'r12gc_equity_turnover_v1_4cba36560ca472e5', 'r12gc_fcf_to_market_v1_49c0b5d214b35db0', 'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2', 'r12gc_float_size_v1_8b275acb0cb20dec', 'r12gc_gpm_q_v1_842e57e4d0d033e5', 'r12gc_gpm_ttm_v1_7e99428574d400ea', 'r12gc_gpm_y_v1_102eddddb8fac4c4', 'r12gc_log_price_v1_0a22efbc7b6bb1f7', 'r12gc_market_value_leverage_v1_9f3705df7636e0cc', 'r12gc_ncf_to_market_v1_71cf1e0deddc7070', 'r12gc_npm_q_v1_a1e5e8bb0a48de33', 'r12gc_npm_ttm_v1_4e4381d67f1d7391', 'r12gc_npm_y_v1_f78b237b3b7c1b18', 'r12gc_opm_ttm_v1_2827ff5d605bdeeb', 'r12gc_opm_y_v1_6e2f1f9aaf3c6106', 'r12gc_opt_tpro_v1_d832d118e2414259', 'r12gc_quick_ratio_v1_ea13af873ce572fc', 'r12gc_receivable_turnover_v1_458e2aaecafa62b9', 'r12gc_return_42_v1_0032bf23a28de8f7', 'r12gc_roa_q_v1_4b4ae2280384ebde', 'r12gc_roa_y_v1_6e585294932485e4', 'r12gc_roe_y_v1_bca9de9f86ce36dd', 'r12gc_sales_to_market_v1_ff344107e3f2c925', 'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb', 'r3b_intraday_rv_skewness_v2_44ef55d83a759fba', 'r4a_forecast_landing_gap_v3_972c0653571ab5d8', 'r4a_sue_accel_v1_4b443eb2d4fda83c', 'r4a_sue_seasonal_q_v1_f1def0b01eb0b979', 'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb', 'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8', 'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9', 'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5', 'r4e_idio_max_20_v1_d0d201efd7755e86', 'r4j_same_month_consistency_v1_be7f8ede9c4b5afe', 'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1', 'r4t_preann_turnover_shock_v1_3a95800106c754f2', 'r4t_preann_vol_expansion_v1_bebf97b2c5260706', 'r7a_tax_expense_seasonal_change_v2_371da87d5055df86', 'r7e_context_salience20_v1_f4efb8789772d003', 'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035', 'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe', 'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728', 'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f', 'ret_skew_20', 'revenue_cagr_3y', 'reversal_2d', 'roa_ttm', 'roc_12', 'roe_ttm', 'rsi_14', 'rsrs_beta_18', 'rv_term_structure', 's26_liq_up_fragility_v1_b43c747ff9090bc2', 's26_structure_side_hhi_v1_bb77e106a875308a', 'short_term_reversal_5', 'sp_ttm', 'td_setup_count', 'three_black_crows', 'turnover_anomaly_20', 'turnover_f_delta_5', 'turnover_std_20', 'vol_120', 'vol_clustering_20', 'vol_of_rv', 'vol_ratio_ma5_ma20', 'volume_ratio', 'yoy_revenue'], 'fund_indices': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205], 'script_parent': 'V202', 'input_migration': {'snapshot_built_at': '2026-10-06 11:07:39', 'snapshot_stock_feature_count': 206, 'snapshot_market_factor_count': 47, 'removed_parent_features': [], 'parent_unit': 'V202'}, 'target_anchor': {'topn': 5, 'money': 10000000.0, 'ic_weight': 0.7}, 'neural_kind': 'mlp', 'neural_score_horizon': 1, 'score_transform': 'raw_neural'}
-
-# Latest authorized live factor migration; historical experiment recipe is preserved.
-if LIVE:
-    RECIPE.update({'flow_feature_names': ['afx_cf_im_net_cashflow_oper_act',
-                            'afx_fi_fcfe',
-                            'afx_fi_fcff',
-                            'afx_fi_ocf_to_interestdebt',
-                            'afx_fi_ocf_to_opincome',
-                            'afx_fi_ocf_to_profit',
-                            'afx_fi_ocfps',
-                            'afx_fi_q_gr_qoq',
-                            'afx_fi_q_gsprofit_margin',
-                            'afx_fi_q_netprofit_qoq',
-                            'afx_fi_q_ocf_to_or',
-                            'afx_is_basic_eps',
-                            'afx_is_ebitda',
-                            'amihud_daily_5',
-                            'amount_mom_accel',
-                            'amount_ratio_20',
-                            'asset_growth_qoq',
-                            'atr_14_ratio',
-                            'beta_60',
-                            'bp',
-                            'bs_other_receiv_to_assets',
-                            'bw_strength_sensitivity_20',
-                            'cash_conversion_cycle',
-                            'cash_sales_ratio',
-                            'cf_purchase_cash_intensity',
-                            'cfcr',
-                            'cfp_ttm',
-                            'close30_ret',
-                            'cp_momentum_lowvol_20',
-                            'cp_value_momentum_div',
-                            'dividend_yield_3y_avg',
-                            'dp_ttm',
-                            'dpo_20',
-                            'ebitda_to_market',
-                            'efx_annual_earnings_yield',
-                            'efx_volume_ratio',
-                            'ep_ttm',
-                            'etp5',
-                            'extreme_move_event',
-                            'holder_number_chg',
-                            'id2_close_vs_pm_vwap',
-                            'id2_close_vs_pm_vwap_20',
-                            'id2_hi_lo_pos_gap',
-                            'id2_parkinson_vol',
-                            'id2_ret_concentration',
-                            'idio_vol_60',
-                            'idt_overnight_minus_intraday',
-                            'idt_rv_daily',
-                            'idt_rv_term_structure_slope',
-                            'idt_vol_stability',
-                            'ind_bps_yoy',
-                            'ind_dt_netprofit_yoy',
-                            'ind_int_to_talcap',
-                            'interest_coverage',
-                            'intraday_vol_ratio_5d',
-                            'inventory_turnover',
-                            'limit_broken_ratio_20',
-                            'limit_days_since_up_20',
-                            'limit_down_event_5',
-                            'log_mv',
-                            'margin_repay_deceleration',
-                            'margin_repay_shock',
-                            'mf_amount_weighted_direction',
-                            'mf_big_order_net_ac1_20',
-                            'mf_net_inflow_5d',
-                            'mf_net_vol_surprise_20',
-                            'mf_small_order_avg_price_dev',
-                            'momentum_120',
-                            'momentum_20',
-                            'momentum_250',
-                            'momentum_60',
-                            'ocf_to_profit',
-                            'ocf_to_revenue',
-                            'open5_capacity_floor_ratio_20',
-                            'overnight_ma_20d',
-                            'overnight_ma_5d',
-                            'overnight_ma_60d',
-                            'overnight_std_5d',
-                            'price_distance_from_52w_low',
-                            'price_to_52w_high',
-                            'qf_cash_margin_floor_4q',
-                            'qf_cash_margin_yoy_change',
-                            'qf_core_roe_floor_4q',
-                            'qf_core_roe_vol_4q',
-                            'qf_core_roe_yoy_change',
-                            'qf_roa_yoy_change',
-                            'qf_sales_growth_accel',
-                            'qf_sales_growth_vol_4q',
-                            'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7',
-                            'r10gc_bias_turn_126_252_v1_a9656f4fececd030',
-                            'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581',
-                            'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742',
-                            'r10gc_high_low_21_v1_ca60e882d8b5c22f',
-                            'r10gc_high_low_252_v1_facb1d1f647f48ca',
-                            'r10gc_high_low_63_v1_34a74707a9f916a3',
-                            'r10gc_income_tax_yoy_v1_c051c303608f0a17',
-                            'r10gc_ret_std_21_v1_51f3cc1a8b65d126',
-                            'r10gc_ret_std_252_v1_db7166018e1a0511',
-                            'r10gc_ret_std_63_v1_19b9e9fa082c7cec',
-                            'r10gc_turn_lvl_21_v1_2bab2360d6cb7099',
-                            'r10gc_turn_lvl_252_v1_2dd70c23d17694f4',
-                            'r10gc_turn_lvl_63_v1_7d51db9d4ff08793',
-                            'r10gc_turn_std_126_v1_e96f93f78ed0e472',
-                            'r10gc_turn_std_252_v1_9a4d3d577535e360',
-                            'r10gc_turn_std_42_v1_21349ae0e32c1db7',
-                            'r10gc_yoy_net_asset_v1_2a57af1e5c40492f',
-                            'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac',
-                            'r10gc_yoy_ocf_v1_066e6046572baf9c',
-                            'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca',
-                            'r11gc_amount_ma_20_v1_1858415feaa5dbe6',
-                            'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732',
-                            'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134',
-                            'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa',
-                            'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1',
-                            'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f',
-                            'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe',
-                            'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1',
-                            'r11gc_bias_turn_126_504_v1_e3ccc91522792d65',
-                            'r11gc_bias_turn_21_504_v1_111533df505215cb',
-                            'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260',
-                            'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad',
-                            'r11gc_bias_turn_63_504_v1_387613367cbd4dd9',
-                            'r11gc_high_low_126_v1_2666509099db4a47',
-                            'r11gc_high_low_42_v1_36fd67d17bea68ac',
-                            'r11gc_ret_std_42_v1_23474362384bc399',
-                            'r11gc_turn_lvl_10_v1_c377944b650ec037',
-                            'r11gc_turn_lvl_126_v1_ef48ac322c8d0929',
-                            'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4',
-                            'r11gc_turn_lvl_42_v1_24d04a044ce607a0',
-                            'r11gc_turn_lvl_5_v1_332d53f4bb907a79',
-                            'r11gc_turn_std_63_v1_5ef776ad40ef77f6',
-                            'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3',
-                            'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1',
-                            'r12gc_asset_turnover_v1_40d616e07fd4a097',
-                            'r12gc_cash_ratio_v1_7ef2829865ad2cc2',
-                            'r12gc_de_v1_d4cd33b978d63b0a',
-                            'r12gc_eps_q_v1_8f3703e8eb218668',
-                            'r12gc_eps_ttm_v1_2d84c57b9ea5f85d',
-                            'r12gc_eps_y_v1_6f0a67c91531a732',
-                            'r12gc_equity_turnover_v1_4cba36560ca472e5',
-                            'r12gc_fcf_to_market_v1_49c0b5d214b35db0',
-                            'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2',
-                            'r12gc_float_size_v1_8b275acb0cb20dec',
-                            'r12gc_gpm_q_v1_842e57e4d0d033e5',
-                            'r12gc_gpm_ttm_v1_7e99428574d400ea',
-                            'r12gc_gpm_y_v1_102eddddb8fac4c4',
-                            'r12gc_log_price_v1_0a22efbc7b6bb1f7',
-                            'r12gc_market_value_leverage_v1_9f3705df7636e0cc',
-                            'r12gc_ncf_to_market_v1_71cf1e0deddc7070',
-                            'r12gc_npm_q_v1_a1e5e8bb0a48de33',
-                            'r12gc_npm_ttm_v1_4e4381d67f1d7391',
-                            'r12gc_npm_y_v1_f78b237b3b7c1b18',
-                            'r12gc_opm_ttm_v1_2827ff5d605bdeeb',
-                            'r12gc_opm_y_v1_6e2f1f9aaf3c6106',
-                            'r12gc_opt_tpro_v1_d832d118e2414259',
-                            'r12gc_quick_ratio_v1_ea13af873ce572fc',
-                            'r12gc_receivable_turnover_v1_458e2aaecafa62b9',
-                            'r12gc_return_42_v1_0032bf23a28de8f7',
-                            'r12gc_roa_q_v1_4b4ae2280384ebde',
-                            'r12gc_roa_y_v1_6e585294932485e4',
-                            'r12gc_roe_y_v1_bca9de9f86ce36dd',
-                            'r12gc_sales_to_market_v1_ff344107e3f2c925',
-                            'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb',
-                            'r3b_intraday_rv_skewness_v2_44ef55d83a759fba',
-                            'r4a_forecast_landing_gap_v3_972c0653571ab5d8',
-                            'r4a_sue_accel_v1_4b443eb2d4fda83c',
-                            'r4a_sue_seasonal_q_v1_f1def0b01eb0b979',
-                            'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb',
-                            'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8',
-                            'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9',
-                            'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5',
-                            'r4e_idio_max_20_v1_d0d201efd7755e86',
-                            'r4j_same_month_consistency_v1_be7f8ede9c4b5afe',
-                            'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1',
-                            'r4t_preann_turnover_shock_v1_3a95800106c754f2',
-                            'r4t_preann_vol_expansion_v1_bebf97b2c5260706',
-                            'r7a_tax_expense_seasonal_change_v2_371da87d5055df86',
-                            'r7e_context_salience20_v1_f4efb8789772d003',
-                            'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035',
-                            'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe',
-                            'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728',
-                            'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f',
-                            'ret_skew_20',
-                            'revenue_cagr_3y',
-                            'reversal_2d',
-                            'roa_ttm',
-                            'roc_12',
-                            'roe_ttm',
-                            'rsi_14',
-                            'rsrs_beta_18',
-                            'rv_term_structure',
-                            's26_liq_up_fragility_v1_b43c747ff9090bc2',
-                            's26_structure_side_hhi_v1_bb77e106a875308a',
-                            'short_term_reversal_5',
-                            'sp_ttm',
-                            'td_setup_count',
-                            'three_black_crows',
-                            'turnover_anomaly_20',
-                            'turnover_f_delta_5',
-                            'turnover_std_20',
-                            'vol_120',
-                            'vol_clustering_20',
-                            'vol_of_rv',
-                            'vol_ratio_ma5_ma20',
-                            'volume_ratio',
-                            'yoy_revenue',
-                            'r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6',
-                            'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd',
-                            'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70',
-                            'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711',
-                            'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8',
-                            'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e',
-                            'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177'],
-     'fund_feature_names': ['afx_cf_im_net_cashflow_oper_act',
-                            'afx_fi_fcfe',
-                            'afx_fi_fcff',
-                            'afx_fi_ocf_to_interestdebt',
-                            'afx_fi_ocf_to_opincome',
-                            'afx_fi_ocf_to_profit',
-                            'afx_fi_ocfps',
-                            'afx_fi_q_gr_qoq',
-                            'afx_fi_q_gsprofit_margin',
-                            'afx_fi_q_netprofit_qoq',
-                            'afx_fi_q_ocf_to_or',
-                            'afx_is_basic_eps',
-                            'afx_is_ebitda',
-                            'amihud_daily_5',
-                            'amount_mom_accel',
-                            'amount_ratio_20',
-                            'asset_growth_qoq',
-                            'atr_14_ratio',
-                            'beta_60',
-                            'bp',
-                            'bs_other_receiv_to_assets',
-                            'bw_strength_sensitivity_20',
-                            'cash_conversion_cycle',
-                            'cash_sales_ratio',
-                            'cf_purchase_cash_intensity',
-                            'cfcr',
-                            'cfp_ttm',
-                            'close30_ret',
-                            'cp_momentum_lowvol_20',
-                            'cp_value_momentum_div',
-                            'dividend_yield_3y_avg',
-                            'dp_ttm',
-                            'dpo_20',
-                            'ebitda_to_market',
-                            'efx_annual_earnings_yield',
-                            'efx_volume_ratio',
-                            'ep_ttm',
-                            'etp5',
-                            'extreme_move_event',
-                            'holder_number_chg',
-                            'id2_close_vs_pm_vwap',
-                            'id2_close_vs_pm_vwap_20',
-                            'id2_hi_lo_pos_gap',
-                            'id2_parkinson_vol',
-                            'id2_ret_concentration',
-                            'idio_vol_60',
-                            'idt_overnight_minus_intraday',
-                            'idt_rv_daily',
-                            'idt_rv_term_structure_slope',
-                            'idt_vol_stability',
-                            'ind_bps_yoy',
-                            'ind_dt_netprofit_yoy',
-                            'ind_int_to_talcap',
-                            'interest_coverage',
-                            'intraday_vol_ratio_5d',
-                            'inventory_turnover',
-                            'limit_broken_ratio_20',
-                            'limit_days_since_up_20',
-                            'limit_down_event_5',
-                            'log_mv',
-                            'margin_repay_deceleration',
-                            'margin_repay_shock',
-                            'mf_amount_weighted_direction',
-                            'mf_big_order_net_ac1_20',
-                            'mf_net_inflow_5d',
-                            'mf_net_vol_surprise_20',
-                            'mf_small_order_avg_price_dev',
-                            'momentum_120',
-                            'momentum_20',
-                            'momentum_250',
-                            'momentum_60',
-                            'ocf_to_profit',
-                            'ocf_to_revenue',
-                            'open5_capacity_floor_ratio_20',
-                            'overnight_ma_20d',
-                            'overnight_ma_5d',
-                            'overnight_ma_60d',
-                            'overnight_std_5d',
-                            'price_distance_from_52w_low',
-                            'price_to_52w_high',
-                            'qf_cash_margin_floor_4q',
-                            'qf_cash_margin_yoy_change',
-                            'qf_core_roe_floor_4q',
-                            'qf_core_roe_vol_4q',
-                            'qf_core_roe_yoy_change',
-                            'qf_roa_yoy_change',
-                            'qf_sales_growth_accel',
-                            'qf_sales_growth_vol_4q',
-                            'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7',
-                            'r10gc_bias_turn_126_252_v1_a9656f4fececd030',
-                            'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581',
-                            'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742',
-                            'r10gc_high_low_21_v1_ca60e882d8b5c22f',
-                            'r10gc_high_low_252_v1_facb1d1f647f48ca',
-                            'r10gc_high_low_63_v1_34a74707a9f916a3',
-                            'r10gc_income_tax_yoy_v1_c051c303608f0a17',
-                            'r10gc_ret_std_21_v1_51f3cc1a8b65d126',
-                            'r10gc_ret_std_252_v1_db7166018e1a0511',
-                            'r10gc_ret_std_63_v1_19b9e9fa082c7cec',
-                            'r10gc_turn_lvl_21_v1_2bab2360d6cb7099',
-                            'r10gc_turn_lvl_252_v1_2dd70c23d17694f4',
-                            'r10gc_turn_lvl_63_v1_7d51db9d4ff08793',
-                            'r10gc_turn_std_126_v1_e96f93f78ed0e472',
-                            'r10gc_turn_std_252_v1_9a4d3d577535e360',
-                            'r10gc_turn_std_42_v1_21349ae0e32c1db7',
-                            'r10gc_yoy_net_asset_v1_2a57af1e5c40492f',
-                            'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac',
-                            'r10gc_yoy_ocf_v1_066e6046572baf9c',
-                            'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca',
-                            'r11gc_amount_ma_20_v1_1858415feaa5dbe6',
-                            'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732',
-                            'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134',
-                            'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa',
-                            'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1',
-                            'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f',
-                            'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe',
-                            'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1',
-                            'r11gc_bias_turn_126_504_v1_e3ccc91522792d65',
-                            'r11gc_bias_turn_21_504_v1_111533df505215cb',
-                            'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260',
-                            'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad',
-                            'r11gc_bias_turn_63_504_v1_387613367cbd4dd9',
-                            'r11gc_high_low_126_v1_2666509099db4a47',
-                            'r11gc_high_low_42_v1_36fd67d17bea68ac',
-                            'r11gc_ret_std_42_v1_23474362384bc399',
-                            'r11gc_turn_lvl_10_v1_c377944b650ec037',
-                            'r11gc_turn_lvl_126_v1_ef48ac322c8d0929',
-                            'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4',
-                            'r11gc_turn_lvl_42_v1_24d04a044ce607a0',
-                            'r11gc_turn_lvl_5_v1_332d53f4bb907a79',
-                            'r11gc_turn_std_63_v1_5ef776ad40ef77f6',
-                            'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3',
-                            'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1',
-                            'r12gc_asset_turnover_v1_40d616e07fd4a097',
-                            'r12gc_cash_ratio_v1_7ef2829865ad2cc2',
-                            'r12gc_de_v1_d4cd33b978d63b0a',
-                            'r12gc_eps_q_v1_8f3703e8eb218668',
-                            'r12gc_eps_ttm_v1_2d84c57b9ea5f85d',
-                            'r12gc_eps_y_v1_6f0a67c91531a732',
-                            'r12gc_equity_turnover_v1_4cba36560ca472e5',
-                            'r12gc_fcf_to_market_v1_49c0b5d214b35db0',
-                            'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2',
-                            'r12gc_float_size_v1_8b275acb0cb20dec',
-                            'r12gc_gpm_q_v1_842e57e4d0d033e5',
-                            'r12gc_gpm_ttm_v1_7e99428574d400ea',
-                            'r12gc_gpm_y_v1_102eddddb8fac4c4',
-                            'r12gc_log_price_v1_0a22efbc7b6bb1f7',
-                            'r12gc_market_value_leverage_v1_9f3705df7636e0cc',
-                            'r12gc_ncf_to_market_v1_71cf1e0deddc7070',
-                            'r12gc_npm_q_v1_a1e5e8bb0a48de33',
-                            'r12gc_npm_ttm_v1_4e4381d67f1d7391',
-                            'r12gc_npm_y_v1_f78b237b3b7c1b18',
-                            'r12gc_opm_ttm_v1_2827ff5d605bdeeb',
-                            'r12gc_opm_y_v1_6e2f1f9aaf3c6106',
-                            'r12gc_opt_tpro_v1_d832d118e2414259',
-                            'r12gc_quick_ratio_v1_ea13af873ce572fc',
-                            'r12gc_receivable_turnover_v1_458e2aaecafa62b9',
-                            'r12gc_return_42_v1_0032bf23a28de8f7',
-                            'r12gc_roa_q_v1_4b4ae2280384ebde',
-                            'r12gc_roa_y_v1_6e585294932485e4',
-                            'r12gc_roe_y_v1_bca9de9f86ce36dd',
-                            'r12gc_sales_to_market_v1_ff344107e3f2c925',
-                            'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb',
-                            'r3b_intraday_rv_skewness_v2_44ef55d83a759fba',
-                            'r4a_forecast_landing_gap_v3_972c0653571ab5d8',
-                            'r4a_sue_accel_v1_4b443eb2d4fda83c',
-                            'r4a_sue_seasonal_q_v1_f1def0b01eb0b979',
-                            'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb',
-                            'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8',
-                            'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9',
-                            'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5',
-                            'r4e_idio_max_20_v1_d0d201efd7755e86',
-                            'r4j_same_month_consistency_v1_be7f8ede9c4b5afe',
-                            'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1',
-                            'r4t_preann_turnover_shock_v1_3a95800106c754f2',
-                            'r4t_preann_vol_expansion_v1_bebf97b2c5260706',
-                            'r7a_tax_expense_seasonal_change_v2_371da87d5055df86',
-                            'r7e_context_salience20_v1_f4efb8789772d003',
-                            'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035',
-                            'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe',
-                            'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728',
-                            'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f',
-                            'ret_skew_20',
-                            'revenue_cagr_3y',
-                            'reversal_2d',
-                            'roa_ttm',
-                            'roc_12',
-                            'roe_ttm',
-                            'rsi_14',
-                            'rsrs_beta_18',
-                            'rv_term_structure',
-                            's26_liq_up_fragility_v1_b43c747ff9090bc2',
-                            's26_structure_side_hhi_v1_bb77e106a875308a',
-                            'short_term_reversal_5',
-                            'sp_ttm',
-                            'td_setup_count',
-                            'three_black_crows',
-                            'turnover_anomaly_20',
-                            'turnover_f_delta_5',
-                            'turnover_std_20',
-                            'vol_120',
-                            'vol_clustering_20',
-                            'vol_of_rv',
-                            'vol_ratio_ma5_ma20',
-                            'volume_ratio',
-                            'yoy_revenue',
-                            'r13f_gpm_dispersion_v1_d45cc0c6c766d353',
-                            'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485',
-                            'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4',
-                            'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254',
-                            'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41',
-                            'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576',
-                            'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a',
-                            'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab',
-                            'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2',
-                            'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd',
-                            'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504',
-                            'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9',
-                            'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981',
-                            'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4',
-                            'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970',
-                            'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769',
-                            'r14f28_tax_cash_refund_share_v1_3904a84026422c3e',
-                            'r14f29_intangible_amort_share_v1_476979a530c60728',
-                            'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708',
-                            'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5',
-                            'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f',
-                            'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8',
-                            'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f',
-                            'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79',
-                            'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c',
-                            'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb',
-                            'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501',
-                            'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394',
-                            'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf',
-                            'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4',
-                            'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3',
-                            'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08',
-                            'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4',
-                            'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e'],
-     'technical_feature_names': ['momentum_20',
-                                 'momentum_60',
-                                 'momentum_120',
-                                 'reversal_2d',
-                                 'short_term_reversal_5',
-                                 'ret_skew_20',
-                                 'vol_120',
-                                 'beta_60',
-                                 'idio_vol_60',
-                                 'log_mv',
-                                 'price_to_52w_high',
-                                 'atr_14_ratio',
-                                 'rsi_14',
-                                 'roc_12',
-                                 'dpo_20',
-                                 'amihud_daily_5',
-                                 'overnight_std_5d',
-                                 'holder_number_chg',
-                                 'interest_coverage',
-                                 'r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43',
-                                 'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e',
-                                 'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449',
-                                 'r13p_fip_return_discreteness_v1_94875f42e1e5efcf',
-                                 'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976',
-                                 'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f',
-                                 'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283',
-                                 'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b',
-                                 'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8',
-                                 'r15p14_monthly_component_range_memory_v1_6fe135138d05893d',
-                                 'r15t3_overnight_variance_share_v1_09b9ae4f22c98618',
-                                 'r15t3_spillover_v1_432027233601b658',
-                                 'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43'],
-     'feature_names': ['afx_cf_im_net_cashflow_oper_act',
-                       'afx_fi_fcfe',
-                       'afx_fi_fcff',
-                       'afx_fi_ocf_to_interestdebt',
-                       'afx_fi_ocf_to_opincome',
-                       'afx_fi_ocf_to_profit',
-                       'afx_fi_ocfps',
-                       'afx_fi_q_gr_qoq',
-                       'afx_fi_q_gsprofit_margin',
-                       'afx_fi_q_netprofit_qoq',
-                       'afx_fi_q_ocf_to_or',
-                       'afx_is_basic_eps',
-                       'afx_is_ebitda',
-                       'amihud_daily_5',
-                       'amount_mom_accel',
-                       'amount_ratio_20',
-                       'asset_growth_qoq',
-                       'atr_14_ratio',
-                       'beta_60',
-                       'bp',
-                       'bs_other_receiv_to_assets',
-                       'bw_strength_sensitivity_20',
-                       'cash_conversion_cycle',
-                       'cash_sales_ratio',
-                       'cf_purchase_cash_intensity',
-                       'cfcr',
-                       'cfp_ttm',
-                       'close30_ret',
-                       'cp_momentum_lowvol_20',
-                       'cp_value_momentum_div',
-                       'dividend_yield_3y_avg',
-                       'dp_ttm',
-                       'dpo_20',
-                       'ebitda_to_market',
-                       'efx_annual_earnings_yield',
-                       'efx_volume_ratio',
-                       'ep_ttm',
-                       'etp5',
-                       'extreme_move_event',
-                       'holder_number_chg',
-                       'id2_close_vs_pm_vwap',
-                       'id2_close_vs_pm_vwap_20',
-                       'id2_hi_lo_pos_gap',
-                       'id2_parkinson_vol',
-                       'id2_ret_concentration',
-                       'idio_vol_60',
-                       'idt_overnight_minus_intraday',
-                       'idt_rv_daily',
-                       'idt_rv_term_structure_slope',
-                       'idt_vol_stability',
-                       'ind_bps_yoy',
-                       'ind_dt_netprofit_yoy',
-                       'ind_int_to_talcap',
-                       'interest_coverage',
-                       'intraday_vol_ratio_5d',
-                       'inventory_turnover',
-                       'limit_broken_ratio_20',
-                       'limit_days_since_up_20',
-                       'limit_down_event_5',
-                       'log_mv',
-                       'margin_repay_deceleration',
-                       'margin_repay_shock',
-                       'mf_amount_weighted_direction',
-                       'mf_big_order_net_ac1_20',
-                       'mf_net_inflow_5d',
-                       'mf_net_vol_surprise_20',
-                       'mf_small_order_avg_price_dev',
-                       'momentum_120',
-                       'momentum_20',
-                       'momentum_250',
-                       'momentum_60',
-                       'ocf_to_profit',
-                       'ocf_to_revenue',
-                       'open5_capacity_floor_ratio_20',
-                       'overnight_ma_20d',
-                       'overnight_ma_5d',
-                       'overnight_ma_60d',
-                       'overnight_std_5d',
-                       'price_distance_from_52w_low',
-                       'price_to_52w_high',
-                       'qf_cash_margin_floor_4q',
-                       'qf_cash_margin_yoy_change',
-                       'qf_core_roe_floor_4q',
-                       'qf_core_roe_vol_4q',
-                       'qf_core_roe_yoy_change',
-                       'qf_roa_yoy_change',
-                       'qf_sales_growth_accel',
-                       'qf_sales_growth_vol_4q',
-                       'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7',
-                       'r10gc_bias_turn_126_252_v1_a9656f4fececd030',
-                       'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581',
-                       'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742',
-                       'r10gc_high_low_21_v1_ca60e882d8b5c22f',
-                       'r10gc_high_low_252_v1_facb1d1f647f48ca',
-                       'r10gc_high_low_63_v1_34a74707a9f916a3',
-                       'r10gc_income_tax_yoy_v1_c051c303608f0a17',
-                       'r10gc_ret_std_21_v1_51f3cc1a8b65d126',
-                       'r10gc_ret_std_252_v1_db7166018e1a0511',
-                       'r10gc_ret_std_63_v1_19b9e9fa082c7cec',
-                       'r10gc_turn_lvl_21_v1_2bab2360d6cb7099',
-                       'r10gc_turn_lvl_252_v1_2dd70c23d17694f4',
-                       'r10gc_turn_lvl_63_v1_7d51db9d4ff08793',
-                       'r10gc_turn_std_126_v1_e96f93f78ed0e472',
-                       'r10gc_turn_std_252_v1_9a4d3d577535e360',
-                       'r10gc_turn_std_42_v1_21349ae0e32c1db7',
-                       'r10gc_yoy_net_asset_v1_2a57af1e5c40492f',
-                       'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac',
-                       'r10gc_yoy_ocf_v1_066e6046572baf9c',
-                       'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca',
-                       'r11gc_amount_ma_20_v1_1858415feaa5dbe6',
-                       'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732',
-                       'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134',
-                       'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa',
-                       'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1',
-                       'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f',
-                       'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe',
-                       'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1',
-                       'r11gc_bias_turn_126_504_v1_e3ccc91522792d65',
-                       'r11gc_bias_turn_21_504_v1_111533df505215cb',
-                       'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260',
-                       'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad',
-                       'r11gc_bias_turn_63_504_v1_387613367cbd4dd9',
-                       'r11gc_high_low_126_v1_2666509099db4a47',
-                       'r11gc_high_low_42_v1_36fd67d17bea68ac',
-                       'r11gc_ret_std_42_v1_23474362384bc399',
-                       'r11gc_turn_lvl_10_v1_c377944b650ec037',
-                       'r11gc_turn_lvl_126_v1_ef48ac322c8d0929',
-                       'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4',
-                       'r11gc_turn_lvl_42_v1_24d04a044ce607a0',
-                       'r11gc_turn_lvl_5_v1_332d53f4bb907a79',
-                       'r11gc_turn_std_63_v1_5ef776ad40ef77f6',
-                       'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3',
-                       'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1',
-                       'r12gc_asset_turnover_v1_40d616e07fd4a097',
-                       'r12gc_cash_ratio_v1_7ef2829865ad2cc2',
-                       'r12gc_de_v1_d4cd33b978d63b0a',
-                       'r12gc_eps_q_v1_8f3703e8eb218668',
-                       'r12gc_eps_ttm_v1_2d84c57b9ea5f85d',
-                       'r12gc_eps_y_v1_6f0a67c91531a732',
-                       'r12gc_equity_turnover_v1_4cba36560ca472e5',
-                       'r12gc_fcf_to_market_v1_49c0b5d214b35db0',
-                       'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2',
-                       'r12gc_float_size_v1_8b275acb0cb20dec',
-                       'r12gc_gpm_q_v1_842e57e4d0d033e5',
-                       'r12gc_gpm_ttm_v1_7e99428574d400ea',
-                       'r12gc_gpm_y_v1_102eddddb8fac4c4',
-                       'r12gc_log_price_v1_0a22efbc7b6bb1f7',
-                       'r12gc_market_value_leverage_v1_9f3705df7636e0cc',
-                       'r12gc_ncf_to_market_v1_71cf1e0deddc7070',
-                       'r12gc_npm_q_v1_a1e5e8bb0a48de33',
-                       'r12gc_npm_ttm_v1_4e4381d67f1d7391',
-                       'r12gc_npm_y_v1_f78b237b3b7c1b18',
-                       'r12gc_opm_ttm_v1_2827ff5d605bdeeb',
-                       'r12gc_opm_y_v1_6e2f1f9aaf3c6106',
-                       'r12gc_opt_tpro_v1_d832d118e2414259',
-                       'r12gc_quick_ratio_v1_ea13af873ce572fc',
-                       'r12gc_receivable_turnover_v1_458e2aaecafa62b9',
-                       'r12gc_return_42_v1_0032bf23a28de8f7',
-                       'r12gc_roa_q_v1_4b4ae2280384ebde',
-                       'r12gc_roa_y_v1_6e585294932485e4',
-                       'r12gc_roe_y_v1_bca9de9f86ce36dd',
-                       'r12gc_sales_to_market_v1_ff344107e3f2c925',
-                       'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb',
-                       'r3b_intraday_rv_skewness_v2_44ef55d83a759fba',
-                       'r4a_forecast_landing_gap_v3_972c0653571ab5d8',
-                       'r4a_sue_accel_v1_4b443eb2d4fda83c',
-                       'r4a_sue_seasonal_q_v1_f1def0b01eb0b979',
-                       'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb',
-                       'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8',
-                       'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9',
-                       'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5',
-                       'r4e_idio_max_20_v1_d0d201efd7755e86',
-                       'r4j_same_month_consistency_v1_be7f8ede9c4b5afe',
-                       'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1',
-                       'r4t_preann_turnover_shock_v1_3a95800106c754f2',
-                       'r4t_preann_vol_expansion_v1_bebf97b2c5260706',
-                       'r7a_tax_expense_seasonal_change_v2_371da87d5055df86',
-                       'r7e_context_salience20_v1_f4efb8789772d003',
-                       'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035',
-                       'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe',
-                       'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728',
-                       'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f',
-                       'ret_skew_20',
-                       'revenue_cagr_3y',
-                       'reversal_2d',
-                       'roa_ttm',
-                       'roc_12',
-                       'roe_ttm',
-                       'rsi_14',
-                       'rsrs_beta_18',
-                       'rv_term_structure',
-                       's26_liq_up_fragility_v1_b43c747ff9090bc2',
-                       's26_structure_side_hhi_v1_bb77e106a875308a',
-                       'short_term_reversal_5',
-                       'sp_ttm',
-                       'td_setup_count',
-                       'three_black_crows',
-                       'turnover_anomaly_20',
-                       'turnover_f_delta_5',
-                       'turnover_std_20',
-                       'vol_120',
-                       'vol_clustering_20',
-                       'vol_of_rv',
-                       'vol_ratio_ma5_ma20',
-                       'volume_ratio',
-                       'yoy_revenue',
-                       'r13f_gpm_dispersion_v1_d45cc0c6c766d353',
-                       'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485',
-                       'r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43',
-                       'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e',
-                       'r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6',
-                       'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4',
-                       'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254',
-                       'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41',
-                       'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576',
-                       'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a',
-                       'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab',
-                       'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2',
-                       'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd',
-                       'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504',
-                       'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9',
-                       'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981',
-                       'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449',
-                       'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd',
-                       'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70',
-                       'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711',
-                       'r13p_fip_return_discreteness_v1_94875f42e1e5efcf',
-                       'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4',
-                       'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970',
-                       'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769',
-                       'r14f28_tax_cash_refund_share_v1_3904a84026422c3e',
-                       'r14f29_intangible_amort_share_v1_476979a530c60728',
-                       'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708',
-                       'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8',
-                       'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976',
-                       'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f',
-                       'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e',
-                       'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283',
-                       'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5',
-                       'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f',
-                       'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8',
-                       'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f',
-                       'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79',
-                       'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c',
-                       'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb',
-                       'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501',
-                       'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394',
-                       'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf',
-                       'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4',
-                       'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3',
-                       'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08',
-                       'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4',
-                       'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b',
-                       'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177',
-                       'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8',
-                       'r15p14_monthly_component_range_memory_v1_6fe135138d05893d',
-                       'r15t3_overnight_variance_share_v1_09b9ae4f22c98618',
-                       'r15t3_spillover_v1_432027233601b658',
-                       'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43',
-                       'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e'],
-     'flow_indices': [0,
-                      1,
-                      2,
-                      3,
-                      4,
-                      5,
-                      6,
-                      7,
-                      8,
-                      9,
-                      10,
-                      11,
-                      12,
-                      13,
-                      14,
-                      15,
-                      16,
-                      17,
-                      18,
-                      19,
-                      20,
-                      21,
-                      22,
-                      23,
-                      24,
-                      25,
-                      26,
-                      27,
-                      28,
-                      29,
-                      30,
-                      31,
-                      32,
-                      33,
-                      34,
-                      35,
-                      36,
-                      37,
-                      38,
-                      39,
-                      40,
-                      41,
-                      42,
-                      43,
-                      44,
-                      45,
-                      46,
-                      47,
-                      48,
-                      49,
-                      50,
-                      51,
-                      52,
-                      53,
-                      54,
-                      55,
-                      56,
-                      57,
-                      58,
-                      59,
-                      60,
-                      61,
-                      62,
-                      63,
-                      64,
-                      65,
-                      66,
-                      67,
-                      68,
-                      69,
-                      70,
-                      71,
-                      72,
-                      73,
-                      74,
-                      75,
-                      76,
-                      77,
-                      78,
-                      79,
-                      80,
-                      81,
-                      82,
-                      83,
-                      84,
-                      85,
-                      86,
-                      87,
-                      88,
-                      89,
-                      90,
-                      91,
-                      92,
-                      93,
-                      94,
-                      95,
-                      96,
-                      97,
-                      98,
-                      99,
-                      100,
-                      101,
-                      102,
-                      103,
-                      104,
-                      105,
-                      106,
-                      107,
-                      108,
-                      109,
-                      110,
-                      111,
-                      112,
-                      113,
-                      114,
-                      115,
-                      116,
-                      117,
-                      118,
-                      119,
-                      120,
-                      121,
-                      122,
-                      123,
-                      124,
-                      125,
-                      126,
-                      127,
-                      128,
-                      129,
-                      130,
-                      131,
-                      132,
-                      133,
-                      134,
-                      135,
-                      136,
-                      137,
-                      138,
-                      139,
-                      140,
-                      141,
-                      142,
-                      143,
-                      144,
-                      145,
-                      146,
-                      147,
-                      148,
-                      149,
-                      150,
-                      151,
-                      152,
-                      153,
-                      154,
-                      155,
-                      156,
-                      157,
-                      158,
-                      159,
-                      160,
-                      161,
-                      162,
-                      163,
-                      164,
-                      165,
-                      166,
-                      167,
-                      168,
-                      169,
-                      170,
-                      171,
-                      172,
-                      173,
-                      174,
-                      175,
-                      176,
-                      177,
-                      178,
-                      179,
-                      180,
-                      181,
-                      182,
-                      183,
-                      184,
-                      185,
-                      186,
-                      187,
-                      188,
-                      189,
-                      190,
-                      191,
-                      192,
-                      193,
-                      194,
-                      195,
-                      196,
-                      197,
-                      198,
-                      199,
-                      200,
-                      201,
-                      202,
-                      203,
-                      204,
-                      205,
-                      210,
-                      223,
-                      224,
-                      225,
-                      233,
-                      236,
-                      253],
-     'fund_indices': [0,
-                      1,
-                      2,
-                      3,
-                      4,
-                      5,
-                      6,
-                      7,
-                      8,
-                      9,
-                      10,
-                      11,
-                      12,
-                      13,
-                      14,
-                      15,
-                      16,
-                      17,
-                      18,
-                      19,
-                      20,
-                      21,
-                      22,
-                      23,
-                      24,
-                      25,
-                      26,
-                      27,
-                      28,
-                      29,
-                      30,
-                      31,
-                      32,
-                      33,
-                      34,
-                      35,
-                      36,
-                      37,
-                      38,
-                      39,
-                      40,
-                      41,
-                      42,
-                      43,
-                      44,
-                      45,
-                      46,
-                      47,
-                      48,
-                      49,
-                      50,
-                      51,
-                      52,
-                      53,
-                      54,
-                      55,
-                      56,
-                      57,
-                      58,
-                      59,
-                      60,
-                      61,
-                      62,
-                      63,
-                      64,
-                      65,
-                      66,
-                      67,
-                      68,
-                      69,
-                      70,
-                      71,
-                      72,
-                      73,
-                      74,
-                      75,
-                      76,
-                      77,
-                      78,
-                      79,
-                      80,
-                      81,
-                      82,
-                      83,
-                      84,
-                      85,
-                      86,
-                      87,
-                      88,
-                      89,
-                      90,
-                      91,
-                      92,
-                      93,
-                      94,
-                      95,
-                      96,
-                      97,
-                      98,
-                      99,
-                      100,
-                      101,
-                      102,
-                      103,
-                      104,
-                      105,
-                      106,
-                      107,
-                      108,
-                      109,
-                      110,
-                      111,
-                      112,
-                      113,
-                      114,
-                      115,
-                      116,
-                      117,
-                      118,
-                      119,
-                      120,
-                      121,
-                      122,
-                      123,
-                      124,
-                      125,
-                      126,
-                      127,
-                      128,
-                      129,
-                      130,
-                      131,
-                      132,
-                      133,
-                      134,
-                      135,
-                      136,
-                      137,
-                      138,
-                      139,
-                      140,
-                      141,
-                      142,
-                      143,
-                      144,
-                      145,
-                      146,
-                      147,
-                      148,
-                      149,
-                      150,
-                      151,
-                      152,
-                      153,
-                      154,
-                      155,
-                      156,
-                      157,
-                      158,
-                      159,
-                      160,
-                      161,
-                      162,
-                      163,
-                      164,
-                      165,
-                      166,
-                      167,
-                      168,
-                      169,
-                      170,
-                      171,
-                      172,
-                      173,
-                      174,
-                      175,
-                      176,
-                      177,
-                      178,
-                      179,
-                      180,
-                      181,
-                      182,
-                      183,
-                      184,
-                      185,
-                      186,
-                      187,
-                      188,
-                      189,
-                      190,
-                      191,
-                      192,
-                      193,
-                      194,
-                      195,
-                      196,
-                      197,
-                      198,
-                      199,
-                      200,
-                      201,
-                      202,
-                      203,
-                      204,
-                      205,
-                      206,
-                      207,
-                      211,
-                      212,
-                      213,
-                      214,
-                      215,
-                      216,
-                      217,
-                      218,
-                      219,
-                      220,
-                      221,
-                      227,
-                      228,
-                      229,
-                      230,
-                      231,
-                      232,
-                      238,
-                      239,
-                      240,
-                      241,
-                      242,
-                      243,
-                      244,
-                      245,
-                      246,
-                      247,
-                      248,
-                      249,
-                      250,
-                      251,
-                      259],
-     'technical_indices': [68,
-                           70,
-                           67,
-                           184,
-                           193,
-                           182,
-                           200,
-                           18,
-                           45,
-                           59,
-                           79,
-                           17,
-                           188,
-                           186,
-                           32,
-                           13,
-                           77,
-                           39,
-                           53,
-                           208,
-                           209,
-                           222,
-                           226,
-                           234,
-                           235,
-                           237,
-                           252,
-                           254,
-                           255,
-                           256,
-                           257,
-                           258],
-     'snapshot_meta_sha256': '81fd6a03498da7f195c42f4c8d52aa8e396888100d914a9e17b0fa3b0f60029d',
-     'snapshot_cutoff': '2026-09-30',
-     'weights_origin': '20261008 live retraining from scratch on updated factor snapshot; replaces '
-                       'previous live weights',
-     'input_migration': {'snapshot_built_at': '2026-10-08 21:30:56',
-                         'snapshot_stock_feature_count': 260,
-                         'snapshot_market_factor_count': 47,
-                         'added_features': ['r13f_gpm_dispersion_v1_d45cc0c6c766d353',
-                                            'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485',
-                                            'r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43',
-                                            'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e',
-                                            'r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6',
-                                            'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4',
-                                            'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254',
-                                            'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41',
-                                            'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576',
-                                            'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a',
-                                            'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab',
-                                            'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2',
-                                            'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd',
-                                            'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504',
-                                            'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9',
-                                            'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981',
-                                            'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449',
-                                            'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd',
-                                            'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70',
-                                            'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711',
-                                            'r13p_fip_return_discreteness_v1_94875f42e1e5efcf',
-                                            'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4',
-                                            'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970',
-                                            'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769',
-                                            'r14f28_tax_cash_refund_share_v1_3904a84026422c3e',
-                                            'r14f29_intangible_amort_share_v1_476979a530c60728',
-                                            'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708',
-                                            'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8',
-                                            'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976',
-                                            'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f',
-                                            'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e',
-                                            'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283',
-                                            'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5',
-                                            'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f',
-                                            'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8',
-                                            'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f',
-                                            'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79',
-                                            'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c',
-                                            'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb',
-                                            'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501',
-                                            'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394',
-                                            'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf',
-                                            'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4',
-                                            'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3',
-                                            'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08',
-                                            'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4',
-                                            'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b',
-                                            'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177',
-                                            'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8',
-                                            'r15p14_monthly_component_range_memory_v1_6fe135138d05893d',
-                                            'r15t3_overnight_variance_share_v1_09b9ae4f22c98618',
-                                            'r15t3_spillover_v1_432027233601b658',
-                                            'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43',
-                                            'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e'],
-                         'added_branch_features': {'fund': ['r13f_gpm_dispersion_v1_d45cc0c6c766d353',
-                                                            'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485',
-                                                            'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4',
-                                                            'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254',
-                                                            'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41',
-                                                            'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576',
-                                                            'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a',
-                                                            'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab',
-                                                            'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2',
-                                                            'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd',
-                                                            'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504',
-                                                            'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9',
-                                                            'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981',
-                                                            'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4',
-                                                            'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970',
-                                                            'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769',
-                                                            'r14f28_tax_cash_refund_share_v1_3904a84026422c3e',
-                                                            'r14f29_intangible_amort_share_v1_476979a530c60728',
-                                                            'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708',
-                                                            'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5',
-                                                            'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f',
-                                                            'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8',
-                                                            'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f',
-                                                            'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79',
-                                                            'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c',
-                                                            'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb',
-                                                            'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501',
-                                                            'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394',
-                                                            'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf',
-                                                            'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4',
-                                                            'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3',
-                                                            'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08',
-                                                            'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4',
-                                                            'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e'],
-                                                   'flow': ['r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6',
-                                                            'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd',
-                                                            'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70',
-                                                            'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711',
-                                                            'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8',
-                                                            'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e',
-                                                            'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177'],
-                                                   'technical': ['r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43',
-                                                                 'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e',
-                                                                 'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449',
-                                                                 'r13p_fip_return_discreteness_v1_94875f42e1e5efcf',
-                                                                 'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976',
-                                                                 'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f',
-                                                                 'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283',
-                                                                 'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b',
-                                                                 'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8',
-                                                                 'r15p14_monthly_component_range_memory_v1_6fe135138d05893d',
-                                                                 'r15t3_overnight_variance_share_v1_09b9ae4f22c98618',
-                                                                 'r15t3_spillover_v1_432027233601b658',
-                                                                 'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43']},
-                         'previous_model_feature_count': 206,
-                         'removed_parent_features': []}})
-
+        for fold in [args.fold] if args.fold else range(1, 5):
+            train_fold(fold, args.device, panel, prices, q, absolute_only=args.prepare_absolute_only)
 _ParentPredictModel = PredictModel
+
 class PredictModel(_ParentPredictModel):
+
     def __init__(self, input_dim, market_dim, horizons=None):
         super().__init__(input_dim, market_dim, horizons)
         if RECIPE['neural_kind'] == 'mlp':
             norm = nn.LayerNorm if RECIPE.get('mlp_layernorm') else nn.BatchNorm1d
-            self.mlp = nn.Sequential(nn.Linear(input_dim,256),nn.LeakyReLU(),nn.Dropout(.2),
-                nn.Linear(256,128),norm(128),nn.GELU(),nn.Dropout(.1),
-                nn.Linear(128,32),norm(32),nn.GELU(),nn.Linear(32,len(RECIPE['label_horizons'])))
+            self.mlp = nn.Sequential(nn.Linear(input_dim, 256), nn.LeakyReLU(), nn.Dropout(0.2), nn.Linear(256, 128), norm(128), nn.GELU(), nn.Dropout(0.1), nn.Linear(128, 32), norm(32), nn.GELU(), nn.Linear(32, len(RECIPE['label_horizons'])))
             for layer in self.mlp.modules():
-                if isinstance(layer,nn.Linear):
-                    nn.init.kaiming_uniform_(layer.weight,mode='fan_in',nonlinearity='relu')
+                if isinstance(layer, nn.Linear):
+                    nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='relu')
                     nn.init.zeros_(layer.bias)
+
     def forward(self, tsdata, market=None):
         if RECIPE['neural_kind'] != 'mlp':
             return super().forward(tsdata, market)
-        rank_heads = self.mlp(tsdata[:,-1].float().clamp(-5.,5.))
-        absolute = self.absolute_forward(tsdata[:,-1],market)
-        return torch.cat([rank_heads,absolute[:,:1]],dim=1)
+        rank_heads = self.mlp(tsdata[:, -1].float().clamp(-5.0, 5.0))
+        absolute = self.absolute_forward(tsdata[:, -1], market)
+        return torch.cat([rank_heads, absolute[:, :1]], dim=1)
 
 def score_of(heads):
-    out=np.full(heads.shape[:2],np.nan,np.float32)
-    j=RECIPE['label_horizons'].index(RECIPE['neural_score_horizon'])
-    for i,row in enumerate(heads):
-        known=np.isfinite(row).all(axis=1);n=known.sum()
-        if n>1:
-            if RECIPE['score_transform']=='raw_neural':
-                out[i,known]=row[known,j]
+    out = np.full(heads.shape[:2], np.nan, np.float32)
+    j = RECIPE['label_horizons'].index(RECIPE['neural_score_horizon'])
+    for i, row in enumerate(heads):
+        known = np.isfinite(row).all(axis=1)
+        n = known.sum()
+        if n > 1:
+            if RECIPE['score_transform'] == 'raw_neural':
+                out[i, known] = row[known, j]
             else:
-                neural=(rankdata(row[known,j])-.5)/n
-                technical=(rankdata(row[known,-1])-.5)/n
-                weight=RECIPE['flow_fusion_weight']
-                out[i,known]=weight*neural+(1-weight)*technical
+                neural = (rankdata(row[known, j]) - 0.5) / n
+                technical = (rankdata(row[known, -1]) - 0.5) / n
+                weight = RECIPE['flow_fusion_weight']
+                out[i, known] = weight * neural + (1 - weight) * technical
     return out
 
 def metadata():
-    raw=(data_root()/'meta.json').read_bytes()
-    if hashlib.sha256(raw).hexdigest()!=RECIPE['snapshot_meta_sha256']:
+    raw = (data_root() / 'meta.json').read_bytes()
+    if hashlib.sha256(raw).hexdigest() != RECIPE['snapshot_meta_sha256']:
         raise ValueError('pinned snapshot changed; create new unit, never resume')
     return json.loads(raw)
 
+def personal_validation_fees(notional, sell=False):
+    return max(notional * 0.00025, 5) + notional * 1e-05 + (notional * 0.0005 if sell else 0)
 
-# ================= R18 round-2 patch (generated) =================
-_R18_UNIT = 'V266'
-_R18_LABEL = 'flow20'
-_R18_NEW_FLOW = ['r17cc_chip_entropy_7a2083fdad619cbc', 'r17cg_chip_cr3_f3dc52e9a85abfb7', 'r17cg_chip_gini_38d02c6cc01fbd71', 'r17cg_chip_n_levels_df5db51fc7a2fdfc', 'r17cg_chip_peak_gap_2a0ffd978824deca', 'r17cg_chip_skew_c0483bce256ff0d4', 'r17cg_cost_range_vs_hist_562131dee31e9ee9', 'r17cg_cost_width_80_5cf614f2d5f3956f', 'r17cg_mean_gap_chg5_33004777b5285f13', 'r17cg_mid_tier_mass_d3ad83f0b2b023cd', 'r17cg_mode_vs_median_fd0f6f0f27661177', 'r17cg_n_peaks_chg20_f44e9e1cc27782a1', 'r17cg_p90_gap_chg20_c91115e3f691152c', 'r17cg_p90_hist_pos_6bdd9e80d892da3e', 'r17cg_peak_vs_top3_d62c93f9f9b52f89', 'r17cg_skew_chg20_4c9f6345c8034e61', 'r17x_net_cluster_tightness_v3_7684619a30bd7821', 'r17x_net_edge_weight_hhi_v3_61f921e8543188e5', 'r17x_net_peer_corr_dispersion_v3_0136fe5025838330', 'r17x_net_two_hop_density_v3_a68943c3d0b8ba5a']
-_R18_NEW_FUND = []
-_R18_BASE_FEATURES = ['afx_cf_im_net_cashflow_oper_act', 'afx_fi_fcfe', 'afx_fi_fcff', 'afx_fi_ocf_to_interestdebt', 'afx_fi_ocf_to_opincome', 'afx_fi_ocf_to_profit', 'afx_fi_ocfps', 'afx_fi_q_gr_qoq', 'afx_fi_q_gsprofit_margin', 'afx_fi_q_netprofit_qoq', 'afx_fi_q_ocf_to_or', 'afx_is_basic_eps', 'afx_is_ebitda', 'amihud_daily_5', 'amount_mom_accel', 'amount_ratio_20', 'asset_growth_qoq', 'atr_14_ratio', 'beta_60', 'bp', 'bs_other_receiv_to_assets', 'bw_strength_sensitivity_20', 'cash_conversion_cycle', 'cash_sales_ratio', 'cf_purchase_cash_intensity', 'cfcr', 'cfp_ttm', 'close30_ret', 'cp_momentum_lowvol_20', 'cp_value_momentum_div', 'dividend_yield_3y_avg', 'dp_ttm', 'dpo_20', 'ebitda_to_market', 'efx_annual_earnings_yield', 'efx_volume_ratio', 'ep_ttm', 'etp5', 'extreme_move_event', 'holder_number_chg', 'id2_close_vs_pm_vwap', 'id2_close_vs_pm_vwap_20', 'id2_hi_lo_pos_gap', 'id2_parkinson_vol', 'id2_ret_concentration', 'idio_vol_60', 'idt_overnight_minus_intraday', 'idt_rv_daily', 'idt_rv_term_structure_slope', 'idt_vol_stability', 'ind_bps_yoy', 'ind_dt_netprofit_yoy', 'ind_int_to_talcap', 'interest_coverage', 'intraday_vol_ratio_5d', 'inventory_turnover', 'limit_broken_ratio_20', 'limit_days_since_up_20', 'limit_down_event_5', 'log_mv', 'margin_repay_deceleration', 'margin_repay_shock', 'mf_amount_weighted_direction', 'mf_big_order_net_ac1_20', 'mf_net_inflow_5d', 'mf_net_vol_surprise_20', 'mf_small_order_avg_price_dev', 'momentum_120', 'momentum_20', 'momentum_250', 'momentum_60', 'ocf_to_profit', 'ocf_to_revenue', 'open5_capacity_floor_ratio_20', 'overnight_ma_20d', 'overnight_ma_5d', 'overnight_ma_60d', 'overnight_std_5d', 'price_distance_from_52w_low', 'price_to_52w_high', 'qf_cash_margin_floor_4q', 'qf_cash_margin_yoy_change', 'qf_core_roe_floor_4q', 'qf_core_roe_vol_4q', 'qf_core_roe_yoy_change', 'qf_roa_yoy_change', 'qf_sales_growth_accel', 'qf_sales_growth_vol_4q', 'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7', 'r10gc_bias_turn_126_252_v1_a9656f4fececd030', 'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581', 'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742', 'r10gc_high_low_21_v1_ca60e882d8b5c22f', 'r10gc_high_low_252_v1_facb1d1f647f48ca', 'r10gc_high_low_63_v1_34a74707a9f916a3', 'r10gc_income_tax_yoy_v1_c051c303608f0a17', 'r10gc_ret_std_21_v1_51f3cc1a8b65d126', 'r10gc_ret_std_252_v1_db7166018e1a0511', 'r10gc_ret_std_63_v1_19b9e9fa082c7cec', 'r10gc_turn_lvl_21_v1_2bab2360d6cb7099', 'r10gc_turn_lvl_252_v1_2dd70c23d17694f4', 'r10gc_turn_lvl_63_v1_7d51db9d4ff08793', 'r10gc_turn_std_126_v1_e96f93f78ed0e472', 'r10gc_turn_std_252_v1_9a4d3d577535e360', 'r10gc_turn_std_42_v1_21349ae0e32c1db7', 'r10gc_yoy_net_asset_v1_2a57af1e5c40492f', 'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac', 'r10gc_yoy_ocf_v1_066e6046572baf9c', 'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca', 'r11gc_amount_ma_20_v1_1858415feaa5dbe6', 'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732', 'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134', 'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa', 'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1', 'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f', 'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe', 'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1', 'r11gc_bias_turn_126_504_v1_e3ccc91522792d65', 'r11gc_bias_turn_21_504_v1_111533df505215cb', 'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260', 'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad', 'r11gc_bias_turn_63_504_v1_387613367cbd4dd9', 'r11gc_high_low_126_v1_2666509099db4a47', 'r11gc_high_low_42_v1_36fd67d17bea68ac', 'r11gc_ret_std_42_v1_23474362384bc399', 'r11gc_turn_lvl_10_v1_c377944b650ec037', 'r11gc_turn_lvl_126_v1_ef48ac322c8d0929', 'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4', 'r11gc_turn_lvl_42_v1_24d04a044ce607a0', 'r11gc_turn_lvl_5_v1_332d53f4bb907a79', 'r11gc_turn_std_63_v1_5ef776ad40ef77f6', 'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3', 'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1', 'r12gc_asset_turnover_v1_40d616e07fd4a097', 'r12gc_cash_ratio_v1_7ef2829865ad2cc2', 'r12gc_de_v1_d4cd33b978d63b0a', 'r12gc_eps_q_v1_8f3703e8eb218668', 'r12gc_eps_ttm_v1_2d84c57b9ea5f85d', 'r12gc_eps_y_v1_6f0a67c91531a732', 'r12gc_equity_turnover_v1_4cba36560ca472e5', 'r12gc_fcf_to_market_v1_49c0b5d214b35db0', 'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2', 'r12gc_float_size_v1_8b275acb0cb20dec', 'r12gc_gpm_q_v1_842e57e4d0d033e5', 'r12gc_gpm_ttm_v1_7e99428574d400ea', 'r12gc_gpm_y_v1_102eddddb8fac4c4', 'r12gc_log_price_v1_0a22efbc7b6bb1f7', 'r12gc_market_value_leverage_v1_9f3705df7636e0cc', 'r12gc_ncf_to_market_v1_71cf1e0deddc7070', 'r12gc_npm_q_v1_a1e5e8bb0a48de33', 'r12gc_npm_ttm_v1_4e4381d67f1d7391', 'r12gc_npm_y_v1_f78b237b3b7c1b18', 'r12gc_opm_ttm_v1_2827ff5d605bdeeb', 'r12gc_opm_y_v1_6e2f1f9aaf3c6106', 'r12gc_opt_tpro_v1_d832d118e2414259', 'r12gc_quick_ratio_v1_ea13af873ce572fc', 'r12gc_receivable_turnover_v1_458e2aaecafa62b9', 'r12gc_return_42_v1_0032bf23a28de8f7', 'r12gc_roa_q_v1_4b4ae2280384ebde', 'r12gc_roa_y_v1_6e585294932485e4', 'r12gc_roe_y_v1_bca9de9f86ce36dd', 'r12gc_sales_to_market_v1_ff344107e3f2c925', 'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb', 'r3b_intraday_rv_skewness_v2_44ef55d83a759fba', 'r4a_forecast_landing_gap_v3_972c0653571ab5d8', 'r4a_sue_accel_v1_4b443eb2d4fda83c', 'r4a_sue_seasonal_q_v1_f1def0b01eb0b979', 'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb', 'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8', 'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9', 'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5', 'r4e_idio_max_20_v1_d0d201efd7755e86', 'r4j_same_month_consistency_v1_be7f8ede9c4b5afe', 'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1', 'r4t_preann_turnover_shock_v1_3a95800106c754f2', 'r4t_preann_vol_expansion_v1_bebf97b2c5260706', 'r7a_tax_expense_seasonal_change_v2_371da87d5055df86', 'r7e_context_salience20_v1_f4efb8789772d003', 'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035', 'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe', 'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728', 'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f', 'ret_skew_20', 'revenue_cagr_3y', 'reversal_2d', 'roa_ttm', 'roc_12', 'roe_ttm', 'rsi_14', 'rsrs_beta_18', 'rv_term_structure', 's26_liq_up_fragility_v1_b43c747ff9090bc2', 's26_structure_side_hhi_v1_bb77e106a875308a', 'short_term_reversal_5', 'sp_ttm', 'td_setup_count', 'three_black_crows', 'turnover_anomaly_20', 'turnover_f_delta_5', 'turnover_std_20', 'vol_120', 'vol_clustering_20', 'vol_of_rv', 'vol_ratio_ma5_ma20', 'volume_ratio', 'yoy_revenue', 'r13f_gpm_dispersion_v1_d45cc0c6c766d353', 'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485', 'r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43', 'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e', 'r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6', 'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4', 'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254', 'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41', 'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576', 'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a', 'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab', 'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2', 'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd', 'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504', 'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9', 'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981', 'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449', 'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd', 'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70', 'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711', 'r13p_fip_return_discreteness_v1_94875f42e1e5efcf', 'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4', 'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970', 'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769', 'r14f28_tax_cash_refund_share_v1_3904a84026422c3e', 'r14f29_intangible_amort_share_v1_476979a530c60728', 'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708', 'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8', 'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976', 'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f', 'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e', 'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283', 'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5', 'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f', 'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8', 'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f', 'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79', 'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c', 'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb', 'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501', 'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394', 'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf', 'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4', 'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3', 'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08', 'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4', 'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b', 'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177', 'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8', 'r15p14_monthly_component_range_memory_v1_6fe135138d05893d', 'r15t3_overnight_variance_share_v1_09b9ae4f22c98618', 'r15t3_spillover_v1_432027233601b658', 'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43', 'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e']
-_R18_BASE_FLOW = ['afx_cf_im_net_cashflow_oper_act', 'afx_fi_fcfe', 'afx_fi_fcff', 'afx_fi_ocf_to_interestdebt', 'afx_fi_ocf_to_opincome', 'afx_fi_ocf_to_profit', 'afx_fi_ocfps', 'afx_fi_q_gr_qoq', 'afx_fi_q_gsprofit_margin', 'afx_fi_q_netprofit_qoq', 'afx_fi_q_ocf_to_or', 'afx_is_basic_eps', 'afx_is_ebitda', 'amihud_daily_5', 'amount_mom_accel', 'amount_ratio_20', 'asset_growth_qoq', 'atr_14_ratio', 'beta_60', 'bp', 'bs_other_receiv_to_assets', 'bw_strength_sensitivity_20', 'cash_conversion_cycle', 'cash_sales_ratio', 'cf_purchase_cash_intensity', 'cfcr', 'cfp_ttm', 'close30_ret', 'cp_momentum_lowvol_20', 'cp_value_momentum_div', 'dividend_yield_3y_avg', 'dp_ttm', 'dpo_20', 'ebitda_to_market', 'efx_annual_earnings_yield', 'efx_volume_ratio', 'ep_ttm', 'etp5', 'extreme_move_event', 'holder_number_chg', 'id2_close_vs_pm_vwap', 'id2_close_vs_pm_vwap_20', 'id2_hi_lo_pos_gap', 'id2_parkinson_vol', 'id2_ret_concentration', 'idio_vol_60', 'idt_overnight_minus_intraday', 'idt_rv_daily', 'idt_rv_term_structure_slope', 'idt_vol_stability', 'ind_bps_yoy', 'ind_dt_netprofit_yoy', 'ind_int_to_talcap', 'interest_coverage', 'intraday_vol_ratio_5d', 'inventory_turnover', 'limit_broken_ratio_20', 'limit_days_since_up_20', 'limit_down_event_5', 'log_mv', 'margin_repay_deceleration', 'margin_repay_shock', 'mf_amount_weighted_direction', 'mf_big_order_net_ac1_20', 'mf_net_inflow_5d', 'mf_net_vol_surprise_20', 'mf_small_order_avg_price_dev', 'momentum_120', 'momentum_20', 'momentum_250', 'momentum_60', 'ocf_to_profit', 'ocf_to_revenue', 'open5_capacity_floor_ratio_20', 'overnight_ma_20d', 'overnight_ma_5d', 'overnight_ma_60d', 'overnight_std_5d', 'price_distance_from_52w_low', 'price_to_52w_high', 'qf_cash_margin_floor_4q', 'qf_cash_margin_yoy_change', 'qf_core_roe_floor_4q', 'qf_core_roe_vol_4q', 'qf_core_roe_yoy_change', 'qf_roa_yoy_change', 'qf_sales_growth_accel', 'qf_sales_growth_vol_4q', 'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7', 'r10gc_bias_turn_126_252_v1_a9656f4fececd030', 'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581', 'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742', 'r10gc_high_low_21_v1_ca60e882d8b5c22f', 'r10gc_high_low_252_v1_facb1d1f647f48ca', 'r10gc_high_low_63_v1_34a74707a9f916a3', 'r10gc_income_tax_yoy_v1_c051c303608f0a17', 'r10gc_ret_std_21_v1_51f3cc1a8b65d126', 'r10gc_ret_std_252_v1_db7166018e1a0511', 'r10gc_ret_std_63_v1_19b9e9fa082c7cec', 'r10gc_turn_lvl_21_v1_2bab2360d6cb7099', 'r10gc_turn_lvl_252_v1_2dd70c23d17694f4', 'r10gc_turn_lvl_63_v1_7d51db9d4ff08793', 'r10gc_turn_std_126_v1_e96f93f78ed0e472', 'r10gc_turn_std_252_v1_9a4d3d577535e360', 'r10gc_turn_std_42_v1_21349ae0e32c1db7', 'r10gc_yoy_net_asset_v1_2a57af1e5c40492f', 'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac', 'r10gc_yoy_ocf_v1_066e6046572baf9c', 'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca', 'r11gc_amount_ma_20_v1_1858415feaa5dbe6', 'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732', 'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134', 'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa', 'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1', 'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f', 'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe', 'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1', 'r11gc_bias_turn_126_504_v1_e3ccc91522792d65', 'r11gc_bias_turn_21_504_v1_111533df505215cb', 'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260', 'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad', 'r11gc_bias_turn_63_504_v1_387613367cbd4dd9', 'r11gc_high_low_126_v1_2666509099db4a47', 'r11gc_high_low_42_v1_36fd67d17bea68ac', 'r11gc_ret_std_42_v1_23474362384bc399', 'r11gc_turn_lvl_10_v1_c377944b650ec037', 'r11gc_turn_lvl_126_v1_ef48ac322c8d0929', 'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4', 'r11gc_turn_lvl_42_v1_24d04a044ce607a0', 'r11gc_turn_lvl_5_v1_332d53f4bb907a79', 'r11gc_turn_std_63_v1_5ef776ad40ef77f6', 'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3', 'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1', 'r12gc_asset_turnover_v1_40d616e07fd4a097', 'r12gc_cash_ratio_v1_7ef2829865ad2cc2', 'r12gc_de_v1_d4cd33b978d63b0a', 'r12gc_eps_q_v1_8f3703e8eb218668', 'r12gc_eps_ttm_v1_2d84c57b9ea5f85d', 'r12gc_eps_y_v1_6f0a67c91531a732', 'r12gc_equity_turnover_v1_4cba36560ca472e5', 'r12gc_fcf_to_market_v1_49c0b5d214b35db0', 'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2', 'r12gc_float_size_v1_8b275acb0cb20dec', 'r12gc_gpm_q_v1_842e57e4d0d033e5', 'r12gc_gpm_ttm_v1_7e99428574d400ea', 'r12gc_gpm_y_v1_102eddddb8fac4c4', 'r12gc_log_price_v1_0a22efbc7b6bb1f7', 'r12gc_market_value_leverage_v1_9f3705df7636e0cc', 'r12gc_ncf_to_market_v1_71cf1e0deddc7070', 'r12gc_npm_q_v1_a1e5e8bb0a48de33', 'r12gc_npm_ttm_v1_4e4381d67f1d7391', 'r12gc_npm_y_v1_f78b237b3b7c1b18', 'r12gc_opm_ttm_v1_2827ff5d605bdeeb', 'r12gc_opm_y_v1_6e2f1f9aaf3c6106', 'r12gc_opt_tpro_v1_d832d118e2414259', 'r12gc_quick_ratio_v1_ea13af873ce572fc', 'r12gc_receivable_turnover_v1_458e2aaecafa62b9', 'r12gc_return_42_v1_0032bf23a28de8f7', 'r12gc_roa_q_v1_4b4ae2280384ebde', 'r12gc_roa_y_v1_6e585294932485e4', 'r12gc_roe_y_v1_bca9de9f86ce36dd', 'r12gc_sales_to_market_v1_ff344107e3f2c925', 'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb', 'r3b_intraday_rv_skewness_v2_44ef55d83a759fba', 'r4a_forecast_landing_gap_v3_972c0653571ab5d8', 'r4a_sue_accel_v1_4b443eb2d4fda83c', 'r4a_sue_seasonal_q_v1_f1def0b01eb0b979', 'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb', 'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8', 'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9', 'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5', 'r4e_idio_max_20_v1_d0d201efd7755e86', 'r4j_same_month_consistency_v1_be7f8ede9c4b5afe', 'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1', 'r4t_preann_turnover_shock_v1_3a95800106c754f2', 'r4t_preann_vol_expansion_v1_bebf97b2c5260706', 'r7a_tax_expense_seasonal_change_v2_371da87d5055df86', 'r7e_context_salience20_v1_f4efb8789772d003', 'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035', 'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe', 'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728', 'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f', 'ret_skew_20', 'revenue_cagr_3y', 'reversal_2d', 'roa_ttm', 'roc_12', 'roe_ttm', 'rsi_14', 'rsrs_beta_18', 'rv_term_structure', 's26_liq_up_fragility_v1_b43c747ff9090bc2', 's26_structure_side_hhi_v1_bb77e106a875308a', 'short_term_reversal_5', 'sp_ttm', 'td_setup_count', 'three_black_crows', 'turnover_anomaly_20', 'turnover_f_delta_5', 'turnover_std_20', 'vol_120', 'vol_clustering_20', 'vol_of_rv', 'vol_ratio_ma5_ma20', 'volume_ratio', 'yoy_revenue', 'r13gc_daily_turnover_ac1_63_v1_e42ca3d25ca965e6', 'r13gc_same_calendar_month_turnover_profile_v2_a64fbb3e9b93a2dd', 'r13gc_turnover_commonality_beta_126_v1_8be87d88402aac70', 'r13gc_turnover_to_nextday_absret_corr_126_v2_ed7738ff0c879711', 'r14gc_session_illiquidity_asymmetry_v1_93978c1ec1b77ea8', 'r14p7_signed_amount_reversal_v2_7dd5dbc630f5495e', 'r15net_peer_flow_diffusion_v1_0ea2820cafbe9177']
-_R18_BASE_FUND = ['afx_cf_im_net_cashflow_oper_act', 'afx_fi_fcfe', 'afx_fi_fcff', 'afx_fi_ocf_to_interestdebt', 'afx_fi_ocf_to_opincome', 'afx_fi_ocf_to_profit', 'afx_fi_ocfps', 'afx_fi_q_gr_qoq', 'afx_fi_q_gsprofit_margin', 'afx_fi_q_netprofit_qoq', 'afx_fi_q_ocf_to_or', 'afx_is_basic_eps', 'afx_is_ebitda', 'amihud_daily_5', 'amount_mom_accel', 'amount_ratio_20', 'asset_growth_qoq', 'atr_14_ratio', 'beta_60', 'bp', 'bs_other_receiv_to_assets', 'bw_strength_sensitivity_20', 'cash_conversion_cycle', 'cash_sales_ratio', 'cf_purchase_cash_intensity', 'cfcr', 'cfp_ttm', 'close30_ret', 'cp_momentum_lowvol_20', 'cp_value_momentum_div', 'dividend_yield_3y_avg', 'dp_ttm', 'dpo_20', 'ebitda_to_market', 'efx_annual_earnings_yield', 'efx_volume_ratio', 'ep_ttm', 'etp5', 'extreme_move_event', 'holder_number_chg', 'id2_close_vs_pm_vwap', 'id2_close_vs_pm_vwap_20', 'id2_hi_lo_pos_gap', 'id2_parkinson_vol', 'id2_ret_concentration', 'idio_vol_60', 'idt_overnight_minus_intraday', 'idt_rv_daily', 'idt_rv_term_structure_slope', 'idt_vol_stability', 'ind_bps_yoy', 'ind_dt_netprofit_yoy', 'ind_int_to_talcap', 'interest_coverage', 'intraday_vol_ratio_5d', 'inventory_turnover', 'limit_broken_ratio_20', 'limit_days_since_up_20', 'limit_down_event_5', 'log_mv', 'margin_repay_deceleration', 'margin_repay_shock', 'mf_amount_weighted_direction', 'mf_big_order_net_ac1_20', 'mf_net_inflow_5d', 'mf_net_vol_surprise_20', 'mf_small_order_avg_price_dev', 'momentum_120', 'momentum_20', 'momentum_250', 'momentum_60', 'ocf_to_profit', 'ocf_to_revenue', 'open5_capacity_floor_ratio_20', 'overnight_ma_20d', 'overnight_ma_5d', 'overnight_ma_60d', 'overnight_std_5d', 'price_distance_from_52w_low', 'price_to_52w_high', 'qf_cash_margin_floor_4q', 'qf_cash_margin_yoy_change', 'qf_core_roe_floor_4q', 'qf_core_roe_vol_4q', 'qf_core_roe_yoy_change', 'qf_roa_yoy_change', 'qf_sales_growth_accel', 'qf_sales_growth_vol_4q', 'r10gc_bias_std_turn_21_252_v1_bcd82eb2bc4c4fe7', 'r10gc_bias_turn_126_252_v1_a9656f4fececd030', 'r10gc_bias_turn_21_252_v1_f541ccc9f9fa2581', 'r10gc_bias_turn_63_252_v1_27c60f4ea79e6742', 'r10gc_high_low_21_v1_ca60e882d8b5c22f', 'r10gc_high_low_252_v1_facb1d1f647f48ca', 'r10gc_high_low_63_v1_34a74707a9f916a3', 'r10gc_income_tax_yoy_v1_c051c303608f0a17', 'r10gc_ret_std_21_v1_51f3cc1a8b65d126', 'r10gc_ret_std_252_v1_db7166018e1a0511', 'r10gc_ret_std_63_v1_19b9e9fa082c7cec', 'r10gc_turn_lvl_21_v1_2bab2360d6cb7099', 'r10gc_turn_lvl_252_v1_2dd70c23d17694f4', 'r10gc_turn_lvl_63_v1_7d51db9d4ff08793', 'r10gc_turn_std_126_v1_e96f93f78ed0e472', 'r10gc_turn_std_252_v1_9a4d3d577535e360', 'r10gc_turn_std_42_v1_21349ae0e32c1db7', 'r10gc_yoy_net_asset_v1_2a57af1e5c40492f', 'r10gc_yoy_net_profit_v1_bdc315b5d4b02fac', 'r10gc_yoy_ocf_v1_066e6046572baf9c', 'r10gc_yoy_total_asset_v1_3b5f72f283c0e3ca', 'r11gc_amount_ma_20_v1_1858415feaa5dbe6', 'r11gc_bias_std_turn_126_252_v1_5be1af21b3af2732', 'r11gc_bias_std_turn_126_504_v1_ec735b581d5c6134', 'r11gc_bias_std_turn_21_504_v1_0ec972aa142a07aa', 'r11gc_bias_std_turn_42_252_v1_f671e4d8cc39efd1', 'r11gc_bias_std_turn_42_504_v1_405ae54d3c3ed62f', 'r11gc_bias_std_turn_63_252_v1_d03f938d9f4b2cfe', 'r11gc_bias_std_turn_63_504_v1_54007b4942cea4c1', 'r11gc_bias_turn_126_504_v1_e3ccc91522792d65', 'r11gc_bias_turn_21_504_v1_111533df505215cb', 'r11gc_bias_turn_42_252_v1_fa9e6caf1c763260', 'r11gc_bias_turn_42_504_v1_c66e9ee701bdb2ad', 'r11gc_bias_turn_63_504_v1_387613367cbd4dd9', 'r11gc_high_low_126_v1_2666509099db4a47', 'r11gc_high_low_42_v1_36fd67d17bea68ac', 'r11gc_ret_std_42_v1_23474362384bc399', 'r11gc_turn_lvl_10_v1_c377944b650ec037', 'r11gc_turn_lvl_126_v1_ef48ac322c8d0929', 'r11gc_turn_lvl_20_v1_2f60dce5b6aba8a4', 'r11gc_turn_lvl_42_v1_24d04a044ce607a0', 'r11gc_turn_lvl_5_v1_332d53f4bb907a79', 'r11gc_turn_std_63_v1_5ef776ad40ef77f6', 'r11u2_peak_timing_mktstate_gate_fix1_83f5c455e951bbb3', 'r11u4_flow_intensity_x_surprise_v1_1cec9f0321fe52c1', 'r12gc_asset_turnover_v1_40d616e07fd4a097', 'r12gc_cash_ratio_v1_7ef2829865ad2cc2', 'r12gc_de_v1_d4cd33b978d63b0a', 'r12gc_eps_q_v1_8f3703e8eb218668', 'r12gc_eps_ttm_v1_2d84c57b9ea5f85d', 'r12gc_eps_y_v1_6f0a67c91531a732', 'r12gc_equity_turnover_v1_4cba36560ca472e5', 'r12gc_fcf_to_market_v1_49c0b5d214b35db0', 'r12gc_fixed_asset_turnover_v1_f5bd2c641032b1a2', 'r12gc_float_size_v1_8b275acb0cb20dec', 'r12gc_gpm_q_v1_842e57e4d0d033e5', 'r12gc_gpm_ttm_v1_7e99428574d400ea', 'r12gc_gpm_y_v1_102eddddb8fac4c4', 'r12gc_log_price_v1_0a22efbc7b6bb1f7', 'r12gc_market_value_leverage_v1_9f3705df7636e0cc', 'r12gc_ncf_to_market_v1_71cf1e0deddc7070', 'r12gc_npm_q_v1_a1e5e8bb0a48de33', 'r12gc_npm_ttm_v1_4e4381d67f1d7391', 'r12gc_npm_y_v1_f78b237b3b7c1b18', 'r12gc_opm_ttm_v1_2827ff5d605bdeeb', 'r12gc_opm_y_v1_6e2f1f9aaf3c6106', 'r12gc_opt_tpro_v1_d832d118e2414259', 'r12gc_quick_ratio_v1_ea13af873ce572fc', 'r12gc_receivable_turnover_v1_458e2aaecafa62b9', 'r12gc_return_42_v1_0032bf23a28de8f7', 'r12gc_roa_q_v1_4b4ae2280384ebde', 'r12gc_roa_y_v1_6e585294932485e4', 'r12gc_roe_y_v1_bca9de9f86ce36dd', 'r12gc_sales_to_market_v1_ff344107e3f2c925', 'r2own_v2_trend_persistence_v1_464e80a3ee6ef0bb', 'r3b_intraday_rv_skewness_v2_44ef55d83a759fba', 'r4a_forecast_landing_gap_v3_972c0653571ab5d8', 'r4a_sue_accel_v1_4b443eb2d4fda83c', 'r4a_sue_seasonal_q_v1_f1def0b01eb0b979', 'r4b_intraday_rv_kurtosis_20_4fdea35833870ebb', 'r4b_intraday_volume_hhi_20_2462d9ca21d9adf8', 'r4c_accrual_ratio_q_v1_8bef7aa2caaf33d9', 'r4c_accrual_ratio_ttm_v1_80e27bcbce7fddb5', 'r4e_idio_max_20_v1_d0d201efd7755e86', 'r4j_same_month_consistency_v1_be7f8ede9c4b5afe', 'r4q_adv_recv_cl_growth_yoy_v1_066cb6dd0e26b3e1', 'r4t_preann_turnover_shock_v1_3a95800106c754f2', 'r4t_preann_vol_expansion_v1_bebf97b2c5260706', 'r7a_tax_expense_seasonal_change_v2_371da87d5055df86', 'r7e_context_salience20_v1_f4efb8789772d003', 'r8e_book_wc_cash_realization_noise20q_v2_3b7ffc1a4a997035', 'r9a_sec_own_rv_beta_v2_ef77e079dd4478fe', 'r9c_abnormal_dispersion_shift_k4_v2_cb653c1abc1fb728', 'r9f_breadth_intraday_slope_x_beta_v1_51445f98a0907e8f', 'ret_skew_20', 'revenue_cagr_3y', 'reversal_2d', 'roa_ttm', 'roc_12', 'roe_ttm', 'rsi_14', 'rsrs_beta_18', 'rv_term_structure', 's26_liq_up_fragility_v1_b43c747ff9090bc2', 's26_structure_side_hhi_v1_bb77e106a875308a', 'short_term_reversal_5', 'sp_ttm', 'td_setup_count', 'three_black_crows', 'turnover_anomaly_20', 'turnover_f_delta_5', 'turnover_std_20', 'vol_120', 'vol_clustering_20', 'vol_of_rv', 'vol_ratio_ma5_ma20', 'volume_ratio', 'yoy_revenue', 'r13f_gpm_dispersion_v1_d45cc0c6c766d353', 'r13f_ocf_seasonal_trend_innovation_v1_4c66203abbadc485', 'r13gc_fb05_deferred_tax_asset_share_v1_d3599ffb97a55de4', 'r13gc_fb06_long_equity_investment_asset_mix_v1_c051b7080293a254', 'r13gc_fb07_supplier_prepayment_asset_share_v1_8a49e274b2af4e41', 'r13gc_fc01_payroll_vs_goods_cash_mix_v1_009c5259e3988576', 'r13gc_fc02_financial_investment_outflow_share_v1_950a52c23c5ce39a', 'r13gc_fi01_selling_admin_mix_v1_8c8039b595a7f2ab', 'r13gc_fi06_revenue_seasonality_v1_8a12e8686b06f0e2', 'r13gc_financial_quality_cash_tax_paid_asinh_ttm_v2_648e7409d04795dd', 'r13gc_financial_quality_income_tax_revenue_ttm_v2_6bdc1290078a0504', 'r13gc_financial_quality_minority_interest_assets_point_v2_9fead6bc31654eb9', 'r13gc_financial_quality_non_oper_exp_revenue_ttm_v2_0e83ec40a51ad981', 'r14f15_minority_external_equity_cash_share_v2_2f46ba1f387a53c4', 'r14f1_ccc_seasonal_trend_innovation_v2_0a98f6e1fc8b0970', 'r14f27_supplier_prepayment_direction_v1_348e7f359c7fd769', 'r14f28_tax_cash_refund_share_v1_3904a84026422c3e', 'r14f29_intangible_amort_share_v1_476979a530c60728', 'r14f7_positive_contract_rights_share_v2_3cab6f4117f47708', 'r15f1_bs_pool_composition_v1_longterm_fix_assets_0e39009c5c8f2db5', 'r15f1_bs_pool_composition_v1_longterm_intangibles_8431a77bc492ef3f', 'r15f1_bs_pool_composition_v1_operating_inventories_0bf01e7fe618a7e8', 'r15f1_bs_pool_composition_v1_operating_receivables_444f672a458e0d1f', 'r15gc_cf01_op_inflow_sales_collection_share_v1_6a13add0e7ebbb79', 'r15gc_cf02_op_outflow_tax_payment_share_v1_1434eaa634455e8c', 'r15gc_cf03_investing_outflow_capex_share_v1_8b4aa1df901e47bb', 'r15gc_cf04_financing_inflow_borrow_share_v1_e4398f1eb4148501', 'r15gc_cf05_financing_outflow_distribution_share_v1_e3e31e9803a73394', 'r15gc_cf06_collection_share_seasonal_deviation_v1_674354f5ce32e8bf', 'r15gc_is01_selling_expense_ratio_v1_d05f1e4dd2122eb4', 'r15gc_is02_admin_expense_ratio_v1_c7c097590031f7e3', 'r15gc_is03_financial_expense_ratio_v1_4b977de0274a7b08', 'r15gc_is04_gross_profit_opex_coverage_v1_410dabf3b40ac2b4', 'r16gc_is05_selling_ratio_seasonal_deviation_replay_v1_371a3b541117bf5e']
-_R18_BASE_TECH = ['momentum_20', 'momentum_60', 'momentum_120', 'reversal_2d', 'short_term_reversal_5', 'ret_skew_20', 'vol_120', 'beta_60', 'idio_vol_60', 'log_mv', 'price_to_52w_high', 'atr_14_ratio', 'rsi_14', 'roc_12', 'dpo_20', 'amihud_daily_5', 'overnight_std_5d', 'holder_number_chg', 'interest_coverage', 'r13gc_daily_range_tail_spread_63_v1_51e696671ccfee43', 'r13gc_daily_return_quantile_skew_63_v1_42a906e8b444a54e', 'r13gc_overnight_gap_intraday_response_beta_60_v1_789a747483612449', 'r13p_fip_return_discreteness_v1_94875f42e1e5efcf', 'r14p11_market_lower_tail_coincidence_v2_d02a562b871b1976', 'r14p6_raw_monthly_tk_v1_dee5c4eeffeaaa9f', 'r14p9_negative_shock_variance_feedback_v2_d4ad4585f4444283', 'r15n14_crossfit_pca_ou_displacement_v1_6de328942e44733b', 'r15p13_restricted_first_passage_v1_6734bafa6d4f2ab8', 'r15p14_monthly_component_range_memory_v1_6fe135138d05893d', 'r15t3_overnight_variance_share_v1_09b9ae4f22c98618', 'r15t3_spillover_v1_432027233601b658', 'r16c_ml1_price_volume_monthly_h5_mlp_replay_v2_d9ac78cf139d8d43']
+def personal_validation_cash(pred, panel, px, days, n=5, period=5, band=0, money=None, forecast_members=4, cost_gate_multiplier=None, gate_scores=None):
+    money = float(RECIPE['backtest_money'] if money is None else money)
+    if forecast_members < 1:
+        raise ValueError('invalid forecast member count')
+    gate = RECIPE['cost_gate_multiplier'] if cost_gate_multiplier is None else cost_gate_multiplier
+    cost_reference = 2 * max(0.00025, 5 / (money / n)) + 2e-05 + 0.0005 + 0.0006
+    score_threshold = forecast_members * gate * cost_reference
+    if n > 1 and gate > 0:
+        if gate_scores is None:
+            if not hasattr(panel, 'absolute_forecast'):
+                raise ValueError('composite gate forecast not supplied')
+            gate_scores = panel.absolute_forecast[days]
+        if gate_scores.shape != pred.shape:
+            raise ValueError('gate forecast axes differ')
+    gate_by_day = {} if gate_scores is None else {int(d): p for d, p in zip(days, gate_scores)}
+    cash = money
+    holdings = {}
+    buys = {}
+    desired = []
+    curves = []
+    trades = []
+    corp_events = 0
+    cumulative_fees = 0.0
+    cumulative_slippage = 0.0
+    first, last = (int(days[0]) + 1, int(days[-1]) + 2)
+    pred_by_day = {int(d): p for d, p in zip(days, pred)}
+    spec_band = band
+    entry_ok = px.entry_ok() if px is not None else None
+    for d in range(first, last + 1):
+        for c in list(holdings):
+            ratio = px.adj[d, c] / px.adj[d - 1, c]
+            if not np.isfinite(ratio) or ratio <= 0:
+                raise ValueError('持仓复权因子缺失')
+            if abs(ratio - 1) > 1e-08:
+                holdings[c] *= ratio
+                corp_events += 1
+        signal = d - 1
+        p = pred_by_day.get(signal)
+        if p is not None:
+            candidates = np.flatnonzero(np.isfinite(p))
+            utility = p.copy()
+            if n > 1 and gate > 0:
+                admission = gate_by_day[signal].copy() - score_threshold
+                for held in holdings:
+                    admission[held] = gate_by_day[signal][held]
+                candidates = candidates[np.isfinite(admission[candidates]) & (admission[candidates] >= 0.0)]
+            ranked = candidates[np.argsort(-utility[candidates], kind='stable')]
+            if (signal - int(days[0])) % period == 0:
+                band = spec_band
+                keep = set((int(c) for c in ranked[:band])) & set(holdings) if band > n else set()
+                fresh = [int(c) for c in ranked if entry_ok[d, c] and c not in keep]
+                desired = list(keep) + fresh[:max(0, n - len(keep))]
+        if d == last:
+            desired = []
+        blocked = []
+        for c in list(holdings):
+            if c in desired:
+                continue
+            if not px.exit[d, c] or buys[c] >= d:
+                blocked.append(c)
+                continue
+            quantity = holdings[c]
+            price = px.open[d, c] * (1 - 0.0003)
+            gross = quantity * price
+            fee = personal_validation_fees(gross, True)
+            cumulative_fees += fee
+            cumulative_slippage += quantity * px.open[d, c] - gross
+            cash += gross - fee
+            trades.append(dict(date=str(panel.days[d]), code=str(panel.codes[c]), side='sell', quantity=quantity, price=float(price), fee=float(fee)))
+            del holdings[c]
+            del buys[c]
+        if p is not None and d < last and ((signal - int(days[0])) % period == 0):
+            equity = cash + sum((q * px.open[d, c] if np.isfinite(px.open[d, c]) else q * px.close[d - 1, c] for c, q in holdings.items()))
+            for c in desired:
+                if c in holdings or len(holdings) >= n:
+                    continue
+                price = px.open[d, c] * (1 + 0.0003)
+                amount = panel.amount[signal, c]
+                cap = amount * 0.01 if np.isfinite(amount) else 0.0
+                if RECIPE['budget_rule'] == 'divide':
+                    k = max(1, n - len(holdings))
+                    purse = (equity - sum((q * px.open[d, cc] if np.isfinite(px.open[d, cc]) else q * px.close[d - 1, cc] for cc, q in holdings.items()))) / k
+                    budget = min(cash, purse, cap)
+                else:
+                    budget = min(cash, equity / n, cap)
+                quantity = int(max(0, budget - 5) / (price * (1 + 0.00025 + 1e-05)) / 100) * 100
+                while quantity > 0 and quantity * price + personal_validation_fees(quantity * price) > budget:
+                    quantity -= 100
+                if quantity <= 0:
+                    continue
+                gross = quantity * price
+                fee = personal_validation_fees(gross)
+                cumulative_fees += fee
+                cumulative_slippage += gross - quantity * px.open[d, c]
+                cash -= gross + fee
+                holdings[c] = float(quantity)
+                buys[c] = d
+                trades.append(dict(date=str(panel.days[d]), code=str(panel.codes[c]), side='buy', quantity=quantity, price=float(price), fee=float(fee)))
+        if cash < -1e-06 or len(holdings) > n:
+            raise AssertionError('资金/持仓上限被突破')
+        equity = cash + sum((q * px.close[d, c] for c, q in holdings.items()))
+        if not np.isfinite(equity):
+            raise ValueError('持仓估值缺失')
+        curves.append(dict(date=str(panel.days[d]), equity=float(equity), cash=float(cash), positions=len(holdings), blocked_exits=len(blocked), gross_equity=float(equity + cumulative_fees + cumulative_slippage), cumulative_fees=cumulative_fees, cumulative_slippage=cumulative_slippage, exposure=float((equity - cash) / equity)))
+    values = np.r_[money, [r['equity'] for r in curves]]
+    returns = values[1:] / values[:-1] - 1
+    dd = values / np.maximum.accumulate(values) - 1
+    return (dict(topn=n, rebalance_days=period, return_value=float(values[-1] / money - 1), max_drawdown=float(dd.min()), sharpe=float(np.mean(returns) / np.std(returns) * np.sqrt(242)) if np.std(returns) > 0 else 0.0, total_fees=float(sum((t['fee'] for t in trades))), gross_return_same_positions=float((values[-1] + cumulative_fees + cumulative_slippage) / money - 1), fee_drag=float(cumulative_fees / money), slippage_drag=float(cumulative_slippage / money), gross_definition='same actual shares and trade dates; costs added back as cash, no reinvestment', avg_exposure=float(np.mean([c['exposure'] for c in curves])), trades=len(trades), ending_cash=cash, ending_positions=len(holdings), corporate_action_adjustments=corp_events, start=str(panel.days[first]), end=str(panel.days[last]), corporate_action_assumption='复权比折算经济股数，分红立即再投资近似'), curves, trades)
+_Wave2BaseSplits = splits
 
-def _r18_extend(names, extra):
-    out = list(names)
-    for n in extra:
-        if n not in out:
-            out.append(n)
-    return out
+def splits(days, purge_horizon=RECIPE['purge_horizon'], folds=4, quarter=None):
+    rows = _Wave2BaseSplits(days, purge_horizon, folds, quarter)
+    if RECIPE['train_window']:
+        for row in rows:
+            row['train'] = row['train'][-RECIPE['train_window']:]
+    return rows
+_Wave2BaseModel = PredictModel
 
-RECIPE['feature_names'] = _r18_extend(_R18_BASE_FEATURES, _R18_NEW_FLOW + _R18_NEW_FUND)
-RECIPE['flow_feature_names'] = _r18_extend(_R18_BASE_FLOW, _R18_NEW_FLOW)
-RECIPE['fund_feature_names'] = _r18_extend(_R18_BASE_FUND, _R18_NEW_FUND)
-RECIPE['technical_feature_names'] = list(_R18_BASE_TECH)
-RECIPE['flow_indices'] = [RECIPE['feature_names'].index(n) for n in RECIPE['flow_feature_names']]
-RECIPE['fund_indices'] = [RECIPE['feature_names'].index(n) for n in RECIPE['fund_feature_names']]
-RECIPE['technical_indices'] = [RECIPE['feature_names'].index(n) for n in RECIPE['technical_feature_names']]
-RECIPE['snapshot_cutoff'] = '2026-10-20'
-RECIPE['snapshot_meta_sha256'] = '2f2cc9a60566cad4c05ebae7aa4819a23cedf61bfac7443b4db1d60254428f6f'
-RECIPE['name'] = 'V266_flow20'
-RECIPE['r18_experiment'] = dict(unit='V266', label='flow20', parent='V230',
-                                n_new_flow=len(_R18_NEW_FLOW), n_new_fund=len(_R18_NEW_FUND),
-                                stock_feature_count=len(RECIPE['feature_names']),
-                                round=2)
-# ================= end R18 round-2 patch =================
+class PredictModel(_Wave2BaseModel):
+
+    def __init__(self, input_dim, market_dim, horizons=None):
+        super().__init__(input_dim, market_dim, horizons)
+        if RECIPE['neural_market_input']:
+            self.mlp[0] = nn.Linear(input_dim + market_dim, 256)
+            nn.init.kaiming_uniform_(self.mlp[0].weight, mode='fan_in', nonlinearity='relu')
+            nn.init.zeros_(self.mlp[0].bias)
+
+    def forward(self, tsdata, market=None):
+        if not RECIPE['neural_market_input']:
+            return super().forward(tsdata, market)
+        if market is None or market.ndim != 1:
+            raise ValueError('one causal market vector per trading-day cross section required')
+        x = tsdata[:, -1].float().clamp(-5.0, 5.0)
+        state = market.float().clamp(-RECIPE['market_clip'], RECIPE['market_clip']).expand(len(x), -1)
+        heads = self.mlp(torch.cat([x, state], dim=1))
+        absolute = self.absolute_forward(x, market)
+        return torch.cat([heads, absolute[:, :1]], dim=1)
+
+
+# 新版本沿用原产物命名；扩展项专门保存验证分数、绝对收益及市场风险模型。
+LAYOUT_QUARTERS = ('2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3')
+FOLD_FILES = (*FOLD_FILES, 'valid_predictions.npy', 'auxiliary_predictions.npy', 'market_risk.pt')
+_template_fixed_files = fixed_files
+OPTIONAL_FILES = {'model_info/recent30_review.json','model_pred/recent30_review.md',*[f'model_pred/ensemble/CSV/{kind}_{name}.csv' for kind in ('cash','trades') for name in ('recent30','recent30_baseline')]}
+
+
+def fixed_files():
+    files = _template_fixed_files()
+    files -= {f'model_pred/ensemble/CSV/{kind}_{name}.csv'
+              for kind in ('cash', 'trades') for name in ('top5_5d', 'top1_1d')}
+    files |= {f'model_pred/ensemble/CSV/{kind}_{name}.csv'
+              for kind in ('cash', 'trades')
+              for name in ('baseline', 'adaptive', 'market_cash', 'open_close_t', 'forward')}
+    return files | OPTIONAL_FILES
+
+
+def quarters(days):
+    return list(LAYOUT_QUARTERS)
+
+
+def splits(days, purge_horizon=20, folds=4, quarter=None):
+    """所有验证折都严格向前；最长标签的兑现日早于下一块首日。"""
+    q = pd.Period(quarter or '2025Q3', freq='Q')
+    first = int(np.searchsorted(days, str(q.start_time.date())))
+    test = np.flatnonzero((days >= str(q.start_time.date())) & (days <= str(q.end_time.date())))
+    result = []
+    for fold in range(1, folds + 1):
+        end = first - purge_horizon - 1 - (folds - fold) * 21
+        valid = np.arange(end - 63, end)
+        train_end = int(valid[0]) - purge_horizon - 1
+        start = max(0, train_end - RECIPE['train_window']) if RECIPE['train_window'] else 0
+        train = np.arange(start, train_end)
+        assert train[-1] + purge_horizon + 1 < valid[0]
+        assert valid[-1] + purge_horizon + 1 < first
+        assert len(train) > 250 and len(test) > 0
+        result.append(dict(quarter=str(q), fold=fold, train=train, valid=valid,
+                           test=test, score=np.arange(first, len(days))))
+    return result
+
+
+_template_wpcc = wpcc
+
+
+def wpcc(preds, y):
+    # Huber 约束绝对输出尺度，避免相关损失对异常尾部和任意缩放完全不敏感。
+    loss = _template_wpcc(preds, y)
+    weight = RECIPE.get('huber_aux_weight', 0.)
+    return loss + weight * torch.nn.functional.smooth_l1_loss(preds, y) if weight else loss
+
+
+def score_of(heads):
+    result = np.full(heads.shape[:2], np.nan, np.float32)
+    weights = RECIPE['score_horizon_weights']
+    for i, row in enumerate(heads):
+        known = np.isfinite(row).all(axis=1)
+        if known.sum() < 3:
+            continue
+        score = np.zeros(int(known.sum()), np.float64)
+        for horizon, weight in weights.items():
+            value = row[known, RECIPE['label_horizons'].index(horizon)]
+            # 多期限头先统一截面尺度，单期限仍保留模板的原始输出。
+            if len(weights) > 1:
+                value = (value - value.mean()) / max(float(value.std()), 1e-8)
+            score += weight * value
+        result[i, known] = score / sum(weights.values())
+    return result
+
+
+def fit_market_risk(panel, train_days):
+    """只用市场因子预测可执行区间的大跌；标签不作为模型输入。"""
+    from sklearn.linear_model import LogisticRegression
+    y1 = np.nanmean(panel.Y['label_ret_1d'][train_days], axis=1)
+    y5 = np.nanmean(panel.Y['label_ret_5d'][train_days], axis=1)
+    good = np.isfinite(y1) & np.isfinite(y5)
+    target = ((y1 <= -.02) | (y5 <= -.04))[good].astype(int)
+    x = panel.M[train_days][good].astype(np.float64)
+    mean, scale = x.mean(axis=0), np.maximum(x.std(axis=0), .1)
+    info = dict(mean=mean, scale=scale, columns=panel.market_features,
+                events=int(target.sum()), days=len(target), train_end=str(panel.days[train_days[-1]]),
+                target='next1d pool-mean open/open <= -2% OR next5d <= -4%',
+                C=.1, constant=None)
+    if len(np.unique(target)) < 2:
+        info['constant'] = float((target.sum() + 1) / (len(target) + 2))
+    else:
+        estimator = LogisticRegression(C=.1, max_iter=1000, solver='lbfgs')
+        estimator.fit((x - mean) / scale, target)
+        info.update(coef=estimator.coef_[0], intercept=float(estimator.intercept_[0]),
+                    iterations=int(estimator.n_iter_[0]))
+        if info['iterations'] >= 1000:
+            raise RuntimeError('市场风险模型未收敛')
+    return info
+
+
+def predict_market_risk(fit, market):
+    if fit['constant'] is not None:
+        return np.full(len(market), fit['constant'])
+    logit = (market.astype(np.float64) - fit['mean']) / fit['scale'] @ fit['coef'] + fit['intercept']
+    return 1. / (1. + np.exp(-np.clip(logit, -40, 40)))
+
+
+@torch.no_grad()
+def predict_auxiliary(net, panel, days, device):
+    result = np.full((len(days), len(panel.codes), 2), np.nan, np.float32)
+    net.eval()
+    for i, d in enumerate(days):
+        known = panel.mask(int(d))
+        x = torch.from_numpy(panel.X[d, known]).to(device)
+        market = torch.from_numpy(panel.M[d]).to(device)
+        result[i, known] = net.absolute_forward(x, market).cpu().numpy()
+    return result
+
+
+_template_train_fold = train_fold
+
+
+def train_fold(fold, device='auto', panel=None, prices=None, quarter=None, absolute_only=False):
+    panel = panel or Panel(RECIPE['features'])
+    prices = prices or Prices(panel)
+    result = _template_train_fold(fold, device, panel, prices, quarter, absolute_only)
+    if absolute_only:
+        return result
+    folder = RUN_ROOT / 'model_train' / quarter / f'fold{fold}'
+    if result.get('research_extension_complete'):
+        for name in ('valid_predictions.npy', 'auxiliary_predictions.npy', 'market_risk.pt'):
+            if not (folder / name).is_file():
+                raise RuntimeError(f'已完成折缺少 {name}')
+        return result
+    split = splits(panel.days, quarter=quarter)[fold - 1]
+    dev = torch.device('cpu')  # 模板的最终落盘采用 CPU 作为规范后端。
+    checkpoint = torch.load(folder / 'best.pt', map_location=dev, weights_only=False)
+    net = PredictModel(len(panel.features), panel.market_dim).to(dev)
+    net.load_state_dict(checkpoint['model'], strict=True)
+    net.ridge = checkpoint.get('ridge')
+    valid_score = predict(net, panel, prices, split['valid'], dev)
+    valid_aux = predict_auxiliary(net, panel, split['valid'], dev)
+    save_npy(folder / 'valid_predictions.npy', np.concatenate([valid_score[..., None], valid_aux], axis=2))
+    save_npy(folder / 'auxiliary_predictions.npy', predict_auxiliary(net, panel, split['score'], dev))
+    save_torch(folder / 'market_risk.pt', fit_market_risk(panel, split['train']))
+    result.update(research_extension_complete=True, validation_is_strictly_forward=True)
+    atomic_json(folder / 'complete.json', result)
+    print('RESEARCH_EXTENSION_READY', quarter, fold, flush=True)
+    return result
+
+
+_template_Prices = Prices
+
+
+class Prices(_template_Prices):
+    def __init__(self, panel):
+        super().__init__(panel)
+        # 开盘订单只用当时存在的价格，不用尚未结束的全天成交量作筛选。
+        traded = (np.isfinite(self.open) & (self.open > 0) &
+                  np.isfinite(self.raw['pre_close']) & (self.raw['pre_close'] > 0) &
+                  np.isfinite(self.adj) & (self.adj > 0))
+        self.entry = traded & (self.open < self.limit_up - 1e-8)
+        self.exit = traded & (self.open > self.limit_down + 1e-8)
+        self.next_entry = np.zeros_like(self.entry)
+        self.next_entry[:-1] = self.entry[1:]
+
+
+
+# 股票因子与市场状态逐样本拼接；LayerNorm 允许在训练时合并多日计算而不混合日截面统计。
+_AbsoluteMethods = PredictModel
+class PredictModel(nn.Module):
+    absolute_basis_numpy = _AbsoluteMethods.absolute_basis_numpy
+    absolute_forward = _AbsoluteMethods.absolute_forward
+    def __init__(self, input_dim, market_dim, horizons=None):
+        super().__init__()
+        self.horizons = list(horizons or RECIPE['output_horizons'])
+        self.market_dim = market_dim
+        self.technical_indices = RECIPE['technical_indices']
+        self.absolute_basis_dim = 3*len(self.technical_indices)+market_dim+1
+        self.register_buffer('absolute_coef',torch.zeros(2,self.absolute_basis_dim))
+        mask=torch.ones(input_dim)
+        if RECIPE.get('disable_new_factors'):
+            mask[RECIPE['new_feature_indices']]=0.
+        self.register_buffer('feature_mask',mask)
+        if RECIPE.get('dual_tower'):
+            self.legacy_encoder=nn.Sequential(nn.Linear(len(RECIPE['legacy_feature_indices']),64),nn.LayerNorm(64),nn.GELU(),nn.Dropout(.2))
+            self.new_encoder=nn.Sequential(nn.Linear(len(RECIPE['new_feature_indices']),64),nn.LayerNorm(64),nn.GELU(),nn.Dropout(.2))
+            self.market_encoder=nn.Sequential(nn.Linear(market_dim,32),nn.LayerNorm(32),nn.GELU())
+            self.mlp=nn.Sequential(nn.Linear(160,128),nn.LayerNorm(128),nn.GELU(),nn.Dropout(.1),nn.Linear(128,32),nn.GELU(),nn.Linear(32,len(RECIPE['label_horizons'])))
+        else:
+            self.mlp=nn.Sequential(nn.Linear(input_dim+market_dim,256),nn.GELU(),nn.Dropout(.2),nn.Linear(256,128),nn.LayerNorm(128),nn.GELU(),nn.Dropout(.1),nn.Linear(128,32),nn.LayerNorm(32),nn.GELU(),nn.Linear(32,len(RECIPE['label_horizons'])))
+        for layer in self.modules():
+            if isinstance(layer,nn.Linear):
+                nn.init.kaiming_uniform_(layer.weight,mode='fan_in',nonlinearity='relu')
+                nn.init.zeros_(layer.bias)
+    def forward(self,tsdata,market=None):
+        x=tsdata[:,-1].float().clamp(-5.,5.)*self.feature_mask
+        if market is None:raise ValueError('缺少因果市场输入')
+        state=market.float().clamp(-10.,10.)
+        if state.ndim==1:state=state.expand(len(x),-1)
+        if RECIPE.get('dual_tower'):
+            z=torch.cat([self.legacy_encoder(x[:,RECIPE['legacy_feature_indices']]),self.new_encoder(x[:,RECIPE['new_feature_indices']]),self.market_encoder(state)],dim=1)
+        else:z=torch.cat([x,state],dim=1)
+        heads=self.mlp(z)
+        return torch.cat([heads,self.absolute_forward(x,state)[:,:1]],dim=1)
+
+
+# 宏观稳定表现是训练目标；小账户收益仅作为执行评价，不用于选轮。
+_macro_base_validation = validation
+def validation(model,panel,prices,days,device):
+    metrics=_macro_base_validation(model,panel,prices,days,device)
+    scores=predict(model,panel,prices,days,device)
+    ic1=[];ic5=[];returns=[]
+    for score,d in zip(scores,days):
+        known=np.isfinite(score)
+        for horizon,series in [(1,ic1),(5,ic5)]:
+            y=panel.Y[f'label_ret_{horizon}d'][d]
+            series.append(corr(score[known],np.nan_to_num(y[known],nan=0.)))
+        ids=np.flatnonzero(known)
+        ids=ids[np.argsort(-score[ids],kind='stable')[:500]]
+        capacity=np.maximum(np.nan_to_num(panel.amount[d,ids],nan=0.),0.)
+        held=np.minimum(1.5e9,np.cumsum(capacity))
+        weights=np.diff(np.r_[0.,held])/1.5e9
+        returns.append(float(weights@np.nan_to_num(panel.Y['label_ret_1d'][d,ids],nan=0.)))
+    ic1=np.asarray(ic1);ic5=np.asarray(ic5);returns=np.asarray(returns)
+    worst=min(float(block.mean()) for block in np.array_split(ic1,3))
+    primary=.7*ic1.mean()+.3*ic5.mean()-.2*ic1.std(ddof=1)+.2*worst+2*returns.mean()-.1*returns.std(ddof=1)
+    metrics.update(val_wei=float(primary),val_criterion='macro_stable',
+        macro_validation=dict(IC1=float(ic1.mean()),IC5=float(ic5.mean()),IC1_std=float(ic1.std(ddof=1)),
+            worst_21day_IC1=worst,capacity_return=float(returns.mean()),capacity_volatility=float(returns.std(ddof=1)),
+            topn=500,money=1500000000,small_account_used_for_epoch_selection=False))
+    return metrics
+
+
+# 固定凸估计器与深网络形成容量对照；全部股票逐日等权，不做尾部择优或选轮。
+_RidgeAbsoluteMethods = PredictModel
+
+
+class PredictModel(nn.Module):
+    absolute_basis_numpy = _RidgeAbsoluteMethods.absolute_basis_numpy
+    absolute_forward = _RidgeAbsoluteMethods.absolute_forward
+
+    def __init__(self,input_dim,market_dim,horizons=None):
+        super().__init__()
+        self.horizons=list(horizons or RECIPE['output_horizons'])
+        self.market_dim=market_dim
+        self.technical_indices=RECIPE['technical_indices']
+        self.absolute_basis_dim=3*len(self.technical_indices)+market_dim+1
+        self.register_buffer('absolute_coef',torch.zeros(2,self.absolute_basis_dim))
+        self.register_buffer('linear_coef',torch.zeros(1,input_dim+1))
+
+    def forward(self,tsdata,market=None):
+        x=tsdata[:,-1].float().clamp(-5.,5.)
+        phi=torch.cat([x,torch.ones((len(x),1),device=x.device)],dim=1)
+        relative=phi@self.linear_coef.T
+        return torch.cat([relative,self.absolute_forward(x,market)[:,:1]],dim=1)
+
+
+def train_fold(fold,device='auto',panel=None,prices=None,quarter=None,absolute_only=False):
+    if absolute_only:raise ValueError('固定岭回归没有单独的神经预训练阶段')
+    panel=panel or Panel(RECIPE['features']);prices=prices or Prices(panel)
+    quarter=quarter or '2025Q3';signature=recipe_signature()
+    folder=RUN_ROOT/'model_train'/quarter/f'fold{fold}';folder.mkdir(parents=True,exist_ok=True)
+    if (folder/'complete.json').exists():
+        done=json.loads((folder/'complete.json').read_text())
+        if done['recipe_signature']!=signature:raise ValueError('已完成配方变化')
+        if not all((folder/name).is_file() for name in FOLD_FILES):raise RuntimeError('已完成折产物缺失')
+        return done
+    torch.set_num_threads(int(os.environ.get('MX_THREADS','2')))
+    dev=device_for(device);seed=RECIPE['seed']+fold-1
+    random.seed(seed);np.random.seed(seed);torch.manual_seed(seed)
+    torch.use_deterministic_algorithms(True)
+    split=splits(panel.days,quarter=quarter)[fold-1]
+    atomic_json(folder/'split.json',split_summary(panel.days,split))
+    atomic_json(folder/'training_info.json',training_info({**RECIPE,'quarter':quarter,'device':str(dev)}))
+    width=len(panel.features)+1
+    gram=np.zeros((width,width),np.float64);cross=np.zeros((width,1),np.float64)
+    yy=0.;dates=rows=processed=0;t0=time.time();history=[]
+    last=folder/'last.pt'
+    if last.exists():
+        checkpoint=torch.load(last,map_location='cpu',weights_only=False)
+        if checkpoint['recipe_signature']!=signature:raise ValueError('岭回归断点配方变化')
+        gram=checkpoint['gram'];cross=checkpoint['cross'];yy=checkpoint['yy']
+        dates=checkpoint['fit_dates'];rows=checkpoint['fit_rows'];processed=checkpoint['processed']
+        history=checkpoint['history']
+    def checkpoint_fit():
+        save_torch(last,dict(recipe_signature=signature,gram=gram,cross=cross,yy=yy,
+            fit_dates=dates,fit_rows=rows,processed=processed,history=history,
+            resume_kind='fixed ridge normal equations; no optimizer or epoch selection'))
+    block_size=RECIPE['ridge_block_days']
+    for start in range(processed,len(split['train']),block_size):
+        xs=[];ys=[]
+        for d in split['train'][start:start+block_size]:
+            mask=panel.mask(int(d))&np.isfinite(panel.Y['label_ret_1d'][d])
+            if mask.sum()<3:continue
+            y=panel.Y['label_ret_1d'][d,mask].astype(np.float64)
+            sd=y.std(ddof=1)
+            if sd<1e-8:continue
+            x=np.clip(panel.X[d,mask],-5.,5.)
+            phi=np.column_stack([x,np.ones(len(x),np.float32)])
+            weight=1/np.sqrt(len(x))
+            xs.append((phi*weight).astype(np.float32));ys.append(((y-y.mean())/sd*weight).astype(np.float32)[:,None])
+            dates+=1;rows+=len(x)
+        if xs:
+            x=torch.from_numpy(np.concatenate(xs)).to(dev)
+            y=torch.from_numpy(np.concatenate(ys)).to(dev)
+            gram+=(x.T@x).cpu().numpy().astype(np.float64)
+            cross+=(x.T@y).cpu().numpy().astype(np.float64)
+            yy+=float((y*y).sum().cpu())
+            del x,y,xs,ys
+        processed=min(start+block_size,len(split['train']))
+        if processed%(4*block_size)==0 or processed==len(split['train']):
+            history.append(dict(stage='normal_equations',processed_days=processed,fit_dates=dates,fit_rows=rows))
+            checkpoint_fit();atomic_json(folder/'history.json',history)
+            print('RIDGE_GRAM',quarter,fold,processed,'/',len(split['train']),flush=True)
+    if not dates:raise ValueError('岭回归无有效训练截面')
+    normal=gram/dates+np.diag(np.r_[np.full(width-1,RECIPE['ridge_penalty']),1e-8])
+    target=cross/dates;coef=np.linalg.solve(normal,target)
+    residual=float(np.linalg.norm(normal@coef-target)/(np.linalg.norm(target)+1e-20))
+    if residual>1e-8 or not np.isfinite(coef).all():raise FloatingPointError('固定岭回归求解失败')
+    net=PredictModel(len(panel.features),panel.market_dim)
+    net.linear_coef.copy_(torch.from_numpy(coef.T.astype(np.float32)))
+    absolute=fit_absolute_component(net,panel,split['train'],seed)
+    net.ridge=None;cpu=torch.device('cpu')
+    metrics=validation(net,panel,prices,split['valid'],cpu)
+    mse=float((coef.T@(gram/dates)@coef-2*coef.T@target).item()+yy/dates)
+    fit=dict(fit_dates=dates,fit_rows=rows,penalty=RECIPE['ridge_penalty'],
+             normal_equation_relative_residual=residual,train_mse=mse,
+             target='date-equal standardized1d return',validation_not_used_for_regularization=True)
+    save_torch(folder/'best.pt',dict(recipe_signature=signature,model=net.state_dict(),
+        input_dim=len(panel.features),market_dim=panel.market_dim,horizons=net.horizons,
+        features=panel.features,epoch=0,metrics=metrics,ridge=None,absolute_fit=absolute,closed_form_fit=fit))
+    score=predict(net,panel,prices,split['score'],cpu)
+    test=score[:len(split['test'])]
+    valid=predict(net,panel,prices,split['valid'],cpu)
+    valid_aux=predict_auxiliary(net,panel,split['valid'],cpu)
+    save_npy(folder/'score_predictions.npy',score);save_npy(folder/'test_predictions.npy',test)
+    save_npy(folder/'valid_predictions.npy',np.concatenate([valid[...,None],valid_aux],axis=2))
+    save_npy(folder/'auxiliary_predictions.npy',predict_auxiliary(net,panel,split['score'],cpu))
+    save_torch(folder/'market_risk.pt',fit_market_risk(panel,split['train']))
+    history.append(dict(epoch=0,train_loss=mse,**metrics));atomic_json(folder/'history.json',history)
+    checkpoint_fit()
+    done=dict(recipe_signature=signature,quarter=quarter,fold=fold,best_epoch=0,epochs=1,
+        test_dates=[str(panel.days[d]) for d in split['test']],score_dates=[str(panel.days[d]) for d in split['score']],
+        best_validation=metrics,argmax_validation=metrics,
+        bag=dict(topk=1,used=1,epochs=[0],scores=[metrics['val_wei']]),
+        peak_rss_gib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/2**20,
+        seconds=round(time.time()-t0,2),device=str(dev),closed_form_fit=fit,
+        research_extension_complete=True,validation_is_strictly_forward=True,
+        epoch_selection=False,regularization_search=False)
+    atomic_json(folder/'complete.json',done)
+    print('RIDGE_COMPLETE',quarter,fold,fit,flush=True)
+    return done
+
+
+_SnapshotPanel = Panel
+
+
+class Panel(_SnapshotPanel):
+    """只缓存源快照派生的只读面板；不同容器自动重建，不改变数值合同。"""
+    def __init__(self,features='all',load_x=True):
+        if not load_x or os.environ.get('MX_PANEL_CACHE','on').lower()=='off':
+            super().__init__(features,load_x=load_x)
+            return
+        import fcntl
+        import shutil
+        meta=metadata();root=data_root()
+        columns=feature_columns(meta) if features in ('all',RECIPE['features']) else meta['feature_sets'][features]
+        source=dict(schema='postfill-panel-v1',meta_sha256=RECIPE['snapshot_meta_sha256'],
+            root=str(root.resolve()),features=columns,semantics=meta['semantics'],
+            flow_indices=RECIPE['flow_indices'],fund_indices=RECIPE['fund_indices'],
+            technical_indices=RECIPE['technical_indices'],
+            factors=[(int(y),(root/'factors'/f'year={y}/data.parquet').stat().st_size,
+                      (root/'factors'/f'year={y}/data.parquet').stat().st_mtime_ns) for y in meta['built_years']])
+        key=hashlib.sha256(json.dumps(source,sort_keys=True).encode()).hexdigest()[:24]
+        folder=Path('/dev/shm')/f'quant-model-panel-{key}'
+        names=('X','coverage','flow_coverage','fund_coverage','technical_coverage')
+        shape=(meta['axis']['n_days'],meta['axis']['n_codes'],len(columns))
+        expected_bytes=int(np.prod(shape))*4
+        def get_int(path):
+            try:return int(Path(path).read_text().strip())
+            except (OSError,ValueError):return None
+        def stats(path):
+            try:return {k:int(v) for k,v in (line.split() for line in Path(path).read_text().splitlines())}
+            except (OSError,ValueError):return {}
+        with (Path('/dev/shm')/f'quant-model-panel-{key}.lock').open('a') as lock:
+            fcntl.flock(lock,fcntl.LOCK_EX)
+            manifest=folder/'meta.json'
+            cached=json.loads(manifest.read_text()) if manifest.exists() else None
+            if cached and cached['source_key']==key and all((folder/f'{n}.npy').is_file() for n in names):
+                arrays={n:np.load(folder/f'{n}.npy',mmap_mode='r',allow_pickle=False) for n in names}
+                if arrays['X'].shape!=shape or any(a.dtype!=np.float32 for a in arrays.values()):
+                    raise ValueError('派生面板缓存结构变化，请移除该缓存后重建')
+                if any((folder/f'{n}.npy').stat().st_size!=cached['files'][n] for n in names):
+                    raise ValueError('派生面板缓存文件长度变化')
+                super().__init__(features,load_x=False)
+                for n,a in arrays.items():setattr(self,n,a)
+                print('PANEL_CACHE_HIT',key,round(expected_bytes/2**30,2),'GiB',flush=True)
+                return
+            budget=get_int('/sys/fs/cgroup/memory.max') or get_int('/sys/fs/cgroup/memory/memory.limit_in_bytes')
+            state=stats('/sys/fs/cgroup/memory.stat') or stats('/sys/fs/cgroup/memory/memory.stat')
+            nonreclaim=state.get('anon',state.get('total_rss',state.get('rss',0)))+state.get('shmem',0)
+            enough_memory=budget is not None and budget-nonreclaim>3*expected_bytes+2*2**30
+            enough_space=shutil.disk_usage('/dev/shm').free>expected_bytes+2*2**30
+            if not enough_memory or not enough_space:
+                print('PANEL_CACHE_SKIP 容器预算不足以安全建立额外副本',flush=True)
+                super().__init__(features,load_x=True)
+                return
+            super().__init__(features,load_x=True)
+            folder.mkdir(mode=0o700,exist_ok=True)
+            arrays={}
+            for name in names:
+                value=getattr(self,name);temp=folder/f'{name}.tmp.npy';dest=folder/f'{name}.npy'
+                output=np.lib.format.open_memmap(temp,mode='w+',dtype=value.dtype,shape=value.shape)
+                for first in range(0,len(value),64):output[first:first+64]=value[first:first+64]
+                output.flush();del output;os.replace(temp,dest)
+                mapped=np.load(dest,mmap_mode='r',allow_pickle=False)
+                for first in range(0,len(value),64):
+                    if not np.array_equal(mapped[first:first+64],value[first:first+64]):
+                        raise ValueError(f'{name}: 派生缓存与源面板不一致')
+                arrays[name]=mapped
+            payload=dict(source_key=key,source=source,files={n:(folder/f'{n}.npy').stat().st_size for n in names})
+            temp=folder/'meta.tmp.json';temp.write_text(json.dumps(payload,ensure_ascii=False));os.replace(temp,manifest)
+            for name,a in arrays.items():setattr(self,name,a)
+            print('PANEL_CACHE_BUILT_VERIFIED',key,round(expected_bytes/2**30,2),'GiB',flush=True)
+
+
+# 验证保持严格样本外；交付权重独立使用测试前已经成熟的全部历史。
+_selection_fit = train_fold
+FOLD_FILES = (*FOLD_FILES, 'selector_best.pt', 'selector_market_risk.pt', 'selector_complete.json')
+
+
+def delivery_train_days(days, split):
+    end = int(split['test'][0]) - RECIPE['purge_horizon'] - 1
+    result = np.arange(end)
+    if not len(result) or result[-1] + RECIPE['purge_horizon'] + 1 >= split['test'][0]:
+        raise ValueError('交付重训标签没有与测试隔离')
+    if not np.array_equal(split['train'], result[:len(split['train'])]):
+        raise ValueError('只有训练前缀完全相同时才能复用岭回归充分统计量')
+    return result
+
+
+def train_fold(fold, device='auto', panel=None, prices=None, quarter=None, absolute_only=False):
+    if absolute_only:
+        raise ValueError('两阶段固定岭回归不支持单独预训练')
+    panel = panel or Panel(RECIPE['features'])
+    prices = prices or Prices(panel)
+    quarter = quarter or '2025Q3'
+    folder = RUN_ROOT / 'model_train' / quarter / f'fold{fold}'
+    folder.mkdir(parents=True, exist_ok=True)
+    signature = recipe_signature()
+    completion = folder / 'complete.json'
+    previous = json.loads(completion.read_text()) if completion.exists() else None
+    if previous is not None and previous['recipe_signature'] != signature:
+        raise ValueError('两阶段配方变化')
+    if previous is not None and previous.get('delivery_refit_complete'):
+        if not all((folder / name).is_file() for name in FOLD_FILES):
+            raise RuntimeError('已完成两阶段折的产物缺失')
+        return previous
+    selector_marker = folder / 'selector_complete.json'
+    if not selector_marker.exists():
+        selected = previous or _selection_fit(fold, device, panel, prices, quarter, False)
+        save_torch(folder / 'selector_best.pt', torch.load(folder / 'best.pt', map_location='cpu', weights_only=False))
+        save_torch(folder / 'selector_market_risk.pt', torch.load(folder / 'market_risk.pt', map_location='cpu', weights_only=False))
+        atomic_json(selector_marker, selected)
+    selected = json.loads(selector_marker.read_text())
+    if selected['recipe_signature'] != signature:
+        raise ValueError('选择阶段的配方变化')
+    # 从此之后不再写 valid_predictions，也不再用交付模型计算旧验证指标。
+    split = splits(panel.days, quarter=quarter)[fold - 1]
+    train_days = delivery_train_days(panel.days, split)
+    summary = split_summary(panel.days, split)
+    summary['delivery_train'] = dict(start=str(panel.days[train_days[0]]), end=str(panel.days[train_days[-1]]), days=len(train_days))
+    summary['validation_prediction_source'] = 'selector_best.pt and selector_market_risk.pt only'
+    atomic_json(folder / 'split.json', summary)
+    dev = device_for(device)
+    torch.set_num_threads(int(os.environ.get('MX_THREADS', '1')))
+    torch.use_deterministic_algorithms(True)
+    t0 = time.time()
+    checkpoint = torch.load(folder / 'last.pt', map_location='cpu', weights_only=False)
+    if checkpoint['recipe_signature'] != signature:
+        raise ValueError('交付重训的充分统计量配方变化')
+    gram, cross, yy = checkpoint['gram'], checkpoint['cross'], checkpoint['yy']
+    dates, rows, processed = checkpoint['fit_dates'], checkpoint['fit_rows'], checkpoint['processed']
+    history = checkpoint['history']
+    if processed < len(split['train']) or processed > len(train_days):
+        raise ValueError('交付重训断点不是合法训练前缀')
+    def checkpoint_fit():
+        save_torch(folder / 'last.pt', dict(recipe_signature=signature, gram=gram, cross=cross, yy=yy,
+            fit_dates=dates, fit_rows=rows, processed=processed, history=history,
+            phase='delivery_refit', train_end=str(panel.days[train_days[-1]]),
+            resume_kind='exact selector prefix normal equations plus mature pretest extension'))
+    block_size = RECIPE['ridge_block_days']
+    for start in range(processed, len(train_days), block_size):
+        xs, ys = [], []
+        for d in train_days[start:start + block_size]:
+            mask = panel.mask(int(d)) & np.isfinite(panel.Y['label_ret_1d'][d])
+            if mask.sum() < 3:
+                continue
+            y = panel.Y['label_ret_1d'][d, mask].astype(np.float64)
+            sd = y.std(ddof=1)
+            if sd < 1e-8:
+                continue
+            phi = np.column_stack([np.clip(panel.X[d, mask], -5., 5.), np.ones(mask.sum(), np.float32)])
+            weight = 1 / np.sqrt(mask.sum())
+            xs.append((phi * weight).astype(np.float32))
+            ys.append(((y - y.mean()) / sd * weight).astype(np.float32)[:, None])
+            dates += 1
+            rows += int(mask.sum())
+        if xs:
+            x = torch.from_numpy(np.concatenate(xs)).to(dev)
+            y = torch.from_numpy(np.concatenate(ys)).to(dev)
+            gram += (x.T @ x).cpu().numpy().astype(np.float64)
+            cross += (x.T @ y).cpu().numpy().astype(np.float64)
+            yy += float((y * y).sum().cpu())
+            del x, y, xs, ys
+        processed = min(start + block_size, len(train_days))
+        checkpoint_fit()
+    width = len(panel.features) + 1
+    normal = gram / dates + np.diag(np.r_[np.full(width - 1, RECIPE['ridge_penalty']), 1e-8])
+    target = cross / dates
+    coef = np.linalg.solve(normal, target)
+    residual = float(np.linalg.norm(normal @ coef - target) / (np.linalg.norm(target) + 1e-20))
+    if residual > 1e-8 or not np.isfinite(coef).all():
+        raise FloatingPointError('最终交付岭回归求解失败')
+    net = PredictModel(len(panel.features), panel.market_dim)
+    net.linear_coef.copy_(torch.from_numpy(coef.T.astype(np.float32)))
+    absolute = fit_absolute_component(net, panel, train_days, RECIPE['seed'] + fold - 1)
+    net.ridge = None
+    fit = dict(fit_dates=dates, fit_rows=rows, penalty=RECIPE['ridge_penalty'],
+        normal_equation_relative_residual=residual, train_end=str(panel.days[train_days[-1]]),
+        selector_train_end=str(panel.days[split['train'][-1]]), validation_not_run_on_refit=True,
+        reused_selector_prefix_days=len(split['train']))
+    save_torch(folder / 'best.pt', dict(recipe_signature=signature, model=net.state_dict(),
+        input_dim=len(panel.features), market_dim=panel.market_dim, horizons=net.horizons,
+        features=panel.features, epoch=0, metrics=selected['best_validation'],
+        validation_source='selector_best.pt only; final refit has no out-of-sample old validation',
+        ridge=None, absolute_fit=absolute, closed_form_fit=fit))
+    cpu = torch.device('cpu')
+    score = predict(net, panel, prices, split['score'], cpu)
+    save_npy(folder / 'score_predictions.npy', score)
+    save_npy(folder / 'test_predictions.npy', score[:len(split['test'])])
+    save_npy(folder / 'auxiliary_predictions.npy', predict_auxiliary(net, panel, split['score'], cpu))
+    save_torch(folder / 'market_risk.pt', fit_market_risk(panel, train_days))
+    history.append(dict(stage='delivery_refit', **fit))
+    atomic_json(folder / 'history.json', history)
+    checkpoint_fit()
+    atomic_json(folder / 'training_info.json', training_info({**RECIPE, 'quarter':quarter,
+        'device':str(dev), 'selection_and_delivery_train_end':fit}))
+    done = dict(selected, closed_form_fit=fit, selection_fit=selected['closed_form_fit'],
+        seconds=round(selected['seconds'] + time.time() - t0, 2), delivery_refit_complete=True,
+        validation_source='selector_best.pt and selector_market_risk.pt; saved valid_predictions unchanged',
+        deterministic_delivery_folds='same mature data; not independent statistical replicas')
+    atomic_json(completion, done)
+    print('DELIVERY_REFIT_COMPLETE', quarter, fold, fit, flush=True)
+    return done
+
+
+_ResidualAbsoluteModel = PredictModel
+
+
+class PredictModel(_ResidualAbsoluteModel):
+    def __init__(self, input_dim, market_dim, horizons=None):
+        super().__init__(input_dim, market_dim, horizons)
+        a, b = RECIPE['residual_hidden']
+        self.residual = nn.Sequential(nn.Linear(input_dim + market_dim, a), nn.LayerNorm(a), nn.SiLU(),
+            nn.Dropout(RECIPE['residual_dropout']), nn.Linear(a, b), nn.LayerNorm(b), nn.SiLU(), nn.Linear(b, 1))
+        for module in self.residual.modules():
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                nn.init.zeros_(module.bias)
+        nn.init.zeros_(self.residual[-1].weight)
+
+    def forward(self, tsdata, market=None):
+        x = tsdata[:, -1].float().clamp(-5., 5.)
+        if market is None:
+            raise ValueError('残差网络缺少已知市场输入')
+        state = market.float().clamp(-10., 10.)
+        if state.ndim == 1:
+            state = state.expand(len(x), -1)
+        score = RECIPE['residual_output_bound'] * torch.tanh(self.residual(torch.cat([x, state], dim=1)))
+        return torch.cat([score, self.absolute_forward(x, state)[:, :1]], dim=1)
+
+    def teacher_score(self, tsdata):
+        x = tsdata[:, -1].float().clamp(-5., 5.)
+        return (torch.cat([x, torch.ones((len(x), 1), device=x.device)], dim=1) @ self.linear_coef.T)[:, 0]
+
+
+def frozen_teacher(panel, quarter, fold, phase, train_days):
+    import ast
+    parent = PROJECT_ROOT / 'experiments/V260'
+    tree = ast.parse((parent / 'model.py').read_text())
+    recipe = next(ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == 'RECIPE' for t in n.targets))
+    parent_signature = hashlib.sha256(json.dumps(recipe, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    if recipe['snapshot_meta_sha256'] != RECIPE['snapshot_meta_sha256']:
+        raise ValueError('教师快照与子模型不同')
+    folder = parent / 'model_train' / quarter / f'fold{fold}'
+    done = json.loads((folder / 'complete.json').read_text())
+    if done['recipe_signature'] != parent_signature or not done.get('delivery_refit_complete'):
+        raise ValueError('教师配方或交付状态不匹配')
+    checkpoint_name = 'selector_best.pt' if phase == 'selector' else 'best.pt'
+    path = folder / checkpoint_name
+    ck = torch.load(path, map_location='cpu', weights_only=False)
+    end = done['closed_form_fit']['selector_train_end' if phase == 'selector' else 'train_end']
+    if end != str(panel.days[train_days[-1]]) or ck['features'] != panel.features or ck['recipe_signature'] != parent_signature:
+        raise ValueError('教师训练截止、列序或权重配方不匹配')
+    net = PredictModel(len(panel.features), panel.market_dim)
+    net.linear_coef.copy_(ck['model']['linear_coef'])
+    net.absolute_coef.copy_(ck['model']['absolute_coef'])
+    net.ridge = None
+    risk_name = 'selector_market_risk.pt' if phase == 'selector' else 'market_risk.pt'
+    risk = torch.load(folder / risk_name, map_location='cpu', weights_only=False)
+    if risk['train_end'] != end:
+        raise ValueError('教师风险模型训练截止不一致')
+    absolute_metadata = copy.deepcopy(ck['absolute_fit'])
+    for stage in absolute_metadata.get('stages', []):
+        stage.pop('coef', None)  # 系数已嵌入state_dict，JSON来源记录只保留拟合诊断。
+    source = dict(model='V260', phase=phase, file=str(path.relative_to(PROJECT_ROOT)),
+        sha256=hashlib.sha256(path.read_bytes()).hexdigest(), recipe_signature=parent_signature,
+        train_end=end, snapshot_meta_sha256=recipe['snapshot_meta_sha256'],
+        absolute_fit=absolute_metadata, risk_source=risk_name)
+    return net, risk, source
+
+
+def fit_residual_stage(panel, prices, quarter, fold, train_days, valid_days, device, folder, phase, fixed_epochs=None):
+    seed = RECIPE['seed'] + fold - 1
+    torch.set_num_threads(int(os.environ.get('MX_THREADS', '2')))
+    torch.manual_seed(seed)
+    torch.use_deterministic_algorithms(True)
+    net, risk, source = frozen_teacher(panel, quarter, fold, phase, train_days)
+    net.to(device)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=RECIPE['lr'], weight_decay=RECIPE['weight_decay'])
+    rng = np.random.default_rng(seed)
+    recent = np.asarray(train_days[-RECIPE['residual_training_window']:])
+    signature = recipe_signature()
+    train_digest = hashlib.sha256(np.asarray(recent, np.int64).tobytes()).hexdigest()
+    last = folder / 'last.pt'
+    saved = torch.load(last, map_location='cpu', weights_only=False) if last.exists() else None
+    start, best_score, best_epoch, stale, history = 0, -1e30, -1, 0, []
+    if saved is not None and saved['recipe_signature'] != signature:
+        raise ValueError('残差断点配方变化')
+    if saved is not None and saved['phase'] == phase:
+        if saved['train_digest'] != train_digest or saved['teacher']['sha256'] != source['sha256']:
+            raise ValueError('残差断点训练日期或教师权重变化')
+        net.load_state_dict(saved['model'], strict=True)
+        optimizer.load_state_dict(saved['optimizer'])
+        rng.bit_generator.state = saved['numpy_rng']
+        torch.set_rng_state(saved['torch_rng'])
+        if device.type == 'cuda':
+            torch.cuda.set_rng_state_all(saved['cuda_rng'])
+        start = saved['epoch'] + 1
+        best_score, best_epoch, stale, history = saved['best_score'], saved['best_epoch'], saved['stale'], saved['history']
+    limit = int(fixed_epochs) if fixed_epochs is not None else RECIPE['max_epochs']
+    history_path = folder / 'history.json'
+    histories = json.loads(history_path.read_text()) if history_path.exists() else {}
+    if isinstance(histories, list):
+        # 接受本次实现修正前的选择阶段断点，不丢失其曲线。
+        histories = {histories[0]['phase']:histories} if histories else {}
+    for epoch in range(start, limit):
+        if fixed_epochs is None and stale >= RECIPE['early_stop_patience']:
+            break
+        net.train()
+        shuffled = rng.permutation(recent)
+        losses = []
+        for at in range(0, len(shuffled), RECIPE['batch_days']):
+            xs, markets, targets, weights = [], [], [], []
+            for d in shuffled[at:at + RECIPE['batch_days']]:
+                mask = panel.mask(int(d)) & np.isfinite(panel.Y['label_ret_1d'][d])
+                if mask.sum() < 3:
+                    continue
+                y = panel.Y['label_ret_1d'][d, mask].astype(np.float64)
+                sd = y.std(ddof=1)
+                if sd < 1e-8:
+                    continue
+                xs.append(panel.inputs(int(d), mask))
+                markets.append(np.broadcast_to(panel.M[d], (len(y), panel.market_dim)))
+                targets.append((np.clip(y, -RECIPE['raw_target_clip'], RECIPE['raw_target_clip']) / RECIPE['raw_return_scale']).astype(np.float32))
+                weights.append(np.full(len(y), 1 / len(y), np.float32))
+            if not xs:
+                continue
+            count = len(xs)
+            x = torch.from_numpy(np.concatenate(xs)).to(device)
+            market = torch.from_numpy(np.concatenate(markets)).to(device)
+            y = torch.from_numpy(np.concatenate(targets)).to(device)
+            weight = torch.from_numpy(np.concatenate(weights)).to(device)
+            prediction = net(x, market)[:, 0]
+            loss = downside_expectile_loss(prediction, y, weight, count)
+            if not torch.isfinite(loss):
+                raise FloatingPointError('残差训练损失非有限')
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 5.)
+            optimizer.step()
+            losses.append(float(loss.detach().cpu()))
+        row = dict(phase=phase, epoch=epoch, train_loss=float(np.mean(losses)))
+        if fixed_epochs is None:
+            cpu_net = copy.deepcopy(net).to('cpu')
+            metrics = validation(cpu_net, panel, prices, valid_days, torch.device('cpu'))
+            row.update(metrics)
+            if metrics['val_wei'] > best_score:
+                best_score, best_epoch, stale = metrics['val_wei'], epoch, 0
+                save_torch(folder / 'selector_best.pt', dict(recipe_signature=signature,
+                    model=cpu_net.state_dict(), input_dim=len(panel.features), market_dim=panel.market_dim,
+                    horizons=net.horizons, features=panel.features, epoch=epoch, metrics=metrics,
+                    ridge=None, teacher=source, absolute_fit=source['absolute_fit']))
+            else:
+                stale += 1
+            del cpu_net
+        history.append(row)
+        histories[phase] = history
+        atomic_json(history_path, histories)
+        save_torch(last, dict(recipe_signature=signature, phase=phase, train_digest=train_digest,
+            teacher=source, model={k:v.detach().cpu() for k,v in net.state_dict().items()},
+            optimizer=optimizer.state_dict(), epoch=epoch, best_score=best_score, best_epoch=best_epoch,
+            stale=stale, history=history, numpy_rng=rng.bit_generator.state,
+            torch_rng=torch.get_rng_state(), cuda_rng=torch.cuda.get_rng_state_all() if device.type == 'cuda' else [],
+            resume_kind='AdamW, model, epoch, exact CPU/CUDA/numpy RNG and frozen teacher'))
+        print('EXPECTILE_EPOCH', quarter, fold, phase, epoch, row['train_loss'], row.get('val_wei'), flush=True)
+    fit = dict(phase=phase, train_start=str(panel.days[recent[0]]), train_end=str(panel.days[recent[-1]]),
+        fit_dates=len(recent), teacher_train_end=source['train_end'], epochs_trained=len(history),
+        best_epoch=best_epoch if fixed_epochs is None else limit - 1,
+        final_epoch_count_frozen_from_selector=fixed_epochs, teacher=source,
+        objective='date-equal raw1d lower-expectile squared loss, tau0.2; relative teacher unused')
+    if fixed_epochs is None:
+        chosen = torch.load(folder / 'selector_best.pt', map_location='cpu', weights_only=False)
+        net.to('cpu')
+        net.load_state_dict(chosen['model'], strict=True)
+        fit['best_validation'] = chosen['metrics']
+    else:
+        net.to('cpu')
+    return net, risk, fit
+
+
+def train_fold(fold, device='auto', panel=None, prices=None, quarter=None, absolute_only=False):
+    if absolute_only:
+        raise ValueError('残差版本必须验证教师与两阶段训练')
+    panel = panel or Panel(RECIPE['features'])
+    prices = prices or Prices(panel)
+    quarter = quarter or '2025Q3'
+    folder = RUN_ROOT / 'model_train' / quarter / f'fold{fold}'
+    folder.mkdir(parents=True, exist_ok=True)
+    signature = recipe_signature()
+    complete = folder / 'complete.json'
+    if complete.exists():
+        done = json.loads(complete.read_text())
+        if done['recipe_signature'] != signature or not done.get('delivery_refit_complete'):
+            raise ValueError('残差完成状态配方不匹配')
+        if not all((folder / name).is_file() for name in FOLD_FILES):
+            raise RuntimeError('残差完整折产物缺失')
+        return done
+    dev = device_for(device)
+    split = splits(panel.days, quarter=quarter)[fold - 1]
+    delivery = delivery_train_days(panel.days, split)
+    summary = split_summary(panel.days, split)
+    summary['delivery_train'] = dict(start=str(panel.days[delivery[0]]), end=str(panel.days[delivery[-1]]), days=len(delivery))
+    summary['neural_recent_window_days'] = RECIPE['residual_training_window']
+    summary['validation_prediction_source'] = 'selector neural residual and selector teacher/risk only'
+    atomic_json(folder / 'split.json', summary)
+    atomic_json(folder / 'training_info.json', training_info({**RECIPE, 'quarter':quarter, 'device':str(dev)}))
+    start = time.time()
+    marker = folder / 'selector_complete.json'
+    if not marker.exists():
+        net, risk, fit = fit_residual_stage(panel, prices, quarter, fold, split['train'], split['valid'], dev, folder, 'selector')
+        valid = predict(net, panel, prices, split['valid'], torch.device('cpu'))
+        auxiliary = predict_auxiliary(net, panel, split['valid'], torch.device('cpu'))
+        save_npy(folder / 'valid_predictions.npy', np.concatenate([valid[..., None], auxiliary], axis=2))
+        save_torch(folder / 'selector_market_risk.pt', risk)
+        atomic_json(marker, dict(recipe_signature=signature, best_validation=fit['best_validation'],
+            argmax_validation=fit['best_validation'], closed_form_fit=fit,
+            best_epoch=fit['best_epoch'], seconds=round(time.time() - start, 2)))
+    selected = json.loads(marker.read_text())
+    if selected['recipe_signature'] != signature:
+        raise ValueError('残差选择阶段配方变化')
+    fixed_epochs = int(selected['best_epoch']) + 1
+    net, risk, fit = fit_residual_stage(panel, prices, quarter, fold, delivery, None, dev, folder,
+        'delivery_refit', fixed_epochs=fixed_epochs)
+    fit.update(selector_train_end=str(panel.days[split['train'][-1]]), validation_not_run_on_refit=True)
+    save_torch(folder / 'best.pt', dict(recipe_signature=signature, model=net.state_dict(),
+        input_dim=len(panel.features), market_dim=panel.market_dim, horizons=net.horizons,
+        features=panel.features, epoch=fixed_epochs - 1, metrics=selected['best_validation'],
+        ridge=None, teacher=fit['teacher'], absolute_fit=fit['teacher']['absolute_fit'], closed_form_fit=fit,
+        validation_source='selector residual model only; final fixed-epoch refit not validated on seen data'))
+    cpu = torch.device('cpu')
+    score = predict(net, panel, prices, split['score'], cpu)
+    save_npy(folder / 'score_predictions.npy', score)
+    save_npy(folder / 'test_predictions.npy', score[:len(split['test'])])
+    save_npy(folder / 'auxiliary_predictions.npy', predict_auxiliary(net, panel, split['score'], cpu))
+    save_torch(folder / 'market_risk.pt', risk)
+    done = dict(recipe_signature=signature, quarter=quarter, fold=fold,
+        best_epoch=selected['best_epoch'], epochs=selected['closed_form_fit']['epochs_trained'],
+        test_dates=[str(panel.days[d]) for d in split['test']], score_dates=[str(panel.days[d]) for d in split['score']],
+        best_validation=selected['best_validation'], argmax_validation=selected['best_validation'],
+        bag=dict(topk=1, used=1, epochs=[selected['best_epoch']], scores=[selected['best_validation']['val_wei']]),
+        seconds=round(time.time() - start, 2), device=str(dev), closed_form_fit=fit,
+        selection_fit=selected['closed_form_fit'], research_extension_complete=True,
+        validation_is_strictly_forward=True, epoch_selection=True, regularization_search=False,
+        delivery_refit_complete=True, validation_source='selector weights and same-partition frozen teacher/risk only')
+    atomic_json(complete, done)
+    print('EXPECTILE_COMPLETE', quarter, fold, fixed_epochs, flush=True)
+    return done
+
+
+def ic_diversity_loss(prediction, target, teacher, sizes):
+    def pearson(a, b):
+        a, b = a - a.mean(), b - b.mean()
+        return (a * b).sum() / torch.sqrt((a.square().sum() + 1e-6) * (b.square().sum() + 1e-6))
+    losses, information, dependence = [], [], []
+    start = 0
+    for size in sizes:
+        p, y, baseline = prediction[start:start + size], target[start:start + size], teacher[start:start + size]
+        ic = pearson(p, y)
+        parent = pearson(p, baseline)
+        penalty = torch.relu(parent.abs() - RECIPE['loss_parent_max_correlation']).square()
+        losses.append(-ic + RECIPE['loss_parent_penalty_weight'] * penalty)
+        information.append(ic.detach())
+        dependence.append(parent.detach().abs())
+        start += size
+    if start != len(prediction) or not losses:
+        raise ValueError('逐日IC损失的股票分段不一致')
+    return torch.stack(losses).mean(), torch.stack(information).mean(), torch.stack(dependence).mean()
+
+
+_CorrelationHeadModel = PredictModel
+
+
+class PredictModel(_CorrelationHeadModel):
+    def forward(self, tsdata, market=None):
+        if market is None:
+            raise ValueError('expectile网络缺少已知市场输入')
+        x = tsdata[:, -1].float().clamp(-5., 5.)
+        state = market.float().clamp(-10., 10.)
+        if state.ndim == 1:
+            state = state.expand(len(x), -1)
+        score = self.residual(torch.cat([x, state], dim=1))
+        return torch.cat([score, self.absolute_forward(x, state)[:, :1]], dim=1)
+
+
+_frozen_auxiliary_parent = frozen_teacher
+
+
+def frozen_teacher(*args, **kwargs):
+    net, risk, source = _frozen_auxiliary_parent(*args, **kwargs)
+    net.linear_coef.zero_()
+    source['relative_teacher_used'] = False
+    return net, risk, source
+
+
+def downside_expectile_loss(prediction, target, weight, days):
+    error = target - prediction
+    tau = RECIPE['expectile_tau']
+    asymmetry = torch.where(error < 0, 1 - tau, tau)
+    return (asymmetry * error.square() * weight).sum() / days
+
 
 if __name__ == '__main__':
     main()

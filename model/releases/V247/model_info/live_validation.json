@@ -1,0 +1,208 @@
+{
+  "model": "V247",
+  "seed": 35253,
+  "quarter": "2026Q4",
+  "folds_checked": 4,
+  "phases_checked": 4,
+  "max_cpu_reload_error": 0.0,
+  "audits": [
+    {
+      "fold": 1,
+      "errors": {
+        "delivery": 0.0
+      },
+      "sources": {
+        "delivery": {
+          "train_end": "2026-08-31",
+          "weight_sha256": "3ae3c393ff7c0eb966ec6699c4325c9a24405dd6eb2f3acc496e548a9ae923c6",
+          "teacher": null
+        }
+      },
+      "paired_selector_delivery": false,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 1,
+        "train": [
+          {
+            "start": "2020-04-03",
+            "end": "2026-08-31",
+            "days": 1555
+          }
+        ],
+        "valid": [
+          {
+            "start": "2018-01-02",
+            "end": "2020-02-04",
+            "days": 505
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ]
+      }
+    },
+    {
+      "fold": 2,
+      "errors": {
+        "delivery": 0.0
+      },
+      "sources": {
+        "delivery": {
+          "train_end": "2026-08-31",
+          "weight_sha256": "aed58c765111d14cfa0a983d37aaab7b0c55bc88d25305ccb0ed6ff95f809bc8",
+          "teacher": null
+        }
+      },
+      "paired_selector_delivery": false,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 2,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2020-02-04",
+            "days": 505
+          },
+          {
+            "start": "2022-06-08",
+            "end": "2026-08-31",
+            "days": 1029
+          }
+        ],
+        "valid": [
+          {
+            "start": "2020-03-05",
+            "end": "2022-03-31",
+            "days": 505
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ]
+      }
+    },
+    {
+      "fold": 3,
+      "errors": {
+        "delivery": 0.0
+      },
+      "sources": {
+        "delivery": {
+          "train_end": "2026-08-31",
+          "weight_sha256": "64b4c995df93bed4ba546f145083150f3d4d6d805edd38cd6c705b4928cc6f20",
+          "teacher": null
+        }
+      },
+      "paired_selector_delivery": false,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 3,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2022-03-31",
+            "days": 1031
+          },
+          {
+            "start": "2024-08-02",
+            "end": "2026-08-31",
+            "days": 504
+          }
+        ],
+        "valid": [
+          {
+            "start": "2022-05-09",
+            "end": "2024-06-03",
+            "days": 504
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ]
+      }
+    },
+    {
+      "fold": 4,
+      "errors": {
+        "delivery": 0.0
+      },
+      "sources": {
+        "delivery": {
+          "train_end": "2024-06-03",
+          "weight_sha256": "a76d183e909dbe2b9d37d582f71b285cf8e4a19abbbd0d4fca4be7250f34f8ed",
+          "teacher": null
+        }
+      },
+      "paired_selector_delivery": false,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 4,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2024-06-03",
+            "days": 1556
+          }
+        ],
+        "valid": [
+          {
+            "start": "2024-07-04",
+            "end": "2026-07-31",
+            "days": 504
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ]
+      }
+    }
+  ],
+  "snapshot_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+  "source_sha256": "4900d130fc5a878008ad26fd7824708823537a4c2b98eafd7ee1ecc714c6abd5",
+  "strict_time_and_teacher_passed": true,
+  "legacy_validation_caveat": "V247 original pre-quarter blocked validation; train may follow validation within pre-quarter history, all before Q4. Not strict chronological selector-refit."
+}

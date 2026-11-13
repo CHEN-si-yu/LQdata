@@ -1,187 +1,158 @@
 #!/usr/bin/env python3
-'V50: flow_temporal; seed 3253; fresh independent research unit, fixed project contract.'
+"""只读共享面板；根据当前容器实测负载逐步增加并行折数。"""
 import argparse
+from concurrent.futures import ProcessPoolExecutor, wait, FIRST_COMPLETED
+import contextlib
+import json
+import math
+import multiprocessing as mp
 import os
 from pathlib import Path
 import subprocess
-import sys
 import time
 
-UNIT = Path(__file__).resolve().parent          # 评价窗与 model.py:quarters() 同源
-LIVE = bool(os.environ.get('MX_LIVE'))     # ★ 实战模式：MX_LIVE=1 ⇒ 只调度伪季度 2026Q4
-LIVE_QUARTER = '2026Q4'
-TASKS = [(q, f) for q in ((LIVE_QUARTER,) if LIVE else ('2025Q3', '2025Q4', '2026Q1', '2026Q2')) for f in (1, 2, 3, 4)]
-PER_FOLD_GIB = 15.0                             # 一折的常驻内存（用户 2026-09-26 定；实测峰值见 complete.json.peak_rss_gib）
+os.environ.setdefault('MX_THREADS','2')
+os.environ.setdefault('NVIDIA_NVML_BASED_CUDA_CHECK','1')
+UNIT=Path(__file__).resolve().parent
+QUARTERS=('2025Q3','2025Q4','2026Q1','2026Q2','2026Q3')
+_PANEL=_PRICES=None
 
 
-def stamp():
-    return time.strftime('%H:%M:%S')
+def number(path,default=0):
+    try:return int(Path(path).read_text().strip())
+    except (OSError,ValueError):return default
 
 
-def cpu_count():
-    """本进程真正能用的核数：优先 cgroup 配额（容器里可见核数常远大于配额），再退回亲和掩码。
-
-    ★ 2026-09-26 补 cgroup **v1** 分支：这台机是 v1（`/sys/fs/cgroup/cpu/…`），只读 v2 的
-      `/sys/fs/cgroup/cpu.max` 会直接落空、退回**亲和掩码**（实测 128 核），而这台机的
-      真实配额是 `cfs_quota_us / cfs_period_us = 50` 核。后果是 `MX_THREADS` 被放大
-      2.5 倍（4 并发时 32 线程/进程 × 8 进程 = 256 线程抢 50 核），**不报错、只是变慢**。
-      与 `free_memory_gib()` 处理 v2/v1 的方式保持一致，两条路都读。
-    """
-    for quota_path, period_path in (('/sys/fs/cgroup/cpu.max', None),
-                                    ('/sys/fs/cgroup/cpu/cpu.cfs_quota_us',
-                                     '/sys/fs/cgroup/cpu/cpu.cfs_period_us')):
-        try:
-            quota_text = Path(quota_path).read_text().split()
-            if period_path is None:                      # v2：一行两个值
-                quota, period = quota_text[0], quota_text[1]
-            else:                                        # v1：两个文件各一个值
-                quota, period = quota_text[0], Path(period_path).read_text().split()[0]
-            if quota != 'max' and int(quota) > 0:
-                return max(1, int(quota) // int(period))
-        except (OSError, ValueError, IndexError):
-            continue
-    return len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
+def keyed(path):
+    try:return {k:int(v) for k,v in (line.split() for line in Path(path).read_text().splitlines())}
+    except (OSError,ValueError):return {}
 
 
-def free_memory_gib():
-    """**启动那一瞬间**的可用内存（GiB）—— 只读一次，跑起来之后不再看（用户 2026-09-26 定）。
-
-    = cgroup 上限 − 已用 + 可回收的 file cache。页缓存会被内核回收，不能算成"已占用"，
-    否则一台刚读过数据的机器会被误判成内存不够。cgroup 读不到就退回 `/proc/meminfo`
-    的 `MemAvailable`；再读不到返回 None，由调用方兜成串行。
-    """
-    def read(path):
-        try:
-            return Path(path).read_text()
-        except OSError:
-            return ''
-
-    def single(text):
-        """单值文件（`memory.max` / `memory.current`）里的那个数；`max` 或读不到 → None。"""
-        try:
-            return float(text.split()[0])
-        except (IndexError, ValueError):
-            return None
-
-    def keyed(text, key):
-        """`键 值` 形式的文件（`memory.stat` / `/proc/meminfo`）里 key 对应的值，单位随文件。"""
-        for line in text.splitlines():
-            if line.startswith(key):
-                try:
-                    return float(line.split()[1].rstrip(':'))
-                except (IndexError, ValueError):
-                    return None
-        return None
-
-    # ★ v2 的 `memory.stat` 与 v1 的 `memory/memory.stat` 是两个不同路径（键名也不同），
-    #   只读 v2 那条时 cache 会算成 0 ⇒ 可用内存被低估一整块页缓存。这台机是 v1，两条都读。
-    stat = read('/sys/fs/cgroup/memory.stat') or read('/sys/fs/cgroup/memory/memory.stat')
-    cache = keyed(stat, 'inactive_file') or keyed(stat, 'total_inactive_file') or 0.0
-    limit = single(read('/sys/fs/cgroup/memory.max')) or single(read('/sys/fs/cgroup/memory/memory.limit_in_bytes'))
-    used = single(read('/sys/fs/cgroup/memory.current')) or single(read('/sys/fs/cgroup/memory/memory.usage_in_bytes'))
-    if limit is not None and used is not None:
-        return max(0.0, (limit - used + cache) / 2 ** 30)
-    available_kb = keyed(read('/proc/meminfo'), 'MemAvailable:')
-    return available_kb / 2 ** 20 if available_kb else None
-
-
-def jobs_default():
-    """默认并发 = 启动时可用内存 ÷ 每折 15 GiB —— 内存是这套模型的硬约束，不按显存/核数猜。"""
-    free = free_memory_gib()
-    if free is None:
-        print('读不到内存上限/余量：按串行（1 并发）跑', flush=True)
-        return 1
-    print(f'可用内存 {free:.1f} GiB ÷ 每折 {PER_FOLD_GIB:g} GiB', flush=True)
-    return max(1, int(free / PER_FOLD_GIB))
-
-
-def visible_gpus():
-    """可见 GPU 的**标识列表**（子进程按它设 `CUDA_VISIBLE_DEVICES`，启动时读一次）。
-
-    ★ 用户显式设过 `CUDA_VISIBLE_DEVICES` 就原样用它：**不能**改写成 `0,1,2…` —— 那是按
-      "容器里第几张" 编号，用户写 `2,3` 时改写成 `0` 会指到别的卡上去。
-    ★ 没设就数一张张卡：优先 torch（与子进程实际看到的是同一套可见性规则），
-      没装 torch 才退回 `/dev/nvidia[0-9]*` 的个数。
-    """
-    env = os.environ.get('CUDA_VISIBLE_DEVICES')
-    if env is not None:
-        return [v.strip() for v in env.split(',') if v.strip()]
+def limits():
+    affinity=len(os.sched_getaffinity(0))
     try:
-        import torch
-        count = torch.cuda.device_count()
-    except ImportError:
-        count = len(list(Path('/dev').glob('nvidia[0-9]*')))
-    return [str(i) for i in range(count)]
+        quota,period=Path('/sys/fs/cgroup/cpu.max').read_text().split()
+        cores=min(affinity,float(quota)/float(period)) if quota!='max' else affinity
+    except (OSError,ValueError):
+        quota=number('/sys/fs/cgroup/cpu/cpu.cfs_quota_us',-1);period=number('/sys/fs/cgroup/cpu/cpu.cfs_period_us',100000)
+        cores=min(affinity,quota/period) if quota>0 else affinity
+    memory=number('/sys/fs/cgroup/memory.max')
+    if not memory:
+        memory=number('/sys/fs/cgroup/memory/memory.limit_in_bytes')
+    return dict(cpu_cores=cores,memory_bytes=memory)
 
 
-def spawn(quarter, fold, device, gpu=None):
-    """一折一个子进程；已完成则追一行日志并返回 None，否则返回 (进程, 日志句柄)。
+def gpu_load():
+    try:
+        result=subprocess.run(['nvidia-smi','--query-gpu=index,uuid,utilization.gpu,memory.used,memory.total',
+            '--format=csv,noheader,nounits'],capture_output=True,text=True,timeout=3,check=True)
+        allowed=os.environ.get('CUDA_VISIBLE_DEVICES')
+        allowed=None if allowed is None else {x.strip() for x in allowed.split(',') if x.strip()}
+        rows=[]
+        for line in result.stdout.splitlines():
+            index,uuid,util,used,total=[x.strip() for x in line.split(',')]
+            if allowed is None or index in allowed or uuid in allowed:
+                rows.append(dict(id=index if allowed is None or index in allowed else uuid,
+                    utilization=float(util),used_mib=float(used),total_mib=float(total)))
+        return rows
+    except (OSError,ValueError,subprocess.SubprocessError):return []
 
-    `gpu` 非空时把这一折**钉在那张卡上**：只给这个子进程设 `CUDA_VISIBLE_DEVICES=<gpu>`，
-    于是它里面的 `cuda:0` 就是这一张卡 —— 多卡机器上按启动顺序轮转，均匀铺开。
-    """
-    log = UNIT / 'model_logs' / f'{quarter}_{fold}.log'
-    log.parent.mkdir(parents=True, exist_ok=True)
-    if (UNIT / 'model_train' / quarter / f'fold{fold}' / 'complete.json').is_file():
-        with open(log, 'a', buffering=1) as handle:
-            handle.write(f'{time.strftime("%Y-%m-%d %H:%M:%S")} {quarter} fold{fold} 已完成，本次复用\n')
-        return None
-    command = [sys.executable, '-B', '-u', str(UNIT / 'model.py'),
-               '--quarter', quarter, '--fold', str(fold), '--device', device]
-    env = dict(os.environ)
-    if gpu is not None:
-        env['CUDA_VISIBLE_DEVICES'] = gpu
-    handle = open(log, 'a', buffering=1)
-    return subprocess.Popen(command, cwd=UNIT, env=env, stdout=handle, stderr=subprocess.STDOUT), handle
+
+def headroom(info):
+    state=keyed('/sys/fs/cgroup/memory.stat') or keyed('/sys/fs/cgroup/memory/memory.stat')
+    anon=state.get('anon',state.get('total_rss',state.get('rss',0)))+state.get('shmem',0)
+    return info['memory_bytes']-anon-2*2**30 if info['memory_bytes'] else None
+
+
+def initialize_worker(counter,gpus):
+    if gpus:
+        with counter.get_lock():
+            slot=counter.value;counter.value+=1
+        # 父进程只用 nvidia-smi 探测，CUDA 上下文在子进程首次训练时初始化。
+        os.environ['CUDA_VISIBLE_DEVICES']=gpus[slot%len(gpus)]
+
+
+def work(quarter,fold,device):
+    from model import train_fold,torch
+    log=UNIT/'model_logs'/f'{quarter}_{fold}.log';log.parent.mkdir(exist_ok=True)
+    with log.open('a',buffering=1) as handle,contextlib.redirect_stdout(handle),contextlib.redirect_stderr(handle):
+        result=train_fold(fold,device=device,panel=_PANEL,prices=_PRICES,quarter=quarter)
+        if device=='cuda':torch.cuda.empty_cache()
+        return result
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--jobs', type=int, default=0,
-                        help='并发折数；0 = 按启动时可用内存自动估（每折 15 GiB）')
-    parser.add_argument('--device', choices=['auto', 'cpu', 'cuda'], default='auto')
-    parser.add_argument('--quarters', nargs='+', choices=([LIVE_QUARTER] if LIVE else ['2025Q3','2025Q4','2026Q1','2026Q2']), default=None, help='selected fixed quarters; default all')
-    parser.add_argument('--folds', nargs='+', type=int, choices=[1,2,3,4], default=None, help='selected fixed folds; default all')
-    args = parser.parse_args()
-    tasks = [(q,f) for q,f in TASKS if (args.quarters is None or q in args.quarters) and (args.folds is None or f in args.folds)]
-    jobs = max(1, min(args.jobs or jobs_default(), len(tasks)))
-    gpus = [] if args.device == 'cpu' else visible_gpus()
-    if args.device == 'cuda' and not gpus:
-        raise SystemExit('--device cuda：一张卡都看不到')
-    os.environ.setdefault('MX_THREADS', str(max(1, cpu_count() // jobs)))    # 每折分到的线程数
-    print(f'{len(tasks)} 折，并发 {jobs}，每折 {os.environ["MX_THREADS"]} 线程'
-          + (f'，{len(gpus)} 张卡轮转：{" / ".join(gpus)}' if gpus else '，不用 GPU'), flush=True)
+    global _PANEL,_PRICES
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--jobs',type=int,default=0,help='并行上限；0按当前资源估计，从1折逐步增加')
+    parser.add_argument('--device',choices=['auto','cpu','cuda'],default='auto')
+    parser.add_argument('--quarters',nargs='+',choices=QUARTERS)
+    parser.add_argument('--folds',nargs='+',type=int,choices=[1,2,3,4])
+    parser.add_argument('--resources-only',action='store_true')
+    args=parser.parse_args();info=limits();gpus=[] if args.device=='cpu' else gpu_load()
+    if args.resources_only:
+        print(json.dumps(dict(**info,gpus=gpus,headroom_bytes=headroom(info)),ensure_ascii=False,indent=2));return
+    if args.device=='auto':args.device='cuda' if gpus else 'cpu'
+    if args.device=='cuda' and not gpus:raise RuntimeError('指定 CUDA，但没有可探测的可见 GPU')
+    from model import Panel,Prices,RECIPE,validate_layout
+    validate_layout(allow_missing=True,allow_temporary=True)
+    tasks=[(q,f) for q in (args.quarters or QUARTERS) for f in (args.folds or [1,2,3,4])]
+    t0=time.monotonic();_PANEL=Panel(RECIPE['features']);_PRICES=Prices(_PANEL)
+    cpu_ridge=RECIPE.get('optimizer')=='closed_form_ridge'
+    compact_residual=RECIPE.get('neural_kind') in ('residual_mlp','diversity_mlp','expectile_mlp')
+    private_bytes=(2 if cpu_ridge or compact_residual else 4)*2**30
+    poll_seconds=1 if cpu_ridge else 5
+    adjust_seconds=2 if cpu_ridge else 10
+    available=headroom(info)
+    if available is not None and available<private_bytes:raise RuntimeError('共享面板加载后私有工作空间不足')
+    threads=max(1,int(os.environ['MX_THREADS']))
+    # 交替CPU/GPU阶段可适度超额预留工作进程；按实测负载扩容，不强行同时跑满。
+    cap=max(1,int(math.ceil(2*info['cpu_cores']/threads)))
+    if available is not None:cap=min(cap,max(1,int(available//private_bytes)))
+    gpu_workspace=512 if cpu_ridge else 1024 if compact_residual else 2048
+    if gpus:cap=min(cap,max(1,int(sum(max(0,g['total_mib']-g['used_mib']-1024)//gpu_workspace for g in gpus))))
+    cap=min(cap,len(tasks),args.jobs if args.jobs>0 else cap)
+    print(f'{len(tasks)}折，共享面板{_PANEL.X.nbytes/2**30:.2f}GiB，容器{info["cpu_cores"]:g}核，自动并行1→{cap}',flush=True)
+    ctx=mp.get_context('fork');counter=ctx.Value('i',0)
+    target=1;active={};pending=list(tasks);finished=0;samples=[];last_cpu=keyed('/sys/fs/cgroup/cpu.stat').get('usage_usec',0);last_sample=time.monotonic();last_adjust=last_sample
+    with ProcessPoolExecutor(max_workers=cap,mp_context=ctx,initializer=initialize_worker,
+            initargs=(counter,[g['id'] for g in gpus])) as pool:
+        while pending or active:
+            while pending and len(active)<target:
+                q,f=pending.pop(0);active[pool.submit(work,q,f,args.device)]=(q,f)
+            completed,_=wait(active,timeout=poll_seconds,return_when=FIRST_COMPLETED)
+            for future in completed:
+                task=active.pop(future);result=future.result();finished+=1
+                print(f'[{time.strftime("%H:%M:%S")}] {task} 就绪{finished}/{len(tasks)}，累计{(time.monotonic()-t0)/60:.1f}分钟，选轮{result["best_epoch"]}',flush=True)
+            now=time.monotonic()
+            if now-last_sample<poll_seconds:continue
+            current_cpu=keyed('/sys/fs/cgroup/cpu.stat').get('usage_usec',last_cpu)
+            cpu=100*(current_cpu-last_cpu)/1e6/(now-last_sample)/info['cpu_cores'];last_cpu=current_cpu;last_sample=now
+            gpu=gpu_load() if gpus else []
+            utilization=sum(g['utilization'] for g in gpu)/len(gpu) if gpu else None
+            room=headroom(info)
+            row=dict(seconds=round(now-t0,1),active=len(active),target=target,cpu_percent=round(cpu,2),
+                gpu_percent=utilization,headroom_gib=None if room is None else round(room/2**30,2),queue=len(pending))
+            samples.append(row)
+            if now-last_adjust>=adjust_seconds and len(samples)>=2:
+                window=samples[-2:];cpu_mean=sum(x['cpu_percent'] for x in window)/len(window)
+                gpu_mean=sum(x['gpu_percent'] or 0 for x in window)/len(window)
+                pressured=(room is not None and room<3*2**30) or any(g['total_mib']-g['used_mib']<768 for g in gpu)
+                if pressured:target=max(1,target-1)
+                elif pending and target<cap and max(cpu_mean,gpu_mean)<=80:
+                    desired=math.ceil(target*82/max(cpu_mean,gpu_mean,5))
+                    target=min(cap,max(target+1,min(2*target,desired)))
+                print('RESOURCE',json.dumps(dict(**row,next_target=target,mean_cpu_percent=cpu_mean,mean_gpu_percent=gpu_mean),ensure_ascii=False),flush=True)
+                last_adjust=now
+    useful=[s for s in samples if s['queue']>0] or samples
+    summary=dict(container=info,gpus=gpus,parallel_limit=cap,target_percent=80,samples=samples,
+        task_scope=tasks,sampling_scope='whole container during this invocation, including concurrent jobs',
+        mean_cpu_percent=sum(s['cpu_percent'] for s in useful)/len(useful) if useful else None,
+        mean_gpu_percent=sum(s['gpu_percent'] or 0 for s in useful)/len(useful) if useful and gpus else None,
+        definition='queue-nonempty samples exclude exhausted tail; includes ramp; memory reserve is a constraint, not a utilization target')
+    log=UNIT/'model_logs/analysis_0.log';log.parent.mkdir(exist_ok=True)
+    with log.open('a') as handle:handle.write('RESOURCE_SUMMARY_JSON '+json.dumps(summary,ensure_ascii=False)+'\n')
+    print('训练完成',flush=True)
 
-    pending, running, failed, started = list(tasks), {}, [], time.time()
-    launched = 0
-    while pending or running:
-        while pending and len(running) < jobs:                       # 补满在跑的名额
-            task = pending.pop(0)
-            gpu = gpus[launched % len(gpus)] if gpus else None       # 轮转：均匀铺到各张卡上
-            child = spawn(*task, 'cuda' if gpu else args.device, gpu)
-            if child is None:
-                print(f'[{stamp()}] {task[0]} fold{task[1]} 已完成，跳过', flush=True)
-                continue
-            launched += 1
-            running[task] = (*child, time.time())
-            print(f'[{stamp()}] 启动 {task[0]} fold{task[1]}（在跑 {len(running)}/{jobs}'
-                  + (f'，GPU {gpu}' if gpu else '') + '）', flush=True)
-        for task, (proc, handle, t0) in list(running.items()):       # 收走已结束的
-            if proc.poll() is None:
-                continue
-            handle.close()
-            del running[task]
-            print(f'[{stamp()}] {task[0]} fold{task[1]} 退出码 {proc.returncode}，'
-                  f'用时 {time.time() - t0:.0f}s', flush=True)
-            if proc.returncode:
-                failed.append(task)
-        time.sleep(2)
 
-    print(f'训练结束：{len(tasks) - len(failed)} 折就绪、{len(failed)} 折失败，'
-          f'用时 {(time.time() - started) / 60:.1f} 分钟', flush=True)
-    if failed:
-        raise SystemExit(f'失败的折 {failed}：见各自 model_logs/<季度>_<折>.log')
-
-
-if __name__ == '__main__':
-    main()
+if __name__=='__main__':main()

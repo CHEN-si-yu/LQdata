@@ -1,0 +1,529 @@
+{
+  "model": "V348",
+  "seed": 35262,
+  "quarter": "2026Q4",
+  "folds_checked": 4,
+  "phases_checked": 8,
+  "max_cpu_reload_error": 4.470348358154297e-08,
+  "audits": [
+    {
+      "fold": 1,
+      "errors": {
+        "selector": 2.2351741790771484e-08,
+        "delivery": 2.9802322387695312e-08
+      },
+      "sources": {
+        "selector": {
+          "train_end": "2026-01-21",
+          "weight_sha256": "304e2ec3fabdfd8c77a6989e2f4480837ae435209f567e63a86eaa80e99a20d1",
+          "teacher": {
+            "model": "V288",
+            "phase": "selector",
+            "file": "experiments/_archive/release_20261030/replicas/teacher/model_train/2026Q4/fold1/selector_best.pt",
+            "sha256": "6e91cc44236d43dbe4dd50f5296e48a1f15aac6763d59ac65c044c33d3c330e3",
+            "recipe_signature": "1a1e19b2bb00e939c02e932c3ca8ef77bcc8dfd4bdfad5041c6f4eee43b017bf",
+            "train_end": "2026-01-21",
+            "snapshot_meta_sha256": "2fcbed2d751d896b849ffd3da2887dc202bfba46b54c8eddabeca5ef4969a74d",
+            "absolute_fit": {
+              "seed": 35253,
+              "horizons": [
+                1,
+                5
+              ],
+              "sample_caps": [
+                512
+              ],
+              "stages": [
+                {
+                  "fit_dates": 1955,
+                  "sample_rows": 1000960,
+                  "stock_sample_cap": 512,
+                  "normal_equation_relative_residual": 3.400186543798891e-16,
+                  "train_loss": 0.7785280187446597
+                }
+              ],
+              "bag_rule": "all fixed training fits equally; no validation/test stage choice",
+              "origin": "fresh fits from this unit training partition; no other checkpoint read"
+            },
+            "risk_source": "selector_market_risk.pt",
+            "effective_input_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+            "input_prefix_identity": {
+              "path": "experiments/_archive/release_20261030/model_info/latest_teacher_prefix_identity.json",
+              "sha256": "a30ba7b3f2ee32603ba37239a86008a39b34bdaf2a9a4890172bd3cedd867085"
+            }
+          }
+        },
+        "delivery": {
+          "train_end": "2026-08-31",
+          "weight_sha256": "352d481b307059fabbcb0dee89056ca9bb60a6ad4b434747d52f022df1c729ea",
+          "teacher": {
+            "model": "V288",
+            "phase": "delivery_refit",
+            "file": "experiments/_archive/release_20261030/replicas/teacher/model_train/2026Q4/fold1/best.pt",
+            "sha256": "6ea0ada4a9c8ea32a193a073b5a86036ff4be52572f9ce9819742e85d14b79ef",
+            "recipe_signature": "1a1e19b2bb00e939c02e932c3ca8ef77bcc8dfd4bdfad5041c6f4eee43b017bf",
+            "train_end": "2026-08-31",
+            "snapshot_meta_sha256": "2fcbed2d751d896b849ffd3da2887dc202bfba46b54c8eddabeca5ef4969a74d",
+            "absolute_fit": {
+              "seed": 35253,
+              "horizons": [
+                1,
+                5
+              ],
+              "sample_caps": [
+                512
+              ],
+              "stages": [
+                {
+                  "fit_dates": 2102,
+                  "sample_rows": 1076224,
+                  "stock_sample_cap": 512,
+                  "normal_equation_relative_residual": 5.090394559021457e-16,
+                  "train_loss": 0.7885531520185294
+                }
+              ],
+              "bag_rule": "all fixed training fits equally; no validation/test stage choice",
+              "origin": "fresh fits from this unit training partition; no other checkpoint read"
+            },
+            "risk_source": "market_risk.pt",
+            "effective_input_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+            "input_prefix_identity": {
+              "path": "experiments/_archive/release_20261030/model_info/latest_teacher_prefix_identity.json",
+              "sha256": "a30ba7b3f2ee32603ba37239a86008a39b34bdaf2a9a4890172bd3cedd867085"
+            }
+          }
+        }
+      },
+      "paired_selector_delivery": true,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 1,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2026-01-21",
+            "days": 1955
+          }
+        ],
+        "valid": [
+          {
+            "start": "2026-03-02",
+            "end": "2026-06-02",
+            "days": 63
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "delivery_train": {
+          "start": "2018-01-02",
+          "end": "2026-08-31",
+          "days": 2102
+        },
+        "neural_recent_window_days": null,
+        "validation_prediction_source": "selector neural residual and selector teacher/risk only"
+      }
+    },
+    {
+      "fold": 2,
+      "errors": {
+        "selector": 2.9802322387695312e-08,
+        "delivery": 4.470348358154297e-08
+      },
+      "sources": {
+        "selector": {
+          "train_end": "2026-02-27",
+          "weight_sha256": "bffc648d5bb89df2b3db41a0d6535d2398f8622dec6f49d19841daf0293312d4",
+          "teacher": {
+            "model": "V288",
+            "phase": "selector",
+            "file": "experiments/_archive/release_20261030/replicas/teacher/model_train/2026Q4/fold2/selector_best.pt",
+            "sha256": "5ab209e1385fca9b69d98fcb1235cfe94b8ba6b1fc1b4ec003bd0bd5d28eb3d9",
+            "recipe_signature": "1a1e19b2bb00e939c02e932c3ca8ef77bcc8dfd4bdfad5041c6f4eee43b017bf",
+            "train_end": "2026-02-27",
+            "snapshot_meta_sha256": "2fcbed2d751d896b849ffd3da2887dc202bfba46b54c8eddabeca5ef4969a74d",
+            "absolute_fit": {
+              "seed": 35254,
+              "horizons": [
+                1,
+                5
+              ],
+              "sample_caps": [
+                512
+              ],
+              "stages": [
+                {
+                  "fit_dates": 1976,
+                  "sample_rows": 1011712,
+                  "stock_sample_cap": 512,
+                  "normal_equation_relative_residual": 4.972311655079958e-16,
+                  "train_loss": 0.7772013543737245
+                }
+              ],
+              "bag_rule": "all fixed training fits equally; no validation/test stage choice",
+              "origin": "fresh fits from this unit training partition; no other checkpoint read"
+            },
+            "risk_source": "selector_market_risk.pt",
+            "effective_input_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+            "input_prefix_identity": {
+              "path": "experiments/_archive/release_20261030/model_info/latest_teacher_prefix_identity.json",
+              "sha256": "a30ba7b3f2ee32603ba37239a86008a39b34bdaf2a9a4890172bd3cedd867085"
+            }
+          }
+        },
+        "delivery": {
+          "train_end": "2026-08-31",
+          "weight_sha256": "31728ec32616e08c6d8700f7dedb99c75cb89828005d8168135cf6a6ec86e91e",
+          "teacher": {
+            "model": "V288",
+            "phase": "delivery_refit",
+            "file": "experiments/_archive/release_20261030/replicas/teacher/model_train/2026Q4/fold2/best.pt",
+            "sha256": "31180e18e330008caca3a224006a11a4429c25be4c51c3948b0198968fab9e18",
+            "recipe_signature": "1a1e19b2bb00e939c02e932c3ca8ef77bcc8dfd4bdfad5041c6f4eee43b017bf",
+            "train_end": "2026-08-31",
+            "snapshot_meta_sha256": "2fcbed2d751d896b849ffd3da2887dc202bfba46b54c8eddabeca5ef4969a74d",
+            "absolute_fit": {
+              "seed": 35254,
+              "horizons": [
+                1,
+                5
+              ],
+              "sample_caps": [
+                512
+              ],
+              "stages": [
+                {
+                  "fit_dates": 2102,
+                  "sample_rows": 1076224,
+                  "stock_sample_cap": 512,
+                  "normal_equation_relative_residual": 3.5323044797454257e-16,
+                  "train_loss": 0.787838275529911
+                }
+              ],
+              "bag_rule": "all fixed training fits equally; no validation/test stage choice",
+              "origin": "fresh fits from this unit training partition; no other checkpoint read"
+            },
+            "risk_source": "market_risk.pt",
+            "effective_input_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+            "input_prefix_identity": {
+              "path": "experiments/_archive/release_20261030/model_info/latest_teacher_prefix_identity.json",
+              "sha256": "a30ba7b3f2ee32603ba37239a86008a39b34bdaf2a9a4890172bd3cedd867085"
+            }
+          }
+        }
+      },
+      "paired_selector_delivery": true,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 2,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2026-02-27",
+            "days": 1976
+          }
+        ],
+        "valid": [
+          {
+            "start": "2026-03-31",
+            "end": "2026-07-02",
+            "days": 63
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "delivery_train": {
+          "start": "2018-01-02",
+          "end": "2026-08-31",
+          "days": 2102
+        },
+        "neural_recent_window_days": null,
+        "validation_prediction_source": "selector neural residual and selector teacher/risk only"
+      }
+    },
+    {
+      "fold": 3,
+      "errors": {
+        "selector": 2.7008354663848877e-08,
+        "delivery": 2.9802322387695312e-08
+      },
+      "sources": {
+        "selector": {
+          "train_end": "2026-03-30",
+          "weight_sha256": "45e09573547ffcce541ff3b7a099fd71ebe07a574ea35c6c160614f4a647918f",
+          "teacher": {
+            "model": "V288",
+            "phase": "selector",
+            "file": "experiments/_archive/release_20261030/replicas/teacher/model_train/2026Q4/fold3/selector_best.pt",
+            "sha256": "98bd1a9ea399a90ae5bdf3dcda1625478b1e117b058e328d4cc7f2ff608f408e",
+            "recipe_signature": "1a1e19b2bb00e939c02e932c3ca8ef77bcc8dfd4bdfad5041c6f4eee43b017bf",
+            "train_end": "2026-03-30",
+            "snapshot_meta_sha256": "2fcbed2d751d896b849ffd3da2887dc202bfba46b54c8eddabeca5ef4969a74d",
+            "absolute_fit": {
+              "seed": 35255,
+              "horizons": [
+                1,
+                5
+              ],
+              "sample_caps": [
+                512
+              ],
+              "stages": [
+                {
+                  "fit_dates": 1997,
+                  "sample_rows": 1022464,
+                  "stock_sample_cap": 512,
+                  "normal_equation_relative_residual": 3.3051296595985783e-16,
+                  "train_loss": 0.7772720423315718
+                }
+              ],
+              "bag_rule": "all fixed training fits equally; no validation/test stage choice",
+              "origin": "fresh fits from this unit training partition; no other checkpoint read"
+            },
+            "risk_source": "selector_market_risk.pt",
+            "effective_input_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+            "input_prefix_identity": {
+              "path": "experiments/_archive/release_20261030/model_info/latest_teacher_prefix_identity.json",
+              "sha256": "a30ba7b3f2ee32603ba37239a86008a39b34bdaf2a9a4890172bd3cedd867085"
+            }
+          }
+        },
+        "delivery": {
+          "train_end": "2026-08-31",
+          "weight_sha256": "83d2c7aa69aa704d7100ea396a06c88db822a8978609a4d24226557d720ed499",
+          "teacher": {
+            "model": "V288",
+            "phase": "delivery_refit",
+            "file": "experiments/_archive/release_20261030/replicas/teacher/model_train/2026Q4/fold3/best.pt",
+            "sha256": "ddcf303f1a38b29815774e8fe617fbd4566380d24c46930c99b9a994a5466d78",
+            "recipe_signature": "1a1e19b2bb00e939c02e932c3ca8ef77bcc8dfd4bdfad5041c6f4eee43b017bf",
+            "train_end": "2026-08-31",
+            "snapshot_meta_sha256": "2fcbed2d751d896b849ffd3da2887dc202bfba46b54c8eddabeca5ef4969a74d",
+            "absolute_fit": {
+              "seed": 35255,
+              "horizons": [
+                1,
+                5
+              ],
+              "sample_caps": [
+                512
+              ],
+              "stages": [
+                {
+                  "fit_dates": 2102,
+                  "sample_rows": 1076224,
+                  "stock_sample_cap": 512,
+                  "normal_equation_relative_residual": 3.962646208564697e-16,
+                  "train_loss": 0.7863337898975082
+                }
+              ],
+              "bag_rule": "all fixed training fits equally; no validation/test stage choice",
+              "origin": "fresh fits from this unit training partition; no other checkpoint read"
+            },
+            "risk_source": "market_risk.pt",
+            "effective_input_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+            "input_prefix_identity": {
+              "path": "experiments/_archive/release_20261030/model_info/latest_teacher_prefix_identity.json",
+              "sha256": "a30ba7b3f2ee32603ba37239a86008a39b34bdaf2a9a4890172bd3cedd867085"
+            }
+          }
+        }
+      },
+      "paired_selector_delivery": true,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 3,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2026-03-30",
+            "days": 1997
+          }
+        ],
+        "valid": [
+          {
+            "start": "2026-04-30",
+            "end": "2026-07-31",
+            "days": 63
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "delivery_train": {
+          "start": "2018-01-02",
+          "end": "2026-08-31",
+          "days": 2102
+        },
+        "neural_recent_window_days": null,
+        "validation_prediction_source": "selector neural residual and selector teacher/risk only"
+      }
+    },
+    {
+      "fold": 4,
+      "errors": {
+        "selector": 4.470348358154297e-08,
+        "delivery": 2.9802322387695312e-08
+      },
+      "sources": {
+        "selector": {
+          "train_end": "2026-04-29",
+          "weight_sha256": "a5f028e8ad21754b692e550a839c64af26f8070ebb928303678b190398a61e8a",
+          "teacher": {
+            "model": "V288",
+            "phase": "selector",
+            "file": "experiments/_archive/release_20261030/replicas/teacher/model_train/2026Q4/fold4/selector_best.pt",
+            "sha256": "8d80c838fd6f3bfd4d9f21879bf1cbf4791cc2e96a7a9490c29415743a7370ca",
+            "recipe_signature": "1a1e19b2bb00e939c02e932c3ca8ef77bcc8dfd4bdfad5041c6f4eee43b017bf",
+            "train_end": "2026-04-29",
+            "snapshot_meta_sha256": "2fcbed2d751d896b849ffd3da2887dc202bfba46b54c8eddabeca5ef4969a74d",
+            "absolute_fit": {
+              "seed": 35256,
+              "horizons": [
+                1,
+                5
+              ],
+              "sample_caps": [
+                512
+              ],
+              "stages": [
+                {
+                  "fit_dates": 2018,
+                  "sample_rows": 1033216,
+                  "stock_sample_cap": 512,
+                  "normal_equation_relative_residual": 3.655729742108366e-16,
+                  "train_loss": 0.7771729083900122
+                }
+              ],
+              "bag_rule": "all fixed training fits equally; no validation/test stage choice",
+              "origin": "fresh fits from this unit training partition; no other checkpoint read"
+            },
+            "risk_source": "selector_market_risk.pt",
+            "effective_input_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+            "input_prefix_identity": {
+              "path": "experiments/_archive/release_20261030/model_info/latest_teacher_prefix_identity.json",
+              "sha256": "a30ba7b3f2ee32603ba37239a86008a39b34bdaf2a9a4890172bd3cedd867085"
+            }
+          }
+        },
+        "delivery": {
+          "train_end": "2026-08-31",
+          "weight_sha256": "431bfe43609b9bd8b6d360a519093621a33859d47b7e65f94554bbaada865873",
+          "teacher": {
+            "model": "V288",
+            "phase": "delivery_refit",
+            "file": "experiments/_archive/release_20261030/replicas/teacher/model_train/2026Q4/fold4/best.pt",
+            "sha256": "64a8c53870061db8a7ad14ccafcb1d458b7a1b45f69bf6e67df902ff09a2defc",
+            "recipe_signature": "1a1e19b2bb00e939c02e932c3ca8ef77bcc8dfd4bdfad5041c6f4eee43b017bf",
+            "train_end": "2026-08-31",
+            "snapshot_meta_sha256": "2fcbed2d751d896b849ffd3da2887dc202bfba46b54c8eddabeca5ef4969a74d",
+            "absolute_fit": {
+              "seed": 35256,
+              "horizons": [
+                1,
+                5
+              ],
+              "sample_caps": [
+                512
+              ],
+              "stages": [
+                {
+                  "fit_dates": 2102,
+                  "sample_rows": 1076224,
+                  "stock_sample_cap": 512,
+                  "normal_equation_relative_residual": 4.230433799992899e-16,
+                  "train_loss": 0.7870436363447559
+                }
+              ],
+              "bag_rule": "all fixed training fits equally; no validation/test stage choice",
+              "origin": "fresh fits from this unit training partition; no other checkpoint read"
+            },
+            "risk_source": "market_risk.pt",
+            "effective_input_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+            "input_prefix_identity": {
+              "path": "experiments/_archive/release_20261030/model_info/latest_teacher_prefix_identity.json",
+              "sha256": "a30ba7b3f2ee32603ba37239a86008a39b34bdaf2a9a4890172bd3cedd867085"
+            }
+          }
+        }
+      },
+      "paired_selector_delivery": true,
+      "split": {
+        "quarter": "2026Q4",
+        "fold": 4,
+        "train": [
+          {
+            "start": "2018-01-02",
+            "end": "2026-04-29",
+            "days": 2018
+          }
+        ],
+        "valid": [
+          {
+            "start": "2026-06-03",
+            "end": "2026-08-31",
+            "days": 63
+          }
+        ],
+        "test": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "score": [
+          {
+            "start": "2026-10-08",
+            "end": "2026-10-28",
+            "days": 15
+          }
+        ],
+        "delivery_train": {
+          "start": "2018-01-02",
+          "end": "2026-08-31",
+          "days": 2102
+        },
+        "neural_recent_window_days": null,
+        "validation_prediction_source": "selector neural residual and selector teacher/risk only"
+      }
+    }
+  ],
+  "snapshot_meta_sha256": "ec93f702e49fce317f985a5ddafb69f73091c3e3996d16b8eb4c82c97a2e64f4",
+  "source_sha256": "1690150b6439e5df6b63326ab7e89516b5a16b44755939d9ccfcf1f4e8094ff4",
+  "strict_time_and_teacher_passed": true
+}

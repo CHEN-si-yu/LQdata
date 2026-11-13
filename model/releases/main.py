@@ -2,7 +2,7 @@
 """执行即可推演所有发布模型最近 10 个交易日，生成 DAILY-YYYYMMDD.md。
 
 读取已训练权重、model/trainingdata 与本地冻结输入合同；按训练列名、顺序、方向评分。
-各模型四折相加，再在共同有效股票中按截面分位秩等权融合。
+各模型四折相加，再按发布清单冻结的方法和比例在共同有效股票中融合。
 每天一份独立日报，同日增量刷新；输入未变时复用缓存，旧日报保留。
 """
 from __future__ import annotations
@@ -10,9 +10,11 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import fcntl
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -41,8 +43,9 @@ STATE_NAME = '.daily_state.json'
 BEGIN = '<!-- releases/main.py:begin -->'
 END = '<!-- releases/main.py:end -->'
 KEYS = ['trade_date', 'stock_code']
-VERSION = 3
+VERSION = 5
 CONTRACT_PATH = ROOT / 'input_contracts.json'
+CONFIG_PATH = ROOT / 'release_config.json'
 
 
 def daily_path(directory, now=None):
@@ -184,7 +187,14 @@ def direction_multipliers(unit, features, market, meta, training_sha, current_sh
             raise ValueError(f'{unit.name} 快照已变化，但缺少训练方向合同 {training_sha}；不能只按列名加载')
         if contract.get('semantics') != meta.get('semantics'):
             raise ValueError(f'{unit.name} 训练方向合同与当前快照的标准化口径不一致')
-        if market and list(contract.get('market_columns') or []) != market:
+        per_model = contract.get('market_columns_by_model')
+        if per_model is not None:
+            if unit.name not in per_model:
+                raise ValueError(f'{unit.name} 缺少该模型的冻结市场列合同')
+            frozen_market = per_model[unit.name]
+        else:
+            frozen_market = contract.get('market_columns') or []
+        if list(frozen_market) != market:
             raise ValueError(f'{unit.name} 训练方向合同与权重的市场列名/顺序不一致')
         expected = contract.get('feature_direction') or {}
     missing = [n for n in features if n not in current or n not in expected]
@@ -301,17 +311,81 @@ def top_rows(values, codes, names, count=10):
             for i, c in enumerate(rank_order(values, codes)[:count], 1)]
 
 
-def fuse_scores(scores):
-    """R1：在各模型共同有效集合内，对截面分位秩等权平均。"""
+def fuse_scores(scores, method='rank_mean', weights=None):
+    """在共同有效股票内变换各分数，再按已冻结发布权重融合。"""
     from scipy.stats import rankdata
+    from scipy.special import ndtri
+    if method not in ('rank_mean', 'zscore_clip3', 'gaussian_rank', 'rank_square'):
+        raise ValueError('未知融合方法')
+    if weights is None:
+        weights = dict.fromkeys(scores, 1.)
+    if set(weights) != set(scores):
+        raise ValueError('融合权重与模型集合不一致')
+    mass = np.asarray([weights[k] for k in scores], dtype=np.float64)
+    if not np.isfinite(mass).all() or (mass <= 0).any():
+        raise ValueError('融合权重必须为有限正数')
     stack = np.stack(list(scores.values())).astype(np.float64)
     common = np.isfinite(stack).all(axis=0)
     fused = np.full(stack.shape[1], np.nan, np.float64)
     if not common.any():
         raise ValueError('模型没有共同有效的股票，无法生成融合排名')
-    fused[common] = np.mean([(rankdata(row[common], method='average') - .5) / common.sum()
-                             for row in stack], axis=0)
+    transformed = []
+    for row in stack:
+        values = row[common]
+        q = (rankdata(values, method='average') - .5) / common.sum()
+        if method == 'rank_mean':
+            value = q
+        elif method == 'rank_square':
+            value = q * q
+        elif method == 'gaussian_rank':
+            value = ndtri(q)
+        else:
+            std = values.std(ddof=1) if len(values) > 1 else 0.
+            value = np.clip((values - values.mean()) / std, -3., 3.) if std > 0 else np.zeros_like(values)
+        transformed.append(value)
+    total = np.zeros(int(common.sum()), dtype=np.float64)
+    for weight, value in zip(mass, transformed):
+        total += weight * value
+    fused[common] = total / mass.sum()
     return fused, int(common.sum())
+
+
+def release_config(units):
+    """缺少清单时兼容原四折入口；有清单时严格绑定发布集合。"""
+    if not CONFIG_PATH.is_file():
+        return dict(method='rank_mean', weights=dict.fromkeys((u.name for u in units), 1.))
+    config = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
+    if (config.get('status') != 'active' or len(config['models']) != 4
+            or sorted(config['models']) != sorted(u.name for u in units)):
+        raise ValueError('发布清单状态或四模型集合与目录不一致')
+    fusion = config['fusion']
+    # Validate before reading market blocks, including methods/positive weights.
+    fuse_scores({u.name: np.asarray([0., 1.]) for u in units}, **fusion)
+    return fusion
+
+
+def verify_release_files(plans):
+    """Bind operational code, checkpoints and training records to the active manifest."""
+    if not CONFIG_PATH.is_file():
+        return
+    config = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
+    required = {'main.py'}
+    for plan in plans:
+        if plan['quarter'] != config['quarter']:
+            raise ValueError('实际权重季度与发布清单不一致')
+        if 'seed_sets' in config and plan['seed_sets'] != config['seed_sets'][plan['unit'].name]:
+            raise ValueError('实际种子集合与发布清单不一致')
+        required.update(str((plan['unit'] / name).relative_to(ROOT))
+                        for name in ('model.py', 'run.py', 'analysis.py'))
+        for weight in plan['checkpoints']:
+            required.update(str(path.relative_to(ROOT)) for path in
+                            (weight, weight.parent / 'training_info.json', weight.parent / 'complete.json'))
+    if not required.issubset(config['files']):
+        raise ValueError('发布清单缺少必需源码、权重或训练记录指纹')
+    for name, expected in config['files'].items():
+        path = (ROOT / name).resolve()
+        if not path.is_relative_to(ROOT) or not path.is_file() or sha256(path) != expected:
+            raise ValueError(f'发布产物指纹变化：{name}')
 
 
 def references(project):
@@ -339,6 +413,7 @@ def cell(value):
 
 
 def render_entry(entry):
+    budget = entry.get('strategy_budget')
     units = entry['units']
     next_day = entry.get('next_day') or '待日历补齐'
     lines = [BEGIN, f"下一交易日：**{next_day}**；共同有效股票：{entry['common_count']} 只。", '',
@@ -351,9 +426,16 @@ def render_entry(entry):
         lines += ['', f'### {unit} · Top10', '', '| 名次 | 代码 | 名称 | 模型分 |', '|---:|---|---|---:|']
         for row in entry['models'][unit]:
             lines.append(f"| {row['rank']} | {row['code']} | {cell(row['name'])} | {format_score(row['score'])} |")
-    lineages = '；'.join(f"{u}={entry['quarters'][u]} 四折相加" for u in units)
-    lines += ['', f"权重：{lineages}。", f"输入快照：`{entry['snapshot_sha256']}`；值口径：`{entry['semantics']}`。",
+    lineages = '；'.join(f"{u}={entry['quarters'][u]} 四折相加"
+                         + (f"（每折{len(entry['seed_sets'][u])}种子等权原始分数）"
+                            if len(entry.get('seed_sets', {}).get(u, [])) > 1 else '') for u in units)
+    fusion = entry.get('fusion_config', dict(method='rank_mean', weights=dict.fromkeys(units, 1.)))
+    total = sum(fusion['weights'].values())
+    lines += ['', f"融合：`{fusion['method']}`；" + '、'.join(f"{u} {fusion['weights'][u] / total:.0%}" for u in units) + '。',
+              f"权重：{lineages}。", f"输入快照：`{entry['snapshot_sha256']}`；值口径：`{entry['semantics']}`。",
               '按训练方向转换：' + '；'.join(f"{u} {entry['direction_flips'][u]} 列" for u in units) + '。', END]
+    if budget:
+        lines.insert(2, f"事件风险概率：{budget['risk_probability']:.2%}；下一开盘目标仓位：**{budget['target_exposure']:.0%}**，最多{budget['target_names']}只；B40。目标清仓仍受涨跌停等成交条件限制。")
     return '\n'.join(lines)
 
 
@@ -378,7 +460,7 @@ def merge_markdown(previous, entries, latest_days, source_end):
     prefix = prefix.rstrip() + '\n\n'
     header = [ '<!-- releases/main.py:header -->',
                f'> 由 `python releases/main.py` 更新；最近 {len(latest_days)} 个交易日：{latest_days[0]} ~ {latest_days[-1]}；数据截至 {source_end}。',
-               '> 每个发布模型使用已有四折权重；融合采用共同有效股票的分位秩等权平均。',
+               '> 每个发布模型使用已有四折权重；融合方法及比例见各日记录，发布选择见 `release_config.json`。',
                '> 以下是当前已训练权重对历史日期的推演；不自动生成或变更持仓。每天另存一份日报，同日更新此文件。',
                '<!-- releases/main.py:header-end -->', '' ]
     for day, entry in entries.items():
@@ -428,11 +510,80 @@ def build_plan(units, meta, current_sha, contracts):
         plans.append(dict(unit=unit, module=module, quarter=quarter, checkpoints=checkpoints,
                           features=features, market=market, checkpoint_hashes=checkpoint_hashes,
                           training_sha=training_sha, multipliers=multipliers,
-                          training_hashes=training_hashes, source_hash=sha256(unit / 'model.py')))
+                          training_hashes=training_hashes, source_hash=sha256(unit / 'model.py'),
+                          seed_sets=list(module.RECIPE.get('replica_seed_sets', [module.RECIPE.get('seed')]))))
     return plans
 
 
-def predict_window(plans, data, meta, all_days, codes, requested, names, open_days):
+def score_payload_hash(identity, raw, fused, common):
+    digest=hashlib.sha256(json.dumps(identity,sort_keys=True,ensure_ascii=False,separators=(',',':')).encode())
+    for array,dtype in [(raw,'<f8'),(fused,'<f8'),(common,'?')]:
+        value=np.asarray(array,dtype=dtype)
+        digest.update(str(value.shape).encode());digest.update(value.tobytes(order='C'))
+    return digest.hexdigest()
+
+
+def archive_scores(directory,day,codes,scores,fused,next_day,fingerprint,provenance,now=None):
+    """Append immutable full vectors; repeat payloads keep the earliest recorded timestamp."""
+    directory=Path(directory)
+    units=list(scores);codes=np.asarray(codes,dtype=str)
+    raw=np.asarray([scores[name] for name in units],dtype=np.float64)
+    fused=np.asarray(fused,dtype=np.float64)
+    if raw.shape!=(len(units),len(codes)) or fused.shape!=(len(codes),) or np.isinf(raw).any() or np.isinf(fused).any():
+        raise ValueError('完整分数归档的日期/模型/股票轴异常')
+    common=np.isfinite(raw).all(axis=0)
+    if not np.array_equal(np.isfinite(fused),common):raise ValueError('融合分数与共同有效股票池不一致')
+    identity=dict(schema=1,trade_date=str(day),next_open_day=next_day,fingerprint=fingerprint,
+        stock_codes=codes.tolist(),units=units,model_provenance=provenance,
+        raw_score_meaning='sum of four frozen fold scores per released model; declared seed replicas averaged within fold; raw amplitudes retained',
+        fusion_meaning=provenance.get('fusion', 'equal mean percentile rank on common finite stock pool'))
+    payload=score_payload_hash(identity,raw,fused,common)
+    path=directory/'signal_archive'/str(day)/f'{payload}.npz'
+    if path.exists():
+        with np.load(path,allow_pickle=False) as saved:
+            metadata=json.loads(str(saved['metadata'].item()))
+            actual=score_payload_hash(metadata['identity'],saved['raw_scores'],saved['fused_rank'],saved['common_mask'])
+            if (actual!=payload or metadata['payload_sha256']!=payload
+                    or not np.array_equal(saved['stock_codes'],codes)
+                    or saved['units'].tolist()!=units):
+                raise RuntimeError('已有完整分数归档损坏；保留原文件并停止写入')
+    else:
+        created=now or datetime.now(timezone.utc)
+        if created.tzinfo is None:raise ValueError('分数归档时间必须包含时区')
+        created=created.astimezone(timezone.utc)
+        next_open=datetime.fromisoformat(next_day+'T09:30:00').replace(tzinfo=ZoneInfo('Asia/Shanghai')).astimezone(timezone.utc) if next_day else None
+        relation='unknown_next_open' if next_open is None else 'recorded_before_next_open' if created<next_open else 'retrospective_after_next_open'
+        metadata=dict(identity=identity,payload_sha256=payload,recorded_at_utc=created.isoformat(),
+            next_open_at_utc=next_open.isoformat() if next_open else None,time_relation=relation,
+            interpretation='generation time only; earlier dates are retrospective, and this does not prove upstream point-in-time factor availability')
+        stream=io.BytesIO()
+        np.savez_compressed(stream,stock_codes=codes,units=np.asarray(units,dtype=str),raw_scores=raw,
+            fused_rank=fused,common_mask=common,metadata=np.asarray(json.dumps(metadata,ensure_ascii=False,sort_keys=True)))
+        path.parent.mkdir(parents=True,exist_ok=True)
+        # Link a complete same-filesystem temporary file; the final archive is never partial or replaced.
+        handle,temporary=tempfile.mkstemp(dir=path.parent,prefix='.scores-',suffix='.tmp')
+        try:
+            with os.fdopen(handle,'wb') as output:output.write(stream.getvalue())
+            os.chmod(temporary,0o664)
+            os.link(temporary,path)
+        except FileExistsError:
+            return archive_scores(directory,day,codes,scores,fused,next_day,fingerprint,provenance,now)
+        finally:
+            if os.path.exists(temporary):os.unlink(temporary)
+    return dict(path=str(path.relative_to(directory)),sha256=sha256(path),payload_sha256=payload,
+        recorded_at_utc=metadata['recorded_at_utc'],time_relation=metadata['time_relation'])
+
+
+def score_archive_valid(entry,directory):
+    item=entry.get('score_archive') or {}
+    if not item.get('path') or not item.get('sha256'):return False
+    path=(Path(directory)/item['path']).resolve()
+    if not path.is_relative_to((Path(directory)/'signal_archive').resolve()):return False
+    try:return path.is_file() and sha256(path)==item['sha256']
+    except OSError:return False
+
+
+def predict_window(plans, data, meta, all_days, codes, requested, names, open_days,score_sink=None, fusion_config=None):
     import torch
     torch.set_num_threads(max(1, int(os.environ['MX_THREADS'])))
     lookback = max(max(p['module'].RECIPE['sequence_days'] - 1,
@@ -478,7 +629,8 @@ def predict_window(plans, data, meta, all_days, codes, requested, names, open_da
     entries = {}
     for i, day in enumerate(requested):
         model_scores = {u: scores[u][i] for u in units}
-        fused, common = fuse_scores(model_scores)
+        fusion_config = fusion_config or dict(method='rank_mean', weights=dict.fromkeys(units, 1.))
+        fused, common = fuse_scores(model_scores, **fusion_config)
         ranks = {u: {str(codes[c]): rank for rank, c in enumerate(rank_order(model_scores[u], codes), 1)}
                  for u in units}
         fusion = top_rows(fused, codes, names)
@@ -493,7 +645,9 @@ def predict_window(plans, data, meta, all_days, codes, requested, names, open_da
                                  fusion=fusion, models={u: top_rows(model_scores[u], codes, names) for u in units},
                                  quarters={p['unit'].name: p['quarter'] for p in plans},
                                  direction_flips={p['unit'].name: sum(s < 0 for s in p['multipliers']) for p in plans},
-                                 snapshot_sha256=sha256(data / 'meta.json'), semantics=meta['semantics'])
+                                 snapshot_sha256=sha256(data / 'meta.json'), semantics=meta['semantics'],
+                                 fusion_config=fusion_config, seed_sets={p['unit'].name: p['seed_sets'] for p in plans})
+        if score_sink is not None:score_sink(str(day),codes,model_scores,fused,following)
     return entries
 
 
@@ -516,10 +670,15 @@ def main(argv=None):
             if meta.get('semantics') != 'zscore_win1_99_v1':
                 raise ValueError(f'模型要求 zscore_win1_99_v1，当前快照为 {meta.get("semantics")}')
             units = discover_units(ROOT)
+            fusion = release_config(units)
             contracts = json.loads(CONTRACT_PATH.read_text(encoding='utf-8')) if CONTRACT_PATH.is_file() else {}
             plans = build_plan(units, meta, sha256(data / 'meta.json'), contracts)
+            verify_release_files(plans)
             all_days, codes = snapshot_axis(data, meta)
             requested = all_days[-args.days:]
+            earliest = max(str(pd.Period(p['quarter'], freq='Q').start_time.date()) for p in plans)
+            if str(requested[0]) < earliest:
+                raise ValueError(f'请求日期早于交付季度起点 {earliest}；请缩小 --days，避免以新季度权重回填旧季度')
             names, open_days = references(PROJECT)
             source_files = [data / 'meta.json']
             for kind in ['factors', 'market_factors', 'amount', 'prices']:
@@ -527,15 +686,18 @@ def main(argv=None):
             model_files = [p['unit'] / 'model.py' for p in plans]
             if CONTRACT_PATH.is_file():
                 model_files.append(CONTRACT_PATH)
+            if CONFIG_PATH.is_file():
+                model_files.append(CONFIG_PATH)
             for plan in plans:
                 for path in plan['checkpoints']:
                     model_files.extend([path, path.parent / 'training_info.json', path.parent / 'complete.json'])
-            fingerprint_data = dict(version=VERSION, runner_sha256=sha256(__file__),
+            fingerprint_data = dict(version=VERSION, runner_sha256=sha256(__file__), fusion=fusion,
                                     input=[signature(p) for p in source_files],
                                     model_files=[signature(p) for p in model_files],
                                     meta_sha256=sha256(data / 'meta.json'),
                                     models=[dict(unit=p['unit'].name, quarter=p['quarter'], source_hash=p['source_hash'],
                                                  checkpoint_hashes=p['checkpoint_hashes'], training_hashes=p['training_hashes'],
+                                                 seed_sets=p['seed_sets'],
                                                  features=p['features'], market=p['market'], training_sha=p['training_sha'],
                                                  multipliers=p['multipliers'])
                                             for p in plans], names=names, open_days=open_days)
@@ -543,16 +705,29 @@ def main(argv=None):
             state_path = document.parent / STATE_NAME
             state = json.loads(state_path.read_text(encoding='utf-8')) if state_path.is_file() else {}
             previous_entries = dict(state.get('entries') or {}) if state.get('fingerprint') == fingerprint else {}
-            cached = all(str(d) in previous_entries for d in requested)
+            cached = all(str(d) in previous_entries and score_archive_valid(previous_entries[str(d)],document.parent) for d in requested)
+            score_payloads={}
+            def collect_scores(day,axis,scores,fused,next_day):
+                score_payloads[day]=(axis.copy(),{k:v.copy() for k,v in scores.items()},fused.copy(),next_day)
             if cached and not args.force:
                 entries = {str(d): previous_entries[str(d)] for d in requested}
                 say(f'缓存命中：{len(units)} 个模型 × {len(requested)} 个交易日；输入和权重未变')
             else:
-                entries = predict_window(plans, data, meta, all_days, codes, requested, names, open_days)
+                entries = predict_window(plans, data, meta, all_days, codes, requested, names, open_days,
+                                         score_sink=collect_scores, fusion_config=fusion)
             if (sha256(data / 'meta.json') != fingerprint_data['meta_sha256']
                     or [signature(p) for p in source_files] != fingerprint_data['input']
                     or [signature(p) for p in model_files] != fingerprint_data['model_files']):
                 raise RuntimeError('推演期间数据或模型发生变化，本次不写日报，请在更新完成后重跑')
+            for day,(axis,scores,fused,next_day) in score_payloads.items():
+                entries[day]['score_archive']=archive_scores(document.parent,day,axis,scores,fused,next_day,
+                    fingerprint,fingerprint_data)
+            import importlib.util
+            strategy_spec = importlib.util.spec_from_file_location('release_budget', ROOT/'strategy.py')
+            strategy = importlib.util.module_from_spec(strategy_spec)
+            strategy_spec.loader.exec_module(strategy)
+            budgets = strategy.budget_trace(data, str(requested[-1]), ROOT)
+            for day in entries: entries[day]['strategy_budget'] = budgets[day]
             previous = document.read_text(encoding='utf-8') if document.is_file() else ''
             content = merge_markdown(previous, entries, requested, str(all_days[-1]))
             old_dates = set(re.findall(r'^## (\d{4}-\d{2}-\d{2})', previous, re.MULTILINE))

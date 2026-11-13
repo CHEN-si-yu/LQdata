@@ -11,21 +11,6 @@ import sys
 ROOT = Path(__file__).resolve().parent
 
 
-def _mutating_cli(argv):
-    """Compatibility helper used by project maintenance scripts."""
-    if "--dry-run" in argv or "--sandbox" in argv:
-        return False
-    for i, arg in enumerate(argv):
-        base = Path(arg).name
-        if base == "backfill_history.py":
-            return True
-        if base == "trim_recent_days.py":
-            return "--apply" in argv
-        if base == "main.py" and (i == len(argv)-1 or argv[i+1] in {"run", "incremental", "rebuild", "full"}):
-            return True
-    return False
-
-
 def _date(value):
     try:
         return dt.date.fromisoformat(value).isoformat()

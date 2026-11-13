@@ -1,0 +1,26 @@
+{
+  "kind": "historical_simulation_not_user_holdings",
+  "start": "2026-10-01",
+  "asof": "2026-10-29",
+  "initial_equity": 100000.0,
+  "equity": 83148.76826184904,
+  "cash": 423.7682618490435,
+  "holdings": {
+    "002796.SZ": 800.0,
+    "600105.SH": 700.0,
+    "002240.SZ": 900.0,
+    "603936.SH": 1200.0,
+    "600152.SH": 2900.0
+  },
+  "next_open_budget": {
+    "risk_probability": 0.2994646129806272,
+    "target_exposure": 0.4,
+    "recovery_count": 0,
+    "target_names": 2,
+    "execution": "next_open",
+    "hold_band": 40,
+    "reference_start": "2026-10-01 cash account; budget state initialized to1, recovery0",
+    "note": "Target only; actual exits obeyT+1/limits/suspension/capacity. Holdings needed to form executable orders."
+  },
+  "next_execution": "2026-10-30"
+}

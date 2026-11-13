@@ -1,0 +1,223 @@
+{
+  "schema": 1,
+  "status": "active",
+  "release_id": "20261030_STABLE_Q4_V259_V247_V321_V348",
+  "created_at_utc": "2026-10-30T08:51:32.875317+00:00",
+  "models": [
+    "V259",
+    "V247",
+    "V321",
+    "V348"
+  ],
+  "quarter": "2026Q4",
+  "fusion": {
+    "method": "zscore_clip3",
+    "weights": {
+      "V259": 1,
+      "V247": 1,
+      "V321": 1,
+      "V348": 1
+    }
+  },
+  "seed_sets": {
+    "V259": [
+      35253
+    ],
+    "V247": [
+      35253
+    ],
+    "V321": [
+      35262
+    ],
+    "V348": [
+      35262,
+      45262,
+      55262
+    ]
+  },
+  "account": {
+    "initial_money": 100000,
+    "max_positions": 5,
+    "execution": "next_open",
+    "hold_band": 40,
+    "cost_gate": false,
+    "slippage_one_way": 0.0003,
+    "policy": "event_cash",
+    "target_exposures": [
+      0,
+      0.4,
+      1
+    ],
+    "risk_source": "strategy_data: V260 frozenQ4 fourfold mean",
+    "decision_entrypoint": "strategy.py"
+  },
+  "selection": {
+    "window": [
+      "2025-07-01",
+      "2026-06-30"
+    ],
+    "signals": 241,
+    "pool_size": 15,
+    "eligible_groups": 74,
+    "tested_configurations": 370,
+    "objective": "highest worst-quarter subject to predeclared stability and IC gates",
+    "frozen": "experiments/_archive/stable_release_20261030/model_info/frozen_selection.json",
+    "frozen_sha256": "ff8bb08b37f4a5822d9f31975e42b2ce21247cf7aa9a988feecffe49647091c6",
+    "evidence": "Best in declared finite development search; October only test, already historically exposed; no profit guarantee."
+  },
+  "training": "V247 refreshed original206/47 inputs on preserved10-28 snapshot, retains original pre-quarter blocked epoch selection (not strict chronological OOF). V321 and all3 V348 outerseeds freshly trained with native strict selector/mature refit. V259 reuses same-day freshly retrained verifiedQ4 unit. All selection and gradient information beforeOct1.",
+  "actual_train_end_by_fold": {
+    "V259": [
+      {
+        "delivery": "2026-01-21"
+      },
+      {
+        "delivery": "2026-02-27"
+      },
+      {
+        "delivery": "2026-03-30"
+      },
+      {
+        "delivery": "2026-04-29"
+      }
+    ],
+    "V247": [
+      {
+        "delivery": "2026-08-31"
+      },
+      {
+        "delivery": "2026-08-31"
+      },
+      {
+        "delivery": "2026-08-31"
+      },
+      {
+        "delivery": "2024-06-03"
+      }
+    ],
+    "V321": [
+      {
+        "selector": "2026-01-21",
+        "delivery": "2026-08-31"
+      },
+      {
+        "selector": "2026-02-27",
+        "delivery": "2026-08-31"
+      },
+      {
+        "selector": "2026-03-30",
+        "delivery": "2026-08-31"
+      },
+      {
+        "selector": "2026-04-29",
+        "delivery": "2026-08-31"
+      }
+    ],
+    "V348": [
+      {
+        "selector": "2026-01-21",
+        "delivery": "2026-08-31"
+      },
+      {
+        "selector": "2026-02-27",
+        "delivery": "2026-08-31"
+      },
+      {
+        "selector": "2026-03-30",
+        "delivery": "2026-08-31"
+      },
+      {
+        "selector": "2026-04-29",
+        "delivery": "2026-08-31"
+      }
+    ]
+  },
+  "files": {
+    "V259/model.py": "2e23f5951f77d4cb5eac118b297d2aac04b2a15ab9ae17b3bd4a05536fb89be8",
+    "V259/run.py": "34acd0d3a0989f766a081c38ae7c4d845762c936d20a23a947d5be311941f3bc",
+    "V259/analysis.py": "4eb293401797fa06fabfd47b774f86a2ecd5c022fc2e60fe6bfb48a1d81baae0",
+    "V259/model_info/live_validation.json": "e87fae8dcafb597e5eb6ce2c653033526fd4b087b4ecf5897a979e0344b3623c",
+    "V259/model_train/2026Q4/fold1/best.pt": "081de38b8886cbf352f5e9f97727ec2e7b86c22bc181a935d063f87c200d9b6e",
+    "V259/model_train/2026Q4/fold1/training_info.json": "9ee2e8e8f995ccd90099060ed94f723fd55d0f8bbeaff5fac21dd61b211960d0",
+    "V259/model_train/2026Q4/fold1/complete.json": "1901aa4b93b51aa1ad2c58511d02b06ccead8e1b537853cc035037ce89072a08",
+    "V259/model_train/2026Q4/fold2/best.pt": "670114335d174768e2a22dbf730cda26fba0615a5d1f47b10442c3ac85c1077c",
+    "V259/model_train/2026Q4/fold2/training_info.json": "9ee2e8e8f995ccd90099060ed94f723fd55d0f8bbeaff5fac21dd61b211960d0",
+    "V259/model_train/2026Q4/fold2/complete.json": "ed6372ee38df8c1344594c7d9f98d511193238fb93f16941990de56dc3f15029",
+    "V259/model_train/2026Q4/fold3/best.pt": "3635e6b9e315e8ba71b556fe34048bfd033d00c5a63ea10aa1241fe0d703fc59",
+    "V259/model_train/2026Q4/fold3/training_info.json": "9ee2e8e8f995ccd90099060ed94f723fd55d0f8bbeaff5fac21dd61b211960d0",
+    "V259/model_train/2026Q4/fold3/complete.json": "3795bc54dbc6662b71b53d491d8376bfdfa76dfaf7251bfe34120227e241cab3",
+    "V259/model_train/2026Q4/fold4/best.pt": "1af2887f1915c586b6f7531b26dd89dc024784d4429d27bd5f136cdf3a8a6a4c",
+    "V259/model_train/2026Q4/fold4/training_info.json": "9ee2e8e8f995ccd90099060ed94f723fd55d0f8bbeaff5fac21dd61b211960d0",
+    "V259/model_train/2026Q4/fold4/complete.json": "fbfa8b36d74b3d518805469de73635be4019b4393b3953eaf24bf5d8c94f3c9f",
+    "V247/model.py": "4900d130fc5a878008ad26fd7824708823537a4c2b98eafd7ee1ecc714c6abd5",
+    "V247/run.py": "a637113720deadb543d77ea84b22112b3554edefeebebf23d2b6de18b7954140",
+    "V247/analysis.py": "80639f38c997b6b9b9296d5e71c961ffea43566c8117954a273cf68b4eb3bae9",
+    "V247/model_info/live_validation.json": "e862f5c5dafe3e25094aeaa65a5b4909c81500ee6e18ee5d2df92550eb1a65ac",
+    "V247/model_train/2026Q4/fold1/best.pt": "3ae3c393ff7c0eb966ec6699c4325c9a24405dd6eb2f3acc496e548a9ae923c6",
+    "V247/model_train/2026Q4/fold1/training_info.json": "9d38c83cc1f026e1265b5ec2f208e0f6b7ad4591b626b2fbd25ebf6a1bf542fb",
+    "V247/model_train/2026Q4/fold1/complete.json": "2a94852bbe6a513654656a9ec5a6775541657d8699579780cc3227d89254b170",
+    "V247/model_train/2026Q4/fold2/best.pt": "aed58c765111d14cfa0a983d37aaab7b0c55bc88d25305ccb0ed6ff95f809bc8",
+    "V247/model_train/2026Q4/fold2/training_info.json": "9d38c83cc1f026e1265b5ec2f208e0f6b7ad4591b626b2fbd25ebf6a1bf542fb",
+    "V247/model_train/2026Q4/fold2/complete.json": "2c31843f329e46aa18c4459e1ae9fdfa2d6d58731457d4bed489212ff470812b",
+    "V247/model_train/2026Q4/fold3/best.pt": "64b4c995df93bed4ba546f145083150f3d4d6d805edd38cd6c705b4928cc6f20",
+    "V247/model_train/2026Q4/fold3/training_info.json": "9d38c83cc1f026e1265b5ec2f208e0f6b7ad4591b626b2fbd25ebf6a1bf542fb",
+    "V247/model_train/2026Q4/fold3/complete.json": "b5da9aa85b67aa079f842686d5f8b70e4d1281ad6eed4f9d9311f804af18ca05",
+    "V247/model_train/2026Q4/fold4/best.pt": "a76d183e909dbe2b9d37d582f71b285cf8e4a19abbbd0d4fca4be7250f34f8ed",
+    "V247/model_train/2026Q4/fold4/training_info.json": "9d38c83cc1f026e1265b5ec2f208e0f6b7ad4591b626b2fbd25ebf6a1bf542fb",
+    "V247/model_train/2026Q4/fold4/complete.json": "c13dba87dc1349a145be71c16c9057ab32071869b3cdededa3b6b342977a13a9",
+    "V321/model.py": "f0a5d6f95ef3427cbc24c22db9d09feff961d503b112c95c86ae170e2c0c5307",
+    "V321/run.py": "a637113720deadb543d77ea84b22112b3554edefeebebf23d2b6de18b7954140",
+    "V321/analysis.py": "4372fc56f669bbe256006e978a14f11d30c46b4b5fc7f06afb93e15b9385a4ad",
+    "V321/model_info/live_validation.json": "bbb2150c8ce1334dfab8911341f575104907f49a9809f85f375485e1c0d18936",
+    "V321/model_train/2026Q4/fold1/best.pt": "a4cc6903868f86d7f4b3da0e82dc4b152037f1ffad28abf412b1f2da99e5e1e4",
+    "V321/model_train/2026Q4/fold1/training_info.json": "40f9ba56461498285c6b91644c1b2366f3367ffdad55597c1bfbe52b1da4249a",
+    "V321/model_train/2026Q4/fold1/complete.json": "fae27d055427c0ccb7ae61c1c84cc2fe1491ead93e1f3839de553dc23327edd8",
+    "V321/model_train/2026Q4/fold2/best.pt": "18a86c76304f89d75d4ae29d1b9c0491a0aff891caf93382a7efd980e3cd1753",
+    "V321/model_train/2026Q4/fold2/training_info.json": "40f9ba56461498285c6b91644c1b2366f3367ffdad55597c1bfbe52b1da4249a",
+    "V321/model_train/2026Q4/fold2/complete.json": "2bdfe9f166e43d82ebdfeef89a07b6dd5c3953a72dd31991f00dead2319199c0",
+    "V321/model_train/2026Q4/fold3/best.pt": "a3caf3728c43ff7d83715ff559a088ba47edc5f46f8834f2d458a398a124759f",
+    "V321/model_train/2026Q4/fold3/training_info.json": "40f9ba56461498285c6b91644c1b2366f3367ffdad55597c1bfbe52b1da4249a",
+    "V321/model_train/2026Q4/fold3/complete.json": "0e24aa9556419bfd475d309f35b687ae037a5e007df0a16f1e7bd41411288bed",
+    "V321/model_train/2026Q4/fold4/best.pt": "f8c621e6705a720ac5c54426eb911095d0c42754ab6c01c715ad8e2ce3af32ed",
+    "V321/model_train/2026Q4/fold4/training_info.json": "40f9ba56461498285c6b91644c1b2366f3367ffdad55597c1bfbe52b1da4249a",
+    "V321/model_train/2026Q4/fold4/complete.json": "7494b4d943b5eae50d9ef86965bc4e5fbcfbf842ac45715c227a84a03f77dc36",
+    "V348/model.py": "1690150b6439e5df6b63326ab7e89516b5a16b44755939d9ccfcf1f4e8094ff4",
+    "V348/run.py": "a637113720deadb543d77ea84b22112b3554edefeebebf23d2b6de18b7954140",
+    "V348/analysis.py": "dc3ccbb27c81d83d90bd73bdb4136407f906f5a906841af3297ca85b9d290022",
+    "V348/model_info/live_validation.json": "6422be598c3c96720dd428771d071b14d6255c6827995219b986152be6ca7502",
+    "V348/model_train/2026Q4/fold1/best.pt": "352d481b307059fabbcb0dee89056ca9bb60a6ad4b434747d52f022df1c729ea",
+    "V348/model_train/2026Q4/fold1/training_info.json": "07a4abcfe5fa6a5676362ce9d9cae774f2ff7d25f048f51baa85124d23d31d74",
+    "V348/model_train/2026Q4/fold1/complete.json": "3be637ae2fc2deae35b9e0e10956564f2e6877f97da75b8f17bb65b76339fe43",
+    "V348/model_train/2026Q4/fold2/best.pt": "31728ec32616e08c6d8700f7dedb99c75cb89828005d8168135cf6a6ec86e91e",
+    "V348/model_train/2026Q4/fold2/training_info.json": "07a4abcfe5fa6a5676362ce9d9cae774f2ff7d25f048f51baa85124d23d31d74",
+    "V348/model_train/2026Q4/fold2/complete.json": "b370e8c97b473b6200ec3d6ab6b4f8b5a9f6c48120d25e36f492ebb76c91d031",
+    "V348/model_train/2026Q4/fold3/best.pt": "83d2c7aa69aa704d7100ea396a06c88db822a8978609a4d24226557d720ed499",
+    "V348/model_train/2026Q4/fold3/training_info.json": "07a4abcfe5fa6a5676362ce9d9cae774f2ff7d25f048f51baa85124d23d31d74",
+    "V348/model_train/2026Q4/fold3/complete.json": "854ce6de9ce48825f77ceb89b62497e946f35ed6afb9b644c1c9151467614a5c",
+    "V348/model_train/2026Q4/fold4/best.pt": "431bfe43609b9bd8b6d360a519093621a33859d47b7e65f94554bbaada865873",
+    "V348/model_train/2026Q4/fold4/training_info.json": "07a4abcfe5fa6a5676362ce9d9cae774f2ff7d25f048f51baa85124d23d31d74",
+    "V348/model_train/2026Q4/fold4/complete.json": "97095af96918a2461cc6296110eeec38916ace8b02f8c4b650d898393e3335b0",
+    "main.py": "01d6ecb8d7995b37d5fed700a27d21d45ef08a5f0fd9320603423ee73f8cae6c",
+    "input_contracts.json": "b9d07bd8f155cd9dad70daeb564cc815c2724c8558bed1ac1060c52a7f7a8610",
+    "strategy.py": "5e60862c999a4486b2a586a87d294b6e296484c6479adde86c4c9f7be69280dc",
+    "strategy_data/fold1.pt": "f63405120fd0290844dc08dc3f8498882c02a2f50e882c65b9f0ae727c328e62",
+    "strategy_data/fold2.pt": "f63405120fd0290844dc08dc3f8498882c02a2f50e882c65b9f0ae727c328e62",
+    "strategy_data/fold3.pt": "f63405120fd0290844dc08dc3f8498882c02a2f50e882c65b9f0ae727c328e62",
+    "strategy_data/fold4.pt": "f63405120fd0290844dc08dc3f8498882c02a2f50e882c65b9f0ae727c328e62"
+  },
+  "previous_models": [
+    "V322",
+    "V259",
+    "V282",
+    "V335"
+  ],
+  "rollback_archive": "experiments/_archive/stable_release_20261030/replicas/previous_release",
+  "validation_status": "failed_october_test",
+  "intended_use": "research_and_paper_replay",
+  "october_test": {
+    "end": "2026-10-29",
+    "return_value": -0.1685123173815095,
+    "max_drawdown": -0.1792706459716078,
+    "used_for_reselection": false
+  }
+}
